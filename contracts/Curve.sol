@@ -6,11 +6,13 @@ contract Curve {
 
     uint256 public PRECISION = 10**18;
     uint256 public MAX_RATIO = 1000000;
-    // TODO: make percent / divisor upgradeable
-    uint256 public PERCENT = 25;
-    uint256 public DIVISOR = 1000;
+    address public owner;
+    uint256 public percent;
 
-    // NOTE: 
+    constructor(address _owner, uint256 _percent) {
+        owner = _owner;
+        percent = percent;
+    }
 
     function calculateMintReturn(
         uint256 supply,
@@ -19,8 +21,11 @@ contract Curve {
         uint32 reserveRatio,
         uint256 amountEth
     ) returns (uint256) {
-        // Bancor.calculatePurchaseReturn()
-        require(reserveRatio > 0);
+        // Bancor.calculatePurchaseReturn(supply, balancePool, reserveRatio, amountEthAfterFees)
+        // require(reserveRatio > 0);
+        uint256 fee = calculateFee(amountEth);
+        uint256 amountEthAfterFee = amountEth - fee;
+
         if (supply > 0) {
 
         } else {
@@ -40,7 +45,7 @@ contract Curve {
 
     /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
     function calculateFee(uint256 amountEth) returns (uint256) {
-        return amountEth * PERCENT / DIVISOR;
+        return amountEth * percent / PRECISION;
     }
 
     /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
@@ -57,16 +62,21 @@ contract Curve {
     // https://billyrennekamp.medium.com/converting-between-bancor-and-bonding-curve-price-formulas-9c11309062f5
     function calculateSlope(
         uint256 supply,
-        uint256 poolBalance
+        uint256 balancePool
     ) {
         // Exponent parameter (n) = 1 / reserveRatio - 1
-        // Slope (m) = (poolBalance * (n + 1)) / (totalSupply ^ (n + 1))
+        // Slope (m) = (balancePool * (n + 1)) / (totalSupply ^ (n + 1))
         n = 1 / reserveRatio - 1;
-        num = poolBalance * (n + 1);
-        denom = supply 
-
+        num = balancePool * (n + 1);
+        // denom = supply;
 
         // slope = collateral / (CW * tokenSupply ^ (1 / CW))
         // CW = connecter weight aka reserveRatio
     }
+
+    function updatePercent(uint256 _percent) {
+        require(msg.sender == owner);
+        percent = _percent;
+    }
+
 }
