@@ -22,9 +22,12 @@ contract Curve is Power {
 
         if (supply == 0) {
             uint256 exponent = 1 / reserveWeight - 1;
-            uint256 slope = (balancePool * (exponent + 1)) / (supply ** (exponent + 1));
-            uint256 amountMinted = (amountEth / (exponent * slope)) ** reserveWeight;
-            return amountMinted;
+            if (balancePool > 0) {
+                uint256 slope = (balancePool * (exponent + 1)) / (supply ** (exponent + 1));
+                uint256 amountMinted = (amountEth / (exponent * slope)) ** reserveWeight;
+                return amountMinted;
+            }
+            return ;// TODO
         }
 
         if (reserveWeight == MAX_WEIGHT) {
@@ -84,6 +87,7 @@ contract Curve is Power {
         return amountToken * lockedBalance / supply;
     }
 
+    /*
     // https://billyrennekamp.medium.com/converting-between-bancor-and-bonding-curve-price-formulas-9c11309062f5
     function calculateSlope(
         uint256 supply,
@@ -98,5 +102,5 @@ contract Curve is Power {
         // slope = collateral / (CW * tokenSupply ^ (1 / CW))
         // CW = connecter weight aka reserveWeight
     }
-
+    */
 }
