@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0;
 
 import "./Power.sol";
+import "./MeToken.sol";
+
 
 contract Curve is Power {
 
@@ -49,7 +51,7 @@ contract Curve is Power {
         uint256 balancePool,
         uint32 reserveWeight,
         uint256 amountToken
-    ) returns (uint256) {
+    ) public view returns (uint256) {
         // Bancor.calculateSaleReturn(supply, balancePool, reserveWeight, amountEthAfterFees)
         require(supply > 0 && reserveWeight > 0 && reserveWeight <= MAX_WEIGHT && amountToken <= supply);
 
@@ -74,17 +76,6 @@ contract Curve is Power {
         uint256 oldBalance = balancePool * result;
         uint256 newBalance = balancePool << precision;
         return (oldBalance - newBalance) / result;
-    }
-
-
-    /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
-    function calculateFee(uint256 amountEth) returns (uint256) {
-        return amountEth * percent / PRECISION;
-    }
-
-    /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
-    function calculateLockedReturn(uint256 amountToken, uint256 lockedBalance, uint256 supply) returns (uint256) {
-        return amountToken * lockedBalance / supply;
     }
 
     /*
