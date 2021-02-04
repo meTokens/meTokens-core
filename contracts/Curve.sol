@@ -2,45 +2,53 @@ pragma solidity ^0.8.0;
 
 import "./Power.sol";
 
-contract Curve {
+contract Curve is Power {
 
-    uint256 public PRECISION = 10**18;
-    uint256 public MAX_RATIO = 1000000;
-    address public owner;
-    uint256 public percent;
+    uint256 public MAX_WEIGHT = 1000000;
 
-    constructor(address _owner, uint256 _percent) {
-        owner = _owner;
-        percent = percent;
-    }
+    constructor() {}
 
     function calculateMintReturn(
         uint256 supply,
         uint256 balancePool,
-        uint256 balanceLocked,
-        uint32 reserveRatio,
+        uint32 reserveWeight,
         uint256 amountEth
-    ) returns (uint256) {
-        // Bancor.calculatePurchaseReturn(supply, balancePool, reserveRatio, amountEthAfterFees)
-        // require(reserveRatio > 0);
-        uint256 fee = calculateFee(amountEth);
-        uint256 amountEthAfterFee = amountEth - fee;
+    ) public view returns (uint256) {
+        // Bancor.calculatePurchaseReturn(supply, balancePool, reserveWeight, amountEthAfterFees)
 
-        if (supply > 0) {
-
-        } else {
-            // supply = 0, special case 
+        if (amountEth == 0) {
+            return 0;
         }
+
+        if (supply == 0) {
+            uint256 exponent = 1 / reserveWeight - 1;
+            uint256 slope = (balancePool * (exponent + 1)) / (supply ** (exponent + 1));
+            uint256 amountMinted = (amountEth / (exponent * slope)) ** reserveWeight;
+            return amountMinted;
+        }
+
+        if (reserveWeight == MAX_WEIGHT) {
+            return supply * amountEth / balancePool;
+        }
+
+        uint256 result;
+        uint8 precision;
+        uint256 baseN = amountEth + balancePool;
+        (result, precision) = power(
+            baseN, balancePool, reserveWeight, MAX_WEIGHT
+        );
+        uint256 newTokenSupply = supply * result >> precision;
+        return newTokenSupply - supply;
     }
 
     function calculateBurnReturn(
         uint256 supply,
         uint256 balancePool,
         uint256 balanceLocked,
-        uint32 reserveRatio,
+        uint32 reserveWeight,
         uint256 amountToken
     ) returns (uint256) {
-
+        // TODO
     }
 
     /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
@@ -53,30 +61,19 @@ contract Curve {
         return amountToken * lockedBalance / supply
     }
 
-    function calculatePrice(
-        uint32 reserveRatio
-    ) {
-
-    }
-
     // https://billyrennekamp.medium.com/converting-between-bancor-and-bonding-curve-price-formulas-9c11309062f5
     function calculateSlope(
         uint256 supply,
         uint256 balancePool
     ) {
-        // Exponent parameter (n) = 1 / reserveRatio - 1
+        // Exponent parameter (n) = 1 / reserveWeight - 1
         // Slope (m) = (balancePool * (n + 1)) / (totalSupply ^ (n + 1))
-        n = 1 / reserveRatio - 1;
+        n = 1 / reserveWeight - 1;
         num = balancePool * (n + 1);
         // denom = supply;
 
         // slope = collateral / (CW * tokenSupply ^ (1 / CW))
-        // CW = connecter weight aka reserveRatio
-    }
-
-    function updatePercent(uint256 _percent) {
-        require(msg.sender == owner);
-        percent = _percent;
+        // CW = connecter weight aka reserveWeight
     }
 
 }
