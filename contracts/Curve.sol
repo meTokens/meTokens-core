@@ -44,12 +44,35 @@ contract Curve is Power {
     function calculateBurnReturn(
         uint256 supply,
         uint256 balancePool,
-        uint256 balanceLocked,
         uint32 reserveWeight,
         uint256 amountToken
     ) returns (uint256) {
-        // TODO
+        // Bancor.calculateSaleReturn(supply, balancePool, reserveWeight, amountEthAfterFees)
+        require(supply > 0 && reserveWeight > 0 && reserveWeight <= MAX_WEIGHT && amountToken <= supply);
+
+        if (amountToken == 0) {
+            return 0;
+        }
+
+        if (amountToken == supply) {
+            return reserveWeight;
+        }
+
+        if (reserveWeight == MAX_WEIGHT) {
+            return balancePool * amountToken / supply;
+        }
+
+        uint256 result;
+        uint8 precision;
+        uint256 baseD = supply - amountTokens;
+        (result, precision) = power(
+            supply, baseD, MAX_WEIGHT, reserveWeight
+        );
+        uint256 oldBalance = balancePool * result;
+        uint256 newBalance = balancePool << precision;
+        return (oldBalance - newBalance) / result;
     }
+
 
     /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
     function calculateFee(uint256 amountEth) returns (uint256) {
@@ -58,7 +81,7 @@ contract Curve is Power {
 
     /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
     function calculateLockedReturn(uint256 amountToken, uint256 lockedBalance, uint256 supply) returns (uint256) {
-        return amountToken * lockedBalance / supply
+        return amountToken * lockedBalance / supply;
     }
 
     // https://billyrennekamp.medium.com/converting-between-bancor-and-bonding-curve-price-formulas-9c11309062f5
