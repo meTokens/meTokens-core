@@ -1,22 +1,27 @@
 pragma solidity ^0.5.0;
 
 import "@openzeppelin/contracts/ownership/Ownables.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
+import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 
 
-contract MeToken is Ownables, ERC20,  ERC20Detailed{
+contract MeToken is Ownables, ERC20Burnable {
 
-  constructor(
-    uint256 _initialSupply,
-    string memory _tokenName
-  ) public
-  ERC20Detailed(
-    "meToken",
-    _tokenName,
-    18) {
-      _symbol = _tokenName;
-      _mint(msg.sender, _initialSupply); //mints the appropriate amount of meToken to the msg.sender
+  bool private initialized;
+  address public owner;
+  string public name;
+  string public symbol;
+
+  constructor() {}
+
+  function initialize(
+    address _owner,
+    string _name,
+    string _symbol
+  ) public external returns () {
+    require(!initialized, "initalize: already initalized");
+    owner = _owner;
+    name = _name;
+    symbol = symbol;
   }
 
   function mint(address account, uint256 amount) public onlyOwner {
