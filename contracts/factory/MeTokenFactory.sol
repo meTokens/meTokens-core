@@ -6,18 +6,20 @@ contract MeTokenFactory {
     
     event MeTokenCreated(
         address indexed _meToken,
-        address         
+        address indexed _owner,
+        string _name,
+        string _symbol
     );
 
     struct MeTokenDetails {
-        address indexed tokenAddress,
-        address indexed owner,
-        string name,
-        string symbol
+        address _tokenAddress,
+        address _owner,
+        string _name,
+        string _symbol
     }
 
     address public owner;
-    address[] public meTokens;
+    MeTokenDetails[] public meTokens;
 
     Metoken public meToken;
 
@@ -30,9 +32,25 @@ contract MeTokenFactory {
         string _name,
         string _symbol
     ) public view returns (address _meToken) {
+
         meToken m = new meToken(_owner, _name, _symbol);
-        meTokens.push(m);
-        emit meTokenCreated(m)
+        meTokenDetail = MeTokenDetails(
+            m,
+            _owner,
+            _name,
+            _symbol
+        );
+
+        meTokens.push(meTokenDetails);
+        
+        emit meTokenCreated(
+            m,
+            _owner,
+            _name,
+            _symbol
+        );
+
+        return m;
     }
 
 
