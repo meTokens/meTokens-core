@@ -10,6 +10,20 @@ contract Curve is Power {
 
     constructor() {}
 
+    /*
+    @notice calculates how many tokens can be minted when current token supply = 0
+    a = y / (x ^ (1/r - 1))   *   Collateral ^ (1/r - 1)
+    */
+
+    function calculateMintReturnFromZero(
+        uint256 base_X,
+        uint256 base_Y,
+        uint256 reserveWeight,
+        uint256 amountEth
+    ) public view returns (uint256 amountMinted) {
+        
+    }
+
     function calculateMintReturn(
         uint256 supply,
         uint256 balancePool,
@@ -77,21 +91,4 @@ contract Curve is Power {
         uint256 newBalance = balancePool << precision;
         return (oldBalance - newBalance) / result;
     }
-
-    /*
-    // https://billyrennekamp.medium.com/converting-between-bancor-and-bonding-curve-price-formulas-9c11309062f5
-    function calculateSlope(
-        uint256 supply,
-        uint256 balancePool
-    ) {
-        // Exponent parameter (n) = 1 / reserveWeight - 1
-        // Slope (m) = (balancePool * (n + 1)) / (totalSupply ^ (n + 1))
-        n = 1 / reserveWeight - 1;
-        num = balancePool * (n + 1);
-        // denom = supply;
-
-        // slope = collateral / (CW * tokenSupply ^ (1 / CW))
-        // CW = connecter weight aka reserveWeight
-    }
-    */
 }
