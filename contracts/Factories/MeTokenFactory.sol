@@ -1,0 +1,5 @@
+contract MeTokenFactory {
+
+	function newMeToken () {}
+
+}
