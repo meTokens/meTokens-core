@@ -68,13 +68,16 @@ contract BancorZeroFormulaValues {
      * needs to reference hub.vault.balancePooled
      * needs to return both burnForOwner and burnForEveryoneElse values
     **/
-	modifier updated;
-    function calculateMintReturn(uint256 _valueSet) updated returns () {
+	
+    // TODO: update calculation returned if meToken is changing hubs
+    function calculateMintReturn(uint256 _valueSetId) view returns (uint) {
         if (supply > 0 ) {
             _calculatePurchaseReturn(param);
         } else {
             _calculatePurchaseReturnFromZero(param);
         }
     }
+
+    // TODO: update calculations returned if meToken is changing hubs
     function calculateBurnReturn(uint256 _valueSet) updated returns () {}
 }
