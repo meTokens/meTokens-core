@@ -1,6 +1,5 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./Power.sol";
 
  /**
@@ -12,16 +11,13 @@ import "./Power.sol";
  * and to You under the Apache License, Version 2.0. "
  */
 contract BancorZeroFormula is Initializable, Power {
-  using SafeMath for uint256;
    string public version;
    uint32 public MAX_WEIGHT;
-
 
    function initialize() public initializer {
      MAX_WEIGHT = 1000000;
      version = "0.3";
    }
-
 
    /**
    * @dev given a token supply, connector balance, weight and a deposit amount (in the connector token),
@@ -36,20 +32,14 @@ contract BancorZeroFormula is Initializable, Power {
    * @param _depositAmount       deposit amount, in connector token
    *
    *  @return purchase return amount
-
    * TODO - add if _supply = 0, then use calculateMintReturnFromZero()
   */
-  function calculateMintReturn(
+  function _calculateMintReturn(
     uint256 _supply,
     uint256 _balancePooled,
     uint32 _reserveWeight,
-    uint256 _depositAmount) public view returns (uint256)
-  {
-    /** if (_supply == 0, ){
-      calculateMintReturnFromZero(base_x, base_y, _reserveWeight, _depositAmount)
-    } else **/
-  
-
+    uint256 _depositAmount
+    ) private view returns (uint256 meTokenAmountReturned) {
     // validate input
     require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT);
      // special case for 0 deposit amount
@@ -58,31 +48,29 @@ contract BancorZeroFormula is Initializable, Power {
     }
      // special case if the weight = 100%
     if (_reserveWeight == MAX_WEIGHT) {
-      return _supply.mul(_depositAmount).div(_balancePooled);
+      return _supply * _depositAmount / _balancePooled;
     }
-     uint256 result;
+
     uint8 precision;
-    uint256 baseN = _depositAmount.add(_balancePooled);
+    uint256 result;
+    uint256 baseN = _depositAmount + _balancePooled;
     (result, precision) = power(
       baseN, _balancePooled, _reserveWeight, MAX_WEIGHT
     );
-    uint256 newTokenSupply = _supply.mul(result) >> precision;
-    return newTokenSupply - _supply;
+    uint256 newTokenSupply = _supply * result >> precision;
+    meTokenAmountReturned = newTokenSupply - _supply;
   }
 
   /**
    * TODO - verify function
   */
   // https://www.notion.so/Economic-Modeling-f7a9e5a5a41b480490628079c794352d#6f090de4a7b34dd68d2c40b76b5f8700
-  function calculateMintReturnFromZero(
+  function _calculateMintReturnFromZero(
     uint256 _base_x, 
     uint256 _base_y, 
     uint32 _reserveWeight, 
     uint256 _depositAmount
-  ) 
-    public 
-    view 
-    returns (uint256 meTokenAmountReturned) {
+  ) private returns (uint256 meTokenAmountReturned) {
       uint256 numerator = _base_y;
       uint256 exponent = (1/_reserveWeight -1);
       uint256 denominator = _base_x ** exponent;
@@ -103,12 +91,12 @@ contract BancorZeroFormula is Initializable, Power {
    *
    * @return sale return amount
   */
-  function calculateBurnReturn(
+  function _calculateBurnReturn(
     uint256 _supply,
     uint256 _balancePooled,
     uint32 _reserveWeight,
-    uint256 _sellAmount) public view returns (uint256)
-  {
+    uint256 _sellAmount
+    ) private view returns (uint256 reserveTokenAmountReturned) {
     // validate input
     require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT && _sellAmount <= _supply);
      // special case for 0 sell amount
@@ -121,7 +109,7 @@ contract BancorZeroFormula is Initializable, Power {
     }
      // special case if the weight = 100%
     if (_reserveWeight == MAX_WEIGHT) {
-      return _balancePooled.mul(_sellAmount).div(_supply);
+      return _balancePooled * _sellAmount / _supply;
     }
      uint256 result;
     uint8 precision;
@@ -129,8 +117,9 @@ contract BancorZeroFormula is Initializable, Power {
     (result, precision) = power(
       _supply, baseD, MAX_WEIGHT, _reserveWeight
     );
-    uint256 oldBalance = _balancePooled.mul(result);
+    uint256 oldBalance = _balancePooled * result;
     uint256 newBalance = _balancePooled << precision;
-    return oldBalance.sub(newBalance).div(result);
+
+    reserveTokenAmountReturned = (oldBalance - newBalance) / result;
   }
 }
