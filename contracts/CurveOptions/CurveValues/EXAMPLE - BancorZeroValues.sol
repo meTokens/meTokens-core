@@ -72,12 +72,22 @@ contract BancorZeroFormulaValues {
     // TODO: update calculation returned if meToken is changing hubs
     function calculateMintReturn(uint256 _valueSetId) view returns (uint) {
         if (supply > 0 ) {
-            _calculatePurchaseReturn(param);
+            _calculateMintReturn(param);
         } else {
-            _calculatePurchaseReturnFromZero(param);
+            _calculateMintReturnFromZero(param);
         }
     }
 
     // TODO: update calculations returned if meToken is changing hubs
     function calculateBurnReturn(uint256 _valueSet) updated returns () {}
+
+    /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
+    function calculateFee(uint256 amountEth) returns (uint256) {
+        return amountEth * percent / PRECISION;
+    }
+
+    /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
+    function calculateLockedReturn(uint256 amountToken, uint256 lockedBalance, uint256 supply) returns (uint256) {
+        return amountToken * lockedBalance / supply;
+    }
 }
