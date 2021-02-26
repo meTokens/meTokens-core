@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/ownership/Ownables.sol";
+import "@openzeppelin/contracts/access/Ownables.sol";
 import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 
 
