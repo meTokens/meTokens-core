@@ -1,10 +1,12 @@
-contract MigrationRegistry{
+pragma solidity ^0.8.0;
+
+contract MigrationRegistry {
 
 	mapping (uint256 => Migration) migrations;
 
-    struct Migration{
-        address fromHub;
-        address toHub;
+    struct Migration {
+        uint256 fromHubId;
+        uint256 toHubId;
         address migrationVault;
         uint256 blockStart;
         uint256 blockTarget;

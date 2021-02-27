@@ -1,6 +1,9 @@
 // example of a contract `CurveOption.libraryParameterSet` that can be registered in CurveRegistry.sol
 // specifically paired with BancorFormulaFromZero.sol
-contract BancorZeroFormulaValues {
+
+import "../CurveFormulas/BancorZeroFormula.sol";
+
+contract BancorZeroFormulaValues is BancorZeroFormula {
 
     event Updated(uint256 indexed hubId);
 
@@ -52,8 +55,8 @@ contract BancorZeroFormulaValues {
     function _finishUpdate(uint256 _valueSetId) internal {
         require(msg.sender == address(this));
 
-        TargetValueSet t = targetValueSets[_valueSetId];
-        ValueSet v = valueSets[_valueSetId];
+        TargetValueSet memory t = targetValueSets[_valueSetId];
+        ValueSet memory v = valueSets[_valueSetId];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
@@ -70,16 +73,22 @@ contract BancorZeroFormulaValues {
     **/
 	
     // TODO: update calculation returned if meToken is changing hubs
-    function calculateMintReturn(uint256 _valueSetId) view returns (uint) {
-        if (supply > 0 ) {
+    function calculateMintReturn(uint256 _valueSetId, uint256 _depositAmount) updated view returns (uint256) {
+        ValueSet memory v = valueSets[_valueSetId];
+
+        if (supply > 0) {
+            // TODO - passing in supply and other args
+            // supply comes from vault
             _calculateMintReturn(param);
         } else {
-            _calculateMintReturnFromZero(param);
+            _calculateMintReturnFromZero(v.base_x, v.base_y, v.reserveWeight, _depositAmount);
         }
     }
 
     // TODO: update calculations returned if meToken is changing hubs
-    function calculateBurnReturn(uint256 _valueSet) updated returns () {}
+    function calculateBurnReturn(uint256 _valueSetId) updated returns (uint256) {
+        ValueSet memory v = valueSets[_valueSetId];
+    }
 
     /// @notice calculateFee is used to calculate the fee earned by the StakeOnMe Development Team whenever a MeToken Purchase or sale occurs throught contract
     function calculateFee(uint256 amountEth) returns (uint256) {
