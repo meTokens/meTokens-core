@@ -64,8 +64,8 @@ contract BancorZeroFormula is Power {
     function _calculateMintReturnFromZero(
         uint256 _base_x, 
         uint256 _base_y, 
-        uint32 _reserveWeight, 
-        uint256 _depositAmount
+        uint256 _depositAmount,
+        uint32 _reserveWeight 
     ) private returns (uint256 meTokenAmountReturned) {
         uint256 numerator = _base_y;
         uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
@@ -90,8 +90,8 @@ contract BancorZeroFormula is Power {
     function _calculateBurnReturn(
         uint256 _supply,
         uint256 _balancePooled,
-        uint32 _reserveWeight,
-        uint256 _sellAmount
+        uint256 _sellAmount,
+        uint32 _reserveWeight
     ) private view returns (uint256 reserveTokenAmountReturned) {
         // validate input
         require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT && _sellAmount <= _supply);
