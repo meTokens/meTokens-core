@@ -1,19 +1,29 @@
-import "../fees.sol";
-import "../HubRegistry/HubRegistry.sol";
+import "../Fees.sol";
+import "../MeToken.sol";
+import "../registries/MeTokenRegistry.sol";
+import "../registries/HubRegistry.sol";
+import "../registries/CurveRegistry.sol";
 
-contract Vault_SingleAsset is Fees, MeToken, MeTokenRegistry, HubRegistry {
+import "../interfaces/I_BancorZeroValues.sol";
 
-	uint256 hub;
-	address collateralAsset;
 
-	mapping (address => MeTokenBalances) MeTokenBalances;
+contract Vault_SingleAsset is Fees, MeToken, MeTokenRegistry, HubRegistry, CurveRegistry {
 
-	struct MeTokenBalances{
+	uint256 public hub;
+	address public collateralAsset;
+
+	mapping (address => MeTokenBalance) meTokenBalances;
+
+	struct MeTokenBalance{
 		uint256 supply;
 		uint256 balancePooled;
 		uint256 balanceLocked;
-		bool subscribed;
+		bool active;
 	}
+
+    constructor(address _curveZeroValues) public {
+        curveZeroValues = I_CurveZeroValues(_curveZeroValues);
+    }
 
 	/**
 	 * TODO - figure out governance of updating the collateralAsset in a vault
@@ -21,41 +31,56 @@ contract Vault_SingleAsset is Fees, MeToken, MeTokenRegistry, HubRegistry {
 	function updateCollateralAsset () returns(){}
 
 	/**
-	 * passes _valueSet through hub.curveOption.values.calculateMintReturn() and ~.calculateBurnReturn()
+	 * passes _valueSet through hub.curveDetails.values.calculateMintReturn() and ~.calculateBurnReturn()
 	**/
-	function mint(uint _amount, address _meToken) returns(){
-		uint256 fee = mintFee();
+    // TODO: http://coders-errand.com/hash-functions-for-smart-contracts-part-3/
+	function mint(uint _amount, address _meToken) returns() {
+
+        Hub memory h = hubs[hub];
+        curveZeroValues memory c = I_Curve
+
+        // TODO: load this properly
+        amountMinted = calculateMintReturn();
+		
+        uint256 fee = mintFee();
+        MeToken(_meToken).mint(msg.sender, amountMinted);
 	}
 
 	function burn(uint _amount, address _meToken) returns(){
-		MeTokenBalances memory mt = MeTokenBalances[_meToken];
-		uint burnReturn = calculateBurnReturn(/**hubValueSetId**/, mt.supply, mt.balancePooled, _amount); //figure out logic
-		address recipient = feeRecipient();
+        
 		uint256 fee;
-		uint256 toUser;
-		uint256 toRecipient;
-		uint256 toLock;
+		uint256 amountToUser;
+		uint256 feeToRecipient;
+		
+        MeTokenBalance memory mt = meTokenBalances[_meToken];
+        uint256 burnReturn = calculateBurnReturn();
+		address recipient = feeRecipient();
 
-		if (msg.sender = meToken.owner){
-			fee = earnFee();
-			uint256 fromLocked = burnReturn / mt.supply * mt.lockedBalance;
-			toRecipient = fee * burnReturn;
-			toUser = burnReturn - toRecipient + fromLocked;
+		if (msg.sender = meToken.owner) {
+			fee = burnOwnerFee();
+			uint256 earnedfromLocked = burnReturn / mt.supply * mt.lockedBalance;
+			feeToRecipient = fee * burnReturn;
+			amountToUser = burnReturn - feeToRecipient + earnedfromLocked;
+
+            // decrease balance locked
+            mt.balanceLocked = mt.balanceLocked - earnedfromLocked;
+            
 		} else {
-			fee = burnFee();
-			toRecipient = fee * burnReturn;
-			toUser = burnReturn - toRecipient;
-			toLock = 
+			fee = burnBuyerFee();
+			feeToRecipient = fee * burnReturn;
+			amountToUser = burnReturn - feeToRecipient;
+			uint256 amountToLock = _amount - amountToUser
+
+            // increase balance locked (TODO: figure out calculation)
+            mt.balanceLocked++; 
 		}
 		_meToken.transferFrom(msg.sender, toRecipient, toRecipient);
 		_meToken.transferFrom(msg.sender, toUser, toUser);
 		mt.balancePooled -- _amount;
-		mt.balanceLocked ++ 
-		mt.balanceLocked -- fromLocked;
     }
 
     /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
-    function calculateLockedReturn(uint256 amountToken, uint256 lockedBalance, uint256 supply) returns (uint256) {
+    function calculateLockedReturn(address _meToken, uint256 amountToken) returns (uint256) {
         return amountToken * lockedBalance / supply;
     }
 }

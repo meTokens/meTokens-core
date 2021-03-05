@@ -10,10 +10,11 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     event Updated(uint256 indexed hubId);
 
 	mapping (uint => ValueSet) valueSets;
-	
+    mapping (uint256 => ValueSet) public hubs;
+
     // NOTE: each valueSet is for a hub
 	struct ValueSet {
-		address hubId; // the hub that uses this parameter set
+		// address hubId; // the hub that uses this parameter set
 		uint base_x;
 		uint base_y;
 		uint256 refundRatio;
@@ -51,13 +52,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     **/
     // TODO: fix calculateMintReturn arguments
     function calculateMintReturn(
-        uint256 _valueSetId,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
     ) view returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_valueSetId];
+        ValueSet memory v = valueSet[_hubId];
         if (_supply > 0) {
             amount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, v.reserveWeight);
         } else {
@@ -78,13 +79,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     // TODO: _calculateBurnReturn arguments
     function calculateBurnReturn(
-        uint256 _valueSetId,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
     ) returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_valueSetId];
+        ValueSet memory v = valueSet[_hubId];
         amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
         
         if (v.updating) {
@@ -119,11 +120,11 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         weightedAmount = weighted_v + weighted_t;
     }
 
-    function _finishUpdate(uint256 _valueSetId) internal {
+    function _finishUpdate(uint256 _hubId) internal {
         require(msg.sender == address(this));
 
-        TargetValueSet memory t = targetValueSets[_valueSetId];
-        ValueSet memory v = valueSets[_valueSetId];
+        TargetValueSet memory t = targetValueSets[_hubId];
+        ValueSet memory v = valueSets[_hubId];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
