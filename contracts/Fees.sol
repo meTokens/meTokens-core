@@ -14,6 +14,7 @@ contract Fees {
 	event SetBurnFee(uint256 rate);
 	event SetEarnFee(uint256 rate);
 	event SetOtherFee(string feeName, uint256 feeId, uint256 rate);
+	event NewFeeRecipient(string feeRecipient);
 
 	/// @dev for when a meToken is minted
 	uint256 private _mintFee;
@@ -29,7 +30,7 @@ contract Fees {
 	uint256 private EARNFEE_MIN = 0;
 	uint256 private EARNFEE_MAX = 10;
 
-	address public owner;
+    address public owner;
 
 	uint256 feeCount;
 	mapping (uint256 => Fee) fees;
@@ -42,10 +43,12 @@ contract Fees {
 		bool active;
 	}
 
+	address feeRecipient; 
+
 	constructor(){}
 
 	/// @dev to create a new type of fee for future vaults
-	function registerFee(string _feeName, uint256 _rate, uint256 _min, uint256 _max){
+	function registerFee(string _feeName, uint256 _rate, uint256 _min, uint256 _max) onlyOwner {
 		Fee memory f = fees[feeCount];
 		f.feeName = _feeName;
 		f.rate = _rate;
@@ -56,13 +59,13 @@ contract Fees {
 		feeCount++;
 	}
 
-	function deactivateFee(uint256 _feeId){
+	function deactivateFee(uint256 _feeId) onlyOwner {
 		Fee memory f = fees[_feeId];
 		f.active = false;
 		emit DeactivateFee(_feeName _feeId)
 	}
 
-	function reactivateFee(uint256 _feeId){
+	function reactivateFee(uint256 _feeId) OnlyOwner {
 		Fee memory f = fees[_feeId];
 		f.active = true;
 		emit ReactivateFee(_feeName _feeId)
@@ -95,6 +98,11 @@ contract Fees {
 		emit setOtherFee(amount);
 	}
 
+	function setFeeRecipient(address _recipient) onlyOnwer {
+		feeRecipient = _recipient;
+		emit NewFeeRecipient(_recipient);
+	}
+
 	/// @dev for when a meToken is minted
 	function mintFee() external view returns (uint256) {
 		return _mintFee;
@@ -111,5 +119,9 @@ contract Fees {
 		Fee memory f = fees[_feeId];
 		require(f.active);
 		return f.rate;
+	}
+
+	function feeRecipient() external view returns (address) {
+		return feeRecipient;
 	}
 }
