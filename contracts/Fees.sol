@@ -29,7 +29,7 @@ contract Fees {
 	uint256 private EARNFEE_MIN = 0;
 	uint256 private EARNFEE_MAX = 10;
 
-    address public owner;
+	address public owner;
 
 	uint256 feeCount;
 	mapping (uint256 => Fee) fees;
