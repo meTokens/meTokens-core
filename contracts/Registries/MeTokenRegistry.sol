@@ -16,7 +16,7 @@ contract MeTokenRegistry{
         bool migrating;
     }
 
-    mapping (address => MeToken) meTokens; // key pair: ERC20 address
+    mapping (address => MeTokenDetails) meTokens; // key pair: ERC20 address
 
     // TODO: access control
     function registerMeToken(

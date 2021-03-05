@@ -1,9 +1,9 @@
 contract CurveRegistry{
 
-    mapping (uint256 => CurveOption) curveOptions;
+    mapping (uint256 => CurveDetails) curves;
 
-    struct CurveOption{
-        string curveName; // BancorZero
+    struct CurveDetails{
+        string name; // BancorZero
         address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
         address values; // see BancorZeroValues.sol as an example of an address that could be registered (needs to be paired with the above library)
         bool active;

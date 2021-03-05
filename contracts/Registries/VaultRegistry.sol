@@ -1,11 +1,10 @@
 contract VaultRegistry{
 
-	mapping (uint256 => VaultOption) vaultOptions;
+	mapping (uint256 => VaultDetails) vaults;
 
-    struct VaultOption{
-    	string vaultName;
-        address vaultOption; //references VaultBalancer.sol as an example of a vault option
-        address vaultFactory; // reference vaultBalancerFactory.sol as an example of a vault factory
+    struct VaultDetails{
+    	string name;
+        address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
         bool active;
     }
 
