@@ -66,7 +66,7 @@ contract BancorZeroFormula is Power {
         uint256 _base_y, 
         uint256 _depositAmount,
         uint32 _reserveWeight 
-    ) private returns (uint256 meTokenAmountReturned) {
+    ) private view returns (uint256 meTokenAmountReturned) {
         uint256 numerator = _base_y;
         uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
         uint256 denominator = _base_x ** exponent;
