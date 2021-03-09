@@ -9,15 +9,14 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     event Updated(uint256 indexed hubId);
 
-	mapping (uint => ValueSet) valueSets;
-    mapping (uint256 => ValueSet) public hubs;
+    // NOTE: keys will be the hubId
+	mapping (uint256 => HubValueSet) hubValueSets;
 
     // NOTE: each valueSet is for a hub
-	struct ValueSet {
+	struct HubValueSet {
 		// address hubId; // the hub that uses this parameter set
 		uint base_x;
 		uint base_y;
-		uint256 refundRatio;
 		uint256 reserveWeight;
 
 		bool updating;
@@ -28,13 +27,12 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function deactivateValueSet() returns(uint256) {}
     function reactivateValueSet() returns(uint256) {}
 
-	mapping (uint => TargetValueSet) targetValueSets;
+	mapping (uint256 => TargetValueSet) targetValueSets;
 
     // NOTE: for updating a hub
-	struct TargetValueSet {
+	struct TargetHubValueSet {
 		uint base_x;
 		uint base_y;
-		uint256 refundRatio;
 		uint256 reserveWeight;
 
 		uint256 blockStart;
@@ -116,7 +114,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
         // TODO: validate these calculations
         uint256 weighted_v = _amount * (PRECISION - targetWeight);
-        uint256 weighted_t = _targetAmount * (targetWeight);
+        uint256 weighted_t = _targetAmount * targetWeight;
         weightedAmount = weighted_v + weighted_t;
     }
 
@@ -129,7 +127,6 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
-        v.refundRatio = t.refundRatio;
         v.updating = false;
 
         emit Updated(v.hubId);

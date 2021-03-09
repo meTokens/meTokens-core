@@ -1,8 +1,10 @@
-contract VaultRegistry{
+pragma solidity ^0.8.0;
+
+contract VaultRegistry {
 
 	mapping (uint256 => VaultDetails) vaults;
 
-    struct VaultDetails{
+    struct VaultDetails {
     	string name;
         address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
         bool active;

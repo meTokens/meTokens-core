@@ -11,8 +11,9 @@ import "../interfaces/I_MeToken.sol"; // TODO
 contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 
     uint256 private PRECISION = 10**18;
-	uint256 public hubId;
     uint256 public collateralBalance;
+	uint256 public hubId;
+    uint256 public refundRatio;
 	I_ERC20 public collateralAsset;
     I_CurveZeroValues public curve;
 
@@ -27,9 +28,22 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
 
     event SetCurve(address curveZeroValues);
 
-    constructor(address _collateralAsset, address _curveZeroValues) public {
+    constructor() {}
+
+    function initialize(
+        uint256 _hubId,
+        uint256 _refundRatio,
+        address _collateralAsset,
+        address _curveZeroValues
+    ) public onlyVaultFactory {  // TODO: onlyVaultFactory
+        require(!initialized, "already initialized");
+        require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
+        hubId = _hubId; // TODO: require hubId exists
+        refundRatio = _refundRatio;
         collateralAsset = I_ERC20(_collateralAsset);
         curve = I_CurveZeroValues(_curveZeroValues);
+
+        initialized = true;
     }
 
 	/**
@@ -37,19 +51,15 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
 	**/
     // TODO: http://coders-errand.com/hash-functions-for-smart-contracts-part-3/
 	function mint(uint _amount, address _meToken) {
+        require(initialized, "!initialized");
 
         MeTokenBalance memory mt = meTokenBalances[_meToken];
         require(mt.active, "MeToken is not active");
 
+        // TODO: validate mintFee() is proportional to PRECISION
         uint256 feeAmount = _amount * mintFee() / PRECISION;
         uint256 amountAfterFees = _amount - feeAmount;
 		
-        // Send fees to recipient (TODO: validate feeRecipient())
-        collateralAsset.transferFrom(msg.sender, feeRecipient(), feeAmount);
-
-        // Send collateral to vault
-        collateralAsset.transferFrom(msg.sender, address(this), amountAfterFees);
-
         // Calculate how much meToken is minted
         amountMinted = valuesContract.calculateMintReturn(
             hubId,
@@ -63,40 +73,52 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
         mt.balancePooled = mt.balancePooled + amountAfterFees;
         mt.supply = mt.supply + amountMinted;
 
+        // Send fees to recipient (TODO: validate feeRecipient())
+        collateralAsset.transferFrom(msg.sender, feeRecipient(), feeAmount);
+
+        // Send collateral to vault
+        collateralAsset.transferFrom(msg.sender, address(this), amountAfterFees);
+
         // Mint meToken
         I_MeToken(_meToken).mint(msg.sender, amountMinted);
 	}
 
-	function burn(uint _amount, address _meToken){
+	function burn(uint256 _amount, address _meToken){
+        require(intialized, "!initialized");
 
         MeTokenBalance memory mt = meTokenBalances[_meToken];
         require(mt.active, "MeToken is not active");
 		
-		uint256 feeToRecipient;
-		uint256 amountToUser;
-        uint256 burnReturn = calculateBurnReturn();
-		address recipient = feeRecipient();
+		uint256 feeAmount;
+		uint256 amountAfterFees;
 
 		if (msg.sender = meToken.owner) {
-			uint256 earnedfromLocked = burnReturn / mt.supply * mt.lockedBalance;
-			feeToRecipient = burnOwnerFee() * burnReturn;
-			amountToUser = burnReturn - feeToRecipient + earnedfromLocked;
+            feeAmount = _amount * burnOwnerFee() / PRECISION;
+			amountAfterFees = _amount - feeAmount + earnedfromLocked;
+
+			uint256 amountFromLocked = _amount * mt.lockedBalance / mt.supply;
 
             // decrease balance locked
             mt.balanceLocked = mt.balanceLocked - earnedfromLocked;
             
-		} else {
-			feeToRecipient = burnBuyerFee() * burnReturn;
-			amountToUser = burnReturn - feeToRecipient;
-			uint256 amountToLock = _amount - amountToUser
+		} else {  // burner is not owner
 
-            // increase balance locked (TODO: figure out calculation)
-            mt.balanceLocked++; 
+			feeAmount = _amount * burnBuyerFee() / PRECISION;
+			amountAfterFees = _amount - feeAmount;
+
+			uint256 amountToLock = amountAfterFees * refundRatio / PRECISION;
+            uint256 amount
+
+            // increase balance locked
+            mt.balanceLocked = mt.balanceLocked + amountToLock; 
 		}
-		_meToken.transferFrom(msg.sender, toRecipient, toRecipient);
+
+
+		_meToken.transfer(feeRecipient(), feeAmount);
 		_meToken.transferFrom(msg.sender, toUser, toUser);
 		mt.balancePooled -- _amount;
     }
+
 
     /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
     function calculateLockedReturn(address _meToken, uint256 amountToken) returns (uint256) {
@@ -105,10 +127,12 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
 
 	//  TODO - figure out governance of updating the collateralAsset in a vault
 	function setCollateralAsset(address _collateralAsset) public onlyGov {
+        require(initialized, "!initialized");
     }
 
     // TODO: onlyGov modifier
     function setCurve(address _newCurveZeroValues) public onlyGov {
+        require(initialized, "!initialized");
         require(_newCurveZeroValues != address(curve), "Same address");
         curve = I_CurveZeroValues(_newCurveZeroValues);
         emit SetCurve(_newCurveZeroValues);
