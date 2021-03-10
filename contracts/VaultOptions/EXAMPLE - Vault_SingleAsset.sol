@@ -11,6 +11,8 @@ import "../interfaces/I_MeToken.sol"; // TODO
 contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 
     uint256 private PRECISION = 10**18;
+    uint256 public id;
+    address public owner;
     uint256 public collateralBalance;
 	uint256 public hubId;
     uint256 public refundRatio;
@@ -19,7 +21,7 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
 
 	mapping (address => MeTokenBalance) meTokenBalances;
 
-	struct MeTokenBalance{
+	struct MeTokenBalance {
 		uint256 supply;
 		uint256 balancePooled;
 		uint256 balanceLocked;
@@ -31,6 +33,8 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
     constructor() {}
 
     function initialize(
+        uint256 _id,
+        address _owner,
         uint256 _hubId,
         uint256 _refundRatio,
         address _collateralAsset,
@@ -38,6 +42,8 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
     ) public onlyVaultFactory {  // TODO: onlyVaultFactory
         require(!initialized, "already initialized");
         require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
+        id = _id;
+        owner = _owner;
         hubId = _hubId; // TODO: require hubId exists
         refundRatio = _refundRatio;
         collateralAsset = I_ERC20(_collateralAsset);
