@@ -2,41 +2,31 @@ pragma solidity ^0.8.0;
 
 contract VaultRegistry {
 
-    event RegisterVault(address factory, string name, uint256 vaultId);
+    event RegisterVault(string name, address vault, address factory);
     event DeactivateVault(uint256 vaultId);
     event ReactivateVault(uint256 vaultId);
     // event RegisterFactory(address factory);
     // event DeactivateFactory(address factory);
 
-	mapping (uint256 => VaultDetails) vaultFactories;
-    mapping (address => bool) vaults;
-    uint256 private _vaultFactoryCount;
+	mapping (address => bool) private vaultFactories;
+    mapping (address => VaultDetails) public vaults;
+    uint256 private _vaultCount;
 
-    // struct VaultDetails {
-    //     address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
-    // 	string name;
-    //     bool active;
-    // }
-
-    struct VaultFactoryDetails {
-        address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
+    struct VaultDetails {
         string name;
+        address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
         bool active;
     }
 
     // TODO: argument check
     // TODO: access control
-    function registerVault(address factory, string calldata name) {
-        require(vaultFactories[factory], "Factory is not registered factory");
-
-        // Create vault
-        
+    function registerVault(string calldata name, address _vault, address _factory) {
 
         // Add vault details to storage
-        VaultDetails memory v = VaultDetails(factory, name, true);
-        vaults[++_vaultFactoryCount] = v;
+        VaultDetails memory v = VaultDetails(name, _vault, _factory, false);
+        vaults[_vault] = v;
 
-        emit RegisterVault(factory, name, _vaultFactoryCount);
+        emit RegisterVault(name, _vault, _factory);
     }
 
     function deactivateVault(uint256 vaultId) public {

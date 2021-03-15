@@ -15,27 +15,26 @@ contract VaultFactory_SingleAsset{
     
     // TODO: access control
 	function createVault (
+        string calldata name
         address _owner,
         uint256 _hubId,
-        uint256 _refundRatio,
-        address _collateralAsset,
-        address _curveZeroValues,
-        string calldata name
-    ) public {
+        address _valueSetAddress,
+        bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio and _collateralAsset hashed
+    ) public returns (address) {
 
         // create our vault
-        vault v = new Vault();
+        Vault memory vault = new Vault_SingleAsset();
         vault.initialize(
             registry.vaultCount(),
             _owner,
             _hubId,
-            _refundRatio,
-            _collateralAsset,
-            _curveZeroValues
+            _valueSetAddress,
+            _encodedVaultAdditionalArgs
         );
 
         // Add vault to registry
-        registry.registerVault(address(this), name);
+        registry.registerVault(name, vault, address(this));
         
+        return address(vault);
     }
 }

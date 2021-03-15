@@ -10,6 +10,8 @@ import "../interfaces/I_MeToken.sol"; // TODO
 
 contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 
+    bytes4 private encodedInitializeFunc = bytes(keccak256("_initialize(uint256,address)"));
+
     uint256 private PRECISION = 10**18;
     uint256 public id;
     address public owner;
@@ -36,20 +38,24 @@ contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry 
         uint256 _id,
         address _owner,
         uint256 _hubId,
-        uint256 _refundRatio,
-        address _collateralAsset,
-        address _curveZeroValues
+        address _curveValues,
+        bytes4 encodedArgs // NOTE: this is _refundRatio and _collateralAsset hashed
     ) public onlyVaultFactory {  // TODO: onlyVaultFactory
         require(!initialized, "already initialized");
         require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
         id = _id;
         owner = _owner;
         hubId = _hubId; // TODO: require hubId exists
-        refundRatio = _refundRatio;
-        collateralAsset = I_ERC20(_collateralAsset);
-        curve = I_CurveZeroValues(_curveZeroValues);
+        curve = I_CurveZeroValues(_curveValues);
+
+        require(this.call(encodedInitializeFunc, encodedArgs), "Encoding failed");
 
         initialized = true;
+    }
+
+    function _initialize(uint256 _refundRatio, address _collateralAsset) private {
+        refundRatio = _refundRatio;
+        collateralAsset = I_ERC20(_collateralAsset);
     }
 
 	/**

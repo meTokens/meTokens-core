@@ -27,7 +27,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function deactivateValueSet() returns(uint256) {}
     function reactivateValueSet() returns(uint256) {}
 
-	mapping (uint256 => TargetValueSet) targetValueSets;
+	mapping (uint256 => TargetValueSet) targetHubValueSets;
 
     // NOTE: for updating a hub
 	struct TargetHubValueSet {
