@@ -39,19 +39,25 @@ contract HubRegistry {
         address _hubOwner,
         string calldata _vaultName,
         address _vaultOwner,
-        address _valueSetAddress,
         address _vaultFactory, // TODO: hash vault function
+        address _valueSetAddress,
+        address _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
     ) public {
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
+        // Require value set adddress is in curve registry
+        
+
+        // TODO: encode args to set the bancor value set
+        address valueSetAddress = I_ValueSet(_valueSetAddress).registerValueSet()
         
         // Create new vault
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _valueSetAddress, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, valueSetAddress, _encodedVaultAdditionalArgs);
         
         // Add the vault to the hub
-        hubDetails memory h = HubDetails(name, _valueSetAddress, vault, _hubOwner, false);
+        hubDetails memory h = HubDetails(name, valueSetAddress, vault, _hubOwner, false);
         
-        // TODO: encode args to set the bancor value set
+        
 
         ++_hubCount;
     }

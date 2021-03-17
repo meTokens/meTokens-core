@@ -8,9 +8,9 @@ contract VaultRegistry {
     // event RegisterFactory(address factory);
     // event DeactivateFactory(address factory);
 
-	mapping (address => bool) private vaultFactories;
+	mapping (address => bool) private approvedVaultFactories;
     mapping (address => VaultDetails) public vaults;
-    uint256 private _vaultCount;
+    // uint256 private _vaultCount;
 
     struct VaultDetails {
         string name;
@@ -21,10 +21,11 @@ contract VaultRegistry {
     // TODO: argument check
     // TODO: access control
     function registerVault(string calldata name, address _vault, address _factory) {
+        require(isApprovedVaultFactory(_factory), "Factory not approved");
 
         // Add vault details to storage
-        VaultDetails memory v = VaultDetails(name, _vault, _factory, false);
-        vaults[_vault] = v;
+        VaultDetails storage vaultDetails = VaultDetails(name, _vault, _factory, true);
+        vaults[_vault] = vaultDetails;
 
         emit RegisterVault(name, _vault, _factory);
     }
@@ -38,15 +39,15 @@ contract VaultRegistry {
 
     // TODO: access control
     function registerVaultFactory(address factory) public {
-        require(!vaultFactories[factory], "Factory already registered");
+        require(!approvedVaultFactories[factory], "Factory already approved");
         require(factory != address(0), "Factory cannot equal 0 address");
-        vaultFactories[factory] = true;
+        approvedVaultFactories[factory] = true;
         emit RegisterVaultFactory(factory);
     }
 
     function deactivateVaultFactory(uint256 factory) public {
-        require(vaultFactories[factory], "Factory not registered");
-        vaultFactories[factory] = false;
+        require(approvedVaultFactories[factory], "Factory not approved");
+        approvedVaultFactories[factory] = false;
         emit DeactivateVaultFactory(vaultId);
     }
 
@@ -55,7 +56,7 @@ contract VaultRegistry {
     }
 
     function isApprovedVaultFactory(address factory) public view returns (bool) {
-        return vaultFactories[factory];
+        return approvedVaultFactories[factory];
     }
 
 }

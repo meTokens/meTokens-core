@@ -15,15 +15,19 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // NOTE: each valueSet is for a hub
 	struct HubValueSet {
 		// address hubId; // the hub that uses this parameter set
-		uint base_x;
-		uint base_y;
+		uint256 base_x;
+		uint256 base_y;
 		uint256 reserveWeight;
 
 		bool updating;
         uint256 targetValueSetId;
 	}
 
-	function registerValueSet() returns(uint256) {}
+	function registerValueSet(
+        uint256 _hubId, uint256 _base_x, uint256 _base_y, uint256 _reserveWeight
+    ) {
+
+    }
     function deactivateValueSet() returns(uint256) {}
     function reactivateValueSet() returns(uint256) {}
 
