@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 contract CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
+    event RegisterFormula(address formula);
+    event RegisterValues(address values);
+    event DeactivateCurve(uint256 curveId);
+    event DeactivateFormula(address formula);
+    event DeactivateValues(address values);
 
     mapping (uint256 => CurveDetails) curves;
     mapping (address => bool) private approvedFormula;
@@ -31,10 +36,36 @@ contract CurveRegistry {
         emit RegisterCurve(name, _formula, _values);
     }
 
-    // TODO: access control
     function deactivateCurve() external returns(uint256) {}
     
     function reactivateCurve() external returns(uint256) {}
+
+    function registerFormula(address _formula) public {
+        // TODO: access control
+        require(!isApprovedFormula(_formula), "Formula already approved");
+        approvedFormula[_formula] = true;
+        emit RegisterFormula(_formula);
+    }
+    function registerValues(address _values) public {
+        // TODO: access control
+        require(!isApprovedValues(_values), "Values already approved");
+        approvedValues[_values] = true;
+        emit RegisterValues(_values);
+    }
+
+    function deactivateFormula(address _formula) public {
+        // TODO: access control
+        require(approvedFormula[_formula], "Formula not approved");
+        approvedFormula[_formula] = false;
+        emit DeactivateFormula(_formula);
+    }
+
+    function deactivateValues(address _values) public {
+        // TODO: access control
+        require(approvedValues[_values], "Values not approved");
+        approvedValues[_values] = false;
+        emit DeactivateValues(_values);
+    }
 
     function isApprovedFormula(address formula) public view returns (bool) {
         return approvedFormula[formula];
