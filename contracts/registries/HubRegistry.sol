@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "../Interaces/I_VaultFactory.sol";
-import "../Interaces/I_VaultRegistry.sol";
+import "../interfaces/I_VaultFactory.sol";
+import "../interfaces/I_VaultRegistry.sol";
 
 contract I_DefaultValueSetContract {
     function registerValueSet() external;
@@ -45,11 +45,12 @@ contract HubRegistry {
         bytes4 _encodedVaultAdditionalArgs
     ) public {
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
+        
         // Require value set adddress is in curve registry
         
 
         // TODO: encode args to set the bancor value set
-        address valueSetAddress = I_ValueSet(_valueSetAddress).registerValueSet()
+        address valueSetAddress = I_ValueSet(_valueSetAddress).registerValueSet();
         
         // Create new vault
         vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, valueSetAddress, _encodedVaultAdditionalArgs);

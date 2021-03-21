@@ -1,9 +1,9 @@
 // example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
 // specifically paired with BancorFormulaFromZero.sol
 
-import "../formulas/BancorZeroFormula.sol";
+import "./SigmoidalFormula.sol";
 
-contract BancorZeroFormulaValues is BancorZeroFormula {
+contract SigmoidalValues is SigmoidalFormula {
 
     uint256 private PRECISION = 10**18;
 

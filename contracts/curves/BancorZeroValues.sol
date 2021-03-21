@@ -1,7 +1,7 @@
 // example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
 // specifically paired with BancorFormulaFromZero.sol
 
-import "../formulas/BancorZeroFormula.sol";
+import "./BancorZeroFormula.sol";
 
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
