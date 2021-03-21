@@ -9,7 +9,7 @@ contract I_DefaultValueSetContract {
 
 contract HubRegistry {
 
-    bytes4 encoded    
+    // bytes4 encoded
 
     event RegisterHub(address factory, string name, uint256 hubId);
     event DeactivateHub(uint256 hubId);
@@ -22,7 +22,7 @@ contract HubRegistry {
 
     struct HubDetails {
     	string name;
-        address valueSetAddress;
+        address valueSet;
         address vault;
         address owner;
         bool active;
@@ -40,7 +40,7 @@ contract HubRegistry {
         string calldata _vaultName,
         address _vaultOwner,
         address _vaultFactory,
-        address _valueSetAddress,
+        address _valueSet,
         bytes4 _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
     ) public {
@@ -50,13 +50,13 @@ contract HubRegistry {
         
 
         // TODO: encode args to set the bancor value set
-        address valueSetAddress = I_ValueSet(_valueSetAddress).registerValueSet();
+        address valueSet = I_ValueSet(_valueSet).registerValueSet();
         
         // Create new vault
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, valueSetAddress, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, valueSet, _encodedVaultAdditionalArgs);
         
         // Add the vault to the hub
-        hubDetails memory h = HubDetails(name, valueSetAddress, vault, _hubOwner, false);
+        hubDetails memory h = HubDetails(name, valueSet, vault, _hubOwner, false);
         
         
 

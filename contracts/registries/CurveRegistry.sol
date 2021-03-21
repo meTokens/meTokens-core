@@ -11,13 +11,13 @@ contract CurveRegistry {
 
     mapping (uint256 => CurveDetails) curves;
     mapping (address => bool) private approvedFormula;
-    mapping (address => bool) private approvedValues;
+    mapping (address => bool) private approvedValueSet;
     uint256 private _curveCount;
 
     struct CurveDetails{
         string name; // BancorZero
         address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
-        address values; // see BancorZeroValues.sol as an example of an address that could be registered (needs to be paired with the above library)
+        address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
         bool active;
     }
 
@@ -25,15 +25,15 @@ contract CurveRegistry {
     function registerCurve(
         string calldata name,
         address _formula,
-        address _values
+        address _valueSet
     ) external {
-        require(isApprovedFormula(_formula) && isApprovedValues(_values), "Not approved");
+        require(isApprovedFormula(_formula) && isApprovedValueSet(_valueSet), "Not approved");
 
         // Add curve details to storage
-        CurveDetails storage curveDetails = CurveDetails(name, _formula, _values, true);
+        CurveDetails storage curveDetails = CurveDetails(name, _formula, _valueSet, true);
         curves[++_curveCount] = curveDetails;
 
-        emit RegisterCurve(name, _formula, _values);
+        emit RegisterCurve(name, _formula, _valueSet);
     }
 
     function deactivateCurve() external returns(uint256) {}
@@ -46,11 +46,11 @@ contract CurveRegistry {
         approvedFormula[_formula] = true;
         emit RegisterFormula(_formula);
     }
-    function registerValues(address _values) public {
+    function registerValueSet(address _valueSet) public {
         // TODO: access control
-        require(!isApprovedValues(_values), "Values already approved");
-        approvedValues[_values] = true;
-        emit RegisterValues(_values);
+        require(!isApprovedValueSet(_valueSet), "ValueSet already approved");
+        approvedValueSet[_valueSet] = true;
+        emit RegisterValueSet(_valueSet);
     }
 
     function deactivateFormula(address _formula) public {
@@ -60,19 +60,19 @@ contract CurveRegistry {
         emit DeactivateFormula(_formula);
     }
 
-    function deactivateValues(address _values) public {
+    function deactivateValueSet(address _valueSet) public {
         // TODO: access control
-        require(approvedValues[_values], "Values not approved");
-        approvedValues[_values] = false;
-        emit DeactivateValues(_values);
+        require(approvedValueSet[_valueSet], "ValueSet not approved");
+        approvedValueSet[_valueSet] = false;
+        emit DeactivateValueSet(_valueSet);
     }
 
     function isApprovedFormula(address formula) public view returns (bool) {
         return approvedFormula[formula];
     }
 
-    function isApprovedValues(address values) public view returns (bool) {
-        return approvedValues[values];
+    function isApprovedValueSet(address valueSet) public view returns (bool) {
+        return approvedValueSet[valueSet];
     }
 
     function getCurveCount() public view returns (uint256) {
