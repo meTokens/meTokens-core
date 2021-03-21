@@ -8,7 +8,7 @@ contract VaultRegistry {
     // event RegisterFactory(address factory);
     // event DeactivateFactory(address factory);
 
-	mapping (address => bool) private approvedVaultFactories;
+	mapping (address => bool) private approvedVaultFactory;
     mapping (address => VaultDetails) public vaults;
     // uint256 private _vaultCount;
 
@@ -41,7 +41,7 @@ contract VaultRegistry {
     function registerVaultFactory(address factory) public {
         require(!approvedVaultFactories[factory], "Factory already approved");
         require(factory != address(0), "Factory cannot equal 0 address");
-        approvedVaultFactories[factory] = true;
+        approvedVaultFactory[factory] = true;
         emit RegisterVaultFactory(factory);
     }
 
@@ -56,7 +56,7 @@ contract VaultRegistry {
     }
 
     function isApprovedVaultFactory(address factory) public view returns (bool) {
-        return approvedVaultFactories[factory];
+        return approvedVaultFactory[factory];
     }
 
 }

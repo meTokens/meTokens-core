@@ -5,7 +5,7 @@ contract CurveRegistry {
     event RegisterCurve(string name, address formula, address values);
 
     mapping (uint256 => CurveDetails) curves;
-    mapping (address => bool) private approvedFormulas;
+    mapping (address => bool) private approvedFormula;
     mapping (address => bool) private approvedValues;
     uint256 private _curveCount;
 
@@ -36,15 +36,15 @@ contract CurveRegistry {
     
     function reactivateCurve() external returns(uint256) {}
 
+    function isApprovedFormula(address formula) public view returns (bool) {
+        return approvedFormula[formula];
+    }
+
+    function isApprovedValues(address values) public view returns (bool) {
+        return approvedValues[values];
+    }
+
     function getCurveCount() public view returns (uint256) {
         return _curveCount;
-    }
-
-    function isApprovedFormula(address formula) public view returns (bool) {
-        return approvedFormulas[formula];
-    }
-
-    function isApprovedValues(address Values) public view returns (bool) {
-        return approvedValues[value];
     }
 }

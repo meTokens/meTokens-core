@@ -39,9 +39,9 @@ contract HubRegistry {
         address _hubOwner,
         string calldata _vaultName,
         address _vaultOwner,
-        address _vaultFactory, // TODO: hash vault function
+        address _vaultFactory,
         address _valueSetAddress,
-        address _encodedValueSetArgs,
+        bytes4 _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
     ) public {
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
