@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract I_CurveZeroValues {
+interface I_CurveValueSet {
     function calculateMintReturn(
         uint256 _hub,
         uint256 _supply,

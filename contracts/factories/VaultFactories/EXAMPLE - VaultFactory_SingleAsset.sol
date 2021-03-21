@@ -15,7 +15,7 @@ contract VaultFactory_SingleAsset{
     
     // TODO: access control
 	function createVault(
-        string calldata name
+        string calldata name,
         address _owner,
         uint256 _hubId,
         address _valueSetAddress,

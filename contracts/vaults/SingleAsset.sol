@@ -1,3 +1,5 @@
+pragma solidity ^0.8.0;
+
 import "./Vault.sol";
 import "../Fees.sol";
 import "../MeToken.sol";
@@ -6,9 +8,9 @@ import "../registries/HubRegistry.sol";
 import "../registries/CurveRegistry.sol";
 
 
-import "../interfaces/I_BancorZeroValues.sol";
+import "../interfaces/I_CurveValueSet.sol";
 import "../interfaces/I_ERC20.sol"; // TODO
-import "../interfaces/I_MeToken.sol"; // TODO
+import "../interfaces/I_MeToken.sol";
 
 contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 
@@ -21,7 +23,7 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
 	uint256 public hubId;
     uint256 public refundRatio;
 	I_ERC20 public collateralAsset;
-    I_CurveZeroValues public curve;
+    I_CurveValueSet public curve;
 
 	mapping (address => MeTokenBalance) meTokenBalances;
 
@@ -32,7 +34,7 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
 		bool active;
 	}
 
-    event SetCurve(address curveZeroValues);
+    event SetCurve(address curveValueSet);
 
     constructor() {}
 
@@ -40,7 +42,7 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
         uint256 _id,
         address _owner,
         uint256 _hubId,
-        address _curveValues,
+        address _curveValueSet,
         bytes4 encodedArgs // NOTE: this is _refundRatio and _collateralAsset hashed
     ) public onlyVaultFactory {  // TODO: onlyVaultFactory
         require(!initialized, "already initialized");
@@ -48,7 +50,7 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
         id = _id;
         owner = _owner;
         hubId = _hubId; // TODO: require hubId exists
-        curve = I_CurveZeroValues(_curveValues);
+        curve = I_CurveValueSet(_curveValueSet); // TODO: check valueSet approved?
 
         require(this.call(encodedInitializeFunc, encodedArgs), "Encoding failed");
 
@@ -145,10 +147,10 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
     }
 
     // TODO: onlyGov modifier
-    function setCurve(address _newCurveZeroValues) public onlyGov {
+    function setCurve(address _newCurveValueSet) public onlyGov {
         require(initialized, "!initialized");
-        require(_newCurveZeroValues != address(curve), "Same address");
-        curve = I_CurveZeroValues(_newCurveZeroValues);
-        emit SetCurve(_newCurveZeroValues);
+        require(_newCurveValueSet != address(curve), "Same address");
+        curve = I_CurveValueSet(_newCurveValueSet);
+        emit SetCurve(_newCurveValueSet);
     }
 }

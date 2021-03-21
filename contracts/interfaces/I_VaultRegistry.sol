@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract I_VaultRegistry {
+interface I_VaultRegistry {
     // TODO: argument check
     function registerVault(address factory, string calldata name) public;
     function deactivateVault(uint256 vaultId) public;

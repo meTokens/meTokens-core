@@ -2,10 +2,8 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
+import "../interfaces/I_CurveValueSet.sol";
 
-contract I_DefaultValueSetContract {
-    function registerValueSet() external;
-}
 
 contract HubRegistry {
 
@@ -19,6 +17,7 @@ contract HubRegistry {
     uint256 private hubCount;
     address public gov;
     I_VaultRegistry public vaultRegistry;
+    I_CurveRegistry public curveRegistry;
 
     struct HubDetails {
     	string name;
@@ -28,10 +27,10 @@ contract HubRegistry {
         bool active;
     }
 
-    constructor(address _vaultRegistry, address _gov) public {
-        require(_vaultRegistry != address(0), "_vaultRegistry cannot be 0 address");
-        vaultRegistry = I_VaultRegistry(_vaultRegistry);
+    constructor(address _gov, address _vaultRegistry, address _curveRegistry) public {
         gov = _gov;
+        vaultRegistry = I_VaultRegistry(_vaultRegistry);
+        curveRegistry = I_CurveRegistry(_curveRegistry);
     }
 
     function registerHub(
@@ -45,9 +44,7 @@ contract HubRegistry {
         bytes4 _encodedVaultAdditionalArgs
     ) public {
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
-        
-        // Require value set adddress is in curve registry
-        
+        require(curveRegistry.isApprovedValueSet(_valueSet), "_valueSet not approved");        
 
         // TODO: encode args to set the bancor value set
         address valueSet = I_ValueSet(_valueSet).registerValueSet();

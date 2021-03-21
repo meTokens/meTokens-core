@@ -32,22 +32,22 @@ contract MeToken is Ownables, ERC20Burnable {
         address _owner,
         string _name,
         string _symbol
-    ) public external returns () {
+    ) public {
         require(!initialized, "initalize: already initalized");
-        // NOTE: owner has to be vault address
+        // TODO: owner has to be vault address
         owner = _owner;
         name = _name;
         symbol = symbol;
     }
 
-    function mint(address account, uint256 amount) public {
+    function mint(address to, uint256 amount) public {
         require(msg.sender == vault, "!vault");
-        _mint(account, amount);
+        _mint(to, amount);
     }
 
-    function burn(address account, uint256 value) public {
+    function burn(address from, uint256 value) public {
         require(msg.sender == vault, "!vault");
-        _burn(account, value);
+        _burn(from, value);
     }
 
     function canMigrate() external view returns (bool) {
@@ -60,6 +60,6 @@ contract MeToken is Ownables, ERC20Burnable {
     * whoever is in charge of the hub
     */
     function switchUpdating() returns (bool) {
-        require(msg.sender == )
+        require(msg.sender == 0x0); // TODO
     }
 }
