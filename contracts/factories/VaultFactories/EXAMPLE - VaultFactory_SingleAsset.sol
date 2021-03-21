@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "../Interfaces/I_VaultRegistry.sol";
-import "../VaultOptions/Vault_SingleAsset.sol";
+import "../interfaces/I_VaultRegistry.sol";
+import "../vaults/Vault_SingleAsset.sol";
 
 contract VaultFactory_SingleAsset{
 

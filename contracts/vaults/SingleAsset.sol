@@ -1,14 +1,16 @@
+import "./Vault.sol";
 import "../Fees.sol";
 import "../MeToken.sol";
 import "../registries/MeTokenRegistry.sol";
 import "../registries/HubRegistry.sol";
 import "../registries/CurveRegistry.sol";
 
+
 import "../interfaces/I_BancorZeroValues.sol";
 import "../interfaces/I_ERC20.sol"; // TODO
 import "../interfaces/I_MeToken.sol"; // TODO
 
-contract Vault_SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
+contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 
     bytes4 private encodedInitializeFunc = bytes(keccak256("_initialize(uint256,address)"));
 

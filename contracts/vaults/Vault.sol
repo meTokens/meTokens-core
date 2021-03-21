@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract Vault_SingleAsset {
+contract Vault {
 
 	uint256 hub;
 	address collateralAsset;
@@ -18,6 +18,6 @@ contract Vault_SingleAsset {
 	function updateCollateralAsset () onlyGov returns() {}
 
 	/**
-	 * passes _valueSet through hub.curveOption.values.calculateMintReturn() and ~.calculateBurnReturn()
+	 * passes _valueSet through hub.curves.values.calculateMintReturn() and ~.calculateBurnReturn()
 	**/
 	function mint(_valueSet, _meToken) returns() {}
