@@ -27,13 +27,6 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
 
 	mapping (address => MeTokenBalance) meTokenBalances;
 
-	struct MeTokenBalance {
-		uint256 supply;
-		uint256 balancePooled;
-		uint256 balanceLocked;
-		bool active;
-	}
-
     event SetCurve(address curveValueSet);
 
     constructor() {}

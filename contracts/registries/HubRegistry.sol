@@ -21,9 +21,9 @@ contract HubRegistry {
 
     struct HubDetails {
     	string name;
-        address valueSet;
-        address vault;
         address owner;
+        address vault;
+        address valueSet;
         bool active;
     }
 
@@ -46,16 +46,16 @@ contract HubRegistry {
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_valueSet), "_valueSet not approved");        
 
-        // TODO: encode args to set the bancor value set
-        address valueSet = I_ValueSet(_valueSet).registerValueSet();
+        // Store value set base paramaters to `{CurveName}ValueSet.sol`
+        // TODO: validate encoding with an additional parameter in function call (ie. _hubCount)
+        I_ValueSet(_valueSet).registerValueSet(_hubCount, _encodedValueSetArgs);
         
         // Create new vault
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, valueSet, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _hubCount, valueSet, _encodedVaultAdditionalArgs);
         
-        // Add the vault to the hub
-        hubDetails memory h = HubDetails(name, valueSet, vault, _hubOwner, false);
-        
-        
+        // Save the hub to the registry
+        HubDetails storage hubDetails = HubDetails(_hubName, _hubOwner, vault, _valueSet, true);
+        hubs[_hubCount] = hubDetails;
 
         ++_hubCount;
     }

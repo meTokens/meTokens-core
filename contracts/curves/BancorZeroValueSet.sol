@@ -5,15 +5,13 @@ import "./BancorZeroFormula.sol";
 
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
-    uint256 private PRECISION = 10**18;
-
     event Updated(uint256 indexed hubId);
 
     // NOTE: keys will be the hubId
-	mapping (uint256 => HubValueSet) hubValueSets;
+	mapping (uint256 => ValueSet) valueSets;
 
     // NOTE: each valueSet is for a hub
-	struct HubValueSet {
+	struct ValueSet {
 		// address hubId; // the hub that uses this parameter set
 		uint256 base_x;
 		uint256 base_y;
@@ -25,16 +23,20 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
 	function registerValueSet(
         uint256 _hubId, uint256 _base_x, uint256 _base_y, uint256 _reserveWeight
-    ) {
-
+    ) public {
+       require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
+       require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
+       ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
+       valueSets[_hubId] = valueSet;
     }
-    function deactivateValueSet() returns(uint256) {}
+
+    function deactivateValueSet(uint256 _hubId) public returns(uint256) {}
     function reactivateValueSet() returns(uint256) {}
 
-	mapping (uint256 => TargetValueSet) targetHubValueSets;
+	mapping (uint256 => TargetValueSet) targetValueSets;
 
     // NOTE: for updating a hub
-	struct TargetHubValueSet {
+	struct TargetValueSet {
 		uint base_x;
 		uint base_y;
 		uint256 reserveWeight;
@@ -58,7 +60,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
-    ) view returns (uint256 amount) {
+    ) external view returns (uint256 amount) {
 
         ValueSet memory v = valueSet[_hubId];
         if (_supply > 0) {
@@ -85,7 +87,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
-    ) returns (uint256 amount) {
+    ) external view returns (uint256 amount) {
 
         ValueSet memory v = valueSet[_hubId];
         amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
@@ -122,7 +124,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         weightedAmount = weighted_v + weighted_t;
     }
 
-    function _finishUpdate(uint256 _hubId) internal {
+    function _finishUpdate(uint256 _hubId) private {
         require(msg.sender == address(this));
 
         TargetValueSet memory t = targetValueSets[_hubId];

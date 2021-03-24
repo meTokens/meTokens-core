@@ -41,9 +41,11 @@ contract MeTokenFactory {
         meToken m = new MeToken(_owner, _name, _symbol);
         meTokenDetail = MeTokenDetails(m,_owner,_name,_symbol);
 
+        // Register meToken
+
         meTokens.push(meTokenDetails);
         
-        emit MeTokenCreated(m,_owner,_name,_symbol);
+        emit MeTokenCreated(m, _owner,_name,_symbol);
 
         return m;
     }
