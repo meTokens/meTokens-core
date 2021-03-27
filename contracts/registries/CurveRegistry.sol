@@ -30,7 +30,8 @@ contract CurveRegistry {
         require(isApprovedFormula(_formula) && isApprovedValueSet(_valueSet), "Not approved");
 
         // Add curve details to storage
-        CurveDetails storage curveDetails = CurveDetails(name, _formula, _valueSet, true);
+        // TODO: validate memory vs. storage usage
+        CurveDetails memory curveDetails = CurveDetails(name, _formula, _valueSet, true);
         curves[++curveCount] = curveDetails;
 
         emit RegisterCurve(name, _formula, _valueSet);
@@ -51,7 +52,7 @@ contract CurveRegistry {
 
     function deactivateCurve(uint256 _curveId) external {
         // TODO: access control
-        require(_curveId < curveCount, "_curveId cannot exceed curveCount");
+        require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         // TODO: is this memory or storage?
         CurveDetails storage curveDetails = curves[_curveId];
         require(curveDetails.active, "curve not active");
@@ -72,8 +73,8 @@ contract CurveRegistry {
         emit DeactivateValueSet(_valueSet);
     }
 
-    // TODO: are reactivate funcs needed for curves/formulas/valuesets?
-    function reactivateCurve(uint256 _curveId) external {}
+    // TODO: are reactivate funcs needed for curve/formula/valueset?
+    // function reactivateCurve(uint256 _curveId) external {}
 
     function isApprovedFormula(address _formula) public view returns (bool) {
         return approvedFormulas[_formula];
@@ -88,7 +89,7 @@ contract CurveRegistry {
     }
 
     function getCurveDetails(uint256 _curveId) external view returns (CurveDetails memory) {
-        require(_curveId < curveCount, "_curveId cannot exceed curveCount");
+        require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         CurveDetails memory curveDetails = curves[_curveId];
         return curveDetails;
     }
