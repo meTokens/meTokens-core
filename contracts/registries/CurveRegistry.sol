@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 contract CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
-    event RegisterFormula(address formula);
-    event RegisterValueSet(address valueSet);
     event DeactivateCurve(uint256 curveId);
-    event DeactivateFormula(address formula);
-    event DeactivateValueSet(address values);
+    event ApproveFormula(address formula);
+    event ApproveValueSet(address valueSet);
+    event UnapproveFormula(address formula);
+    event UnapproveValueSet(address values);
 
     mapping (uint256 => CurveDetails) private curves;
     mapping (address => bool) private approvedFormulas;
@@ -27,7 +27,7 @@ contract CurveRegistry {
         address _formula,
         address _valueSet
     ) external {
-        require(isApprovedFormula(_formula) && isApprovedValueSet(_valueSet), "Not approved");
+        require(approvedFormulas[_formula] && approvedValueSets[_valueSet], "Not approved");
 
         // Add curve details to storage
         // TODO: validate memory vs. storage usage
@@ -37,19 +37,6 @@ contract CurveRegistry {
         emit RegisterCurve(name, _formula, _valueSet);
     }
 
-    function registerFormula(address _formula) external {
-        // TODO: access control
-        require(!isApprovedFormula(_formula), "Formula already approved");
-        approvedFormulas[_formula] = true;
-        emit RegisterFormula(_formula);
-    }
-    function registerValueSet(address _valueSet) external {
-        // TODO: access control
-        require(!isApprovedValueSet(_valueSet), "ValueSet already approved");
-        approvedValueSets[_valueSet] = true;
-        emit RegisterValueSet(_valueSet);
-    }
-
     function deactivateCurve(uint256 _curveId) external {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
@@ -57,30 +44,45 @@ contract CurveRegistry {
         CurveDetails storage curveDetails = curves[_curveId];
         require(curveDetails.active, "curve not active");
         curveDetails.active = false;
+        emit DeactivateCurve(_curveId);
+    }
+
+    function approveFormula(address _formula) external {
+        // TODO: access control
+        require(!approvedFormulas[_formula], "Formula already approved");
+        approvedFormulas[_formula] = true;
+        emit ApproveFormula(_formula);
+    }
+
+    function approveValueSet(address _valueSet) external {
+        // TODO: access control
+        require(!approvedValueSets[_valueSet], "ValueSet already approved");
+        approvedValueSets[_valueSet] = true;
+        emit ApproveValueSet(_valueSet);
     }
     
-    function deactivateFormula(address _formula) external {
+    function unapproveFormula(address _formula) external {
         // TODO: access control
         require(approvedFormulas[_formula], "Formula not approved");
         approvedFormulas[_formula] = false;
-        emit DeactivateFormula(_formula);
+        emit UnapproveFormula(_formula);
     }
 
-    function deactivateValueSet(address _valueSet) external {
+    function unapproveValueSet(address _valueSet) external {
         // TODO: access control
         require(approvedValueSets[_valueSet], "ValueSet not approved");
         approvedValueSets[_valueSet] = false;
-        emit DeactivateValueSet(_valueSet);
+        emit UnapproveValueSet(_valueSet);
     }
 
     // TODO: are reactivate funcs needed for curve/formula/valueset?
     // function reactivateCurve(uint256 _curveId) external {}
 
-    function isApprovedFormula(address _formula) public view returns (bool) {
+    function isApprovedFormula(address _formula) external view returns (bool) {
         return approvedFormulas[_formula];
     }
 
-    function isApprovedValueSet(address _valueSet) public view returns (bool) {
+    function isApprovedValueSet(address _valueSet) external view returns (bool) {
         return approvedValueSets[_valueSet];
     }
 

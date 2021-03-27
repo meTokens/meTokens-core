@@ -7,17 +7,16 @@ import "../interfaces/I_CurveRegistry.sol";
 
 contract HubRegistry {
 
-    // bytes4 encoded
-
     event RegisterHub(address factory, string name, uint256 hubId);
     event DeactivateHub(uint256 hubId);
     event ReactivateHub(uint256 hubId);
 
-	mapping (uint256 => HubDetails) private hubs;
     uint256 private hubCount;
     address public gov;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
+
+	mapping (uint256 => HubDetails) private hubs;
 
     struct HubDetails {
     	string name;
@@ -63,9 +62,10 @@ contract HubRegistry {
 
     function deactivateHub(uint256 _hubId) external {
         // TODO: access control
-        require(isHubActive(_hubId), "_hubId not active");
+        require(isActiveHub(_hubId), "_hubId not active");
         HubDetails storage hubDetails = hubs[_hubId];
         hubDetails.active = false;
+        emit DeactivateHub(_hubId);
     }
 
     // TODO: is this needed?
@@ -75,7 +75,7 @@ contract HubRegistry {
         return hubCount;
     }
 
-    function isHubActive(uint256 _hubId) public view returns (bool) {
+    function isActiveHub(uint256 _hubId) public view returns (bool) {
         require(_hubId <= hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.active;

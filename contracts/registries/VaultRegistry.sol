@@ -5,7 +5,7 @@ contract VaultRegistry {
     event RegisterVault(string name, address vault, address factory);
     event DeactivateVault(address vault);
     event ApproveVaultFactory(address factory);
-    event DisapproveVaultFactory(address factory);
+    event UnapproveVaultFactory(address factory);
 
     mapping (address => VaultDetails) private vaults;
 	mapping (address => bool) private approvedVaultFactories;
@@ -19,7 +19,7 @@ contract VaultRegistry {
     // TODO: argument check
     function registerVault(string calldata name, address _vault, address _factory) external {
         // TODO: access control
-        require(isApprovedVaultFactory(_factory), "Factory not approved");
+        require(approvedVaultFactories[_factory], "Factory not approved");
 
         // Add vault details to storage
         // TODO: validate memory vs. storage usage
@@ -43,23 +43,23 @@ contract VaultRegistry {
         vaultDetails.active = false;
     }
 
-    function disapproveVaultFactory(address _factory) external {
+    function unapproveVaultFactory(address _factory) external {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
         approvedVaultFactories[_factory] = false;
-        emit DisapproveVaultFactory(_factory);
+        emit UnapproveVaultFactory(_factory);
     }
 
     // TODO: are reactivate funcs needed?
     // function reactivateVault(uint256 vaultId) public {}
 
-    // TODO: Do these views need to be external to work with I_VaultRegistry.sol?
+    // TODO: Does this view need to be external to work with I_VaultRegistry.sol?
     function isActiveVault(address _vault) public view returns (bool) {
         VaultDetails memory vaultDetails = vaults[_vault];
         return vaultDetails.active;
     }
 
-    function isApprovedVaultFactory(address _factory) public view returns (bool) {
+    function isApprovedVaultFactory(address _factory) external view returns (bool) {
         return approvedVaultFactories[_factory];
     }
 
