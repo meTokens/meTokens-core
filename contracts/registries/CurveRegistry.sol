@@ -23,7 +23,7 @@ contract CurveRegistry {
 
     // TODO: access control
     function registerCurve(
-        string calldata name,
+        string calldata _name,
         address _formula,
         address _valueSet
     ) external {
@@ -31,10 +31,10 @@ contract CurveRegistry {
 
         // Add curve details to storage
         // TODO: validate memory vs. storage usage
-        CurveDetails memory curveDetails = CurveDetails(name, _formula, _valueSet, true);
+        CurveDetails memory curveDetails = CurveDetails(_name, _formula, _valueSet, true);
         curves[++curveCount] = curveDetails;
 
-        emit RegisterCurve(name, _formula, _valueSet);
+        emit RegisterCurve(_name, _formula, _valueSet);
     }
 
     function deactivateCurve(uint256 _curveId) external {

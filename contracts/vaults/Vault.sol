@@ -2,8 +2,11 @@ pragma solidity ^0.8.0;
 
 contract Vault {
 
+    uint256 private MAX_NUM_COLLATERAL_ASSETS = 5;
+
 	uint256 hub;
-	address collateralAsset;
+	// TODO
+	address[] collateralAssets;
 
 	mapping (address => MeTokenBalances) MeTokenBalances;
 

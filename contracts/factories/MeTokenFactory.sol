@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
+import "../interfaces/I_MeTokenRegistry.sol";
 
 
 contract MeTokenFactory {
@@ -12,7 +13,7 @@ contract MeTokenFactory {
         string _symbol
     );
 
-    address public meTokenRegistry;
+    I_MeTokenRegistry public meTokenRegistry;
     mapping(address => bool) private owners;
     
     MeToken public meToken;
@@ -22,7 +23,7 @@ contract MeTokenFactory {
     }
 
     function createMeToken(
-        string calldata name,
+        string calldata _name,
         address _owner,
         string calldata _symbol,
 		uint256 _hubId
@@ -33,7 +34,7 @@ contract MeTokenFactory {
         meToken m = new MeToken(_owner, _name, _symbol);
 
         // Add metoken to meTokenRegistry
-        meTokenRegistry.registerMeToken() // TODO: args
+        meTokenRegistry.registerMeToken(); // TODO: args
 
         return address(m);
     }

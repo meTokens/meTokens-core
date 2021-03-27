@@ -7,7 +7,7 @@ import "../interfaces/I_CurveRegistry.sol";
 
 contract HubRegistry {
 
-    event RegisterHub(address factory, string name, uint256 hubId);
+    event RegisterHub(address factory, string name, uint256 hubId);  // TODO: decide on arguments
     event DeactivateHub(uint256 hubId);
     event ReactivateHub(uint256 hubId);
 
@@ -41,7 +41,7 @@ contract HubRegistry {
         address _valueSet,
         bytes4 _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
-    ) public {
+    ) external {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_valueSet), "_valueSet not approved");        
@@ -79,5 +79,24 @@ contract HubRegistry {
         require(_hubId <= hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.active;
+    }
+
+    function getHubDetails(uint256 _hubId) external view returns (HubDetails memory) {
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails;
+    }
+
+    function getHubVault(uint256 _hubId) external view returns (address) {
+        // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.vault;
+    }
+
+    function getHubValueSet(uint256 _hubId) external view returns (address) {
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.valueSet;
     }
 }

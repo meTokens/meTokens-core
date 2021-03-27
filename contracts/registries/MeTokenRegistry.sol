@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenFactory.sol";
+import "../interfaces/I_HubRegistry.sol";
 
 
 contract MeTokenRegistry{
@@ -16,8 +17,8 @@ contract MeTokenRegistry{
     event ApproveCollateralAsset(address asset);
     event UnapproveCollateralAsset(address asset);
 
-    uint256 private MAX_NUM_COLLATERAL_ASSETS = 5;
     I_MeTokenFactory public meTokenFactory;
+    I_HubRegistry public hubRegistry;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
     mapping (address => bool) private approvedCollateralAssets;
@@ -37,33 +38,30 @@ contract MeTokenRegistry{
 		bool active;
 	}
 
-    constructor(address _meTokenFactory) public {
+    constructor(address _meTokenFactory, address _hubRegistry) public {
         meTokenFactory = I_MeTokenFactory(_meTokenFactory);
+        hubRegistry = I_HubRegistry(_hubRegistry);
     }
 
     function registerMeToken(
-        string name,
+        string _name,
         address _owner,
         string _symbol,
-        address _hubId,
-        address[] calldata _collateralAssets
+        address _hubId
+        // address[] calldata _collateralAssets
     ) external {
         // TODO: access control
         require(!meTokens(_owner), "initialize: address has already created their meToken");
-        require(
-            collateralAssets.length > 0 && _collateralAssets.length <= MAX_NUM_COLLATERAL_ASSETS, 
-            "Invalid number of collateral assets"
-        );
+        
+        // Use hubId to find vault
+        require(hubRegistry.isActiveHub(_hubId), "Hub not active");
+        address vault = hubRegistry.getHubVault(_hubId);
 
-        for (uint i=0; i<_collateralAssets.length; i++) {
-            require(
-                approvedCollateralAssets[_collateralAssets[i]],
-                "All collateral assets must be approved"  
-            );
-        }
+        // Use vault to find collateral assets
+        
 
         address meTokenAddr = meTokenFactory.createMeToken(
-            name, _owner, _symbol, _hubId
+            _name, _owner, _symbol, _hubId
         );
 
         emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol);

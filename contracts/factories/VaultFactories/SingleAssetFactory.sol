@@ -20,10 +20,17 @@ contract SingleAssetFactory {
         address _owner,
         uint256 _hubId,
         address _valueSetAddress,
+        // address[] _collateralAssets[], // TODO
         bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio and _collateralAsset hashed
     ) public returns (address) {
 
+        require(
+            _collateralAssets.length > 0 && _collateralAssets.length <= MAX_NUM_COLLATERAL_ASSETS, 
+            "Invalid number of collateral assets"
+        );
+
         // create our vault
+        // TODO: create2 shit
         Vault memory vault = new Vault_SingleAsset();
         vault.initialize(
             vaultRegistry.vaultCount(),

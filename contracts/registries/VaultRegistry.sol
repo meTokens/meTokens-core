@@ -17,16 +17,16 @@ contract VaultRegistry {
     }
 
     // TODO: argument check
-    function registerVault(string calldata name, address _vault, address _factory) external {
+    function registerVault(string calldata _name, address _vault, address _factory) external {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
 
         // Add vault details to storage
         // TODO: validate memory vs. storage usage
-        VaultDetails memory vaultDetails = VaultDetails(name, _factory, true);
+        VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);
         vaults[_vault] = vaultDetails;
 
-        emit RegisterVault(name, _vault, _factory);
+        emit RegisterVault(_name, _vault, _factory);
     }
 
     function approveVaultFactory(address _factory) external {
