@@ -4,15 +4,15 @@ contract CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
     event RegisterFormula(address formula);
-    event RegisterValues(address values);
+    event RegisterValueSet(address valueSet);
     event DeactivateCurve(uint256 curveId);
     event DeactivateFormula(address formula);
-    event DeactivateValues(address values);
+    event DeactivateValueSet(address values);
 
-    mapping (uint256 => CurveDetails) curves;
-    mapping (address => bool) private approvedFormula;
-    mapping (address => bool) private approvedValueSet;
-    uint256 private _curveCount;
+    mapping (uint256 => CurveDetails) private curves;
+    mapping (address => bool) private approvedFormulas;
+    mapping (address => bool) private approvedValueSets;
+    uint256 private curveCount;
 
     struct CurveDetails{
         string name; // BancorZero
@@ -31,51 +31,65 @@ contract CurveRegistry {
 
         // Add curve details to storage
         CurveDetails storage curveDetails = CurveDetails(name, _formula, _valueSet, true);
-        curves[++_curveCount] = curveDetails;
+        curves[++curveCount] = curveDetails;
 
         emit RegisterCurve(name, _formula, _valueSet);
     }
 
-    function deactivateCurve() external returns(uint256) {}
-    
-    function reactivateCurve() external returns(uint256) {}
-
-    function registerFormula(address _formula) public {
+    function registerFormula(address _formula) external {
         // TODO: access control
         require(!isApprovedFormula(_formula), "Formula already approved");
-        approvedFormula[_formula] = true;
+        approvedFormulas[_formula] = true;
         emit RegisterFormula(_formula);
     }
-    function registerValueSet(address _valueSet) public {
+    function registerValueSet(address _valueSet) external {
         // TODO: access control
         require(!isApprovedValueSet(_valueSet), "ValueSet already approved");
-        approvedValueSet[_valueSet] = true;
+        approvedValueSets[_valueSet] = true;
         emit RegisterValueSet(_valueSet);
     }
 
-    function deactivateFormula(address _formula) public {
+    function deactivateCurve(uint256 _curveId) external {
         // TODO: access control
-        require(approvedFormula[_formula], "Formula not approved");
-        approvedFormula[_formula] = false;
+        require(_curveId < curveCount, "_curveId cannot exceed curveCount");
+        // TODO: is this memory or storage?
+        CurveDetails storage curveDetails = curves[_curveId];
+        require(curveDetails.active, "curve not active");
+        curveDetails.active = false;
+    }
+    
+    function deactivateFormula(address _formula) external {
+        // TODO: access control
+        require(approvedFormulas[_formula], "Formula not approved");
+        approvedFormulas[_formula] = false;
         emit DeactivateFormula(_formula);
     }
 
-    function deactivateValueSet(address _valueSet) public {
+    function deactivateValueSet(address _valueSet) external {
         // TODO: access control
-        require(approvedValueSet[_valueSet], "ValueSet not approved");
-        approvedValueSet[_valueSet] = false;
+        require(approvedValueSets[_valueSet], "ValueSet not approved");
+        approvedValueSets[_valueSet] = false;
         emit DeactivateValueSet(_valueSet);
     }
 
-    function isApprovedFormula(address formula) public view returns (bool) {
-        return approvedFormula[formula];
+    // TODO: are reactivate funcs needed for curves/formulas/valuesets?
+    function reactivateCurve(uint256 _curveId) external {}
+
+    function isApprovedFormula(address _formula) public view returns (bool) {
+        return approvedFormulas[_formula];
     }
 
-    function isApprovedValueSet(address valueSet) public view returns (bool) {
-        return approvedValueSet[valueSet];
+    function isApprovedValueSet(address _valueSet) public view returns (bool) {
+        return approvedValueSets[_valueSet];
     }
 
-    function getCurveCount() public view returns (uint256) {
-        return _curveCount;
+    function getCurveCount() external view returns (uint256) {
+        return curveCount;
+    }
+
+    function getCurveDetails(uint256 _curveId) external view returns (CurveDetails memory) {
+        require(_curveId < curveCount, "_curveId cannot exceed curveCount");
+        CurveDetails memory curveDetails = curves[_curveId];
+        return curveDetails;
     }
 }
