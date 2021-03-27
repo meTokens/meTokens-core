@@ -2,7 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
-import "../interfaces/I_CurveValueSet.sol";
+import "../interfaces/I_CurveRegistry.sol";
 
 
 contract HubRegistry {
@@ -43,27 +43,41 @@ contract HubRegistry {
         bytes4 _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
     ) public {
+        // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_valueSet), "_valueSet not approved");        
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
-        // TODO: validate encoding with an additional parameter in function call (ie. _hubCount)
-        I_ValueSet(_valueSet).registerValueSet(_hubCount, _encodedValueSetArgs);
+        // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
+        I_ValueSet(_valueSet).registerValueSet(++hubCount, _encodedValueSetArgs);
         
         // Create new vault
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _hubCount, valueSet, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _valueSet, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails storage hubDetails = HubDetails(_hubName, _hubOwner, vault, _valueSet, true);
-        hubs[_hubCount] = hubDetails;
+        hubs[hubCount] = hubDetails;
 
-        ++_hubCount;
     }
 
-    function deactivateHub() returns (uint256) {}
-    function reactivateHub() returns (uint256) {}
+
+    function deactivateHub(uint256 _hubId) external {
+        // TODO: access control
+        require(isHubActive(_hubId), "_hubId not active");
+        HubDetails storage hubDetails = hubs[_hubId];
+        hubDetails.active = false;
+    }
+
+    // TODO: is this needed?
+    // function reactivateHub() returns (uint256) {}
 
     function getHubCount() public view returns (uint256) {
         return hubCount;
+    }
+
+    function isHubActive(uint256 _hubId) public view returns (bool) {
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.active;
     }
 }
