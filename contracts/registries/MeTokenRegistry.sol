@@ -1,30 +1,35 @@
 pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
+import "../interfaces/I_MeTokenFactory.sol";
+
 
 contract MeTokenRegistry{
 
-    uint256 private MAX_NUM_COLLATERAL_TOKENS = 5;
+    event RegisterMeToken(
+        address indexed meToken,
+        address indexed owner,
+        string name,
+        string symbol,
+        uint256 hubId
+    );
+    event ApproveCollateralAsset(address asset);
+    event DisapproveCollateralAsset(address asset);
 
-    modifier onlyOwner(address _meTokenAddress) {
-        meToken m = MeToken(address);
-    }
+    uint256 private MAX_NUM_COLLATERAL_ASSETS = 5;
+    I_MeTokenFactory public meTokenFactory;
 
-    // NOTE: hubs point at vaults, don't need vault address in struct
-    // struct MeTokenDetails{
-    //     address owner;
-    //     uint256 hub;
-    //     uint256 migrationDuration;
-    //     bool migrating;
-    // }
+    mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
+    mapping (address => bool) private approvedCollateralAssets;
+
     struct MeTokenDetails {
         address owner;
         uint256 hub;
 
         // TODO: does length need to be initialized?
-		uint256[MAX_NUM_COLLATERAL_TOKENS] balancePooled;
-		uint256[MAX_NUM_COLLATERAL_TOKENS] balanceLocked;
-        address[MAX_NUM_COLLATERAL_TOKENS] collateralAssets;		
+		uint256[] balancesPooled;
+		uint256[] balancesLocked;
+        address[] collateralAssets;		
 
         // TODO: should migration info be somewhere else
         uint256 migrationDuration;
@@ -32,37 +37,56 @@ contract MeTokenRegistry{
 		bool active;
 	}
 
+    constructor(address _meTokenFactory) public {
+        meTokenFactory = I_MeTokenFactory(_meTokenFactory);
+    }
 
-    mapping (address => MeTokenDetails) meTokens; // key pair: ERC20 address
-
-    // TODO: Should only be called by MeTokenFactory.sol
     function registerMeToken(
+        string name,
         address _owner,
-        uint256 _hub,
-    ) public returns () {
-        MeTokenDetails storage meTokenDetails = ();
-    }
-
-    // TODO: access control
-    function initialize(
-        address _owner,
-        string _name,
         string _symbol,
-        address hub
-    ) public view returns (address _meToken) {
+        address _hubId,
+        address[] calldata _collateralAssets
+    ) external {
+        // TODO: access control
         require(!meTokens(_owner), "initialize: address has already created their meToken");
+        require(
+            collateralAssets.length > 0 && _collateralAssets.length <= MAX_NUM_COLLATERAL_ASSETS, 
+            "Invalid number of collateral assets"
+        );
 
-        
-        meToken m = new MeToken(_owner, _name, _symbol);
-        
-        // meTokens.push(meTokenDetails);
+        for (uint i=0; i<_collateralAssets.length; i++) {
+            require(
+                isApprovedCollateralAsset(_collateralAssets[i]),
+                "All collateral assets must be approved"  
+            );
+        }
 
-        emit MeTokenInitialized(m,_owner,_name,_symbol);
+        address meTokenAddr = meTokenFactory.createMeToken(
+            name, _owner, _symbol, _hubId
+        );
 
-        return m;
+        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol);
     }
 
-    function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {
 
+    function approveCollateralAsset(address _asset) external {
+        // TODO: access control
+        require(!isApprovedCollateralAsset(_asset), "Asset already approved");
+        approvedCollateralAssets[_asset] = true;
+        emit ApproveCollateralAsset(_asset);
     }
+
+    function disapproveCollateralAsset(address _asset) external {
+        require(isApprovedCollateralAsset(_asset), "Asset not approved");
+        approvedCollateralAssets[_asset] = false;
+        emit DisapproveCollateralAsset(_asset);
+    }
+
+    function isApprovedCollateralAsset(address _asset) public view returns (bool) {
+        return approvedCollateralAssets[_asset];
+    }
+
+    // TODO
+    // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
 }

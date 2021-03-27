@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
 
+
 contract MeTokenFactory {
     
     event MeTokenInitialized(
@@ -11,47 +12,27 @@ contract MeTokenFactory {
         string _symbol
     );
 
-    struct MeTokenDetails{
-        address owner;
-        uint256 hub;
-        uint256 migrationDuration;
-        bool migrating;
-    }
-
-    address public owner;
+    address public meTokenRegistry;
     mapping(address => bool) private owners;
-
-    MeTokenDetails[] public meTokens;
     
-    Metoken public meToken;
+    MeToken public meToken;
 
-    constructor (address _owner) {
-        owner = owner;
+    constructor (address _meTokenRegistry) {
+        meTokenRegistry = _meTokenRegistry;
     }
 
-    function initialize(
+    function createMeToken(
+        string calldata name,
         address _owner,
-        string _name,
-        string _symbol,
-		uint256 hub
-    ) public view returns (address _meToken) {
+        string calldata _symbol,
+		uint256 _hubId
+    ) external returns (address) {
+        require(msg.sender == meTokenRegistry, "!meTokenRegistry");
 
-        require(!isOwner(_owner), "initialize: address has already created their meToken");
-
+        // TODO: create2 shit
         meToken m = new MeToken(_owner, _name, _symbol);
-        meTokenDetail = MeTokenDetails(m,_owner,_name,_symbol);
-
-        // Register meToken
-
-        meTokens.push(meTokenDetails);
-        
-        emit MeTokenCreated(m, _owner,_name,_symbol);
 
         return m;
-    }
-
-    function isOwner(address _address) public view returns (bool) {
-        return owners[_address];
     }
 
 }
