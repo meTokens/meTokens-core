@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/I_VaultRegistry.sol";
 import "../vaults/Vault_SingleAsset.sol";
 
-contract VaultFactory_SingleAsset{
+contract SingleAsset {
 
     I_VaultRegistry public registry;
     Vault public vault;
