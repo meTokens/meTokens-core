@@ -14,7 +14,7 @@ contract MeTokenRegistry{
         uint256 hubId
     );
     event ApproveCollateralAsset(address asset);
-    event DisapproveCollateralAsset(address asset);
+    event UnapproveCollateralAsset(address asset);
 
     uint256 private MAX_NUM_COLLATERAL_ASSETS = 5;
     I_MeTokenFactory public meTokenFactory;
@@ -57,7 +57,7 @@ contract MeTokenRegistry{
 
         for (uint i=0; i<_collateralAssets.length; i++) {
             require(
-                isApprovedCollateralAsset(_collateralAssets[i]),
+                approvedCollateralAssets[_collateralAssets[i]],
                 "All collateral assets must be approved"  
             );
         }
@@ -72,18 +72,18 @@ contract MeTokenRegistry{
 
     function approveCollateralAsset(address _asset) external {
         // TODO: access control
-        require(!isApprovedCollateralAsset(_asset), "Asset already approved");
+        require(!approvedCollateralAssets[_asset], "Asset already approved");
         approvedCollateralAssets[_asset] = true;
         emit ApproveCollateralAsset(_asset);
     }
 
-    function disapproveCollateralAsset(address _asset) external {
-        require(isApprovedCollateralAsset(_asset), "Asset not approved");
+    function unapproveCollateralAsset(address _asset) external {
+        require(approvedCollateralAssets[_asset], "Asset not approved");
         approvedCollateralAssets[_asset] = false;
-        emit DisapproveCollateralAsset(_asset);
+        emit UnapproveCollateralAsset(_asset);
     }
 
-    function isApprovedCollateralAsset(address _asset) public view returns (bool) {
+    function isApprovedCollateralAsset(address _asset) external view returns (bool) {
         return approvedCollateralAssets[_asset];
     }
 

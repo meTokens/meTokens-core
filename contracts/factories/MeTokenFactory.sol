@@ -32,7 +32,10 @@ contract MeTokenFactory {
         // TODO: create2 shit
         meToken m = new MeToken(_owner, _name, _symbol);
 
-        return m;
+        // Add metoken to meTokenRegistry
+        meTokenRegistry.registerMeToken() // TODO: args
+
+        return address(m);
     }
 
 }
