@@ -4,8 +4,8 @@ contract VaultRegistry {
 
     event RegisterVault(string name, address vault, address factory);
     event DeactivateVault(address vault);
-    event RegisterVaultFactory(address factory);
-    event DeactivateVaultFactory(address factory);
+    event ApproveVaultFactory(address factory);
+    event DisapproveVaultFactory(address factory);
 
     mapping (address => VaultDetails) private vaults;
 	mapping (address => bool) private approvedVaultFactories;
@@ -29,11 +29,11 @@ contract VaultRegistry {
         emit RegisterVault(name, _vault, _factory);
     }
 
-    function registerVaultFactory(address _factory) external {
+    function approveVaultFactory(address _factory) external {
         // TODO: access control
         require(!approvedVaultFactories[_factory], "Factory already approved");
         approvedVaultFactories[_factory] = true;
-        emit RegisterVaultFactory(_factory);
+        emit ApproveVaultFactory(_factory);
     }
 
     function deactivateVault(address _vault) external {
@@ -43,11 +43,11 @@ contract VaultRegistry {
         vaultDetails.active = false;
     }
 
-    function deactivateVaultFactory(address _factory) external {
+    function disapproveVaultFactory(address _factory) external {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
         approvedVaultFactories[_factory] = false;
-        emit DeactivateVaultFactory(_factory);
+        emit DisapproveVaultFactory(_factory);
     }
 
     // TODO: are reactivate funcs needed?
