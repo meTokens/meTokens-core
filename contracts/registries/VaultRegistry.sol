@@ -3,60 +3,64 @@ pragma solidity ^0.8.0;
 contract VaultRegistry {
 
     event RegisterVault(string name, address vault, address factory);
-    event DeactivateVault(uint256 vaultId);
-    event ReactivateVault(uint256 vaultId);
-    // event RegisterFactory(address factory);
-    // event DeactivateFactory(address factory);
+    event DeactivateVault(address vault);
+    event RegisterVaultFactory(address factory);
+    event DeactivateVaultFactory(address factory);
 
-	mapping (address => bool) private approvedVaultFactory;
-    mapping (address => VaultDetails) public vaults;
-    // uint256 private _vaultCount;
+    mapping (address => VaultDetails) private vaults;
+	mapping (address => bool) private approvedVaultFactories;
 
     struct VaultDetails {
         string name;
-        address factory; // reference vaultBalancerFactory.sol as an example of a vault factory
+        address factory; // NOTE: references factories/VaultFactories/{}.sol
         bool active;
     }
 
     // TODO: argument check
-    // TODO: access control
-    function registerVault(string calldata name, address _vault, address _factory) {
+    function registerVault(string calldata name, address _vault, address _factory) external {
+        // TODO: access control
         require(isApprovedVaultFactory(_factory), "Factory not approved");
 
         // Add vault details to storage
-        VaultDetails storage vaultDetails = VaultDetails(name, _vault, _factory, true);
+        // TODO: validate memory vs. storage usage
+        VaultDetails memory vaultDetails = VaultDetails(name, _factory, true);
         vaults[_vault] = vaultDetails;
 
         emit RegisterVault(name, _vault, _factory);
     }
 
-    function deactivateVault(uint256 vaultId) public {
-        emit DeactivateVault(vaultId);
-    }
-    function reactivateVault(uint256 vaultId) public {
-        emit ReactivateVault(vaultId);
-    }
-
-    // TODO: access control
-    function registerVaultFactory(address factory) public {
-        require(!approvedVaultFactories[factory], "Factory already approved");
-        require(factory != address(0), "Factory cannot equal 0 address");
-        approvedVaultFactory[factory] = true;
-        emit RegisterVaultFactory(factory);
+    function registerVaultFactory(address _factory) external {
+        // TODO: access control
+        require(!approvedVaultFactories[_factory], "Factory already approved");
+        approvedVaultFactories[_factory] = true;
+        emit RegisterVaultFactory(_factory);
     }
 
-    function deactivateVaultFactory(uint256 factory) public {
-        require(approvedVaultFactories[factory], "Factory not approved");
-        approvedVaultFactories[factory] = false;
-        emit DeactivateVaultFactory(vaultId);
+    function deactivateVault(address _vault) external {
+        // TODO: access control
+        require(isActiveVault(_vault), "Vault not active");
+        VaultDetails storage vaultDetails = vaults[_vault];
+        vaultDetails.active = false;
     }
 
-    function getVaultFactoryCount() public view returns (uint256) {
-        return _vaultFactoryCount;
+    function deactivateVaultFactory(address _factory) external {
+        // TODO: access control
+        require(approvedVaultFactories[_factory], "Factory not approved");
+        approvedVaultFactories[_factory] = false;
+        emit DeactivateVaultFactory(_factory);
     }
 
-    function isApprovedVaultFactory(address factory) public view returns (bool) {
-        return approvedVaultFactory[factory];
+    // TODO: are reactivate funcs needed?
+    // function reactivateVault(uint256 vaultId) public {}
+
+    // TODO: Do these views need to be external to work with I_VaultRegistry.sol?
+    function isActiveVault(address _vault) public view returns (bool) {
+        VaultDetails memory vaultDetails = vaults[_vault];
+        return vaultDetails.active;
+    }
+
+    function isApprovedVaultFactory(address _factory) public view returns (bool) {
+        return approvedVaultFactories[_factory];
     }
 
 }
