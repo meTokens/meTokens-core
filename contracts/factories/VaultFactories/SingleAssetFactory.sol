@@ -1,16 +1,17 @@
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_VaultRegistry.sol";
-import "../vaults/Vault_SingleAsset.sol";
+import "../../vaults/SingleAsset.sol";
+import "../../interfaces/I_VaultRegistry.sol";
 
-contract SingleAsset {
 
-    I_VaultRegistry public registry;
+contract SingleAssetFactory {
+
+    I_VaultRegistry public vaultRegistry;
     Vault public vault;
 
-    constructor(address _registry) public {
-        require(_registry != address(0), "Cannot be 0 address");
-        registry = _registry;
+    constructor(address _vaultRegistry) public {
+        require(_vaultRegistry != address(0), "Cannot be 0 address");
+        vaultRegistry = _vaultRegistry;
     }
     
     // TODO: access control
@@ -25,15 +26,15 @@ contract SingleAsset {
         // create our vault
         Vault memory vault = new Vault_SingleAsset();
         vault.initialize(
-            registry.vaultCount(),
+            vaultRegistry.vaultCount(),
             _owner,
             _hubId,
             _valueSetAddress,
             _encodedVaultAdditionalArgs
         );
 
-        // Add vault to registry
-        registry.registerVault(name, vault, address(this));
+        // Add vault to vaultRegistry
+        vaultRegistry.registerVault(name, vault, address(this));
         
         return address(vault);
     }
