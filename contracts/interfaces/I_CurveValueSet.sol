@@ -6,12 +6,12 @@ interface I_CurveValueSet {
         uint256 supply,
         uint256 balancePooled,
         uint256 depositAmount
-    ) public view returns (uint256 amount);
+    ) external view returns (uint256 amount);
 
     function calculateBurnReturn(
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled,
         uint256 sellAmount
-    ) public view returns (uint256 amount);
+    ) external view returns (uint256 amount);
 }
