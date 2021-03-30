@@ -33,7 +33,7 @@ contract CurveRegistry {
         // Add curve details to storage
         // TODO: validate memory vs. storage usage
         CurveDetails memory curveDetails = CurveDetails(_name, _formula, _valueSet, true);
-        curves[++curveCount] = curveDetails;
+        curves[curveCount++] = curveDetails;
 
         emit RegisterCurve(_name, _formula, _valueSet);
     }
@@ -78,6 +78,12 @@ contract CurveRegistry {
 
     // TODO: are reactivate funcs needed for curve/formula/valueset?
     // function reactivateCurve(uint256 _curveId) external {}
+
+    function isActiveCurve(uint256 _curveId) external view returns (bool) {
+        require(_curveId < curveCount, "_curveId does not exist");
+        CurveDetails memory curveDetails = curves[_curveId];
+        return curveDetails.active;
+    }
 
     function isApprovedFormula(address _formula) external view returns (bool) {
         return approvedFormulas[_formula];
