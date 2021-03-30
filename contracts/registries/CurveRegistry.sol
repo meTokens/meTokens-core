@@ -21,13 +21,14 @@ contract CurveRegistry {
         bool active;
     }
 
-    // TODO: access control
     function registerCurve(
         string calldata _name,
         address _formula,
         address _valueSet
     ) external {
-        require(approvedFormulas[_formula] && approvedValueSets[_valueSet], "Not approved");
+        require(approvedFormulas[_formula], "_formula not approved");
+        require(approvedValueSets[_valueSet], "_valueSet not approved");
+        // TODO: access control
 
         // Add curve details to storage
         // TODO: validate memory vs. storage usage

@@ -1,9 +1,10 @@
-// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
-// specifically paired with BancorFormulaFromZero.sol
+pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
+import "./CurveBase.sol";
 
-
+// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
+// specifically paired with BancorFormulaFromZero.sol
 contract BancorZeroFormulaValues is BancorZeroFormula, CurveBase {
 
     event Updated(uint256 indexed hubId);
@@ -13,8 +14,11 @@ contract BancorZeroFormulaValues is BancorZeroFormula, CurveBase {
 	mapping (uint256 => TargetValueSet) targetValueSets;
 
 	function registerValueSet(
-        uint256 _hubId, uint256 _base_x, uint256 _base_y, uint256 _reserveWeight
-    ) public {
+        uint256 _hubId,
+        uint256 _base_x,
+        uint256 _base_y,
+        uint256 _reserveWeight
+    ) external virtual override {
        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
        require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
        ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
@@ -26,7 +30,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula, CurveBase {
     // TODO: is this needed
     // function reactivateValueSet() {}
 
-	function registerTargetValueSet() {}
+	function registerTargetValueSet() public {}
 
     /**
      * if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
