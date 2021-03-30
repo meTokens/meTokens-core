@@ -3,23 +3,14 @@
 
 import "./BancorZeroFormula.sol";
 
-contract BancorZeroFormulaValues is BancorZeroFormula {
+
+contract BancorZeroFormulaValues is BancorZeroFormula, CurveBase {
 
     event Updated(uint256 indexed hubId);
 
     // NOTE: keys will be the hubId
 	mapping (uint256 => ValueSet) valueSets;
-
-    // NOTE: each valueSet is for a hub
-	struct ValueSet {
-		// address hubId; // the hub that uses this parameter set
-		uint256 base_x;
-		uint256 base_y;
-		uint256 reserveWeight;
-
-		bool updating;
-        uint256 targetValueSetId;
-	}
+	mapping (uint256 => TargetValueSet) targetValueSets;
 
 	function registerValueSet(
         uint256 _hubId, uint256 _base_x, uint256 _base_y, uint256 _reserveWeight
@@ -31,22 +22,11 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
     function deactivateValueSet(uint256 _hubId) public returns(uint256) {}
-    function reactivateValueSet() returns(uint256) {}
+    
+    // TODO: is this needed
+    // function reactivateValueSet() {}
 
-	mapping (uint256 => TargetValueSet) targetValueSets;
-
-    // NOTE: for updating a hub
-	struct TargetValueSet {
-		uint base_x;
-		uint base_y;
-		uint256 reserveWeight;
-
-		uint256 blockStart;
-        uint256 blockTarget;
-        bool targetReached;
-	}
-
-	function registerTargetValueSet() returns(uint256) {}
+	function registerTargetValueSet() {}
 
     /**
      * if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
@@ -60,7 +40,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
-    ) external view returns (uint256 amount) {
+    ) external view override returns (uint256 amount) {
 
         ValueSet memory v = valueSet[_hubId];
         if (_supply > 0) {
@@ -87,7 +67,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
-    ) external view returns (uint256 amount) {
+    ) external view override returns (uint256 amount) {
 
         ValueSet memory v = valueSet[_hubId];
         amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
