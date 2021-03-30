@@ -2,9 +2,16 @@
 // specifically paired with BancorFormulaFromZero.sol
 
 import "./SigmoidalFormula.sol";
-import "./CurveBase.sol";
 
-contract SigmoidalValues is SigmoidalFormula, CurveBase {
+contract SigmoidalValues is SigmoidalFormula {
+
+    struct ValueSet{
+
+    }
+
+    struct TargetValueSet{
+
+    }
 
     uint256 private PRECISION = 10**18;
 

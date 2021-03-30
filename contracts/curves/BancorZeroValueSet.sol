@@ -1,11 +1,33 @@
 pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
-import "./CurveBase.sol";
 
 // example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
 // specifically paired with BancorFormulaFromZero.sol
-contract BancorZeroFormulaValues is BancorZeroFormula, CurveBase {
+contract BancorZeroFormulaValues is BancorZeroFormula {
+
+    // NOTE: each valueSet is for a hub
+    struct ValueSet {
+        // TODO: should `hubId` be included?
+		// address hubId; // the hub that uses this parameter set
+		uint256 base_x;
+		uint256 base_y;
+		uint256 reserveWeight;
+
+		bool updating;
+        uint256 targetValueSetId;
+	}
+
+    // NOTE: for updating a hub
+	struct TargetValueSet {
+		uint base_x;
+		uint base_y;
+		uint256 reserveWeight;
+
+		uint256 blockStart;
+        uint256 blockTarget;
+        bool targetReached;
+	}
 
     event Updated(uint256 indexed hubId);
 
