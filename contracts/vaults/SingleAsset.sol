@@ -12,7 +12,9 @@ import "../interfaces/I_CurveValueSet.sol";
 import "../interfaces/I_ERC20.sol"; // TODO
 import "../interfaces/I_MeToken.sol";
 
-contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
+contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
+
+    event SetCurve(address curveValueSet);
 
     bytes4 private encodedInitializeFunc = bytes(keccak256("_initialize(uint256,address)"));
 
@@ -26,8 +28,11 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
     I_CurveValueSet public curve;
 
 	mapping (address => MeTokenBalance) meTokenBalances;
-
-    event SetCurve(address curveValueSet);
+        
+    struct MeTokenBalance{
+        uint256 balancePooled;
+        uint256 balanceLocked;
+    }
 
     constructor() {}
 
@@ -59,7 +64,7 @@ contract SingleAsset is Vault, Fees, MeTokenRegistry, HubRegistry, CurveRegistry
 	 * passes _valueSet through hub.curveDetails.values.calculateMintReturn() and ~.calculateBurnReturn()
 	**/
     // TODO: http://coders-errand.com/hash-functions-for-smart-contracts-part-3/
-	function mint(uint _amount, address _meToken) {
+	function mint(address _meToken, uint256 _amount) {
         require(initialized, "!initialized");
 
         MeTokenBalance memory mt = meTokenBalances[_meToken];

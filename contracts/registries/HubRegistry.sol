@@ -3,26 +3,30 @@ pragma solidity ^0.8.0;
 import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
 import "../interfaces/I_CurveRegistry.sol";
+import "../interfaces/I_Curve.sol";
 
 
 contract HubRegistry {
 
-    event RegisterHub(address factory, string name, uint256 hubId);  // TODO: decide on arguments
+    event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hubId);
     event ReactivateHub(uint256 hubId);
 
-    uint256 private hubCount;
     address public gov;
+    I_Curve public curve;
+    I_VaultFactory public vaultFactory;
     I_VaultRegistry public vaultRegistry;
-    I_CurveRegistry public curveRegistry;
 
-	mapping (uint256 => HubDetails) private hubs;
+    Hub[] public hubs;
 
-    struct HubDetails {
-    	string name;
+    struct Hub {
         address owner;
+        address[] subscribedMeTokens;
         address vault;
-        address valueSet;
+        address curve;
+        string valueSet;
+        uint256 targetValueSet;
+        bool updating;
         bool active;
     }
 
@@ -33,30 +37,30 @@ contract HubRegistry {
     }
 
     function registerHub(
-        string calldata _hubName,
-        address _hubOwner,
+        string calldata _name,
+        address _owner,
         string calldata _vaultName,
         address _vaultOwner,
         address _vaultFactory,
-        address _valueSet,
+        address _curve,
         bytes4 _encodedValueSetArgs,
         bytes4 _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
-        require(curveRegistry.isApprovedValueSet(_valueSet), "_valueSet not approved");        
+        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");        
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
-        I_ValueSet(_valueSet).registerValueSet(++hubCount, _encodedValueSetArgs);
+        I_Curve(_curve).registerValueSet(_encodedValueSetArgs);
         
         // Create new vault
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _valueSet, _encodedVaultAdditionalArgs);
+        // TODO: way to group-encode function arguments?
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubs.length, _curve, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        HubDetails storage hubDetails = HubDetails(_hubName, _hubOwner, vault, _valueSet, true);
-        hubs[hubCount] = hubDetails;
-
+        Hub storage hub = Hub(_name, _owner, vault, _curve, true);
+        hubs.push(hub);
     }
 
 
@@ -67,6 +71,19 @@ contract HubRegistry {
         hubDetails.active = false;
         emit DeactivateHub(_hubId);
     }
+
+    /// @notice subscribe a newly instantiated meToken to a current hub
+    function suscribeMeToken(address _meToken, uint256 _hubId) external {
+        // TODO: access control - 
+        HubDetails storage hubDetails = hubs[hubId];
+
+        require(hubDetails)
+
+    }
+
+
+    function mint() {}
+    function burn() {}    
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}

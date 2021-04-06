@@ -23,10 +23,10 @@ contract MeTokenFactory {
     }
 
     function createMeToken(
-        string calldata _name,
         address _owner,
+        string calldata _name,
         string calldata _symbol,
-		uint256 _hubId
+		string calldata hub
     ) external returns (address) {
         require(msg.sender == meTokenRegistry, "!meTokenRegistry");
 
@@ -35,6 +35,8 @@ contract MeTokenFactory {
 
         // Add metoken to meTokenRegistry
         meTokenRegistry.registerMeToken(); // TODO: args
+
+        // TODO: subscribe meToken
 
         return address(m);
     }

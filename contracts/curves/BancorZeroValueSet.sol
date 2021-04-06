@@ -6,27 +6,13 @@ import "./BancorZeroFormula.sol";
 // specifically paired with BancorFormulaFromZero.sol
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
-    // NOTE: each valueSet is for a hub
+    // NOTE: each valueSet is for a curve
     struct ValueSet {
-        // TODO: should `hubId` be included?
-		// address hubId; // the hub that uses this parameter set
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
 
 		bool updating;
-        uint256 targetValueSetId;
-	}
-
-    // NOTE: for updating a hub
-	struct TargetValueSet {
-		uint base_x;
-		uint base_y;
-		uint256 reserveWeight;
-
-		uint256 blockStart;
-        uint256 blockTarget;
-        bool targetReached;
 	}
 
     event Updated(uint256 indexed hubId);
@@ -41,6 +27,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _base_y,
         uint256 _reserveWeight
     ) external virtual override {
+        
        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
        require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
        ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
@@ -52,7 +39,6 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // TODO: is this needed
     // function reactivateValueSet() {}
 
-	function registerTargetValueSet() public {}
 
     /**
      * if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
@@ -109,17 +95,17 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function _calculateWeightedAmount(
         uint256 _amount,
         uint256 _targetAmount,
-        TargetValueSet _t
+        Curve curve
     ) private returns (uint256 weightedAmount) {
         uint256 targetWeight;
 
        // Finish update if complete
-        if (_t.blockTarget <= block.number) { 
+        if (targetValueSet.blockTarget <= block.number) { 
             _finishUpdate(t);
             targetWeight = PRECISION;
         } else {
-            uint256 targetProgress = block.number - _t.blockStart;
-            uint256 targetLength = _t.blockTarget - _t.blockStart;
+            uint256 targetProgress = block.number - targetValueSet.blockStart;
+            uint256 targetLength = targetValueSet.blockTarget - targetValueSet.blockStart;
             // TODO: is this calculation right?
             targetWeight = PRECISION * targetProgress / targetLength;
         }
@@ -145,3 +131,16 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 }
+
+
+/*
+struct TargetValueSet {
+    uint base_x;
+    uint base_y;
+    uint256 reserveWeight;
+
+    uint256 blockStart;
+    uint256 blockTarget;
+    bool targetReached;
+}
+*/
