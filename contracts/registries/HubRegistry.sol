@@ -17,18 +17,21 @@ contract HubRegistry {
     I_VaultFactory public vaultFactory;
     I_VaultRegistry public vaultRegistry;
 
-    Hub[] public hubs;
+    // Hub[] public hubs;
+    mapping(uint256 => Hub) private hubs;
+    uint256 private hubCount;
 
-    struct Hub {
+    enum Status { INACTIVE, ACTIVE, UPDATING, MIGRATING }
+    struct Hub {    
+        string name;
         address owner;
         address[] subscribedMeTokens;
         address vault;
         address curve;
-        string valueSet;
-        uint256 targetValueSet;
-        bool updating;
-        bool active;
+        uint256 valueSet;
+        Status status;
     }
+
 
     constructor(address _gov, address _vaultRegistry, address _curveRegistry) public {
         gov = _gov;
@@ -55,19 +58,29 @@ contract HubRegistry {
         I_Curve(_curve).registerValueSet(_encodedValueSetArgs);
         
         // Create new vault
-        // TODO: way to group-encode function arguments?
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubs.length, _curve, _encodedVaultAdditionalArgs);
+        // ALl new hubs will create a vault
+        // TODO: way to group encoding of function arguments?
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _curve, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        Hub storage hub = Hub(_name, _owner, vault, _curve, true);
-        hubs.push(hub);
+        Hub storage hub = Hub(
+            _name,
+            _owner,
+            vault,
+            _curve,
+            true
+        );  // TODO: args
+        hubs[hubCount] = Hub;
+        hubCount++;
     }
 
 
     function deactivateHub(uint256 _hubId) external {
         // TODO: access control
-        require(isActiveHub(_hubId), "_hubId not active");
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
         HubDetails storage hubDetails = hubs[_hubId];
+
+        require(hubDetails.active, "Hub not active");
         hubDetails.active = false;
         emit DeactivateHub(_hubId);
     }
@@ -93,26 +106,26 @@ contract HubRegistry {
     }
 
     function isActiveHub(uint256 _hubId) public view returns (bool) {
-        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.active;
     }
 
-    function getHubDetails(uint256 _hubId) external view returns (HubDetails memory) {
-        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+    function getHubDetails(uint256 _hubId) external view returns (HubDetails calldata) {
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails;
     }
 
     function getHubVault(uint256 _hubId) external view returns (address) {
         // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
-        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
     }
 
     function getHubValueSet(uint256 _hubId) external view returns (address) {
-        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.valueSet;
     }
