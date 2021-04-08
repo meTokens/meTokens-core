@@ -32,7 +32,6 @@ contract HubRegistry {
         Status status;
     }
 
-
     constructor(address _gov, address _vaultRegistry, address _curveRegistry) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
@@ -105,10 +104,10 @@ contract HubRegistry {
         return hubCount;
     }
 
-    function isActiveHub(uint256 _hubId) public view returns (bool) {
+    function getHubStatus(uint256 _hubId) public view returns (Status) {
         require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.active;
+        return hubDetails.status;
     }
 
     function getHubDetails(uint256 _hubId) external view returns (HubDetails calldata) {
@@ -125,8 +124,8 @@ contract HubRegistry {
     }
 
     function getHubValueSet(uint256 _hubId) external view returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         return hubDetails.valueSet;
     }
 }

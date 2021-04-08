@@ -38,7 +38,7 @@ contract MeToken is Ownables, ERC20Burnable {
         string _symbol
     ) public {
         require(!initialized, "initalize: already initalized");
-        // TODO: owner has to be vault address
+        // TODO: owner has to be contract responsible for mint/burn
         owner = _owner;
         name = _name;
         symbol = symbol;

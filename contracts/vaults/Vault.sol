@@ -4,9 +4,8 @@ contract Vault {
 
     uint256 private MAX_NUM_COLLATERAL_ASSETS = 5;
 
-	uint256 hub;
-	// TODO
-	address[] collateralAssets;
+	// uint256 hub;
+	address collateralAsset;
 
 	mapping (address => MeTokenBalances) MeTokenBalances;
 

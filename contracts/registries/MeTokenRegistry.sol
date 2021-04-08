@@ -14,28 +14,23 @@ contract MeTokenRegistry{
         string symbol,
         uint256 hubId
     );
-    event ApproveCollateralAsset(address asset);
-    event UnapproveCollateralAsset(address asset);
+    // event ApproveCollateralAsset(address asset);
+    // event UnapproveCollateralAsset(address asset);
 
     I_MeTokenFactory public meTokenFactory;
     I_HubRegistry public hubRegistry;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
+    mapping (address => bool) private meTokenOwners;
     mapping (address => bool) private approvedCollateralAssets;
 
     struct MeTokenDetails {
         address owner;
         uint256 hub;
-
-        // TODO: does length need to be initialized?
-		uint256[] balancesPooled;
-		uint256[] balancesLocked;
-        address[] collateralAssets;		
-
-        // TODO: should migration info be somewhere else
-        uint256 migrationDuration;
+		uint256 balancePooled;
+		uint256 balanceLocked;
+        address collateralAsset;
         bool migrating;
-		bool active;
 	}
 
     constructor(address _meTokenFactory, address _hubRegistry) public {
@@ -47,14 +42,14 @@ contract MeTokenRegistry{
         string _name,
         address _owner,
         string _symbol,
-        address _hubId
+        uint256 _hubId
         // address[] calldata _collateralAssets
     ) external {
         // TODO: access control
-        require(!meTokens(_owner), "initialize: address has already created their meToken");
+        require(!meTokenOwners[_owner], "_owner already owns a meToken");
         
         // Use hubId to find vault
-        require(hubRegistry.isActiveHub(_hubId), "Hub not active");
+        require(hubRegistry.getHubStatus(_hubId) != "INACTIVE", "Hub not active");
         address vault = hubRegistry.getHubVault(_hubId);
 
         // Use vault to find collateral assets
@@ -64,10 +59,19 @@ contract MeTokenRegistry{
             _name, _owner, _symbol, _hubId
         );
 
-        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol);
+        // Add meToken to registry
+        MeTokenDetails storage meTokenDetails = MeTokenDetails(_owner) 
+
+        meTokenOwners[_owner] = true;   
+
+        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hubId);
     }
 
+    function isMeTokenOwner(address _owner) public view returns (bool) {
 
+    }
+
+    /*
     function approveCollateralAsset(address _asset) external {
         // TODO: access control
         require(!approvedCollateralAssets[_asset], "Asset already approved");
@@ -84,6 +88,7 @@ contract MeTokenRegistry{
     function isApprovedCollateralAsset(address _asset) external view returns (bool) {
         return approvedCollateralAssets[_asset];
     }
+    */
 
     // TODO
     // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}

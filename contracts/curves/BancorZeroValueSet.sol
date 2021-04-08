@@ -11,8 +11,6 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
-
-		bool updating;
 	}
 
     event Updated(uint256 indexed hubId);
@@ -61,6 +59,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
             amount = _calculateMintReturnFromZero(v.base_x, v.base_y, _depositAmount, v.reserveWeight);
         }
 
+        // TODO: Since updating was moved to hub, need to bring this o
         if (v.updating) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[v.targetValueSetId];

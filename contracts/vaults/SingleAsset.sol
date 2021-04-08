@@ -22,7 +22,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
     uint256 public id;
     address public owner;
     uint256 public collateralBalance;
-	uint256 public hubId;
+	// uint256 public hubId;
     uint256 public refundRatio;
 	I_ERC20 public collateralAsset;
     I_CurveValueSet public curve;
@@ -39,7 +39,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
     function initialize(
         uint256 _id,
         address _owner,
-        uint256 _hubId,
+        // uint256 _hubId,
         address _curveValueSet,
         bytes4 encodedArgs // NOTE: this is _refundRatio and _collateralAsset hashed
     ) public onlyVaultFactory {  // TODO: onlyVaultFactory
@@ -47,7 +47,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
         require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
         id = _id;
         owner = _owner;
-        hubId = _hubId; // TODO: require hubId exists
+        // hubId = _hubId; // TODO: require hubId exists
         curve = I_CurveValueSet(_curveValueSet); // TODO: check valueSet approved?
 
         require(this.call(encodedInitializeFunc, encodedArgs), "Encoding failed");
@@ -76,7 +76,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 		
         // Calculate how much meToken is minted
         amountMinted = valuesContract.calculateMintReturn(
-            hubId,
+            // hubId,
             mt.supply,
             mt.balancePooled,
             amountAfterFees
