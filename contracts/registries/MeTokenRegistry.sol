@@ -29,7 +29,6 @@ contract MeTokenRegistry{
         uint256 hub;
 		uint256 balancePooled;
 		uint256 balanceLocked;
-        address collateralAsset;
         bool migrating;
 	}
 
@@ -73,7 +72,7 @@ contract MeTokenRegistry{
     function getMeTokenHub(address _meToken) external view returns (uint256) {
         // TODO: validate MeTokenDetails struct wwill revert for missing meToken address
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.hub
+        return meTokenDetails.hub;
     }
 
     /*

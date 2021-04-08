@@ -5,8 +5,8 @@ interface I_MeTokenRegistry {
         string calldata name,
         address owner,
         string calldata symbol,
-        address hubId,
-        address[] calldata collateralAssets
+        uint256 hub
     ) external;
     function isMeTokenOwner(address owner) external view returns (bool);
+    function getMeTokenHub(address meToken) external view returns (uint256);
 }

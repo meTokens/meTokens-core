@@ -22,7 +22,7 @@ contract HubRegistry {
     uint256 private hubCount;
 
     enum Status { INACTIVE, ACTIVE, UPDATING, MIGRATING }
-    struct Hub {    
+    struct HubDetails {    
         string name;
         address owner;
         address[] subscribedMeTokens;
@@ -77,7 +77,14 @@ contract HubRegistry {
 
     function mint(address _meToken, uint256 collateralAssetDeposited) external {
         // find which hub meToken is a part of
-        meTokenRegistry(0x0)
+        uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
+        uint256 supply = I_ERC20(_meToken).totalSupply();
+        uint256 balancePooled = 0x0;
+        
+        HubDetails memory hubDetails = hubs[hub];
+        require(hubDetails.status != "INACTIVE", "Hub inactive");
+
+        
     }
 
 

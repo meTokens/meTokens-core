@@ -27,12 +27,12 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 	I_ERC20 public collateralAsset;
     I_CurveValueSet public curve;
 
-	mapping (address => MeTokenBalance) meTokenBalances;
+	// mapping (address => MeTokenBalance) meTokenBalances;
         
-    struct MeTokenBalance{
-        uint256 balancePooled;
-        uint256 balanceLocked;
-    }
+    // struct MeTokenBalance{
+    //     uint256 balancePooled;
+    //     uint256 balanceLocked;
+    // }
 
     constructor() {}
 
@@ -47,7 +47,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
         require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
         id = _id;
         owner = _owner;
-        // hubId = _hub; // TODO: require hub exists
+        // hub = _hub; // TODO: require hub exists
         curve = I_CurveValueSet(_curveValueSet); // TODO: check valueSet approved?
 
         require(this.call(encodedInitializeFunc, encodedArgs), "Encoding failed");
@@ -110,7 +110,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
             feeAmount = _amount * burnOwnerFee() / PRECISION;
 			amountAfterFees = _amount - feeAmount + earnedfromLocked;
 
-			uint256 amountFromLocked = _amount * mt.lockedBalance / mt.supply;
+			uint256 amountFromLocked = _amount * mt.balanceLocked / mt.supply;
 
             // decrease balance locked
             mt.balanceLocked = mt.balanceLocked - earnedfromLocked;
@@ -121,7 +121,7 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 			amountAfterFees = _amount - feeAmount;
 
 			uint256 amountToLock = amountAfterFees * refundRatio / PRECISION;
-            uint256 amount
+            // uint256 amount
 
             // increase balance locked
             mt.balanceLocked = mt.balanceLocked + amountToLock; 
@@ -131,12 +131,6 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 		_meToken.transfer(feeRecipient(), feeAmount);
 		_meToken.transferFrom(msg.sender, toUser, toUser);
 		mt.balancePooled -- _amount;
-    }
-
-
-    /// @notice calculateLockedReturn is used to calculate the amount of locked Eth returned to the owner during a burn/spend
-    function calculateLockedReturn(address _meToken, uint256 amountToken) returns (uint256) {
-        return amountToken * lockedBalance / supply;
     }
 
 	//  TODO - figure out governance of updating the collateralAsset in a vault
