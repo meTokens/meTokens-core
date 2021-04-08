@@ -13,14 +13,14 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 		uint256 reserveWeight;
 	}
 
-    event Updated(uint256 indexed hubId);
+    event Updated(uint256 indexed hub);
 
-    // NOTE: keys will be the hubId
-	mapping (uint256 => ValueSet) valueSets;
-	mapping (uint256 => TargetValueSet) targetValueSets;
+    // NOTE: keys will be the hub
+	mapping (uint256 => ValueSet) private valueSets;
+	mapping (uint256 => TargetValueSet) private targetValueSets;
 
 	function registerValueSet(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _base_x,
         uint256 _base_y,
         uint256 _reserveWeight
@@ -29,10 +29,10 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
        require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
        ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
-       valueSets[_hubId] = valueSet;
+       valueSets[_hub] = valueSet;
     }
 
-    function deactivateValueSet(uint256 _hubId) public returns(uint256) {}
+    function deactivateValueSet(uint256 _hub) public returns(uint256) {}
     
     // TODO: is this needed
     // function reactivateValueSet() {}
@@ -46,13 +46,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     **/
     // TODO: fix calculateMintReturn arguments
     function calculateMintReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
     ) external view override returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_hubId];
+        ValueSet memory v = valueSets[_hub];
         if (_supply > 0) {
             amount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, v.reserveWeight);
         } else {
@@ -74,13 +74,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     // TODO: _calculateBurnReturn arguments
     function calculateBurnReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
     ) external view override returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_hubId];
+        ValueSet memory v = valueSets[_hub];
         amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
         
         if (v.updating) {
@@ -115,18 +115,22 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         weightedAmount = weighted_v + weighted_t;
     }
 
-    function _finishUpdate(uint256 _hubId) private {
+    function _finishUpdate(uint256 _hub) private {
         require(msg.sender == address(this));
 
-        TargetValueSet memory t = targetValueSets[_hubId];
-        ValueSet memory v = valueSets[_hubId];
+        TargetValueSet memory t = targetValueSets[_hub];
+        ValueSet memory v = valueSets[_hub];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
         v.updating = false;
 
-        emit Updated(v.hubId);
+        emit Updated(v.hub);
+    }
+
+    function getValueSetCount() external view returns (uint256) {
+        return valueSetCount;
     }
 
 }

@@ -5,8 +5,8 @@ contract MigrationRegistry {
 	mapping (uint256 => MigrationDetails) migrations;
 
     struct MigrationDetails {
-        uint256 fromHubId;
-        uint256 toHubId;
+        uint256 fromHub;
+        uint256 toHub;
         address migrationVault;
         uint256 blockStart;
         uint256 blockTarget;

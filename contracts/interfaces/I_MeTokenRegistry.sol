@@ -8,7 +8,5 @@ interface I_MeTokenRegistry {
         address hubId,
         address[] calldata collateralAssets
     ) external;
-    function approveCollateralAsset(address asset) external;
-    function UnapproveCollateralAsset(address asset) external;
-    function isApprovedCollateralAsset(address asset) external view returns (bool);
+    function isMeTokenOwner(address owner) external view returns (bool);
 }

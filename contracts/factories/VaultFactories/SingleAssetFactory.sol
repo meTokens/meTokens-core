@@ -18,7 +18,7 @@ contract SingleAssetFactory {
 	function createVault(
         string calldata name,
         address _owner,
-        uint256 _hubId,
+        uint256 _hub,
         address _valueSetAddress,
         // address[] _collateralAssets[], // TODO
         bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio and _collateralAsset hashed
@@ -35,7 +35,7 @@ contract SingleAssetFactory {
         vault.initialize(
             vaultRegistry.vaultCount(),
             _owner,
-            _hubId,
+            _hub,
             _valueSetAddress,
             _encodedVaultAdditionalArgs
         );

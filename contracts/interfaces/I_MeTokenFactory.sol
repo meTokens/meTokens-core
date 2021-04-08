@@ -5,6 +5,6 @@ interface I_MeTokenFactory {
         string calldata name,
         address owner,
         string calldata symbol,
-        uint256 hubId
+        uint256 hub
     ) external returns (address);
 }

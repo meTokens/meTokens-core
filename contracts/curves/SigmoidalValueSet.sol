@@ -15,9 +15,9 @@ contract SigmoidalValues is SigmoidalFormula {
 
     uint256 private PRECISION = 10**18;
 
-    event Updated(uint256 indexed hubId);
+    event Updated(uint256 indexed hub);
 
-    // NOTE: keys will be the hubId
+    // NOTE: keys will be the hub
 	mapping (uint256 => HubValueSet) hubValueSets;
 
 	function registerValueSet(
@@ -36,7 +36,7 @@ contract SigmoidalValues is SigmoidalFormula {
 	function registerTargetValueSet() returns(uint256) {}
 
     function calculateMintReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
@@ -45,7 +45,7 @@ contract SigmoidalValues is SigmoidalFormula {
     };
 
     function calculateBurnReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount

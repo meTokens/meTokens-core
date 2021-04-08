@@ -12,7 +12,7 @@ contract MeTokenRegistry{
         address indexed owner,
         string name,
         string symbol,
-        uint256 hubId
+        uint256 hub
     );
     // event ApproveCollateralAsset(address asset);
     // event UnapproveCollateralAsset(address asset);
@@ -42,33 +42,38 @@ contract MeTokenRegistry{
         string _name,
         address _owner,
         string _symbol,
-        uint256 _hubId
-        // address[] calldata _collateralAssets
+        uint256 _hub
     ) external {
         // TODO: access control
         require(!meTokenOwners[_owner], "_owner already owns a meToken");
         
-        // Use hubId to find vault
-        require(hubRegistry.getHubStatus(_hubId) != "INACTIVE", "Hub not active");
-        address vault = hubRegistry.getHubVault(_hubId);
+        // Use hub to find vault
+        require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
+        address vault = hubRegistry.getHubVault(_hub);
 
         // Use vault to find collateral assets
         
 
         address meTokenAddr = meTokenFactory.createMeToken(
-            _name, _owner, _symbol, _hubId
+            _name, _owner, _symbol, _hub
         );
 
         // Add meToken to registry
-        MeTokenDetails storage meTokenDetails = MeTokenDetails(_owner) 
+        MeTokenDetails storage meTokenDetails = MeTokenDetails(_owner);
 
         meTokenOwners[_owner] = true;   
 
-        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hubId);
+        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hub);
     }
 
-    function isMeTokenOwner(address _owner) public view returns (bool) {
+    function isMeTokenOwner(address _owner) external view returns (bool) {
+        return meTokenOwners[_owner];
+    }
 
+    function getMeTokenHub(address _meToken) external view returns (uint256) {
+        // TODO: validate MeTokenDetails struct wwill revert for missing meToken address
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails.hub
     }
 
     /*
