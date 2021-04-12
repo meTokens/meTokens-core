@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
 import "../interfaces/I_CurveRegistry.sol";
-import "../interfaces/I_Curve.sol";
+import "../interfaces/I_CurveValueSet.sol";
 
 
 contract HubRegistry {
@@ -11,12 +11,14 @@ contract HubRegistry {
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
     event ReactivateHub(uint256 hub);
+    event Mint(address from, address meToken, uint256 amount, uint256 meTokensMinted);
 
     address public gov;
     I_Curve public curve;
     I_VaultFactory public vaultFactory;
     I_VaultRegistry public vaultRegistry;
     I_MeTokenRegistry public meTokenRegistry;
+    I_Fees public fees;
 
     mapping(uint256 => Hub) private hubs;
     uint256 private hubCount;
@@ -32,11 +34,12 @@ contract HubRegistry {
         Status status;
     }
 
-    constructor(address _gov, address _vaultRegistry, address _curveRegistry, address _meTokenRegistry) public {
+    constructor(address _gov, address _vaultRegistry, address _curveRegistry, address _meTokenRegistry, address _fees) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
         curveRegistry = I_CurveRegistry(_curveRegistry);
         meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
+        fees = I_Fees(_fees);
     }
 
     function registerHub(
@@ -46,8 +49,8 @@ contract HubRegistry {
         address _vaultOwner,
         address _vaultFactory,
         address _curve,
-        bytes4 _encodedValueSetArgs,
-        bytes4 _encodedVaultAdditionalArgs
+        bytes _encodedValueSetArgs,
+        bytes _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
@@ -55,7 +58,9 @@ contract HubRegistry {
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
-        I_Curve(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
+        // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
+        // abi.encodePacked();
+        I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
         
         // Create new vault
         // ALl new hubs will create a vault
@@ -63,10 +68,11 @@ contract HubRegistry {
         vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _curve, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
+        address[] subscribedMeTokens;
         Hub storage hub = Hub(
             _name,
             _owner,
-            address[],
+            subscribedMeTokens,
             vault,
             _curve,
             ACTIVE
@@ -75,20 +81,44 @@ contract HubRegistry {
         hubCount++;
     }
 
-    function mint(address _meToken, uint256 collateralAssetDeposited) external {
+    function mint(address _meToken, uint256 _collateralDeposited) external {
         // find which hub meToken is a part of
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
-        uint256 supply = I_ERC20(_meToken).totalSupply();
+        uint256 supply = I_ERC20(_meToken).totalSupply(); 
         uint256 balancePooled = 0x0;
         
         HubDetails memory hubDetails = hubs[hub];
         require(hubDetails.status != "INACTIVE", "Hub inactive");
+        require(!meTokenRegistry.isMeTokenMigrating(_meToken), "meToken is migrating");
 
+        uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
+        uint256 collateralDepositedAfterFees = _collateralDeposited - fee;
+
+        // Calculate how much meToken isminted
+        meTokensMinted = I_CurveValueSet(hubDetails.curve).calculateMintReturn(
+            hub,
+            // TODO: should this be meTokenDetails.supply to account for burning?
+            I_ERC20(_meToken).totalSupply(),
+            meTokenRegistry.getMeTokenBalancePooled(_meToken),
+            collateralDepositedAfterFees
+        );
+
+        // updating balances (TODO)
         
+        // Send fees to recipient
+        collateralAsset.transferFrom(msg.sender, fees.feeRecipient(), fee);
+        
+        // Send collateral to vault
+        collateralAsset.transferFrom(msg.sender, address(this), collateralDepositedAfterFees);
+
+        // Mint meToken to user
+        I_MeToken(_meToken).mint(msg.sender, meTokensMinted);
+
+        emit Mint(msg.sender, _metoken, _collateralDeposited, meTokensMinted);
     }
 
 
-    function burn(address _meToken, uint256 meTokenDeposited) {
+    function burn(address _meToken, uint256 meTokenBurned) {
         // Check if msg.sender is owner to give owner the sell rate vs. giving the buyer the burn rate
     }
 
@@ -139,9 +169,4 @@ contract HubRegistry {
         return hubDetails.vault;
     }
 
-    function getHubValueSet(uint256 _hub) external view returns (address) {
-        HubDetails memory hubDetails = hubs[_hub];
-        require(_hub < hubCount, "_hub exceeds hubCount");
-        return hubDetails.valueSet;
-    }
 }

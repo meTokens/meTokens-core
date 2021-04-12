@@ -69,10 +69,30 @@ contract MeTokenRegistry{
         return meTokenOwners[_owner];
     }
 
-    function getMeTokenHub(address _meToken) external view returns (uint256) {
+    function getMeTokenOwner(address _meToken) external view returns (address) {
         // TODO: validate MeTokenDetails struct wwill revert for missing meToken address
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails.owner;
+    }
+
+    function getMeTokenHub(address _meToken) external view returns (uint256) {
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails.hub;
+    }
+
+    function getMeTokenBalancePooled(address _meToken) external view returns (uint256) {
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails.balancePooled;
+    }
+
+    function getMeTokenBalanceLocked(address _meToken) external view returns (uint256) {
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails.balanceLocked;
+    }
+
+    function isMeTokenMigrating(address _meToken) external view returns (uint256) { 
+        MeTokenDetails memory MeTokenDetails = meTokens[_meToken];
+        return meTokenDetails.migrating;
     }
 
     /*

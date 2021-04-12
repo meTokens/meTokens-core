@@ -28,7 +28,6 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
     I_CurveValueSet public curve;
 
 	// mapping (address => MeTokenBalance) meTokenBalances;
-        
     // struct MeTokenBalance{
     //     uint256 balancePooled;
     //     uint256 balanceLocked;
