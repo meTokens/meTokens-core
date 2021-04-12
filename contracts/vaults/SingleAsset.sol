@@ -22,16 +22,8 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
     uint256 public id;
     address public owner;
     uint256 public collateralBalance;
-	// uint256 public hub;
     uint256 public refundRatio;
-	I_ERC20 public collateralAsset;
     I_CurveValueSet public curve;
-
-	// mapping (address => MeTokenBalance) meTokenBalances;
-    // struct MeTokenBalance{
-    //     uint256 balancePooled;
-    //     uint256 balanceLocked;
-    // }
 
     constructor() {}
 
@@ -64,22 +56,22 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 	**/
     // TODO: http://coders-errand.com/hash-functions-for-smart-contracts-part-3/
 	function mint(address _meToken, uint256 _amount) {
-        require(initialized, "!initialized");
+        // require(initialized, "!initialized");
 
-        MeTokenBalance memory mt = meTokenBalances[_meToken];
-        require(mt.active, "MeToken is not active");
+        // MeTokenBalance memory mt = meTokenBalances[_meToken];
+        // require(mt.active, "MeToken is not active");
 
-        // TODO: validate mintFee() is proportional to PRECISION
-        uint256 feeAmount = _amount * mintFee() / PRECISION;
-        uint256 amountAfterFees = _amount - feeAmount;
+        // // TODO: validate mintFee() is proportional to PRECISION
+        // uint256 feeAmount = _amount * mintFee() / PRECISION;
+        // uint256 amountAfterFees = _amount - feeAmount;
 		
-        // Calculate how much meToken is minted
-        amountMinted = valuesContract.calculateMintReturn(
-            // hub,
-            mt.supply,
-            mt.balancePooled,
-            amountAfterFees
-        );
+        // // Calculate how much meToken is minted
+        // amountMinted = valuesContract.calculateMintReturn(
+        //     // hub,
+        //     mt.supply,
+        //     mt.balancePooled,
+        //     amountAfterFees
+        // );
 
         // Update balances
         collateralBalance = collateralBalance + amountAfterFees;
@@ -87,13 +79,13 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
         mt.supply = mt.supply + amountMinted;
 
         // Send fees to recipient (TODO: validate feeRecipient())
-        collateralAsset.transferFrom(msg.sender, feeRecipient(), feeAmount);
+        // collateralAsset.transferFrom(msg.sender, feeRecipient(), feeAmount);
 
-        // Send collateral to vault
-        collateralAsset.transferFrom(msg.sender, address(this), amountAfterFees);
+        // // Send collateral to vault
+        // collateralAsset.transferFrom(msg.sender, address(this), amountAfterFees);
 
-        // Mint meToken
-        I_MeToken(_meToken).mint(msg.sender, amountMinted);
+        // // Mint meToken
+        // I_MeToken(_meToken).mint(msg.sender, amountMinted);
 	}
 
 	function burn(uint256 _amount, address _meToken){
@@ -130,11 +122,6 @@ contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
 		_meToken.transfer(feeRecipient(), feeAmount);
 		_meToken.transferFrom(msg.sender, toUser, toUser);
 		mt.balancePooled -- _amount;
-    }
-
-	//  TODO - figure out governance of updating the collateralAsset in a vault
-	function setCollateralAsset(address _collateralAsset) public onlyGov {
-        require(initialized, "!initialized");
     }
 
     // TODO: onlyGov modifier

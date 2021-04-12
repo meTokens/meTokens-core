@@ -95,6 +95,11 @@ contract MeTokenRegistry{
         return meTokenDetails.migrating;
     }
 
+    function getMeTokenDetails(address _meToken) external view returns (MeTokenDetails calldata) {
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails;
+    }
+
     /*
     function approveCollateralAsset(address _asset) external {
         // TODO: access control
