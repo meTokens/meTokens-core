@@ -2,22 +2,13 @@ pragma solidity ^0.8.0;
 
 contract Vault {
 
-	uint256 hub;
-	address collateralAsset;
+	address private collateralAsset;
 
-	mapping (address => MeTokenBalances) MeTokenBalances;
+    function getCollateralAsset() external view returns (address) {
+        return collateralAsset;
+    }
 
-	struct MeTokenBalances{
-		uint256 balancePooled;
-		uint256 balanceLocked;
-	}
-
-	/**
-	 * TODO - figure out governance of updating the collateralAsset in a vault
-	**/
-	function updateCollateralAsset () onlyGov returns() {}
-
-	/**
-	 * passes _valueSet through hub.curves.values.calculateMintReturn() and ~.calculateBurnReturn()
-	**/
-	function mint(_valueSet, _meToken) returns() {}
+	//  TODO - figure out governance of updating the collateralAsset in a vault
+	function setCollateralAsset(address _collateralAsset) public onlyGov {
+        require(initialized, "!initialized");
+    }

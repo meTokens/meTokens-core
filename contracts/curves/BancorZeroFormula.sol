@@ -74,11 +74,10 @@ contract BancorZeroFormula is Power {
     }
 
     /**
-    * @dev given a token supply, connector balance, weight and a sell amount (in the main token),
+    * @notice given a token supply, connector balance, weight and a sell amount (in the main token),
     * calculates the return for a given conversion (in the connector token)
     *
-    * Formula:
-    * Return = _balancePooled * (1 - (1 - _sellAmount / _supply) ^ (1 / (_reserveWeight / 1000000)))
+    * @notice Return = _balancePooled * (1 - (1 - _sellAmount / _supply) ^ (1 / (_reserveWeight / 1000000)))
     *
     * @param _supply              token total supply
     * @param _balancePooled    total connector

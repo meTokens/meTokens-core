@@ -21,7 +21,11 @@ contract MeToken is Ownables, ERC20Burnable {
     bool public updating;
     bool private initialized;
     bool private _canMigrate;
-    address public creator;
+    
+    // For person that creates meToken, may not be the designated owner
+    // For example, someone creates ANDRE coin on his behalf and he takes ownership later
+    address public owner;
+
     address public vault;
     string public name;
     string public symbol;
@@ -29,12 +33,12 @@ contract MeToken is Ownables, ERC20Burnable {
     constructor() {}
 
     function initialize(
-        address _owner,
+        address _creator,
         string _name,
         string _symbol
     ) public {
         require(!initialized, "initalize: already initalized");
-        // TODO: owner has to be vault address
+        // TODO: owner has to be contract responsible for mint/burn
         owner = _owner;
         name = _name;
         symbol = symbol;

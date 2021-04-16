@@ -1,50 +1,42 @@
-// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
-// specifically paired with BancorFormulaFromZero.sol
+pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 
+// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
+// specifically paired with BancorFormulaFromZero.sol
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
-    uint256 private PRECISION = 10**18;
-
-    event Updated(uint256 indexed hubId);
-
-    // NOTE: keys will be the hubId
-	mapping (uint256 => HubValueSet) hubValueSets;
-
-    // NOTE: each valueSet is for a hub
-	struct HubValueSet {
-		// address hubId; // the hub that uses this parameter set
+    // NOTE: each valueSet is for a curve
+    struct ValueSet {
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
-
-		bool updating;
-        uint256 targetValueSetId;
 	}
+
+    event Updated(uint256 indexed hub);
+
+    // NOTE: keys will be the hub
+	mapping (uint256 => ValueSet) private valueSets;
+	mapping (uint256 => TargetValueSet) private targetValueSets;
 
 	function registerValueSet(
-        uint256 _hubId, uint256 _base_x, uint256 _base_y, uint256 _reserveWeight
-    ) {
-
+        uint256 _hub,
+        uint256 _base_x,
+        uint256 _base_y,
+        uint256 _reserveWeight
+    ) external virtual override {
+        
+       require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
+       require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
+       ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
+       valueSets[_hub] = valueSet;
     }
-    function deactivateValueSet() returns(uint256) {}
-    function reactivateValueSet() returns(uint256) {}
 
-	mapping (uint256 => TargetValueSet) targetHubValueSets;
+    function deactivateValueSet(uint256 _hub) public returns(uint256) {}
+    
+    // TODO: is this needed
+    // function reactivateValueSet() {}
 
-    // NOTE: for updating a hub
-	struct TargetHubValueSet {
-		uint base_x;
-		uint base_y;
-		uint256 reserveWeight;
-
-		uint256 blockStart;
-        uint256 blockTarget;
-        bool targetReached;
-	}
-
-	function registerTargetValueSet() returns(uint256) {}
 
     /**
      * if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
@@ -54,19 +46,20 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     **/
     // TODO: fix calculateMintReturn arguments
     function calculateMintReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
-    ) view returns (uint256 amount) {
+    ) external view override returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_hubId];
+        ValueSet memory v = valueSets[_hub];
         if (_supply > 0) {
             amount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, v.reserveWeight);
         } else {
             amount = _calculateMintReturnFromZero(v.base_x, v.base_y, _depositAmount, v.reserveWeight);
         }
 
+        // TODO: Since updating was moved to hub, need to bring this o
         if (v.updating) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[v.targetValueSetId];
@@ -81,13 +74,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     // TODO: _calculateBurnReturn arguments
     function calculateBurnReturn(
-        uint256 _hubId,
+        uint256 _hub,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
-    ) returns (uint256 amount) {
+    ) external view override returns (uint256 amount) {
 
-        ValueSet memory v = valueSet[_hubId];
+        ValueSet memory v = valueSets[_hub];
         amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
         
         if (v.updating) {
@@ -101,17 +94,17 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function _calculateWeightedAmount(
         uint256 _amount,
         uint256 _targetAmount,
-        TargetValueSet _t
+        Curve curve
     ) private returns (uint256 weightedAmount) {
         uint256 targetWeight;
 
        // Finish update if complete
-        if (_t.blockTarget <= block.number) { 
+        if (targetValueSet.blockTarget <= block.number) { 
             _finishUpdate(t);
             targetWeight = PRECISION;
         } else {
-            uint256 targetProgress = block.number - _t.blockStart;
-            uint256 targetLength = _t.blockTarget - _t.blockStart;
+            uint256 targetProgress = block.number - targetValueSet.blockStart;
+            uint256 targetLength = targetValueSet.blockTarget - targetValueSet.blockStart;
             // TODO: is this calculation right?
             targetWeight = PRECISION * targetProgress / targetLength;
         }
@@ -122,18 +115,35 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         weightedAmount = weighted_v + weighted_t;
     }
 
-    function _finishUpdate(uint256 _hubId) internal {
+    function _finishUpdate(uint256 _hub) private {
         require(msg.sender == address(this));
 
-        TargetValueSet memory t = targetValueSets[_hubId];
-        ValueSet memory v = valueSets[_hubId];
+        TargetValueSet memory t = targetValueSets[_hub];
+        ValueSet memory v = valueSets[_hub];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
         v.updating = false;
 
-        emit Updated(v.hubId);
+        emit Updated(v.hub);
+    }
+
+    function getValueSetCount() external view returns (uint256) {
+        return valueSetCount;
     }
 
 }
+
+
+/*
+struct TargetValueSet {
+    uint base_x;
+    uint base_y;
+    uint256 reserveWeight;
+
+    uint256 blockStart;
+    uint256 blockTarget;
+    bool targetReached;
+}
+*/
