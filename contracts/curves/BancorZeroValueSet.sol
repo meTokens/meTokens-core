@@ -4,6 +4,10 @@ import "./BancorZeroFormula.sol";
 
 // example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
 // specifically paired with BancorFormulaFromZero.sol
+
+/// @title Bancor curve registry and calculator
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
     // NOTE: each valueSet is for a curve

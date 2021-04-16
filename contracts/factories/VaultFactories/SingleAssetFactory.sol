@@ -3,14 +3,16 @@ pragma solidity ^0.8.0;
 import "../../vaults/SingleAsset.sol";
 import "../../interfaces/I_VaultRegistry.sol";
 
-
+/// @title Factory contract to erc20-collateral vaults
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory {
 
     I_VaultRegistry public vaultRegistry;
     Vault public vault;
 
-    constructor(address _vaultRegistry) public {
-        require(_vaultRegistry != address(0), "Cannot be 0 address");
+    constructor(address _hub, address _vaultRegistry) public {
+        hub = _hub;
         vaultRegistry = _vaultRegistry;
     }
     
@@ -20,14 +22,9 @@ contract SingleAssetFactory {
         address _owner,
         uint256 _hub,
         address _valueSetAddress,
-        // address[] _collateralAssets[], // TODO
-        bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio and _collateralAsset hashed
+        address _collateralAsset,
+        bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio, base_x, & base_y
     ) public returns (address) {
-
-        require(
-            _collateralAssets.length > 0 && _collateralAssets.length <= MAX_NUM_COLLATERAL_ASSETS, 
-            "Invalid number of collateral assets"
-        );
 
         // create our vault
         // TODO: create2 shit

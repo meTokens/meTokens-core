@@ -1,5 +1,9 @@
 pragma solidity ^0.8.0;
 
+
+/// @title vault registry
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Keeps track of all active vaults and available vault factories 
 contract VaultRegistry {
 
     event RegisterVault(string name, address vault, address factory);
@@ -13,14 +17,12 @@ contract VaultRegistry {
     struct VaultDetails {
         string name;
         address factory; // NOTE: references factories/VaultFactories/{}.sol
-        bool active;
+        bool active;  // NOTE: can be inactive after vault migration
     }
 
     // TODO: argument check
     function registerVault(string calldata _name, address _vault, address _factory) external {
         // TODO: access control
-        require(approvedVaultFactories[_factory], "Factory not approved");
-
         // Add vault details to storage
         // TODO: validate memory vs. storage usage
         VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);

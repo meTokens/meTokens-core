@@ -1,5 +1,9 @@
 pragma solidity ^0.8.0;
 
+
+/// @title Migration registry
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Keeps track of all used migration strategies 
 contract MigrationRegistry {
 
 	mapping (uint256 => MigrationDetails) migrations;

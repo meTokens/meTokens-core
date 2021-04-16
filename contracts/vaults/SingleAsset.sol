@@ -12,13 +12,17 @@ import "../interfaces/I_CurveValueSet.sol";
 import "../interfaces/I_ERC20.sol"; // TODO
 import "../interfaces/I_MeToken.sol";
 
-contract SingleAsset is Fees, MeTokenRegistry, HubRegistry, CurveRegistry {
+
+/// @title ERC-20 (non-LP) token vault
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Base single asset vault contract
+/// @dev Only callable by the vault factory
+contract SingleAsset is Vault {
 
     event SetCurve(address curveValueSet);
 
     bytes4 private encodedInitializeFunc = bytes(keccak256("_initialize(uint256,address)"));
 
-    uint256 private PRECISION = 10**18;
     uint256 public id;
     address public owner;
     uint256 public collateralBalance;

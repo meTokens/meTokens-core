@@ -1,8 +1,10 @@
-// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
-// specifically paired with BancorFormulaFromZero.sol
+pragma solidity ^0.8.0;
 
 import "./SigmoidalFormula.sol";
 
+/// @title Sigmoidal curve registry and calculator
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Uses SigmoidalFormula.sol for private methods
 contract SigmoidalValues is SigmoidalFormula {
 
     struct ValueSet{

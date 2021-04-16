@@ -7,6 +7,10 @@ import "../interfaces/I_CurveValueSet.sol";
 import "../interfaces/I_Vault.sol";
 
 
+/// @title meToken hub
+/// @author Carl Farterson (@carlfarterson)
+/// @notice This contract tracks all combinations of vaults and curves,
+///     and their respective subscribed meTokens 
 contract HubRegistry {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
@@ -163,6 +167,7 @@ contract HubRegistry {
         );
 
         // TODO: Update balance pooled
+                
 
         I_MeToken(_meToken).transfer(fees.feeRecipient(), fee);
         I_MeToken(_meToken).burn(msg.sender, meTokensBurnedAfterFees);

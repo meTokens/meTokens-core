@@ -1,14 +1,8 @@
 pragma solidity ^0.8.0;
 
- /**
- * @title Power function by Bancor
- * @dev https://github.com/bancorprotocol/contracts
- *
- * Modified from the original by Slava Balasanov & Tarrence van As
- *
- * Split Power.sol out from BancorFormula.sol
- * https://github.com/bancorprotocol/contracts/blob/c9adc95e82fdfb3a0ada102514beb8ae00147f5d/solidity/contracts/converter/BancorFormula.sol
- */
+/// @title Power function by Bancor
+/// @dev https://github.com/bancorprotocol/contracts
+/// @notice Modified from the original by Slava Balasanov & Tarrence van As
 contract Power {
   string public version = "0.3";
 
