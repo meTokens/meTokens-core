@@ -3,7 +3,9 @@ pragma solidity ^0.8.0;
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenRegistry.sol";
 
-
+/// @title meToken factory
+/// @author Carl Farterson (@carlfarterson)
+/// @notice This contract creates and deploys a users' meToken
 contract MeTokenFactory {
 
     I_MeTokenRegistry public meTokenRegistry;

@@ -1,5 +1,8 @@
 pragma solidity ^0.8.0;
 
+/// @title Curve registry
+/// @author Carl Farterson (@carlfarterson)
+/// @notice This contract keeps track of active curve types and their base values
 contract CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);

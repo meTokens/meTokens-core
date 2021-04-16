@@ -5,6 +5,9 @@ import "../interfaces/I_MeTokenFactory.sol";
 import "../interfaces/I_HubRegistry.sol";
 
 
+/// @title meToken registry
+/// @author Carl Farterson (@carlfarterson)
+/// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistry{
 
     event RegisterMeToken(
@@ -14,8 +17,6 @@ contract MeTokenRegistry{
         string symbol,
         uint256 hub
     );
-    // event ApproveCollateralAsset(address asset);
-    // event UnapproveCollateralAsset(address asset);
 
     I_MeTokenFactory public meTokenFactory;
     I_HubRegistry public hubRegistry;
@@ -69,56 +70,15 @@ contract MeTokenRegistry{
         return meTokenOwners[_owner];
     }
 
-    function getMeTokenOwner(address _meToken) external view returns (address) {
-        // TODO: validate MeTokenDetails struct wwill revert for missing meToken address
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.owner;
-    }
-
     function getMeTokenHub(address _meToken) external view returns (uint256) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails.hub;
-    }
-
-    function getMeTokenBalancePooled(address _meToken) external view returns (uint256) {
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.balancePooled;
-    }
-
-    function getMeTokenBalanceLocked(address _meToken) external view returns (uint256) {
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.balanceLocked;
-    }
-
-    function isMeTokenMigrating(address _meToken) external view returns (uint256) { 
-        MeTokenDetails memory MeTokenDetails = meTokens[_meToken];
-        return meTokenDetails.migrating;
     }
 
     function getMeTokenDetails(address _meToken) external view returns (MeTokenDetails calldata) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails;
     }
-
-    /*
-    function approveCollateralAsset(address _asset) external {
-        // TODO: access control
-        require(!approvedCollateralAssets[_asset], "Asset already approved");
-        approvedCollateralAssets[_asset] = true;
-        emit ApproveCollateralAsset(_asset);
-    }
-
-    function unapproveCollateralAsset(address _asset) external {
-        require(approvedCollateralAssets[_asset], "Asset not approved");
-        approvedCollateralAssets[_asset] = false;
-        emit UnapproveCollateralAsset(_asset);
-    }
-
-    function isApprovedCollateralAsset(address _asset) external view returns (bool) {
-        return approvedCollateralAssets[_asset];
-    }
-    */
-
     // TODO
     // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
 }
