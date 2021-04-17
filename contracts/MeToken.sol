@@ -1,15 +1,16 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownables.sol";
 import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 
 
+/// @title
+/// @author
+/// @notice
 contract MeToken is Ownables, ERC20Burnable {
 
-    event SwitchUpdating(bool _updating);
-
-    modifier onlyCreator() {
-        require(msg.sender == creator, "!creator");
+    modifier onlyOwner() {
+        require(msg.sender == creator, "!owner");
         _;
     }
 
@@ -20,17 +21,15 @@ contract MeToken is Ownables, ERC20Burnable {
 
     bool public updating;
     bool private initialized;
-    bool private _canMigrate;
     
     // For person that creates meToken, may not be the designated owner
     // For example, someone creates ANDRE coin on his behalf and he takes ownership later
     address public owner;
 
-    address public vault;
     string public name;
     string public symbol;
 
-    constructor() {}
+    constructor() public {}
 
     function initialize(
         address _creator,
@@ -45,25 +44,13 @@ contract MeToken is Ownables, ERC20Burnable {
     }
 
     function mint(address to, uint256 amount) public {
-        require(msg.sender == vault, "!vault");
+        require(msg.sender == hub, "!hub");
         _mint(to, amount);
     }
 
     function burn(address from, uint256 value) public {
-        require(msg.sender == vault, "!vault");
+        require(msg.sender == hub, "!hub");
         _burn(from, value);
     }
 
-    function canMigrate() external view returns (bool) {
-        return _canMigrate;
-    }
-
-    /*
-    Scenarios when updating would happen
-    * only owner
-    * whoever is in charge of the hub
-    */
-    function switchUpdating() returns (bool) {
-        require(msg.sender == 0x0); // TODO
-    }
 }

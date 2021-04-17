@@ -13,19 +13,15 @@ contract BancorZeroFormula is Power {
    uint256 private PRECISION = 10**18;
 
     /**
-    * @dev given a token supply, connector balance, weight and a deposit amount (in the connector token),
-    * calculates the return for a given conversion (in the main token)
-    *
-    * Formula:
-    * Return = _supply * ((1 + _depositAmount / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
-    *
-    * @param _supply              token total supply
-    * @param _balancePooled    total connector balance
-    * @param _reserveWeight     connector weight, represented in ppm, 1-1000000
-    * @param _depositAmount       deposit amount, in connector token
-    *
-    *  @return purchase return amount
-    * TODO - add if _supply = 0, then use calculateMintReturnFromZero()
+    @notice given a token supply, connector balance, weight and a deposit amount (in the connector token),
+        calculates the return for a given conversion (in the main token)
+
+    @dev _supply * ((1 + _depositAmount / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
+    @param _supply              token total supply
+    @param _balancePooled    total connector balance
+    @param _reserveWeight     connector weight, represented in ppm, 1-1000000
+    @param _depositAmount       deposit amount, in connector token
+    @return purchase return amount
     */
     function _calculateMintReturn(
         uint256 _supply,
@@ -34,7 +30,7 @@ contract BancorZeroFormula is Power {
         uint256 _depositAmount
     ) private view returns (uint256 meTokenAmountReturned) {
         // validate input
-        require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT);
+        require(_balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT);
         // special case for 0 deposit amount
         if (_depositAmount == 0) {
             return 0;
@@ -54,10 +50,12 @@ contract BancorZeroFormula is Power {
         meTokenAmountReturned = newTokenSupply - _supply;
     }
 
-    /**
-    * TODO - verify function
-    */
-    // https://www.notion.so/Economic-Modeling-f7a9e5a5a41b480490628079c794352d#6f090de4a7b34dd68d2c40b76b5f8700
+    /// @notice TODO
+    /// @param _base_x
+    /// @param _base_y
+    /// @param _depositAmount
+    /// @param _reserveWeight
+    /// @return purchase return amount when supply = 0
     function _calculateMintReturnFromZero(
         uint256 _base_x, 
         uint256 _base_y, 

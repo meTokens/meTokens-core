@@ -50,14 +50,15 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     **/
     // TODO: fix calculateMintReturn arguments
     function calculateMintReturn(
+        uint256 _depositAmount,
         uint256 _hub,
         uint256 _supply,
-        uint256 _balancePooled,
-        uint256 _depositAmount
+        uint256 _balancePooled
     ) external view override returns (uint256 amount) {
 
         ValueSet memory v = valueSets[_hub];
         if (_supply > 0) {
+            // TODO: can _supply > 0 and _balancePooled = 0? If so would break
             amount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, v.reserveWeight);
         } else {
             amount = _calculateMintReturnFromZero(v.base_x, v.base_y, _depositAmount, v.reserveWeight);

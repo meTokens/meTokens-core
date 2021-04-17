@@ -66,6 +66,19 @@ contract MeTokenRegistry{
         emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hub);
     }
 
+    function toggleUpdating() returns (bool) {
+        require(msg.sender == 0x0, ""); // TODO
+        updating = !updating;
+        emit ToggleUpdating(updating);
+    }
+
+    function toggleMigrating() returns (bool) {    
+        require(msg.sender == 0x0, ""); // TODO
+        migrating = !migrating;
+        emit ToggleMigrating(migrating);
+    }
+
+
     function isMeTokenOwner(address _owner) external view returns (bool) {
         return meTokenOwners[_owner];
     }

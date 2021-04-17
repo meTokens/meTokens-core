@@ -82,7 +82,7 @@ contract HubRegistry {
         
         // Save the hub to the registry
         address[] subscribedMeTokens;
-        Hub storage hub = Hub(
+        Hub storage hub = HubDetails(
             _name,
             _owner,
             subscribedMeTokens,
@@ -192,9 +192,6 @@ contract HubRegistry {
 
         require(hubDetails);
     }
-
-
-
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}

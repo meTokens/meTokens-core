@@ -16,7 +16,6 @@ contract SingleAssetFactory {
         vaultRegistry = _vaultRegistry;
     }
     
-    // TODO: access control
 	function createVault(
         string calldata name,
         address _owner,
