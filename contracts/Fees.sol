@@ -1,5 +1,9 @@
 pragma solidity ^0.8.0;
 
+
+/// @title meToken Fees
+/// @author Carl Farterson (@carlfarterson)
+/// @notice contract to manage all meToken fees
 contract Fees {
 
     // NOTE: this will be the DAO

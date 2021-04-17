@@ -4,9 +4,9 @@ import "@openzeppelin/contracts/access/Ownables.sol";
 import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 
 
-/// @title
-/// @author
-/// @notice
+/// @title meToken
+/// @author Carl Farterson (@carlfarterson)
+/// @notice Base erc20-like meToken contract used for all meTokens
 contract MeToken is Ownables, ERC20Burnable {
 
     modifier onlyOwner() {
