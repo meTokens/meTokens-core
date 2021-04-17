@@ -23,32 +23,29 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
+    /// @notice Given a hubId, base_x, base_y and connector weight, add the configuration to the
+    //      BancorZero ValueSet registry
+    /// @param _hubId           Hub which will use the value set
+    /// @param _base_x          constant X
+    /// @param _base_y          constant Y
+    /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
 	function registerValueSet(
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _base_x,
         uint256 _base_y,
-        uint256 _reserveWeight
+        uint256 _reserveWeight 
     ) external virtual override {
-        
+        // TODO: access control
        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
-       require(_reserveWeight <= MAX_WEIGHT, "_reserveWeight cannot exceed MAX_WEIGHT");
+       require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
        ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
-       valueSets[_hub] = valueSet;
+       valueSets[_hubId] = valueSet;
     }
 
-    function deactivateValueSet(uint256 _hub) public returns(uint256) {}
-    
-    // TODO: is this needed
-    // function reactivateValueSet() {}
-
-
-    /**
-     * if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
-     * if updating == true and targetReached == true, then set updating == false
-     * needs to reference hub.vault.balancePooled
-     * needs to return both burnForOwner and burnForEveryoneElse values
-    **/
+    // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
+    // TODO: if updating == true and targetReached == true, then set updating == false
     // TODO: fix calculateMintReturn arguments
+    /// @notice given a deposit amount (in the collateral token)
     function calculateMintReturn(
         uint256 _depositAmount,
         uint256 _hub,
@@ -59,9 +56,9 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         ValueSet memory v = valueSets[_hub];
         if (_supply > 0) {
             // TODO: can _supply > 0 and _balancePooled = 0? If so would break
-            amount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, v.reserveWeight);
+            amount = _calculateMintReturn(_depositAmount, v.reserveWeight, _supply, _balancePooled);
         } else {
-            amount = _calculateMintReturnFromZero(v.base_x, v.base_y, _depositAmount, v.reserveWeight);
+            amount = _calculateMintReturnFromZero(_depositAmount, v.reserveWeight, v.base_x, v.base_y);
         }
 
         // TODO: Since updating was moved to hub, need to bring this o
@@ -69,9 +66,9 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[v.targetValueSetId];
             if (_supply > 0) {
-                uint256 targetAmount = _calculateMintReturn(_supply, _balancePooled, _depositAmount, t.reserveWeight);
+                uint256 targetAmount = _calculateMintReturn(_depositAmount, t.reserveWeight, _supply, _balancePooled);
             } else {
-                uint256 targetAmount = _calculateMintReturnFromZero(t.base_x, t.base_y, _depositAmount, t.reserveWeight);
+                uint256 targetAmount = _calculateMintReturnFromZero(_depositAmount, t.reserveWeight, t.base_x, t.base_y);
             }
             amount = _calculateWeightedAmount(amount, targetAmount, t);
         }
