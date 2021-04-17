@@ -83,12 +83,12 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     ) external view override returns (uint256 amount) {
 
         ValueSet memory v = valueSets[_hub];
-        amount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, v.reserveWeight);
+        amount = _calculateBurnReturn(_sellAmount,v.reserveWeight, _supply, _balancePooled);
         
         if (v.updating) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[v.targetValueSetId];
-            uint256 targetAmount = _calculateBurnReturn(_supply, _balancePooled, _sellAmount, t.reserveWeight);
+            uint256 targetAmount = _calculateBurnReturn(_sellAmount, t.reserveWeight, _supply, _balancePooled);
             amount = _calculateWeightedAmount(amount, targetAmount, t);
         }
     }
