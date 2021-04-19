@@ -31,6 +31,10 @@ contract MeToken is Ownables, ERC20Burnable {
 
     constructor() public {}
 
+    /// @notice create a meToken
+    /// @param _creator address that created the meToken
+    /// @param _name name of meToken
+    /// @param _symbol symbol of meToken
     function initialize(
         address _creator,
         string _name,

@@ -45,7 +45,12 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
     // TODO: if updating == true and targetReached == true, then set updating == false
     // TODO: fix calculateMintReturn arguments
-    /// @notice given a deposit amount (in the collateral token)
+    /// @notice given a deposit amount (in the collateral token), return the amount of meTokens minted
+    /// @param _depositAmount   amount of collateral tokens to deposit
+    /// @param _hub             unique hub identifier
+    /// @param _supply          current meToken supply
+    /// @param _balancePooled   total connector balance
+    /// @return amount 
     function calculateMintReturn(
         uint256 _depositAmount,
         uint256 _hub,

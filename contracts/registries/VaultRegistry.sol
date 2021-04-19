@@ -21,6 +21,10 @@ contract VaultRegistry {
     }
 
     // TODO: argument check
+    /// @notice add a vault to the vault registry
+    /// @param _name name of new vault
+    /// @param _vault address of new vault
+    /// @param _factory address of vault factory used to create the vault
     function registerVault(string calldata _name, address _vault, address _factory) external {
         // TODO: access control
         // Add vault details to storage

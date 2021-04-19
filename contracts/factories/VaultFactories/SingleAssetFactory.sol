@@ -16,8 +16,15 @@ contract SingleAssetFactory {
         vaultRegistry = _vaultRegistry;
     }
     
-	function createVault(
-        string calldata name,
+	/// @notice function to create and register a new vault to the vault registry
+    /// @param _name name of vault
+    /// @param _owner owner of vault
+    /// @param _hub hub identifier
+    /// @param _valueSetAddress address of {Curve}ValueSet.sol
+    /// @param _collateralAsset address of vault collateral asset
+    /// @param _encodedVaultAdditionalArgs Additional arguments passed to create a vault
+    function createVault(
+        string calldata _name,
         address _owner,
         uint256 _hub,
         address _valueSetAddress,
@@ -27,7 +34,7 @@ contract SingleAssetFactory {
 
         // create our vault
         // TODO: create2 shit
-        Vault memory vault = new Vault_SingleAsset();
+        Vault vault = new Vault_SingleAsset();
         vault.initialize(
             vaultRegistry.vaultCount(),
             _owner,
@@ -37,7 +44,7 @@ contract SingleAssetFactory {
         );
 
         // Add vault to vaultRegistry
-        vaultRegistry.registerVault(name, vault, address(this));
+        vaultRegistry.registerVault(_name, vault, address(this));
         
         return address(vault);
     }
