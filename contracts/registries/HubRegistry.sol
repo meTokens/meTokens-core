@@ -55,6 +55,16 @@ contract HubRegistry {
         fees = I_Fees(_fees);
     }
 
+
+    /// @notice TODO
+    /// @param _name TODO
+    /// @param _owner TODO
+    /// @param _vaultName TODO
+    /// @param _vaultOwner TODO
+    /// @param _vaultFactory TODO
+    /// @param _curve TODO
+    /// @param _encodedValueSetArgs TODO
+    /// @param _encodedVaultAdditionalArgs TODO
     function registerHub(
         string calldata _name,
         address _owner,
@@ -94,6 +104,10 @@ contract HubRegistry {
         hubCount++;
     }
 
+
+    /// @notice TODO
+    /// @param _meToken TODO
+    /// @param _collateralDeposited TODO
     function mint(address _meToken, uint256 _collateralDeposited) external {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
@@ -131,6 +145,9 @@ contract HubRegistry {
     }
 
 
+    /// @notice TODO
+    /// @param _meToken TODO
+    /// @param _meTokensBurned TODO
     function burn(address _meToken, uint256 _meTokensBurned) external {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
@@ -175,6 +192,9 @@ contract HubRegistry {
         I_ERC20(I_Vault(hubDetails.vault).getCollateralAsset()).transfer(msg.sender, collateralReturned);
     }
 
+
+    /// @notice TODO
+    /// @param _hub TODO
     function deactivateHub(uint256 _hub) external {
         // TODO: access control
         require(_hub <= hubCount, "_hub exceeds hubCount");
@@ -186,6 +206,8 @@ contract HubRegistry {
     }
 
     /// @notice subscribe a newly instantiated meToken to a current hub
+    /// @param _meToken TODO
+    /// @param _hub TODO
     function suscribeMeToken(address _meToken, uint256 _hub) external {
         // TODO: access control - 
         HubDetails storage hubDetails = hubs[_hub];
@@ -196,22 +218,34 @@ contract HubRegistry {
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
+    /// @notice TODO
+    /// @return TODO
     function getHubCount() public view returns (uint256) {
         return hubCount;
     }
 
+    /// @notice TODO
+    /// @param _hub TODO
+    /// @return Status TODO
     function getHubStatus(uint256 _hub) public view returns (Status) {
         require(_hub < hubCount, "_hub exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hub];
         return hubDetails.status;
     }
 
+    /// @notice TODO
+    /// @param _hub TODO
+    /// @return HubDetails TODO
     function getHubDetails(uint256 _hub) external view returns (HubDetails calldata) {
         require(_hub < hubCount, "_hub exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hub];
         return hubDetails;
     }
 
+
+    /// @notice TODO
+    /// @param _hub TODO
+    /// @return TODO
     function getHubVault(uint256 _hub) external view returns (address) {
         // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
         require(_hub < hubCount, "_hub exceeds hubCount");

@@ -38,6 +38,12 @@ contract MeTokenRegistry{
         hubRegistry = I_HubRegistry(_hubRegistry);
     }
 
+
+    /// @notice TODO
+    /// @param _name TODO
+    /// @param _owner TODO
+    /// @param _symbol TODO
+    /// @param _hub TODO
     function registerMeToken(
         string _name,
         address _owner,
@@ -66,12 +72,18 @@ contract MeTokenRegistry{
         emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hub);
     }
 
+
+    /// @notice TODO
+    /// @return TODO
     function toggleUpdating() returns (bool) {
         require(msg.sender == 0x0, ""); // TODO
         updating = !updating;
         emit ToggleUpdating(updating);
     }
 
+
+    /// @notice TODO
+    /// @return TODO
     function toggleMigrating() returns (bool) {    
         require(msg.sender == 0x0, ""); // TODO
         migrating = !migrating;
@@ -79,19 +91,30 @@ contract MeTokenRegistry{
     }
 
 
+    /// @notice TODO
+    /// @param _owner TODO
+    /// @return TODO
     function isMeTokenOwner(address _owner) external view returns (bool) {
         return meTokenOwners[_owner];
     }
 
+    /// @notice TODO
+    /// @param _meToken TODO
+    /// @return TODO
     function getMeTokenHub(address _meToken) external view returns (uint256) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails.hub;
     }
 
+    /// @notice TODO
+    /// @param _meToken TODO
+    /// @return TODO
     function getMeTokenDetails(address _meToken) external view returns (MeTokenDetails calldata) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails;
     }
+
+
     // TODO
     // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
 }

@@ -20,7 +20,6 @@ contract VaultRegistry {
         bool active;  // NOTE: can be inactive after vault migration
     }
 
-    // TODO: argument check
     /// @notice add a vault to the vault registry
     /// @param _name name of new vault
     /// @param _vault address of new vault
@@ -35,6 +34,8 @@ contract VaultRegistry {
         emit RegisterVault(_name, _vault, _factory);
     }
 
+    /// @notice TODO
+    /// @param _factory TODO
     function approveVaultFactory(address _factory) external {
         // TODO: access control
         require(!approvedVaultFactories[_factory], "Factory already approved");
@@ -42,13 +43,17 @@ contract VaultRegistry {
         emit ApproveVaultFactory(_factory);
     }
 
+    /// @notice TODO
+    /// @param _vault TODO
     function deactivateVault(address _vault) external {
         // TODO: access control
-        require(isActiveVault(_vault), "Vault not active");
         VaultDetails storage vaultDetails = vaults[_vault];
+        require(vaultDetails.active != false, "Vault not active");
         vaultDetails.active = false;
     }
 
+    /// @notice TODO
+    /// @param _factory TODO
     function unapproveVaultFactory(address _factory) external {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
@@ -60,7 +65,9 @@ contract VaultRegistry {
     // function reactivateVault(uint256 vaultId) public {}
 
     // TODO: Does this view need to be external to work with I_VaultRegistry.sol?
-    function isActiveVault(address _vault) public view returns (bool) {
+    /// @notice TODO
+    /// @param _vault TODO
+    function isActiveVault(address _vault) external view returns (bool) {
         VaultDetails memory vaultDetails = vaults[_vault];
         return vaultDetails.active;
     }

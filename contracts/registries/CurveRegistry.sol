@@ -24,6 +24,10 @@ contract CurveRegistry {
         bool active;
     }
 
+    /// @notice TODO
+    /// @param _name TODO
+    /// @param _formula TODO
+    /// @param _valueSet TODO
     function registerCurve(
         string calldata _name,
         address _formula,
@@ -41,6 +45,9 @@ contract CurveRegistry {
         emit RegisterCurve(_name, _formula, _valueSet);
     }
 
+
+    /// @notice TODO
+    /// @param _curveId TODO
     function deactivateCurve(uint256 _curveId) external {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
@@ -51,6 +58,9 @@ contract CurveRegistry {
         emit DeactivateCurve(_curveId);
     }
 
+
+    /// @notice TODO
+    /// @param _formula TODO
     function approveFormula(address _formula) external {
         // TODO: access control
         require(!approvedFormulas[_formula], "Formula already approved");
@@ -58,6 +68,9 @@ contract CurveRegistry {
         emit ApproveFormula(_formula);
     }
 
+
+    /// @notice TODO
+    /// @param _valueSet TODO
     function approveValueSet(address _valueSet) external {
         // TODO: access control
         require(!approvedValueSets[_valueSet], "ValueSet already approved");
@@ -65,6 +78,9 @@ contract CurveRegistry {
         emit ApproveValueSet(_valueSet);
     }
     
+
+    /// @notice TODO
+    /// @param _formula TODO
     function unapproveFormula(address _formula) external {
         // TODO: access control
         require(approvedFormulas[_formula], "Formula not approved");
@@ -72,6 +88,9 @@ contract CurveRegistry {
         emit UnapproveFormula(_formula);
     }
 
+
+    /// @notice TODO
+    /// @param _valueSet TODO
     function unapproveValueSet(address _valueSet) external {
         // TODO: access control
         require(approvedValueSets[_valueSet], "ValueSet not approved");
@@ -81,25 +100,42 @@ contract CurveRegistry {
 
     // TODO: are reactivate funcs needed for curve/formula/valueset?
     // function reactivateCurve(uint256 _curveId) external {}
-
+    /// @notice TODO
+    /// @param _curveId TODO
+    /// @return TODO
     function isActiveCurve(uint256 _curveId) external view returns (bool) {
         require(_curveId < curveCount, "_curveId does not exist");
         CurveDetails memory curveDetails = curves[_curveId];
         return curveDetails.active;
     }
 
+
+    /// @notice TODO
+    /// @param _formula TODO
+    /// @return TODO
     function isApprovedFormula(address _formula) external view returns (bool) {
         return approvedFormulas[_formula];
     }
 
+
+    /// @notice TODO
+    /// @param _valueSet TODO
+    /// @return TODO
     function isApprovedValueSet(address _valueSet) external view returns (bool) {
         return approvedValueSets[_valueSet];
     }
 
+
+    /// @notice TODO
+    /// @return TODO
     function getCurveCount() external view returns (uint256) {
         return curveCount;
     }
 
+
+    /// @notice TODO
+    /// @param _curveId TODO
+    /// @return TODO
     function getCurveDetails(uint256 _curveId) external view returns (CurveDetails memory) {
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         CurveDetails memory curveDetails = curves[_curveId];
