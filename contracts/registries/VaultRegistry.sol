@@ -1,10 +1,12 @@
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_VaultRegistry.sol";
+
 
 /// @title vault registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all active vaults and available vault factories 
-contract VaultRegistry {
+contract VaultRegistry is I_VaultRegistry {
 
     event RegisterVault(string name, address vault, address factory);
     event DeactivateVault(address vault);
@@ -20,11 +22,11 @@ contract VaultRegistry {
         bool active;  // NOTE: can be inactive after vault migration
     }
 
-    /// @notice add a vault to the vault registry
-    /// @param _name name of new vault
-    /// @param _vault address of new vault
-    /// @param _factory address of vault factory used to create the vault
-    function registerVault(string calldata _name, address _vault, address _factory) external {
+    /// @inheritdoc I_VaultRegistry
+    function registerVault(
+        string calldata _name,
+        address _vault,
+        address _factory) external override {
         // TODO: access control
         // Add vault details to storage
         // TODO: validate memory vs. storage usage
@@ -34,27 +36,25 @@ contract VaultRegistry {
         emit RegisterVault(_name, _vault, _factory);
     }
 
-    /// @notice TODO
-    /// @param _factory TODO
-    function approveVaultFactory(address _factory) external {
+    /// @inheritdoc I_VaultRegistry
+    function approveVaultFactory(address _factory) external override {
         // TODO: access control
         require(!approvedVaultFactories[_factory], "Factory already approved");
         approvedVaultFactories[_factory] = true;
         emit ApproveVaultFactory(_factory);
     }
 
-    /// @notice TODO
-    /// @param _vault TODO
-    function deactivateVault(address _vault) external {
+
+    /// @inheritdoc I_VaultRegistry
+    function deactivateVault(address _vault) external override {
         // TODO: access control
         VaultDetails storage vaultDetails = vaults[_vault];
         require(vaultDetails.active != false, "Vault not active");
         vaultDetails.active = false;
     }
 
-    /// @notice TODO
-    /// @param _factory TODO
-    function unapproveVaultFactory(address _factory) external {
+    /// @inheritdoc I_VaultRegistry
+    function unapproveVaultFactory(address _factory) external override {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
         approvedVaultFactories[_factory] = false;
@@ -64,16 +64,17 @@ contract VaultRegistry {
     // TODO: are reactivate funcs needed?
     // function reactivateVault(uint256 vaultId) public {}
 
-    // TODO: Does this view need to be external to work with I_VaultRegistry.sol?
-    /// @notice TODO
-    /// @param _vault TODO
+
+    /// @inheritdoc I_VaultRegistry
     function isActiveVault(address _vault) external view returns (bool) {
+        // TODO: import VaultDetails struct
         VaultDetails memory vaultDetails = vaults[_vault];
         return vaultDetails.active;
     }
 
+
+    /// @inheritdoc I_VaultRegistry
     function isApprovedVaultFactory(address _factory) external view returns (bool) {
         return approvedVaultFactories[_factory];
     }
-
 }
