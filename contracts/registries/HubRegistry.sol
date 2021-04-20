@@ -1,5 +1,6 @@
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_HubRegistry.sol";
 import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
 import "../interfaces/I_CurveRegistry.sol";
@@ -11,7 +12,7 @@ import "../interfaces/I_Vault.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens 
-contract HubRegistry {
+contract HubRegistry is I_HubRegistry {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
@@ -47,7 +48,13 @@ contract HubRegistry {
         bool migrating;
 	}
 
-    constructor(address _gov, address _vaultRegistry, address _curveRegistry, address _meTokenRegistry, address _fees) public {
+    constructor(
+        address _gov,
+        address _vaultRegistry,
+        address _curveRegistry,
+        address _meTokenRegistry,
+        address _fees
+    ) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
         curveRegistry = I_CurveRegistry(_curveRegistry);
@@ -55,6 +62,8 @@ contract HubRegistry {
         fees = I_Fees(_fees);
     }
 
+
+    /// @inheritdoc I_HubRegistry
     function registerHub(
         string calldata _name,
         address _owner,
@@ -64,7 +73,7 @@ contract HubRegistry {
         address _curve,
         bytes _encodedValueSetArgs,
         bytes _encodedVaultAdditionalArgs
-    ) external {
+    ) external override {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");        
@@ -94,7 +103,9 @@ contract HubRegistry {
         hubCount++;
     }
 
-    function mint(address _meToken, uint256 _collateralDeposited) external {
+
+    /// @inheritdoc I_HubRegistry
+    function mint(address _meToken, uint256 _collateralDeposited) external override {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
         HubDetails memory hubDetails = hubs[hub];        
@@ -115,9 +126,7 @@ contract HubRegistry {
             collateralDepositedAfterFees
         );
         
-
         // update balancePooled (TODO)
-        
 
         // Send fees to recipient
         collateralAsset.transferFrom(msg.sender, fees.feeRecipient(), fee);
@@ -131,6 +140,7 @@ contract HubRegistry {
     }
 
 
+    /// @inheritdoc I_HubRegistry
     function burn(address _meToken, uint256 _meTokensBurned) external {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
@@ -175,7 +185,9 @@ contract HubRegistry {
         I_ERC20(I_Vault(hubDetails.vault).getCollateralAsset()).transfer(msg.sender, collateralReturned);
     }
 
-    function deactivateHub(uint256 _hub) external {
+
+    /// @inheritdoc I_HubRegistry
+    function deactivateHub(uint256 _hub) external override {
         // TODO: access control
         require(_hub <= hubCount, "_hub exceeds hubCount");
         HubDetails storage hubDetails = hubs[_hub];
@@ -185,8 +197,8 @@ contract HubRegistry {
         emit DeactivateHub(_hub);
     }
 
-    /// @notice subscribe a newly instantiated meToken to a current hub
-    function suscribeMeToken(address _meToken, uint256 _hub) external {
+    /// @inheritdoc I_HubRegistry
+    function suscribeMeToken(address _meToken, uint256 _hub) external override {
         // TODO: access control - 
         HubDetails storage hubDetails = hubs[_hub];
 
@@ -196,23 +208,23 @@ contract HubRegistry {
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
-    function getHubCount() public view returns (uint256) {
-        return hubCount;
-    }
-
-    function getHubStatus(uint256 _hub) public view returns (Status) {
+    /// @inheritdoc I_HubRegistry
+    function getHubStatus(uint256 _hub) public view override returns (Status) {
         require(_hub < hubCount, "_hub exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hub];
         return hubDetails.status;
     }
 
-    function getHubDetails(uint256 _hub) external view returns (HubDetails calldata) {
+    /// @inheritdoc I_HubRegistry
+    function getHubDetails(uint256 _hub) external view override returns (HubDetails calldata) {
         require(_hub < hubCount, "_hub exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hub];
         return hubDetails;
     }
 
-    function getHubVault(uint256 _hub) external view returns (address) {
+
+    /// @inheritdoc I_HubRegistry
+    function getHubVault(uint256 _hub) external view override returns (address) {
         // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
         require(_hub < hubCount, "_hub exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hub];

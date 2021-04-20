@@ -1,5 +1,6 @@
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_MeTokenRegistry.sol";
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenFactory.sol";
 import "../interfaces/I_HubRegistry.sol";
@@ -8,7 +9,7 @@ import "../interfaces/I_HubRegistry.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry{
+contract MeTokenRegistry is I_MeTokenRegistry {
 
     event RegisterMeToken(
         address indexed meToken,
@@ -38,6 +39,7 @@ contract MeTokenRegistry{
         hubRegistry = I_HubRegistry(_hubRegistry);
     }
 
+    /// @inheritdoc I_MeTokenRegistry
     function registerMeToken(
         string _name,
         address _owner,
@@ -66,32 +68,43 @@ contract MeTokenRegistry{
         emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hub);
     }
 
-    function toggleUpdating() returns (bool) {
+
+    /// @inheritdoc I_MeTokenRegistry
+    function toggleUpdating() override returns (bool) {
         require(msg.sender == 0x0, ""); // TODO
         updating = !updating;
         emit ToggleUpdating(updating);
     }
 
-    function toggleMigrating() returns (bool) {    
+
+    /// @inheritdoc I_MeTokenRegistry
+    function toggleMigrating() override returns (bool) {    
         require(msg.sender == 0x0, ""); // TODO
         migrating = !migrating;
         emit ToggleMigrating(migrating);
     }
 
 
-    function isMeTokenOwner(address _owner) external view returns (bool) {
+    /// @inheritdoc I_MeTokenRegistry
+    function isMeTokenOwner(address _owner) external view override returns (bool) {
         return meTokenOwners[_owner];
     }
 
-    function getMeTokenHub(address _meToken) external view returns (uint256) {
+
+    /// @inheritdoc I_MeTokenRegistry
+    function getMeTokenHub(address _meToken) external view override returns (uint256) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails.hub;
     }
 
-    function getMeTokenDetails(address _meToken) external view returns (MeTokenDetails calldata) {
+
+    /// @inheritdoc I_MeTokenRegistry
+    function getMeTokenDetails(address _meToken) external view override returns (MeTokenDetails calldata) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails;
     }
+
+
     // TODO
     // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
 }

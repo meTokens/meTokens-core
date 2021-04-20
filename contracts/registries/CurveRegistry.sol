@@ -1,9 +1,11 @@
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_CurveRegistry.sol";
+
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
-contract CurveRegistry {
+contract CurveRegistry is I_CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);
@@ -24,11 +26,12 @@ contract CurveRegistry {
         bool active;
     }
 
+    /// @inheritdoc I_CurveRegistry
     function registerCurve(
         string calldata _name,
         address _formula,
         address _valueSet
-    ) external {
+    ) external override {
         require(approvedFormulas[_formula], "_formula not approved");
         require(approvedValueSets[_valueSet], "_valueSet not approved");
         // TODO: access control
@@ -41,7 +44,9 @@ contract CurveRegistry {
         emit RegisterCurve(_name, _formula, _valueSet);
     }
 
-    function deactivateCurve(uint256 _curveId) external {
+
+    /// @inheritdoc I_CurveRegistry
+    function deactivateCurve(uint256 _curveId) external override {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         // TODO: is this memory or storage?
@@ -51,28 +56,36 @@ contract CurveRegistry {
         emit DeactivateCurve(_curveId);
     }
 
-    function approveFormula(address _formula) external {
+
+    /// @inheritdoc I_CurveRegistry
+    function approveFormula(address _formula) external override {
         // TODO: access control
         require(!approvedFormulas[_formula], "Formula already approved");
         approvedFormulas[_formula] = true;
         emit ApproveFormula(_formula);
     }
 
-    function approveValueSet(address _valueSet) external {
+
+    /// @inheritdoc I_CurveRegistry
+    function approveValueSet(address _valueSet) external override {
         // TODO: access control
         require(!approvedValueSets[_valueSet], "ValueSet already approved");
         approvedValueSets[_valueSet] = true;
         emit ApproveValueSet(_valueSet);
     }
     
-    function unapproveFormula(address _formula) external {
+
+    /// @inheritdoc I_CurveRegistry
+    function unapproveFormula(address _formula) external override {
         // TODO: access control
         require(approvedFormulas[_formula], "Formula not approved");
         approvedFormulas[_formula] = false;
         emit UnapproveFormula(_formula);
     }
 
-    function unapproveValueSet(address _valueSet) external {
+
+    /// @inheritdoc I_CurveRegistry
+    function unapproveValueSet(address _valueSet) external override {
         // TODO: access control
         require(approvedValueSets[_valueSet], "ValueSet not approved");
         approvedValueSets[_valueSet] = false;
@@ -81,26 +94,34 @@ contract CurveRegistry {
 
     // TODO: are reactivate funcs needed for curve/formula/valueset?
     // function reactivateCurve(uint256 _curveId) external {}
-
+    
+    /// @inheritdoc I_CurveRegistry
     function isActiveCurve(uint256 _curveId) external view returns (bool) {
         require(_curveId < curveCount, "_curveId does not exist");
         CurveDetails memory curveDetails = curves[_curveId];
         return curveDetails.active;
     }
 
-    function isApprovedFormula(address _formula) external view returns (bool) {
+
+    /// @inheritdoc I_CurveRegistry
+    function isApprovedFormula(address _formula) external view override returns (bool) {
         return approvedFormulas[_formula];
     }
 
-    function isApprovedValueSet(address _valueSet) external view returns (bool) {
+
+    /// @inheritdoc I_CurveRegistry
+    function isApprovedValueSet(address _valueSet) external view override returns (bool) {
         return approvedValueSets[_valueSet];
     }
 
-    function getCurveCount() external view returns (uint256) {
+    /// @inheritdoc I_CurveRegistry
+    function getCurveCount() external view override returns (uint256) {
         return curveCount;
     }
 
-    function getCurveDetails(uint256 _curveId) external view returns (CurveDetails memory) {
+
+    /// @inheritdoc I_CurveRegistry
+    function getCurveDetails(uint256 _curveId) external view override returns (CurveDetails memory) {
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         CurveDetails memory curveDetails = curves[_curveId];
         return curveDetails;
