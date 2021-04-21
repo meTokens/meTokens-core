@@ -11,8 +11,7 @@ contract SingleAssetFactory {
     I_VaultRegistry public vaultRegistry;
     Vault public vault;
 
-    constructor(address _hub, address _vaultRegistry) public {
-        hub = _hub;
+    constructor(address _vaultRegistry) public {
         vaultRegistry = _vaultRegistry;
     }
     
@@ -23,6 +22,7 @@ contract SingleAssetFactory {
     /// @param _valueSetAddress address of {Curve}ValueSet.sol
     /// @param _collateralAsset address of vault collateral asset
     /// @param _encodedVaultAdditionalArgs Additional arguments passed to create a vault
+    /// @return address of new vault
     function createVault(
         string calldata _name,
         address _owner,
