@@ -16,7 +16,6 @@ contract HubRegistry is I_HubRegistry {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
-    event ReactivateHub(uint256 hub);
     event Mint(address from, address meToken, uint256 amount, uint256 meTokensMinted);
 
     address public gov;
@@ -33,10 +32,10 @@ contract HubRegistry is I_HubRegistry {
     struct HubDetails {    
         string name;
         address owner;
-        address[] subscribedMeTokens;
+        // NOTE: this is commented out to be fetched from the graph
+        // address[] subscribedMeTokens;
         address vault;
         address curve;
-        // uint256 valueSet; NOTE: not needed as valueSet is mapped to hub
         Status status;
     }
 
@@ -90,11 +89,11 @@ contract HubRegistry is I_HubRegistry {
         vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _curve, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        address[] subscribedMeTokens;
+        // address[] subscribedMeTokens;
         Hub storage hub = HubDetails(
             _name,
             _owner,
-            subscribedMeTokens,
+            // subscribedMeTokens,
             vault,
             _curve,
             ACTIVE
@@ -108,7 +107,7 @@ contract HubRegistry is I_HubRegistry {
     function mint(address _meToken, uint256 _collateralDeposited) external override {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
-        HubDetails memory hubDetails = hubs[hub];        
+        HubDetails memory hubDetails = hubs[hub];
         require(hubDetails.status != "INACTIVE", "Hub inactive");
 
         MeTokenDetails memory meTokenDetails = meTokenRegistry.getMeTokenDetails(_meToken);
@@ -200,9 +199,9 @@ contract HubRegistry is I_HubRegistry {
     /// @inheritdoc I_HubRegistry
     function suscribeMeToken(address _meToken, uint256 _hub) external override {
         // TODO: access control - 
+        require(msg.sender == address(meTokenRegistry), "Access denied");
         HubDetails storage hubDetails = hubs[_hub];
-
-        require(hubDetails);
+        hub.subscribedMeTokens.push(_meToken);
     }
 
     // TODO: is this needed?

@@ -18,6 +18,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         string symbol,
         uint256 hub
     );
+    event SubscribeMeToken(address meToken, uint256 hub);
 
     I_MeTokenFactory public meTokenFactory;
     I_HubRegistry public hubRegistry;
@@ -44,28 +45,29 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         string _name,
         address _owner,
         string _symbol,
-        uint256 _hub
+        uint256 _hub,
+        uint256 _collateralDeposited // TODO
     ) external {
         // TODO: access control
-        require(!meTokenOwners[_owner], "_owner already owns a meToken");
-        
-        // Use hub to find vault
+        require(!meTokenOwners[_owner], "_owner already owns a meToken");        
         require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
-        address vault = hubRegistry.getHubVault(_hub);
 
+        // Use hub to find vault
         // Use vault to find collateral assets
+        address vault = hubRegistry.getHubVault(_hub);
         
-
         address meTokenAddr = meTokenFactory.createMeToken(
             _name, _owner, _symbol, _hub
         );
 
         // Add meToken to registry
-        MeTokenDetails storage meTokenDetails = MeTokenDetails(_owner);
+        MeTokenDetails storage meTokenDetails = MeTokenDetails(
+            _owner, _hub, 0, 0, false
+        );
 
-        meTokenOwners[_owner] = true;   
+        meTokens[meTokenAddr] = meTokenDetails;
+        meTokenOwners[_owner] = true;
 
-        emit RegisterMeToken(meTokenAddr, _owner,_name,_symbol, _hub);
     }
 
 
@@ -90,13 +92,17 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         return meTokenOwners[_owner];
     }
 
+    // TODO: natspec
+    function getMeTokenOwner(address _meToken) public view override returns (address) {
+        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
+        return meTokenDetails.owner;
+    }
 
     /// @inheritdoc I_MeTokenRegistry
     function getMeTokenHub(address _meToken) external view override returns (uint256) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         return meTokenDetails.hub;
     }
-
 
     /// @inheritdoc I_MeTokenRegistry
     function getMeTokenDetails(address _meToken) external view override returns (MeTokenDetails calldata) {
