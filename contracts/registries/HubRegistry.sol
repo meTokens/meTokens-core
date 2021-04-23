@@ -16,7 +16,6 @@ contract HubRegistry is I_HubRegistry {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
-    event Mint(address from, address meToken, uint256 amount, uint256 meTokensMinted);
 
     address public gov;
     I_Curve public curve;
@@ -32,8 +31,6 @@ contract HubRegistry is I_HubRegistry {
     struct HubDetails {    
         string name;
         address owner;
-        // NOTE: this is commented out to be fetched from the graph
-        // address[] subscribedMeTokens;
         address vault;
         address curve;
         Status status;
@@ -89,22 +86,20 @@ contract HubRegistry is I_HubRegistry {
         vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _curve, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        // address[] subscribedMeTokens;
-        Hub storage hub = HubDetails(
+        HubDetails memory hubDetails = HubDetails(
             _name,
             _owner,
-            // subscribedMeTokens,
             vault,
             _curve,
             ACTIVE
         );
-        hubs[hubCount] = Hub;
+        hubs[hubCount] = hubDetails;
         hubCount++;
     }
 
 
     /// @inheritdoc I_HubRegistry
-    function mint(address _meToken, uint256 _collateralDeposited) external override {
+    function mint(address _meToken, address _recipient, uint256 _collateralDeposited) external override {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
         HubDetails memory hubDetails = hubs[hub];
@@ -134,8 +129,7 @@ contract HubRegistry is I_HubRegistry {
         collateralAsset.transferFrom(msg.sender, address(this), collateralDepositedAfterFees);
 
         // Mint meToken to user
-        I_MeToken(_meToken).mint(msg.sender, meTokensMinted);
-        emit Mint(msg.sender, _metoken, _collateralDeposited, meTokensMinted);
+        I_MeToken(_meToken).mint(_recipient, meTokensMinted);
     }
 
 

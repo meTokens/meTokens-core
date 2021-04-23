@@ -14,12 +14,6 @@ contract MeToken is Ownables, ERC20Burnable {
         _;
     }
 
-    modifier isUpdating() {
-        require(!updating, "meToken is updating");
-        _;
-    }
-
-    bool public updating;
     bool private initialized;
     
     // For person that creates meToken, may not be the designated owner

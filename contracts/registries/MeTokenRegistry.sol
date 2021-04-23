@@ -43,31 +43,50 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     /// @inheritdoc I_MeTokenRegistry
     function registerMeToken(
         string _name,
-        address _owner,
         string _symbol,
         uint256 _hub,
         uint256 _collateralDeposited // TODO
     ) external {
         // TODO: access control
-        require(!meTokenOwners[_owner], "_owner already owns a meToken");        
+        require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
         require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
-
-        // Use hub to find vault
-        // Use vault to find collateral assets
-        address vault = hubRegistry.getHubVault(_hub);
         
+        // Initial collateral deposit by owner by finding the vault,
+        // and then the collateral asset tied to that vault
+        address vault = hubRegistry.getHubVault(_hub);
+        address collateralAsset = I_Vault(vault).getCollateralAsset();
+        require(
+            I_ERC20(collateralAsset).balanceOf(msg.sender) <= _collateralDeposited,
+            "Collateral deposited cannot exceed balance"
+        );
+
+        // Create meToken erc20 contract
         address meTokenAddr = meTokenFactory.createMeToken(
-            _name, _owner, _symbol, _hub
+            _name, msg.sender, _symbol
         );
 
         // Add meToken to registry
-        MeTokenDetails storage meTokenDetails = MeTokenDetails(
-            _owner, _hub, 0, 0, false
+        MeTokenDetails memory meTokenDetails = MeTokenDetails(
+            msg.sender, _hub, _collateralDeposited, 0, false
+        );
+        meTokens[meTokenAddr] = meTokenDetails;
+
+        // Register the address which created a meToken
+        meTokenOwners[msg.sender] = true;
+
+        // Get curve information from hub
+        I_CurveValueSet curveValueSet = I_CurveValueSet(hubRegistry.getHubCurve);
+
+        uint256 meTokensMinted = curveValueSet.calculateMintReturn(
+            _collateralDeposited,
+            _hub,
+            I_ERC20(meTokenAddr).totalSupply(),
+            0
         );
 
-        meTokens[meTokenAddr] = meTokenDetails;
-        meTokenOwners[_owner] = true;
-
+        // Transfer collateral to vault and return the minted meToken
+        I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
+        I_MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
     }
 
 

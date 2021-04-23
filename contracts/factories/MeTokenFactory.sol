@@ -16,16 +16,14 @@ contract MeTokenFactory {
         meTokenRegistry = _meTokenRegistry;
     }
 
-    /// @notice create and register a meToken
+    /// @notice create a meToken
     /// @param _name name of meToken
     /// @param _owner owner of meToken
     /// @param _symbol symbol of meToken
-    /// @param _hub Hub identifier
     function createMeToken(
         string calldata _name,
         address _owner,
-        string calldata _symbol,
-		uint256 calldata _hub
+        string calldata _symbol
     ) external returns (address) {
         require(msg.sender == meTokenRegistry, "!meTokenRegistry");
 

@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-contract MeTokenRegistryMock is I_MeTokenRegistry {
+contract MeTokenRegistryMock {
     
     mapping(address => bool) public owners;
 

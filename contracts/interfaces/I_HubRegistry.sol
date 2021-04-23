@@ -36,11 +36,6 @@ interface I_HubRegistry {
     /// @param _hub TODO
     function deactivateHub(uint256 _hub) external;
 
-    /// @notice subscribe a newly instantiated meToken to a current hub
-    /// @param _meToken TODO
-    /// @param _hub TODO
-    function suscribeMeToken(address _meToken, uint256 _hub) external;
-
     /// @notice TODO
     /// @param _hub TODO
     /// @return Status TODO
