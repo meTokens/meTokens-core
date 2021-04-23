@@ -18,13 +18,13 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         string symbol,
         uint256 hub
     );
-    event SubscribeMeToken(address meToken, uint256 hub);
+    event TransferMeTokenOwnership(address from, address to, address meToken);
 
     I_MeTokenFactory public meTokenFactory;
     I_HubRegistry public hubRegistry;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
-    mapping (address => bool) private meTokenOwners;
+    mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
     struct MeTokenDetails {
@@ -48,7 +48,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 _collateralDeposited // TODO
     ) external {
         // TODO: access control
-        require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
+        require(meTokenOwners[msg.sender] == address(0), "msg.sender already owns a meToken");        
         require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
         
         // Initial collateral deposit by owner by finding the vault,
@@ -72,21 +72,36 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         meTokens[meTokenAddr] = meTokenDetails;
 
         // Register the address which created a meToken
-        meTokenOwners[msg.sender] = true;
+        meTokenOwners[msg.sender] = meTokenAddr;
 
         // Get curve information from hub
         I_CurveValueSet curveValueSet = I_CurveValueSet(hubRegistry.getHubCurve);
 
         uint256 meTokensMinted = curveValueSet.calculateMintReturn(
-            _collateralDeposited,
-            _hub,
-            I_ERC20(meTokenAddr).totalSupply(),
-            0
+            _collateralDeposited,   // _deposit_amount
+            _hub,                   // _hub
+            0,                      // _supply
+            0                       // _balancePooled
         );
 
         // Transfer collateral to vault and return the minted meToken
         I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
         I_MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+    }
+
+
+    // TODO: documentation
+    function transferMeTokenOwnership(address _meToken, address _newOwner) external {
+        require(meTokenOwners[_newOwner] == address(0), "_newOwner already owns a meToken");
+        require(_meToken == meTokenOwners[msg.sender], "!owner");
+
+        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+
+        meTokenOwners[msg.sender] = address(0);
+        meTokenOwners[_newOwner] = _meToken;
+        meTokenDetails.owner = _newOwner;
+
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
     }
 
 
@@ -108,7 +123,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
     /// @inheritdoc I_MeTokenRegistry
     function isMeTokenOwner(address _owner) external view override returns (bool) {
-        return meTokenOwners[_owner];
+        return meTokenOwners[_owner] != address(0);
     }
 
     // TODO: natspec
