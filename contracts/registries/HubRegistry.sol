@@ -149,6 +149,7 @@ contract HubRegistry is I_HubRegistry {
 
         // If msg.sender == owner, give owner the sell rate.
         // If msg.sender != owner, give msg.sender the burn rate
+        if (meTokenRegistry.getMeTokenOwner(_meToken) == msg.sender)
         if (msg.sender == meTokenDetails.owner) {
             fee = _meTokensBurned * fees.burnOwnerFee() / PRECISION;
             meTokensBurnedAfterFees = _meTokensBurned - fee + earnedFromLocked;  //TODO: earnedFromLocked

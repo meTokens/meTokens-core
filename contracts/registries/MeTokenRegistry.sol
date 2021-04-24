@@ -24,7 +24,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     I_HubRegistry public hubRegistry;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
-    mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
+    mapping (address => bool) private meTokenOwners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
     struct MeTokenDetails {
@@ -48,7 +48,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 _collateralDeposited // TODO
     ) external {
         // TODO: access control
-        require(meTokenOwners[msg.sender] == address(0), "msg.sender already owns a meToken");        
+        require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
         require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
         
         // Initial collateral deposit by owner by finding the vault,
@@ -72,7 +72,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         meTokens[meTokenAddr] = meTokenDetails;
 
         // Register the address which created a meToken
-        meTokenOwners[msg.sender] = meTokenAddr;
+        meTokenOwners[msg.sender] = true;
 
         // Get curve information from hub
         I_CurveValueSet curveValueSet = I_CurveValueSet(hubRegistry.getHubCurve);
@@ -92,13 +92,12 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
     // TODO: documentation
     function transferMeTokenOwnership(address _meToken, address _newOwner) external {
-        require(meTokenOwners[_newOwner] == address(0), "_newOwner already owns a meToken");
-        require(_meToken == meTokenOwners[msg.sender], "!owner");
-
+        require(!meTokenOwners[_newOwner], "_newOwner already owns a meToken");
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        require(msg.sender == meTokenDetails.owner, "!owner");
 
-        meTokenOwners[msg.sender] = address(0);
-        meTokenOwners[_newOwner] = _meToken;
+        meTokenOwners[msg.sender] = false;
+        meTokenOwners[_newOwner] = true;
         meTokenDetails.owner = _newOwner;
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
@@ -123,7 +122,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
     /// @inheritdoc I_MeTokenRegistry
     function isMeTokenOwner(address _owner) external view override returns (bool) {
-        return meTokenOwners[_owner] != address(0);
+        return meTokenOwners[_owner];
     }
 
     // TODO: natspec
