@@ -87,6 +87,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         // Transfer collateral to vault and return the minted meToken
         I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
         I_MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+
+        emit RegisterMeToken(_meToken, msg.sender, _name, _symbol, _hub);
     }
 
 
