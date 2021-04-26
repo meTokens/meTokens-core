@@ -8,8 +8,9 @@ import "../../interfaces/I_VaultRegistry.sol";
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory {
 
+    event CreateVault(address vault);
+
     I_VaultRegistry public vaultRegistry;
-    Vault public vault;
 
     constructor(address _vaultRegistry) public {
         vaultRegistry = _vaultRegistry;
@@ -18,7 +19,6 @@ contract SingleAssetFactory {
 	/// @notice function to create and register a new vault to the vault registry
     /// @param _name name of vault
     /// @param _owner owner of vault
-    /// @param _hub hub identifier
     /// @param _valueSetAddress address of {Curve}ValueSet.sol
     /// @param _collateralAsset address of vault collateral asset
     /// @param _encodedVaultAdditionalArgs Additional arguments passed to create a vault
@@ -26,26 +26,26 @@ contract SingleAssetFactory {
     function createVault(
         string calldata _name,
         address _owner,
-        uint256 _hub,
         address _valueSetAddress,
         address _collateralAsset,
         bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio, base_x, & base_y
     ) public returns (address) {
-
+        uint256 vaultId = vaultRegistry.vaultCount();
         // create our vault
         // TODO: create2 shit
-        Vault vault = new Vault_SingleAsset();
-        vault.initialize(
-            vaultRegistry.vaultCount(),
+        address vaultAddress = Create2.deploy(vaultId, type(SingleAsset).creationCode);
+
+        SingleAsset(vaultAddress).initialize(
+            vaultId,
             _owner,
-            _hub,
             _valueSetAddress,
             _encodedVaultAdditionalArgs
         );
 
         // Add vault to vaultRegistry
         vaultRegistry.registerVault(_name, vault, address(this));
-        
-        return address(vault);
+
+        emit CreateVault(vaultAddress);
+        return vaultAddress;
     }
 }
