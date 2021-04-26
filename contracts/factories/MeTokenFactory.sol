@@ -1,5 +1,7 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Create2.sol";
+
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenRegistry.sol";
 
@@ -8,10 +10,15 @@ import "../interfaces/I_MeTokenRegistry.sol";
 /// @notice This contract creates and deploys a users' meToken
 contract MeTokenFactory {
 
-    I_MeTokenRegistry public meTokenRegistry;
-    
-    MeToken public meToken;
+    modifier onlyRegistry() {
+        require(msg.sender == meTokenRegistry, "!meTokenRegistry");
+        _;
+    }
 
+    event CreateMeToken(address meToken);
+
+    address public meTokenRegistry;
+    
     constructor (address _meTokenRegistry) {
         meTokenRegistry = _meTokenRegistry;
     }
@@ -21,16 +28,18 @@ contract MeTokenFactory {
     /// @param _owner owner of meToken
     /// @param _symbol symbol of meToken
     function createMeToken(
-        string calldata _name,
         address _owner,
+        string calldata _name,
         string calldata _symbol
-    ) external returns (address) {
-        require(msg.sender == meTokenRegistry, "!meTokenRegistry");
+    ) onlyRegistry external returns (address) {
 
-        // TODO: create2 shit
-        meToken m = new MeToken(_name, _owner,  _symbol);   
+        address meTokenAddress = Create2.deploy(_owner, type(MeToken).creationCode);
 
-        return address(m);
+        // Create our meToken
+        MeToken(meTokenAddress).initialize(_name, _symbol);
+
+        emit CreateMeToken(meTokenAddress);
+        return meTokenAddress;
     }
 
 }

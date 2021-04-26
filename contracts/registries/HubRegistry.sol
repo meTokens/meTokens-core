@@ -173,9 +173,8 @@ contract HubRegistry is I_HubRegistry {
         // TODO: Update balance pooled
                 
 
-        I_MeToken(_meToken).transfer(fees.feeRecipient(), fee);
+        I_ERC20(_meToken).transfer(fees.feeRecipient(), fee);
         I_MeToken(_meToken).burn(msg.sender, meTokensBurnedAfterFees);
-        // TODO: transfer collateral tokens
         I_ERC20(I_Vault(hubDetails.vault).getCollateralAsset()).transfer(msg.sender, collateralReturned);
     }
 

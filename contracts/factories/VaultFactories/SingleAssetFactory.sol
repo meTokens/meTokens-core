@@ -1,5 +1,7 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/Create2.sol";
+
 import "../../vaults/SingleAsset.sol";
 import "../../interfaces/I_VaultRegistry.sol";
 
@@ -8,11 +10,18 @@ import "../../interfaces/I_VaultRegistry.sol";
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory {
 
+    modifier onlyHub() {
+        require(msg.sender == hubAddress, "!hub");
+        _;
+    }
+
     event CreateVault(address vault);
 
+    address public hubAddress;
     I_VaultRegistry public vaultRegistry;
 
-    constructor(address _vaultRegistry) public {
+    constructor(address _hubAddress, address _vaultRegistry) public {
+        hubAddress = _hubAddress;
         vaultRegistry = _vaultRegistry;
     }
     
@@ -29,12 +38,11 @@ contract SingleAssetFactory {
         address _valueSetAddress,
         address _collateralAsset,
         bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio, base_x, & base_y
-    ) public returns (address) {
+    ) onlyHub external returns (address) {
         uint256 vaultId = vaultRegistry.vaultCount();
-        // create our vault
-        // TODO: create2 shit
         address vaultAddress = Create2.deploy(vaultId, type(SingleAsset).creationCode);
 
+        // create our vault
         SingleAsset(vaultAddress).initialize(
             vaultId,
             _owner,
