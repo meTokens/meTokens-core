@@ -19,8 +19,8 @@ contract HubRegistry is I_HubRegistry {
 
     address public gov;
     I_Curve public curve;
-    I_VaultFactory public vaultFactory;
     I_VaultRegistry public vaultRegistry;
+    I_CurveRegistry public curveRegistry;
     I_MeTokenRegistry public meTokenRegistry;
     I_Fees public fees;
 
@@ -33,6 +33,7 @@ contract HubRegistry is I_HubRegistry {
         address owner;
         address vault;
         address curve;
+        uint256 valueSet;
         Status status;
     }
 
@@ -67,6 +68,7 @@ contract HubRegistry is I_HubRegistry {
         address _vaultOwner,
         address _vaultFactory,
         address _curve,
+        uint256 _curveValueSet,
         bytes _encodedValueSetArgs,
         bytes _encodedVaultAdditionalArgs
     ) external override {
