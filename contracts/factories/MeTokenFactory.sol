@@ -33,6 +33,7 @@ contract MeTokenFactory {
         string calldata _symbol
     ) onlyRegistry external returns (address) {
 
+        // TODO: is _owner the right data type?
         address meTokenAddress = Create2.deploy(_owner, type(MeToken).creationCode);
 
         // Create our meToken

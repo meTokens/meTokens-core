@@ -23,7 +23,8 @@ contract SingleAsset is Vault, Initializable {
 
     event SetCurve(address curveValueSet);
 
-    bytes4 private encodedInitializeFunc = bytes(keccak256("_initialize(uint256,address)"));
+    // TODO: arguments
+    bytes4 private encodedInitialize = bytes(keccak256("_initialize(uint256,address)"));
 
     // TODO: does hub need to be included in vault details?
     uint256 public id;
@@ -45,7 +46,7 @@ contract SingleAsset is Vault, Initializable {
         owner = _owner;
         curve = I_CurveValueSet(_curveValueSet); // TODO: check valueSet approved?
 
-        require(this.call(encodedInitializeFunc, encodedArgs), "Encoding failed");
+        require(this.call(encodedInitialize, encodedArgs), "Encoding failed");
     }
 
     function _initialize(uint256 _refundRatio, address _collateralAsset) private {

@@ -92,7 +92,6 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    // TODO: documentation
     function transferMeTokenOwnership(address _meToken, address _newOwner) external {
         require(!meTokenOwners[_newOwner], "_newOwner already owns a meToken");
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];

@@ -31,16 +31,33 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
 	function registerValueSet(
         uint256 _hubId,
+        bytes32 _encodedValueSet,
         uint256 _base_x,
         uint256 _base_y,
         uint256 _reserveWeight 
     ) external virtual override {
         // TODO: access control
-       require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
-       require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
+
+        require(this.call(encodedFunction, _encodedValueSet), "Encoding failed");
+
        ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
        valueSets[_hubId] = valueSet;
+
+       valueSet = _registerValueSet(_base_x, _base_y, _reserveWeight);
     }
+
+
+    bytes4 private encodedFunction = bytes(keccak256("_registerValueSet(uint256,uint256,uin256)"));
+    // TODO: documentation
+    function _registerValueSet(
+        uint256 _base_x,
+        uint256 _base_y,
+        uint256 _reserveweight
+    ) private {
+        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
+        require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
+    }
+
 
     // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
     // TODO: if updating == true and targetReached == true, then set updating == false

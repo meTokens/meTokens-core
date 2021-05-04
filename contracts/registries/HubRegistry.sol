@@ -192,14 +192,6 @@ contract HubRegistry is I_HubRegistry {
         emit DeactivateHub(_hub);
     }
 
-    /// @inheritdoc I_HubRegistry
-    function suscribeMeToken(address _meToken, uint256 _hub) external override {
-        // TODO: access control - 
-        require(msg.sender == address(meTokenRegistry), "Access denied");
-        HubDetails storage hubDetails = hubs[_hub];
-        hub.subscribedMeTokens.push(_meToken);
-    }
-
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 

@@ -14,13 +14,6 @@ interface I_MeTokenRegistry {
         uint256 _hub
     ) external;
 
-
-    /// @notice subscribe a newly instantiated meToken to a current hub
-    /// @param _meToken TODO
-    /// @param _hub TODO
-    function suscribeMeToken(address _meToken, uint256 _hub) external;
-
-
     /// @notice TODO
     /// @return TODO
     function toggleUpdating() external returns (bool);
