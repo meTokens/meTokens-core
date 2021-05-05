@@ -14,6 +14,8 @@ contract VaultRegistry is I_VaultRegistry {
     event UnapproveVaultFactory(address factory);
 
     mapping (address => VaultDetails) private vaults;
+    // NOTE: approved vault factories could be for
+    // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
 	mapping (address => bool) private approvedVaultFactories;
 
     struct VaultDetails {

@@ -45,13 +45,13 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         string _name,
         string _symbol,
         uint256 _hub,
-        uint256 _collateralDeposited // TODO
+        uint256 _collateralDeposited
     ) external {
         // TODO: access control
         require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
         require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
         
-        // Initial collateral deposit by owner by finding the vault,
+        // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
         address vault = hubRegistry.getHubVault(_hub);
         address collateralAsset = I_Vault(vault).getCollateralAsset();

@@ -54,11 +54,4 @@ contract SingleAsset is Vault, Initializable {
         collateralAsset = I_ERC20(_collateralAsset);
     }
 
-    // TODO: onlyGov modifier
-    // TODO: will this ever be needed?
-    function setCurve(address _newCurveValueSet) public onlyGov {
-        require(_newCurveValueSet != address(curve), "Same address");
-        curve = I_CurveValueSet(_newCurveValueSet);
-        emit SetCurve(_newCurveValueSet);
-    }
 }

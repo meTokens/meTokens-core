@@ -10,6 +10,8 @@ import "./BancorZeroFormula.sol";
 /// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
+    bytes4 private encodedFunction = bytes(keccak256("_registerValueSet(uint256,uint256,uin256)"));
+
     // NOTE: each valueSet is for a curve
     struct ValueSet {
 		uint256 base_x;
@@ -25,37 +27,30 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     /// @notice Given a hubId, base_x, base_y and connector weight, add the configuration to the
     //      BancorZero ValueSet registry
-    /// @param _hubId           Hub which will use the value set
-    /// @param _base_x          constant X
-    /// @param _base_y          constant Y
-    /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
+    /// @param _encodedValueSet   connector weight, represented in ppm, 1 - 1,000,000
 	function registerValueSet(
         uint256 _hubId,
-        bytes32 _encodedValueSet,
-        uint256 _base_x,
-        uint256 _base_y,
-        uint256 _reserveWeight 
+        bytes32 _encodedValueSet
     ) external virtual override {
         // TODO: access control
 
         require(this.call(encodedFunction, _encodedValueSet), "Encoding failed");
 
-       ValueSet storage valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
+       ValueSet storage valueSet = _registerValueSet(_encodedValueSet);
        valueSets[_hubId] = valueSet;
-
-       valueSet = _registerValueSet(_base_x, _base_y, _reserveWeight);
     }
 
 
-    bytes4 private encodedFunction = bytes(keccak256("_registerValueSet(uint256,uint256,uin256)"));
-    // TODO: documentation
+    // TODO: double-check returning structs from functions
     function _registerValueSet(
         uint256 _base_x,
         uint256 _base_y,
         uint256 _reserveweight
-    ) private {
+    ) private returns (ValueSet) {
         require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
         require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
+        ValueSet memory valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
+        return valueSet;
     }
 
 
