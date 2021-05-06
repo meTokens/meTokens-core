@@ -37,7 +37,7 @@ contract SingleAssetFactory {
         address _owner,
         address _valueSetAddress,
         address _collateralAsset,
-        bytes4 _encodedVaultAdditionalArgs // NOTE: this is _refundRatio, base_x, & base_y
+        bytes4 _encodedVaultAdditionalArgs // NOTE: this is refundRatio, base_x, & base_y
     ) onlyHub external returns (address) {
         uint256 vaultId = vaultRegistry.vaultCount();
         address vaultAddress = Create2.deploy(vaultId, type(SingleAsset).creationCode);
@@ -51,7 +51,7 @@ contract SingleAssetFactory {
         );
 
         // Add vault to vaultRegistry
-        vaultRegistry.registerVault(_name, vault, address(this));
+        vaultRegistry.registerVault(_name, vaultAddress, address(this));
 
         emit CreateVault(vaultAddress);
         return vaultAddress;

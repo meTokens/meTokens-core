@@ -68,7 +68,7 @@ contract HubRegistry is I_HubRegistry {
         address _vaultOwner,
         address _vaultFactory,
         address _curve,
-        uint256 _curveValueSet,
+        address _collateralAsset,
         bytes _encodedValueSetArgs,
         bytes _encodedVaultAdditionalArgs
     ) external override {
@@ -85,7 +85,7 @@ contract HubRegistry is I_HubRegistry {
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, hubCount, _curve, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _curve, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails memory hubDetails = HubDetails(
@@ -190,6 +190,18 @@ contract HubRegistry is I_HubRegistry {
         require(hubDetails.active, "Hub not active");
         hubDetails.active = false;
         emit DeactivateHub(_hub);
+    }
+
+
+    function setCurve(uint256 _hub, address _curve, bytes _encodedValueSetArgs) {
+        // TODO: access control
+        require(_hub < hubCount, "_hub exceeds hubCount");
+        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
+
+        HubDetails storage hubDetails = hubs[_hub];
+        require(_curve != hubDetails.curve, "Cannot set curve to the same curve");
+
+        I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
     }
 
     // TODO: is this needed?

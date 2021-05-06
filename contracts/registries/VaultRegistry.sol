@@ -28,10 +28,10 @@ contract VaultRegistry is I_VaultRegistry {
     function registerVault(
         string calldata _name,
         address _vault,
-        address _factory) external override {
-        // TODO: access control
+        address _factory
+    ) external override {
+        require(approvedVaultFactories[msg.sender], "Only vault factories can register vaults");
         // Add vault details to storage
-        // TODO: validate memory vs. storage usage
         VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);
         vaults[_vault] = vaultDetails;
 
