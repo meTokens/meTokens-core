@@ -3,16 +3,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./Vault.sol";
-import "../Fees.sol";
-import "../MeToken.sol";
-import "../registries/MeTokenRegistry.sol";
-import "../registries/HubRegistry.sol";
-import "../registries/CurveRegistry.sol";
-
-import "../interfaces/I_CurveValueSet.sol";
-import "../interfaces/I_ERC20.sol"; // TODO
-import "../interfaces/I_MeToken.sol";
-
+import "../interfaces/I_VaultRegistry.sol";
+import "../interfaces/I_ERC20.sol";
 
 /// @title ERC-20 (non-LP) token vault
 /// @author Carl Farterson (@carlfarterson)
@@ -20,22 +12,17 @@ import "../interfaces/I_MeToken.sol";
 /// @dev Only callable by the vault factory
 contract SingleAsset is Vault, Initializable {
 
-    event SetCurve(address curveValueSet);
-
     // TODO: does hub need to be included in vault details?
 
-    address public owner;
-    // TODO: move refundRatio to hub level
-    // uint256 public refundRatio;
-    // note: add this require statement for refundRatio 
-    // require(_refundRatio < PRECISION, "_refundRatio >= PRECISION");
+    I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO: address
 
     constructor() {}
 
     function initialize(
         address _owner,
         address _collateralAsset
-    ) initializer onlyVaultFactory public {  // TODO: onlyVaultFactory
+    ) initializer public {
+        require(vaultRegistry.isApprovedVaultFactory(msg.sender), "msg.sender not approved vault factory");
         owner = _owner;
         collateralAsset = I_ERC20(_collateralAsset);
     }

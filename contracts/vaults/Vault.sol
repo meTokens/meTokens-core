@@ -7,8 +7,8 @@ pragma solidity ^0.8.0;
 contract Vault {
 
     uint256 private PRECISION = 10**18;
+    address public owner;
 	address private collateralAsset;
-    bool private initialized;
 
     function getCollateralAsset() external view returns (address) {
         return collateralAsset;

@@ -17,6 +17,7 @@ contract HubRegistry is I_HubRegistry {
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
 
+    uint256 private immutable PRECISION = 10**18;
     address public gov;
     I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
@@ -34,6 +35,7 @@ contract HubRegistry is I_HubRegistry {
         address vault;
         address curve;
         uint256 valueSet;
+        uint256 refundRatio;
         Status status;
     }
 
@@ -69,12 +71,14 @@ contract HubRegistry is I_HubRegistry {
         address _vaultFactory,
         address _curve,
         address _collateralAsset,
+        uint256 _refundRatio,
         bytes _encodedValueSetArgs,
         bytes _encodedVaultAdditionalArgs
     ) external override {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
-        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");        
+        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
+        require(_refundRatio <= PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
@@ -93,6 +97,7 @@ contract HubRegistry is I_HubRegistry {
             _owner,
             vault,
             _curve,
+            _refundRatio,
             ACTIVE
         );
         hubs[hubCount] = hubDetails;
@@ -125,10 +130,10 @@ contract HubRegistry is I_HubRegistry {
         // update balancePooled (TODO)
 
         // Send fees to recipient
-        collateralAsset.transferFrom(msg.sender, fees.feeRecipient(), fee);
+        I_ERC20(collateralAsset).transferFrom(msg.sender, fees.feeRecipient(), fee);
         
         // Send collateral to vault
-        collateralAsset.transferFrom(msg.sender, address(this), collateralDepositedAfterFees);
+        I_ERC20(collateralAsset).transferFrom(msg.sender, address(this), collateralDepositedAfterFees);
 
         // Mint meToken to user
         I_MeToken(_meToken).mint(_recipient, meTokensMinted);
@@ -160,7 +165,7 @@ contract HubRegistry is I_HubRegistry {
         } else {
             fee = _meTokensBurned * fees.getBuyerFee() / PRECISION;
             meTokensBurnedAfterFees = _meTokensBurned - fee;
-            uint256 meTokensToLock = meTokensBurnedAfterFees * refundRatio / PRECISION; // TODO: refundRatio
+            uint256 meTokensToLock = meTokensBurnedAfterFees * hubDetails.refundRatio / PRECISION;
             // increase balance locked (TODO)
         }
 
