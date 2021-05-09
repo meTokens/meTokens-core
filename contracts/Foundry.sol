@@ -1,11 +1,26 @@
 pragma solidity ^0.8.0;
 
+import "./interfaces/I_Fees.sol";
+import "./interfaces/I_MeTokenRegistry.sol";
+import "./interfaces/I_MeToken.sol";
+import "./interfaces/I_ERC20.sol";
+import "./interfaces/I_CurveValueSet.sol";
+import "./interfaces/I_Vault.sol";
+
 
 contract Foundry {
     
-    constructor() {}
+    I_Fees public fees;
+    I_MeTokenRegistry public meTokenRegistry;
 
-        /// @inheritdoc I_HubRegistry
+    constructor(
+        address _fees,
+        address _meTokenRegistry
+    ) {
+        fees = I_Fees(_fees);
+        meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
+    }
+
     function mint(address _meToken, address _recipient, uint256 _collateralDeposited) external override {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
@@ -41,7 +56,6 @@ contract Foundry {
 
 
 
-    /// @inheritdoc I_HubRegistry
     function burn(address _meToken, uint256 _meTokensBurned) external {
 
         uint256 hub = meTokenRegistry.getMeTokenHub(_meToken);
@@ -85,7 +99,7 @@ contract Foundry {
         I_MeToken(_meToken).burn(msg.sender, meTokensBurnedAfterFees);
         I_ERC20(I_Vault(hubDetails.vault).getCollateralAsset()).transfer(msg.sender, collateralReturned);
     }
-    
+
 
 
 }

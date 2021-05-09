@@ -5,7 +5,6 @@ import "../interfaces/I_VaultFactory.sol";
 import "../interfaces/I_VaultRegistry.sol";
 import "../interfaces/I_CurveRegistry.sol";
 import "../interfaces/I_CurveValueSet.sol";
-import "../interfaces/I_Vault.sol";
 
 
 /// @title meToken hub
@@ -22,8 +21,6 @@ contract HubRegistry is I_HubRegistry {
     I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
-    I_MeTokenRegistry public meTokenRegistry;
-    I_Fees public fees;
 
     mapping(uint256 => Hub) private hubs;
     uint256 private hubCount;
@@ -50,15 +47,11 @@ contract HubRegistry is I_HubRegistry {
     constructor(
         address _gov,
         address _vaultRegistry,
-        address _curveRegistry,
-        address _meTokenRegistry,
-        address _fees
+        address _curveRegistry
     ) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
         curveRegistry = I_CurveRegistry(_curveRegistry);
-        meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
-        fees = I_Fees(_fees);
     }
 
 
