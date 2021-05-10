@@ -14,7 +14,8 @@ contract SingleAsset is Vault, Initializable {
 
     // TODO: does hub need to be included in vault details?
 
-    I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO: address
+    I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO
+    address foundry = address(0x0);  // TODO
 
     constructor() {}
 
@@ -24,7 +25,10 @@ contract SingleAsset is Vault, Initializable {
     ) initializer public {
         require(vaultRegistry.isApprovedVaultFactory(msg.sender), "msg.sender not approved vault factory");
         owner = _owner;
-        collateralAsset = I_ERC20(_collateralAsset);
+        collateralAsset = _collateralAsset;
+
+        // Approve Foundry to spend all collateral in vault
+        I_ERC20(collateralAsset).approve(foundry, 2**256 - 1);
     }
 
 
