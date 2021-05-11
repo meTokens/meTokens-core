@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./Vault.sol";
-import "../interfaces/I_VaultRegistry.sol";
-import "../interfaces/I_ERC20.sol";
 
 /// @title ERC-20 (non-LP) token vault
 /// @author Carl Farterson (@carlfarterson)
@@ -12,18 +10,12 @@ import "../interfaces/I_ERC20.sol";
 /// @dev Only callable by the vault factory
 contract SingleAsset is Vault, Initializable {
 
-    // TODO: does hub need to be included in vault details?
-
-    I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO
-    address foundry = address(0x0);  // TODO
-
     constructor() {}
 
     function initialize(
         address _owner,
         address _collateralAsset
-    ) initializer public {
-        require(vaultRegistry.isApprovedVaultFactory(msg.sender), "msg.sender not approved vault factory");
+    ) initializer onlyVaultFactory public {
         owner = _owner;
         collateralAsset = _collateralAsset;
 
