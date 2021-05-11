@@ -15,8 +15,7 @@ contract CurveRegistry is I_CurveRegistry {
     event UnapproveValueSet(address values);
 
     mapping (uint256 => CurveDetails) private curves;
-    mapping (address => bool) private approvedFormulas;
-    mapping (address => bool) private approvedValueSets;
+    mapping (string => bool) private namedCurves;
     uint256 private curveCount;
 
     struct Curve{
@@ -32,15 +31,14 @@ contract CurveRegistry is I_CurveRegistry {
         address _formula,
         address _valueSet
     ) external override {
-        require(approvedFormulas[_formula], "_formula not approved");
-        require(approvedValueSets[_valueSet], "_valueSet not approved");
-        // TODO: access control
+        // TODO: access control - only DAO can register
+        require(!namedCurves[_name], "Curve name already chosen");
 
         // Add curve details to storage
-        // TODO: validate memory vs. storage usage
         CurveDetails memory curveDetails = CurveDetails(_name, _formula, _valueSet, true);
         curves[curveCount++] = curveDetails;
-
+        namedCurves[_name] = true;
+    
         emit RegisterCurve(_name, _formula, _valueSet);
     }
 
@@ -56,63 +54,6 @@ contract CurveRegistry is I_CurveRegistry {
         emit DeactivateCurve(_curveId);
     }
 
-
-    /// @inheritdoc I_CurveRegistry
-    function approveFormula(address _formula) external override {
-        // TODO: access control
-        require(!approvedFormulas[_formula], "Formula already approved");
-        approvedFormulas[_formula] = true;
-        emit ApproveFormula(_formula);
-    }
-
-
-    /// @inheritdoc I_CurveRegistry
-    function approveValueSet(address _valueSet) external override {
-        // TODO: access control
-        require(!approvedValueSets[_valueSet], "ValueSet already approved");
-        approvedValueSets[_valueSet] = true;
-        emit ApproveValueSet(_valueSet);
-    }
-    
-
-    /// @inheritdoc I_CurveRegistry
-    function unapproveFormula(address _formula) external override {
-        // TODO: access control
-        require(approvedFormulas[_formula], "Formula not approved");
-        approvedFormulas[_formula] = false;
-        emit UnapproveFormula(_formula);
-    }
-
-
-    /// @inheritdoc I_CurveRegistry
-    function unapproveValueSet(address _valueSet) external override {
-        // TODO: access control
-        require(approvedValueSets[_valueSet], "ValueSet not approved");
-        approvedValueSets[_valueSet] = false;
-        emit UnapproveValueSet(_valueSet);
-    }
-
-    // TODO: are reactivate funcs needed for curve/formula/valueset?
-    // function reactivateCurve(uint256 _curveId) external {}
-    
-    /// @inheritdoc I_CurveRegistry
-    function isActiveCurve(uint256 _curveId) external view returns (bool) {
-        require(_curveId < curveCount, "_curveId does not exist");
-        CurveDetails memory curveDetails = curves[_curveId];
-        return curveDetails.active;
-    }
-
-
-    /// @inheritdoc I_CurveRegistry
-    function isApprovedFormula(address _formula) external view override returns (bool) {
-        return approvedFormulas[_formula];
-    }
-
-
-    /// @inheritdoc I_CurveRegistry
-    function isApprovedValueSet(address _valueSet) external view override returns (bool) {
-        return approvedValueSets[_valueSet];
-    }
 
     /// @inheritdoc I_CurveRegistry
     function getCurveCount() external view override returns (uint256) {
