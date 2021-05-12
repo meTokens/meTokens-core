@@ -8,8 +8,6 @@ import "./BancorZeroFormula.sol";
 /// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroFormulaValues is BancorZeroFormula {
 
-    bytes4 private encodedFunction = bytes(keccak256("_registerValueSet(uint256,uint256,uin256)"));
-
     // NOTE: each valueSet is for a curve
     struct ValueSet {
 		uint256 base_x;
@@ -32,24 +30,21 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         bytes32 _encodedValueSet
     ) external override {
         // TODO: access control
+        uint256 base_x;
+        uint256 base_y;
+        uint256 reserveWeight;
 
-        require(this.call(encodedFunction, _encodedValueSet), "Encoding failed");
+        // NOTE: this validates parameters are within the bounds before setting to value set
+        // This is needed to register future value sets of different curves, as they may have different
+        // arguments within Hub.registerValueSet()
+        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
 
-        ValueSet storage valueSet = _registerValueSet(_encodedValueSet);
-        valueSets[_hub] = valueSet;
-    }
-
-
-    // TODO: double-check returning structs from functions
-    function _registerValueSet(
-        uint256 _base_x,
-        uint256 _base_y,
-        uint256 _reserveweight
-    ) private returns (ValueSet) {
-        require(_base_x > 0 && _base_y > 0, "_base_x and _base_y cannot be 0");
+        // TODO: max requirement on base_x and base_y?
+        require(base_x > 0 && base_y > 0, "_base_x and _base_y cannot be 0");
         require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
-        ValueSet memory valueSet = ValueSet(_base_x, _base_y, _reserveWeight, false, 0);
-        return valueSet;
+
+        ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false, 0);
+        valueSets[_hub] = valueSet;
     }
 
 
