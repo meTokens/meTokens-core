@@ -10,6 +10,8 @@ import "./interfaces/I_Vault.sol";
 
 contract Foundry {
     
+    uint256 private PRECISION = 10**18;
+
     I_Fees public fees;
     I_MeTokenRegistry public meTokenRegistry;
 
@@ -44,7 +46,11 @@ contract Foundry {
         
         // update balancePooled (TODO)
 
+
         // Send fees to recipient
+        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
+
+        // TODO: increment
         I_ERC20(collateralAsset).transferFrom(msg.sender, fees.feeRecipient(), fee);
         
         // Send collateral to vault
@@ -67,21 +73,25 @@ contract Foundry {
         require(!meTokenDetails.migrating, "meToken is migrating");
 
         uint256 fee;
-        uint256 meTokensBurnedAfterFees;
+        uint256 burnReturn;
 
         // If msg.sender == owner, give owner the sell rate.
         // If msg.sender != owner, give msg.sender the burn rate
-        if (meTokenRegistry.getMeTokenOwner(_meToken) == msg.sender)
-        if (msg.sender == meTokenDetails.owner) {
+        if (meTokenRegistry.getMeTokenOwner(_meToken) == msg.sender) {
+
             fee = _meTokensBurned * fees.burnOwnerFee() / PRECISION;
-            meTokensBurnedAfterFees = _meTokensBurned - fee + earnedFromLocked;  //TODO: earnedFromLocked
-            uint256 meTokensFromLocked = _meTokensBurned * meTokenDetails.balanceLocked / I_MeToken(_meToken).totalSupply(); // TODO: total supply
+            uint256 earnedFromLocked = _meTokensBurned * meTokenDetails.balanceLocked / I_MeToken(_meToken).totalSupply();
+            burnReturn = _meTokensBurned - fee + earnedFromLocked;
+
             // decrease balance locked (TODO)
+
         } else {
             fee = _meTokensBurned * fees.getBuyerFee() / PRECISION;
-            meTokensBurnedAfterFees = _meTokensBurned - fee;
-            uint256 meTokensToLock = meTokensBurnedAfterFees * hubDetails.refundRatio / PRECISION;
+            burnReturn = _meTokensBurned - fee;
+            uint256 meTokensToLock = burnReturn * hubDetails.refundRatio / PRECISION;
+
             // increase balance locked (TODO)
+
         }
 
         // Calculate how many collateral tokens are returned
@@ -89,15 +99,21 @@ contract Foundry {
             hub,
             I_MeToken(_meToken).totalSupply(),
             meTokenDetails.balancePooled,
-            meTokensBurnedAfterFees
+            burnReturn
         );
 
         // TODO: Update balance pooled
-                
 
-        I_ERC20(_meToken).transfer(fees.feeRecipient(), fee);
-        I_MeToken(_meToken).burn(msg.sender, meTokensBurnedAfterFees);
-        I_ERC20(I_Vault(hubDetails.vault).getCollateralAsset()).transfer(msg.sender, collateralReturned);
+
+        // Transfer fees
+        I_MeToken(_meToken).transfer(fees.feeRecipient(), fee);
+
+        // Send collateral from vault (minus fees)
+        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
+        I_ERC20(collateralAsset).transferFrom(hubDetails.vault, msg.sender, collateralReturned);
+        
+        // Burn metoken from user
+        I_MeToken(_meToken).burn(msg.sender, burnReturn);
     }
 
 
