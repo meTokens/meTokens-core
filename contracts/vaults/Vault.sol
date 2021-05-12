@@ -15,7 +15,6 @@ contract Vault {
     address gov = address(0x0);  // TODO
     I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO
 
-
     address public owner;
 	address private collateralAsset;
     uint256 accruedFees;

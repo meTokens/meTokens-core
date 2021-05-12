@@ -12,8 +12,6 @@ import "./Vault.sol";
 /// @dev Only callable by the vault factory
 contract SingleAsset is Vault, Initializable {
 
-    I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO
-
     constructor() {}
 
     function initialize(
@@ -40,6 +38,5 @@ contract SingleAsset is Vault, Initializable {
         I_ERC20(collateralAsset).transfer(_to, _amount);
         emit WithdrawFees(_amount, _to);
     }
-
 
 }
