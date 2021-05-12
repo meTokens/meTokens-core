@@ -9,11 +9,8 @@ contract CurveRegistry is I_CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);
-    event ApproveFormula(address formula);
-    event ApproveValueSet(address valueSet);
-    event UnapproveFormula(address formula);
-    event UnapproveValueSet(address values);
 
+    address public dao = address(0x0) // TODO
     mapping (uint256 => CurveDetails) private curves;
     mapping (string => bool) private namedCurves;
     uint256 private curveCount;
@@ -31,7 +28,7 @@ contract CurveRegistry is I_CurveRegistry {
         address _formula,
         address _valueSet
     ) external override {
-        // TODO: access control - only DAO can register
+        require(msg.sender == dao, "!dao");
         require(!namedCurves[_name], "Curve name already chosen");
 
         // Add curve details to storage
