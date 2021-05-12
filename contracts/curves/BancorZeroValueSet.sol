@@ -39,9 +39,9 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         // arguments within Hub.registerValueSet()
         (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
 
-        // TODO: max requirement on base_x and base_y?
-        require(base_x > 0 && base_y > 0, "_base_x and _base_y cannot be 0");
-        require(0 < _reserveWeight && _reserveWeight <= MAX_WEIGHT, "_reserveWeight not in range");
+        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
+        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
+        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false, 0);
         valueSets[_hub] = valueSet;
