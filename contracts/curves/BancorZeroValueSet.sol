@@ -2,8 +2,6 @@ pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 
-// example of a contract `curves.libraryParameterSet` that can be registered in CurveRegistry.sol
-// specifically paired with BancorFormulaFromZero.sol
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
@@ -141,6 +139,8 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         }
     }
 
+
+    // TODO: natspec
     function _calculateWeightedAmount(
         uint256 _amount,
         uint256 _targetAmount,
@@ -165,6 +165,8 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         weightedAmount = weighted_v + weighted_t;
     }
 
+
+    // TODO: natspec
     function _finishUpdate(uint256 _hub) private {
         require(msg.sender == address(this));
 
