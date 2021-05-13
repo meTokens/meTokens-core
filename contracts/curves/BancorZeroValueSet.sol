@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
+import "../interfaces/I_Hub.sol";
 
 
 /// @title Bancor curve registry and calculator
@@ -13,13 +14,64 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
+        bool updating;
 	}
 
+    struct TargetValueSet {
+        uint base_x;
+        uint base_y;
+        uint256 reserveWeight;
+
+        uint256 blockStart;
+        uint256 blockTarget;
+        bool targetReached;
+    }
+
     event Updated(uint256 indexed hub);
+
+    I_Hub public hub = I_Hub(0x0);  // TODO: address
 
     // NOTE: keys will be the hub
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
+
+    function updateValueSet(
+        uint256 _hub,
+        uint256 _base_x,
+        uint256 _base_y,
+        uint256 _reserveWeight,
+        uint256 _blockStart,
+        uint256 _blockTarget
+    ) external {
+        require(msg.sender == hub.getHubOwner(_hub), "msg.sender not hub owner");
+        ValueSet storage valueSet = valueSets[_hub];
+        require(!valueSet.updating, "ValueSet already updating");
+
+        require(_base_x > 0 && _base_x <= PRECISION, "base_x not in range");
+        require(_base_y > 0 && _base_y <= PRECISION, "base_y not in range");
+        require(_reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+
+        // TODO: determine where to put these variables
+        uint256 minBlocksUntilStart = 50;
+        uint256 minUpdateBlockDuration = 1000;
+        require(_blockStart - minBlocksUntilStart >= block.number, "_blockStart too soon");
+        require(_blockTarget - _blockStart >= minUpdateBlockDuration, "Update period too short");
+
+        // Create target value set mapped to the hub
+        TargetValueSet memory targetValueSet = TargetValueSet(
+            _base_x,
+            _base_y,
+            _reserveWeight,
+            _blockStart,
+            _blockTarget,
+            false
+        );
+        targetValueSets[_hub] = targetValueSet;
+
+        // Set valueSet updating to true
+        valueSet.updating = true;
+    }
+
 
     /// @notice Given a hub, base_x, base_y and connector weight, add the configuration to the
     ///      BancorZero ValueSet registry
@@ -48,7 +100,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 
-    // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between startBlock & targetBlock
+    // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between blockStart & targetBlock
     // TODO: if updating == true and targetReached == true, then set updating == false
     /// @notice given a deposit amount (in the collateral token), return the amount of meTokens minted
     /// @param _depositAmount   amount of collateral tokens to deposit
@@ -81,26 +133,29 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
             );
         }
 
-        // TODO: Since updating was moved to hub, need to bring this o
         if (v.updating) {
             // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[v.targetValueSetId];
-            if (_supply > 0) {
-                uint256 targetAmount = _calculateMintReturn(
-                    _depositAmount,
-                    t.reserveWeight,
-                    _supply,
-                    _balancePooled
-                );
-            } else {
-                uint256 targetAmount = _calculateMintReturnFromZero(
-                    _depositAmount,
-                    t.reserveWeight,
-                    t.base_x,
-                    t.base_y
-                );
+            TargetValueSet memory t = targetValueSets[_hub];
+
+            // Only calculate weighted amount if update is live
+            if (t.blockStart > block.number) {
+                if (_supply > 0) {
+                    uint256 targetAmount = _calculateMintReturn(
+                        _depositAmount,
+                        t.reserveWeight,
+                        _supply,
+                        _balancePooled
+                    );
+                } else {
+                    uint256 targetAmount = _calculateMintReturnFromZero(
+                        _depositAmount,
+                        t.reserveWeight,
+                        t.base_x,
+                        t.base_y
+                    );
+                }
+                meTokenAmount = _calculateWeightedAmount(amount, targetAmount, t);
             }
-            meTokenAmount = _calculateWeightedAmount(amount, targetAmount, t);
         }
     }
 
@@ -123,7 +178,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         
         if (v.updating) {
             // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[v.targetValueSetId];
+            TargetValueSet memory t = targetValueSets[_hub];
             uint256 targetAmount = _calculateBurnReturn(
                 _burnAmount,
                 t.reserveWeight,
@@ -165,8 +220,8 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function _finishUpdate(uint256 _hub) private {
         require(msg.sender == address(this));
 
-        TargetValueSet memory t = targetValueSets[_hub];
-        ValueSet memory v = valueSets[_hub];
+        TargetValueSet storage t = targetValueSets[_hub];
+        ValueSet storage v = valueSets[_hub];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
@@ -177,16 +232,3 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 }
-
-
-/*
-struct TargetValueSet {
-    uint base_x;
-    uint base_y;
-    uint256 reserveWeight;
-
-    uint256 blockStart;
-    uint256 blockTarget;
-    bool targetReached;
-}
-*/
