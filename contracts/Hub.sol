@@ -99,23 +99,23 @@ contract Hub is I_Hub {
     
 
     /// @inheritdoc I_Hub
-    function deactivateHub(uint256 _hub) external override {
+    function deactivateHub(uint256 _hubId) external override {
         // TODO: access control
-        require(_hub <= hubCount, "_hub exceeds hubCount");
-        HubDetails storage hubDetails = hubs[_hub];
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        HubDetails storage hubDetails = hubs[_hubId];
 
         require(hubDetails.active, "Hub not active");
         hubDetails.active = false;
-        emit DeactivateHub(_hub);
+        emit DeactivateHub(_hubId);
     }
 
 
-    function setCurve(uint256 _hub, address _curve, bytes _encodedValueSetArgs) {
+    function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) {
         // TODO: access control
-        require(_hub < hubCount, "_hub exceeds hubCount");
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
 
-        HubDetails storage hubDetails = hubs[_hub];
+        HubDetails storage hubDetails = hubs[_hubId];
         require(_curve != hubDetails.curve, "Cannot set curve to the same curve");
 
         I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
@@ -124,26 +124,36 @@ contract Hub is I_Hub {
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
+
+    // TODO: natspec
+    function getHubOwner(uint256 _hubId) public view override returns (address) {
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.owner;
+    }
+
+
     /// @inheritdoc I_Hub
-    function getHubStatus(uint256 _hub) public view override returns (Status) {
-        require(_hub < hubCount, "_hub exceeds hubCount");
-        HubDetails memory hubDetails = hubs[_hub];
+    function getHubStatus(uint256 _hubId) public view override returns (Status) {
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.status;
     }
 
+
     /// @inheritdoc I_Hub
-    function getHubDetails(uint256 _hub) external view override returns (HubDetails calldata) {
-        require(_hub < hubCount, "_hub exceeds hubCount");
-        HubDetails memory hubDetails = hubs[_hub];
+    function getHubDetails(uint256 _hubId) external view override returns (HubDetails calldata) {
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails;
     }
 
 
     /// @inheritdoc I_Hub
-    function getHubVault(uint256 _hub) external view override returns (address) {
+    function getHubVault(uint256 _hubId) external view override returns (address) {
         // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
-        require(_hub < hubCount, "_hub exceeds hubCount");
-        HubDetails memory hubDetails = hubs[_hub];
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
     }
 

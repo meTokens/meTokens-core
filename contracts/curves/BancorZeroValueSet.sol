@@ -35,16 +35,18 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
+
+    // TODO: natspec
     function updateValueSet(
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _base_x,
         uint256 _base_y,
         uint256 _reserveWeight,
         uint256 _blockStart,
         uint256 _blockTarget
     ) external {
-        require(msg.sender == hub.getHubOwner(_hub), "msg.sender not hub owner");
-        ValueSet storage valueSet = valueSets[_hub];
+        require(msg.sender == hub.getHubOwner(_hubId), "msg.sender not hub owner");
+        ValueSet storage valueSet = valueSets[_hubId];
         require(!valueSet.updating, "ValueSet already updating");
 
         require(_base_x > 0 && _base_x <= PRECISION, "base_x not in range");
@@ -66,7 +68,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
             _blockTarget,
             false
         );
-        targetValueSets[_hub] = targetValueSet;
+        targetValueSets[_hubId] = targetValueSet;
 
         // Set valueSet updating to true
         valueSet.updating = true;
@@ -75,10 +77,10 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     /// @notice Given a hub, base_x, base_y and connector weight, add the configuration to the
     ///      BancorZero ValueSet registry
-    /// @param _hub                 Identifier of hubs
+    /// @param _hubId                 Identifier of hubs
     /// @param _encodedValueSet     connector weight, represented in ppm, 1 - 1,000,000
 	function registerValueSet(
-        uint256 _hub,
+        uint256 _hubId,
         bytes32 _encodedValueSet
     ) external override {
         // TODO: access control
@@ -96,7 +98,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false, 0);
-        valueSets[_hub] = valueSet;
+        valueSets[_hubId] = valueSet;
     }
 
 
@@ -104,18 +106,18 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // TODO: if updating == true and targetReached == true, then set updating == false
     /// @notice given a deposit amount (in the collateral token), return the amount of meTokens minted
     /// @param _depositAmount   amount of collateral tokens to deposit
-    /// @param _hub             unique hub identifier
+    /// @param _hubId             unique hub identifier
     /// @param _supply          current meToken supply
     /// @param _balancePooled   total connector balance
     /// @return meTokenAmount   amount of meTokens minted
     function calculateMintReturn(
         uint256 _depositAmount,
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokenAmount) {
 
-        ValueSet memory v = valueSets[_hub];
+        ValueSet memory v = valueSets[_hubId];
         if (_supply > 0) {
             // TODO: can _supply > 0 and _balancePooled = 0? If so would break
             meTokenAmount = _calculateMintReturn(
@@ -135,7 +137,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
         if (v.updating) {
             // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hub];
+            TargetValueSet memory t = targetValueSets[_hubId];
 
             // Only calculate weighted amount if update is live
             if (t.blockStart > block.number) {
@@ -163,12 +165,12 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // TODO: natspec
     function calculateBurnReturn(
         uint256 _burnAmount,
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 reserveTokenAmount) {
 
-        ValueSet memory v = valueSets[_hub];
+        ValueSet memory v = valueSets[_hubId];
         reserveTokenAmount = _calculateBurnReturn(
             _burnAmount,
             v.reserveWeight,
@@ -178,7 +180,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         
         if (v.updating) {
             // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hub];
+            TargetValueSet memory t = targetValueSets[_hubId];
             uint256 targetAmount = _calculateBurnReturn(
                 _burnAmount,
                 t.reserveWeight,
@@ -217,11 +219,11 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
 
     // TODO: natspec
-    function _finishUpdate(uint256 _hub) private {
+    function _finishUpdate(uint256 _hubId) private {
         require(msg.sender == address(this));
 
-        TargetValueSet storage t = targetValueSets[_hub];
-        ValueSet storage v = valueSets[_hub];
+        TargetValueSet storage t = targetValueSets[_hubId];
+        ValueSet storage v = valueSets[_hubId];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;

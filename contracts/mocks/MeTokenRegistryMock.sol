@@ -12,14 +12,14 @@ contract MeTokenRegistryMock {
         string calldata _name,
         address _owner,
         string calldata _symbol,
-        uint256 _hub
-    ) external override {
+        uint256 _hubId
+    ) external {
         owners[_owner] = true;
     }
 
     function isMeTokenOwner(
         address _owner
-    ) external view override returns (bool) {
+    ) external view returns (bool) {
         return owners[_owner];
     }
 }

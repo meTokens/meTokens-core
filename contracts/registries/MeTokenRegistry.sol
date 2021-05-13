@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/I_MeTokenRegistry.sol";
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenFactory.sol";
-import "../interfaces/I_HubRegistry.sol";
+import "../interfaces/I_Hub.sol";
 
 
 /// @title meToken registry
@@ -21,7 +21,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     event TransferMeTokenOwnership(address from, address to, address meToken);
 
     I_MeTokenFactory public meTokenFactory;
-    I_HubRegistry public hubRegistry;
+    I_Hub public hub;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
     mapping (address => bool) private meTokenOwners;  // key: address of owner, value: address of meToken
@@ -35,25 +35,25 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         bool migrating;
 	}
 
-    constructor(address _meTokenFactory, address _hubRegistry) public {
+    constructor(address _meTokenFactory, address _hub) public {
         meTokenFactory = I_MeTokenFactory(_meTokenFactory);
-        hubRegistry = I_HubRegistry(_hubRegistry);
+        hub = I_Hub(_hub);
     }
 
     /// @inheritdoc I_MeTokenRegistry
     function registerMeToken(
         string _name,
         string _symbol,
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _collateralDeposited
     ) external {
         // TODO: access control
         require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
-        require(hubRegistry.getHubStatus(_hub) != "INACTIVE", "Hub not active");
+        require(hub.getHubStatus(_hubId) != "INACTIVE", "Hub not active");
         
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
-        address vault = hubRegistry.getHubVault(_hub);
+        address vault = hub.getHubVault(_hubId);
         address collateralAsset = I_Vault(vault).getCollateralAsset();
         require(
             I_ERC20(collateralAsset).balanceOf(msg.sender) <= _collateralDeposited,
@@ -67,7 +67,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
         // Add meToken to registry
         MeTokenDetails memory meTokenDetails = MeTokenDetails(
-            msg.sender, _hub, _collateralDeposited, 0, false
+            msg.sender, _hubId, _collateralDeposited, 0, false
         );
         meTokens[meTokenAddr] = meTokenDetails;
 
@@ -75,11 +75,11 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         meTokenOwners[msg.sender] = true;
 
         // Get curve information from hub
-        I_CurveValueSet curveValueSet = I_CurveValueSet(hubRegistry.getHubCurve);
+        I_CurveValueSet curveValueSet = I_CurveValueSet(hub.getHubCurve);
 
         uint256 meTokensMinted = curveValueSet.calculateMintReturn(
             _collateralDeposited,   // _deposit_amount
-            _hub,                   // _hub
+            _hubId,                   // _hubId
             0,                      // _supply
             0                       // _balancePooled
         );
@@ -88,7 +88,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
         I_MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
 
-        emit RegisterMeToken(_meToken, msg.sender, _name, _symbol, _hub);
+        emit RegisterMeToken(_meToken, msg.sender, _name, _symbol, _hubId);
     }
 
 

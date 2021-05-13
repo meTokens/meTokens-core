@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 
+// TODO: is I_Hub needed?
 
 /// @title meToken
 /// @author Carl Farterson (@carlfarterson)
@@ -10,12 +11,12 @@ import "@openzeppelin/contracts/token/ERC20/ERCBurnable.sol";
 contract MeToken is Initializable, ERC20Burnable {
 
     modifier onlyHub() {
-        require(msg.sender == hubAddress, "!hub");
+        require(msg.sender == hub, "!hub");
     }
 
     // For person that creates meToken, may not be the designated owner
     // For example, someone creates ANDRE coin on his behalf and he takes ownership later
-    address public hubAddress;
+    address public hub;
 
     string public name;
     string public symbol;
@@ -27,11 +28,11 @@ contract MeToken is Initializable, ERC20Burnable {
     /// @param _name name of meToken
     /// @param _symbol symbol of meToken
     function initialize(
-        address _hubAddress,
+        address _hub,
         string calldata _name,
         string calldata _symbol
     ) initializer public {
-        hubAddress = _hubAddress;
+        hub = _hub;
         name = _name;
         symbol = symbol;
     }

@@ -5,23 +5,25 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "../../vaults/SingleAsset.sol";
 import "../../interfaces/I_VaultRegistry.sol";
 
+// TODO: Should I_Hub be imported?
+
 /// @title Factory contract to erc20-collateral vaults
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory {
 
     modifier onlyHub() {
-        require(msg.sender == hubAddress, "!hub");
+        require(msg.sender == hub, "!hub");
         _;
     }
 
     event CreateVault(address vault);
 
-    address public hubAddress;
+    address public hub;
     I_VaultRegistry public vaultRegistry;
 
-    constructor(address _hubAddress, address _vaultRegistry) public {
-        hubAddress = _hubAddress;
+    constructor(address _hub, address _vaultRegistry) public {
+        hub = _hub;
         vaultRegistry = _vaultRegistry;
     }
     

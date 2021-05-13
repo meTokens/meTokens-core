@@ -33,23 +33,26 @@ interface I_Hub {
     function burn(address _meToken, uint256 _meTokensBurned) external;
 
     /// @notice TODO
-    /// @param _hub TODO
-    function deactivateHub(uint256 _hub) external;
+    /// @param _hubId TODO
+    function deactivateHub(uint256 _hubId) external;
 
     /// @notice TODO
-    /// @param _hub TODO
+    /// @param _hubId TODO
     /// @return Status TODO
     // TODO: import Status struct 
-    function getHubStatus(uint256 _hub) external view returns (Status);
+    function getHubStatus(uint256 _hubId) external view returns (Status);
+
+    // TODO
+    function getHubOwner(uint256 _hubId) external view returns (address);
 
     /// @notice TODO
-    /// @param _hub TODO
+    /// @param _hubId TODO
     /// @return HubDetails TODO
     // TODO: import HubDetails struct
-    function getHubDetails(uint256 _hub) external view returns (HubDetails);
+    function getHubDetails(uint256 _hubId) external view returns (HubDetails);
 
     /// @notice TODO
-    /// @param _hub TODO
+    /// @param _hubId TODO
     /// @return TODO
-    function getHubVault(uint256 _hub) external view returns (address);
+    function getHubVault(uint256 _hubId) external view returns (address);
 }

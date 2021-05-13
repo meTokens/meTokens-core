@@ -17,7 +17,7 @@ contract SigmoidalValues is SigmoidalFormula {
 
     uint256 private PRECISION = 10**18;
 
-    event Updated(uint256 indexed hub);
+    event Updated(uint256 indexed hubId);
 
     // NOTE: keys will be the hub
 	mapping (uint256 => HubValueSet) hubValueSets;
@@ -28,30 +28,30 @@ contract SigmoidalValues is SigmoidalFormula {
         // TODO
     }
 
-    function deactivateValueSet() returns(uint256) {}
+    function deactivateValueSet() returns (uint256) {}
 
     
-    function reactivateValueSet() returns(uint256) {}
+    function reactivateValueSet() returns (uint256) {}
 
 	mapping (uint256 => TargetValueSet) targetHubValueSets;
 
-	function registerTargetValueSet() returns(uint256) {}
+	function registerTargetValueSet() returns (uint256) {}
 
     function calculateMintReturn(
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _depositAmount
     ) external view override returns (uint256 amount) {
         // TODO
-    };
+    }
 
     function calculateBurnReturn(
-        uint256 _hub,
+        uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled,
         uint256 _sellAmount
     ) returns (uint256 amount) {
         // TODO
-    };
+    }
 }

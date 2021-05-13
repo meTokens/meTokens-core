@@ -6,12 +6,12 @@ interface I_MeTokenRegistry {
     /// @param _name TODO
     /// @param _owner TODO
     /// @param _symbol TODO
-    /// @param _hub TODO
+    /// @param _hubId TODO
     function registerMeToken(
         string calldata _name,
         address _owner,
         string calldata _symbol,
-        uint256 _hub
+        uint256 _hubId
     ) external;
 
     /// @notice TODO
