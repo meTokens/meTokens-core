@@ -27,7 +27,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         bool targetReached;
     }
 
-    event Updated(uint256 indexed hub);
+    event Updated(uint256 indexed hubId);
 
     I_Hub public hub = I_Hub(0x0);  // TODO: address
 
@@ -57,6 +57,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         // TODO: determine where to put these variables
         uint256 minBlocksUntilStart = 50;
         uint256 minUpdateBlockDuration = 1000;
+
         require(_blockStart - minBlocksUntilStart >= block.number, "_blockStart too soon");
         require(_blockTarget - _blockStart >= minUpdateBlockDuration, "Update period too short");
 
@@ -78,7 +79,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     /// @notice Given a hub, base_x, base_y and connector weight, add the configuration to the
     ///      BancorZero ValueSet registry
-    /// @param _hubId                 Identifier of hubs
+    /// @param _hubId               Identifier of hubs
     /// @param _encodedValueSet     connector weight, represented in ppm, 1 - 1,000,000
 	function registerValueSet(
         uint256 _hubId,
@@ -95,7 +96,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
         _validateValueSet(base_x, base_y, reserveWeight);
 
-        ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false, 0);
+        ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false);
         valueSets[_hubId] = valueSet;
     }
 
@@ -104,7 +105,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     // TODO: if updating == true and targetReached == true, then set updating == false
     /// @notice given a deposit amount (in the collateral token), return the amount of meTokens minted
     /// @param _depositAmount   amount of collateral tokens to deposit
-    /// @param _hubId             unique hub identifier
+    /// @param _hubId           unique hub identifier
     /// @param _supply          current meToken supply
     /// @param _balancePooled   total connector balance
     /// @return meTokenAmount   amount of meTokens minted
@@ -147,6 +148,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
                         _balancePooled
                     );
                 } else {
+                    // TODO: can supply == 0 when updating?
                     uint256 targetAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
@@ -185,7 +187,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
                 _supply,
                 _balancePooled
             );
-            reserveTokenAmount = _calculateWeightedAmount(reserveTokenAmount, targetAmount, t);
+            reserveTokenAmount = _calculateWeightedAmount(
+                reserveTokenAmount,
+                targetAmount,
+                _hubId,
+                t.blockStart,
+                t.blockTarget
+            );
         }
     }
 
@@ -194,17 +202,19 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     function _calculateWeightedAmount(
         uint256 _amount,
         uint256 _targetAmount,
-        Curve curve // TODO
+        uint256 _hubId,
+        uint256 _blockStart,
+        uint256 _blockTarget
     ) private returns (uint256 weightedAmount) {
         uint256 targetWeight;
 
+        if (block.number <= _blockTarget) { 
        // Finish update if complete
-        if (targetValueSet.blockTarget <= block.number) { 
-            _finishUpdate(t);
+            _finishUpdate(_hubId);
             targetWeight = PRECISION;
         } else {
-            uint256 targetProgress = block.number - targetValueSet.blockStart;
-            uint256 targetLength = targetValueSet.blockTarget - targetValueSet.blockStart;
+            uint256 targetProgress = block.number - _blockStart;
+            uint256 targetLength = _blockTarget - _blockStart;
             // TODO: is this calculation right?
             targetWeight = PRECISION * targetProgress / targetLength;
         }
@@ -225,17 +235,18 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
     // TODO: natspec
     function _finishUpdate(uint256 _hubId) private {
-        require(msg.sender == address(this));
 
-        TargetValueSet storage t = targetValueSets[_hubId];
         ValueSet storage v = valueSets[_hubId];
+        TargetValueSet storage t = targetValueSets[_hubId];
 
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
         v.updating = false;
 
-        emit Updated(v.hub);
+        delete(t);
+
+        emit Updated(_hubId);
     }
 
 }
