@@ -47,14 +47,15 @@ contract Foundry {
         // update balancePooled (TODO)
 
 
-        // Send fees to recipient
         address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
 
-        // TODO: increment
-        I_ERC20(collateralAsset).transferFrom(msg.sender, fees.feeRecipient(), fee);
-        
         // Send collateral to vault
-        I_ERC20(collateralAsset).transferFrom(msg.sender, address(this), collateralDepositedAfterFees);
+        // NOTE: this will break if msg.sender holds less collateral than what they're trying to deposit
+        I_ERC20(collateralAsset).transferFrom(msg.sender, address(this), collateralDeposited);
+
+        // Send fees to recipient
+        // TODO: track increment in fees over transfering
+        I_ERC20(collateralAsset).transferFrom(msg.sender, fees.feeRecipient(), fee);
 
         // Mint meToken to user
         I_MeToken(_meToken).mint(_recipient, meTokensMinted);
@@ -104,16 +105,17 @@ contract Foundry {
 
         // TODO: Update balance pooled
 
+        // Burn metoken from user
+        // NOTE: this will break if msg.sender tries to burn more meTokens than what they own
+        I_MeToken(_meToken).burn(msg.sender, burnReturn);
+
+        // Send collateral from vault
+        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
+        I_ERC20(collateralAsset).transferFrom(hubDetails.vault, msg.sender, collateralReturned);        
 
         // Transfer fees
+        // TODO: track increment in fees over transfering
         I_MeToken(_meToken).transfer(fees.feeRecipient(), fee);
-
-        // Send collateral from vault (minus fees)
-        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
-        I_ERC20(collateralAsset).transferFrom(hubDetails.vault, msg.sender, collateralReturned);
-        
-        // Burn metoken from user
-        I_MeToken(_meToken).burn(msg.sender, burnReturn);
     }
 
 
