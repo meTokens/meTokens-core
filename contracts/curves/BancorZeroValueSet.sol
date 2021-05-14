@@ -46,12 +46,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 _blockTarget
     ) external {
         require(msg.sender == hub.getHubOwner(_hubId), "msg.sender not hub owner");
+        
+        // TODO: validate hub is not updating
+
         ValueSet storage valueSet = valueSets[_hubId];
         require(!valueSet.updating, "ValueSet already updating");
 
-        require(_base_x > 0 && _base_x <= PRECISION, "base_x not in range");
-        require(_base_y > 0 && _base_y <= PRECISION, "base_y not in range");
-        require(_reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+        _validateValueSet(_base_x, _base_y, _reserveWeight);
 
         // TODO: determine where to put these variables
         uint256 minBlocksUntilStart = 50;
@@ -92,10 +93,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         // This is needed to register future value sets of different curves, as they may have different
         // arguments within Hub.registerValueSet()
         (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
-
-        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
-        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
-        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+        _validateValueSet(base_x, base_y, reserveWeight);
 
         ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false, 0);
         valueSets[_hubId] = valueSet;
@@ -215,6 +213,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
         uint256 weighted_v = _amount * (PRECISION - targetWeight);
         uint256 weighted_t = _targetAmount * targetWeight;
         weightedAmount = weighted_v + weighted_t;
+    }
+
+
+    function _validateValueSet(uint256 base_x, uint256 base_y, uint256 reserveWeight) private {
+        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
+        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
+        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
     }
 
 
