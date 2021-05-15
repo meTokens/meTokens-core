@@ -2,12 +2,13 @@ pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
+import "../interfaces/I_ValueSet.sol";
 
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-contract BancorZeroFormulaValues is BancorZeroFormula {
+contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     // NOTE: each valueSet is for a curve
     struct ValueSet {
@@ -36,15 +37,13 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
 
-    // TODO: natspec
+    /// @inheritdoc I_ValueSet
     function updateValueSet(
         uint256 _hubId,
-        uint256 _base_x,
-        uint256 _base_y,
-        uint256 _reserveWeight,
+        bytes32 _encodedTargetValueSet, // TODO: unencode
         uint256 _blockStart,
         uint256 _blockTarget
-    ) external {
+    ) external override {
         require(msg.sender == hub.getHubOwner(_hubId), "msg.sender not hub owner");
         
         // TODO: validate hub is not updating
@@ -77,10 +76,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 
-    /// @notice Given a hub, base_x, base_y and connector weight, add the configuration to the
-    ///      BancorZero ValueSet registry
-    /// @param _hubId               Identifier of hubs
-    /// @param _encodedValueSet     connector weight, represented in ppm, 1 - 1,000,000
+    /// @inheritdoc I_ValueSet
 	function registerValueSet(
         uint256 _hubId,
         bytes32 _encodedValueSet
@@ -101,14 +97,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 
-    // TODO: if updating == true, then reference the curve's updater.sol to linearly calculate the new rate between blockStart & targetBlock
-    // TODO: if updating == true and targetReached == true, then set updating == false
-    /// @notice given a deposit amount (in the collateral token), return the amount of meTokens minted
-    /// @param _depositAmount   amount of collateral tokens to deposit
-    /// @param _hubId           unique hub identifier
-    /// @param _supply          current meToken supply
-    /// @param _balancePooled   total connector balance
-    /// @return meTokenAmount   amount of meTokens minted
+    /// @inheritdoc I_ValueSet
     function calculateMintReturn(
         uint256 _depositAmount,
         uint256 _hubId,
@@ -118,7 +107,6 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
 
         ValueSet memory v = valueSets[_hubId];
         if (_supply > 0) {
-            // TODO: can _supply > 0 and _balancePooled = 0? If so would break
             meTokenAmount = _calculateMintReturn(
                 _depositAmount,
                 v.reserveWeight,
@@ -141,7 +129,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
             // Only calculate weighted amount if update is live
             if (t.blockStart > block.number) {
                 if (_supply > 0) {
-                    uint256 targetAmount = _calculateMintReturn(
+                    uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
                         t.reserveWeight,
                         _supply,
@@ -149,29 +137,33 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
                     );
                 } else {
                     // TODO: can supply == 0 when updating?
-                    uint256 targetAmount = _calculateMintReturnFromZero(
+                    uint256 targetMeTokenAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
                         t.base_x,
                         t.base_y
                     );
                 }
-                meTokenAmount = _calculateWeightedAmount(amount, targetAmount, t);
+                meTokenAmount = _calculateWeightedAmount(
+                    meTokenAmount,
+                    targetMeTokenAmount,
+                    t
+                );
             }
         }
     }
 
 
-    // TODO: natspec
+    /// @inheritdoc I_ValueSet
     function calculateBurnReturn(
         uint256 _burnAmount,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 reserveTokenAmount) {
+    ) external view override returns (uint256 collateralTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
-        reserveTokenAmount = _calculateBurnReturn(
+        collateralTokenAmount = _calculateBurnReturn(
             _burnAmount,
             v.reserveWeight,
             _supply,
@@ -187,8 +179,8 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
                 _supply,
                 _balancePooled
             );
-            reserveTokenAmount = _calculateWeightedAmount(
-                reserveTokenAmount,
+            collateralTokenAmount = _calculateWeightedAmount(
+                collateralTokenAmount,
                 targetAmount,
                 _hubId,
                 t.blockStart,
@@ -226,6 +218,7 @@ contract BancorZeroFormulaValues is BancorZeroFormula {
     }
 
 
+    /// TODO: natspec
     function _validateValueSet(uint256 base_x, uint256 base_y, uint256 reserveWeight) private {
         require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
         require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
