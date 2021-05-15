@@ -1,16 +1,12 @@
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 
 /// @title meToken Fees
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage all meToken fees
-contract Fees {
-
-    // NOTE: this will be the DAO
-	modifier onlyOwner() {
-		require(msg.sender == owner);
-		_;
-	}
+contract Fees is Ownable {
 
 	event SetMintFee(uint256 rate);
 	event SetBurnBuyerFee(uint256 rate);
@@ -35,11 +31,9 @@ contract Fees {
     /// @dev Generated from liquidity mining
 	uint256 private _yieldFee;
 
-    address public owner;
 	address public feeRecipient;
 
 	constructor(
-        address owner_,
         uint256 mintFee_
         uint256 burnBuyerFee_
         uint256 burnOwnerFee_
@@ -47,7 +41,6 @@ contract Fees {
         uint256 interestFee_
         uint256 yieldFee_
     ) public {
-        owner = owner_;
         _mintFee = mintFee_;
         _burnBuyerFee = burnBuyerFee_;
         _burnOwnerFee = burnOwnerFee_;
@@ -56,47 +49,41 @@ contract Fees {
         _yieldFee = yieldFee_;
     }
 
-	function setMintFee(uint256 amount) external onlyOwner {
-        require(amount != _mintFee && amount < FEE_MAX, "out of range");
-		_mintFee = amount;
-		emit SetMintFee(amount);
+	function setMintFee(uint256 rate) external onlyOwner {
+        require(rate != _mintFee && rate < FEE_MAX, "out of range");
+		_mintFee = rate;
+		emit SetMintFee(rate);
 	}
 
-	function setBurnBuyerFee(uint256 amount) external onlyOwner {
-        require(amount != _burnBuyerFee && amount < FEE_MAX, "out of range");
-		_burnBuyerFee = amount;
-		emit SetBurnBuyerFee(amount);
+	function setBurnBuyerFee(uint256 rate) external onlyOwner {
+        require(rate != _burnBuyerFee && rate < FEE_MAX, "out of range");
+		_burnBuyerFee = rate;
+		emit SetBurnBuyerFee(rate);
 	}
 
-	function setBurnOwnerFee(uint256 amount) external onlyOwner {
-        require(amount != _burnOwnerFee && amount < FEE_MAX, "out of range");
-		_burnOwnerFee = amount;
-		emit SetBurnOwnerFee(amount);
+	function setBurnOwnerFee(uint256 rate) external onlyOwner {
+        require(rate != _burnOwnerFee && rate < FEE_MAX, "out of range");
+		_burnOwnerFee = rate;
+		emit SetBurnOwnerFee(rate);
 	}
 
-    function setTransferFee(uint256 amount) external onlyOwner {
-        require(amount != _burnOwnerFee && amount < FEE_MAX, "out of range");
-		_transferFee = amount;
-		emit SetTransferFee(amount);
+    function setTransferFee(uint256 rate) external onlyOwner {
+        require(rate != _burnOwnerFee && rate < FEE_MAX, "out of range");
+		_transferFee = rate;
+		emit SetTransferFee(rate);
 	}
 
-    function setInterestFee(uint256 amount) external onlyOwner {
-        require(amount != _interestFee && amount < FEE_MAX, "out of range");
-		_interestFee = amount;
-		emit SetInterestFee(amount);
+    function setInterestFee(uint256 rate) external onlyOwner {
+        require(rate != _interestFee && rate < FEE_MAX, "out of range");
+		_interestFee = rate;
+		emit SetInterestFee(rate);
 	}
 
-    function setYieldFee(uint256 amount) external onlyOwner {
-        require(amount != _yieldFee && amount < FEE_MAX, "out of range");
-		_yieldFee = amount;
-		emit SetYieldFee(amount);
+    function setYieldFee(uint256 rate) external onlyOwner {
+        require(rate != _yieldFee && rate < FEE_MAX, "out of range");
+		_yieldFee = rate;
+		emit SetYieldFee(rate);
 	}
-
-    function setOwner(address _owner) external onlyOwner {
-        require(_owner != owner, "_owner == owner");
-        owner = _owner;
-        emit SetOwner(_owner);
-    }
 
 	function setFeeRecipient(address _recipient) onlyOwner {
         require(feeRecipient != _recipient, "feeRecipient == _recipient");
@@ -127,6 +114,5 @@ contract Fees {
     function yieldFee() public view returns (uint256) {
         return _yieldFee;
     }
-
 
 }
