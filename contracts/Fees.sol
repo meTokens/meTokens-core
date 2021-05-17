@@ -34,13 +34,13 @@ contract Fees is Ownable {
 	address public feeRecipient;
 
 	constructor(
-        uint256 mintFee_
-        uint256 burnBuyerFee_
-        uint256 burnOwnerFee_
-        uint256 transferFee_
-        uint256 interestFee_
+        uint256 mintFee_,
+        uint256 burnBuyerFee_,
+        uint256 burnOwnerFee_,
+        uint256 transferFee_,
+        uint256 interestFee_,
         uint256 yieldFee_
-    ) public {
+    ) {
         _mintFee = mintFee_;
         _burnBuyerFee = burnBuyerFee_;
         _burnOwnerFee = burnOwnerFee_;
@@ -85,7 +85,7 @@ contract Fees is Ownable {
 		emit SetYieldFee(rate);
 	}
 
-	function setFeeRecipient(address _recipient) onlyOwner {
+	function setFeeRecipient(address _recipient) external onlyOwner {
         require(feeRecipient != _recipient, "feeRecipient == _recipient");
 		feeRecipient = _recipient;
 		emit SetFeeRecipient(_recipient);
