@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
 import "../interfaces/I_ValueSet.sol";
+import "../interfaces/I_Migrations.sol";
 
 
 /// @title Bancor curve registry and calculator
@@ -30,12 +31,20 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     event Updated(uint256 indexed hubId);
 
-    I_Hub public hub = I_Hub(0x0);  // TODO: address
-
     // NOTE: keys will be the hub
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
+    I_Hub public hub;
+    I_Migrations public migrations;
+
+    constructor(
+        address _hub,
+        address _migrations
+    ) {
+        hub = I_Hub(_hub);
+        migrations = I_Migrations(_migrations);
+    }
 
     /// @inheritdoc I_ValueSet
     function updateValueSet(
@@ -53,9 +62,18 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
         _validateValueSet(_base_x, _base_y, _reserveWeight);
 
-        // TODO: determine where to put these variables
-        uint256 minBlocksUntilStart = 50;
-        uint256 minUpdateBlockDuration = 1000;
+        require(
+            _blockStart - block.number >= migrations.minBlocksUntilStart() &&
+            _blockStart - block.number <= migrations.maxBlocksUntilStart(),
+            "Unacceptable _blockStart"
+        );
+
+        require(
+            _blockTarget - _blockStart >= migrations.minUpdateBlockDuration() &&
+            _blockTarget - _blockStart <= migrations.maxUpdateBlockDuration(),
+            "Unacceptable update duration"
+        );
+
 
         require(_blockStart - minBlocksUntilStart >= block.number, "_blockStart too soon");
         require(_blockTarget - _blockStart >= minUpdateBlockDuration, "Update period too short");
