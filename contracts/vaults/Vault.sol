@@ -11,6 +11,7 @@ contract Vault {
     event WithdrawFees(uint256 amount, address to);
 
     uint256 private PRECISION = 10**18;
+    
     address foundry = address(0x0);  // TODO
     address gov = address(0x0);  // TODO
     I_VaultRegistry public vaultRegistry = I_VaultRegistry(0x0); // TODO
@@ -18,6 +19,10 @@ contract Vault {
     address public owner;
 	address private collateralAsset;
     uint256 accruedFees;
+
+    function addFee(uint256 amount) external {
+        accruedFees = accruedFees + amount;
+    }
 
     function getCollateralAsset() external view returns (address) {
         return collateralAsset;

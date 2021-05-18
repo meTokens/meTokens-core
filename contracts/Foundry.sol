@@ -33,32 +33,33 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!meTokenDetails.migrating, "meToken is migrating");
 
+        I_MeToken meToken = I_MeToken(_meToken);
+        I_CurveValueSet curve = I_CurveValueSet(huDetails.curve);
+        I_Vault vault = I_Vault(hubDetails.vault);
+        I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
+
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
         uint256 collateralDepositedAfterFees = _collateralDeposited - fee;
 
-        // Calculate how much meToken isminted
-        uint256 meTokensMinted = I_CurveValueSet(hubDetails.curve).calculateMintReturn(
+        // Calculate how much meToken is minted
+        uint256 meTokensMinted = curve.calculateMintReturn(
             hub,
-            I_MeToken(_meToken).totalSupply(),
+            meToken.totalSupply(),
             meTokenDetails.balancePooled,
-            collateralDepositedAfterFees
+            collateralDepositedAfterFees // TODO: do we use this calculation or collateralDeposited
         );
         
         // update balancePooled (TODO)
 
-
-        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
-
         // Send collateral to vault
-        // NOTE: this will break if msg.sender holds less collateral than what they're trying to deposit
-        I_ERC20(collateralAsset).transferFrom(msg.sender, address(this), collateralDeposited);
+        collateralToken.transferFrom(msg.sender, address(this), collateralDeposited);
 
         // Send fees to recipient
-        // TODO: track increment in fees over transfering
-        I_ERC20(collateralAsset).transferFrom(msg.sender, fees.feeRecipient(), fee);
+        if (fee > 0) {vault.addFee(fee);}
+        // collateralToken.transferFrom(msg.sender, fees.feeRecipient(), fee);
 
         // Mint meToken to user
-        I_MeToken(_meToken).mint(_recipient, meTokensMinted);
+        meToken.mint(_recipient, meTokensMinted);
     }
 
 
@@ -73,6 +74,11 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!meTokenDetails.migrating, "meToken is migrating");
 
+        I_MeToken meToken = I_MeToken(_meToken);
+        I_CurveValueSet curve = I_CurveValueSet(huDetails.curve);
+        I_Vault vault = I_Vault(hubDetails.vault);
+        I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
+
         uint256 fee;
         uint256 burnReturn;
 
@@ -81,7 +87,7 @@ contract Foundry {
         if (meTokenRegistry.getMeTokenOwner(_meToken) == msg.sender) {
 
             fee = _meTokensBurned * fees.burnOwnerFee() / PRECISION;
-            uint256 earnedFromLocked = _meTokensBurned * meTokenDetails.balanceLocked / I_MeToken(_meToken).totalSupply();
+            uint256 earnedFromLocked = _meTokensBurned * meTokenDetails.balanceLocked / meToken.totalSupply();
             burnReturn = _meTokensBurned - fee + earnedFromLocked;
 
             // decrease balance locked (TODO)
@@ -96,9 +102,9 @@ contract Foundry {
         }
 
         // Calculate how many collateral tokens are returned
-        uint256 collateralReturned = I_CurveValueSet(hubDetails.curve).calculateMintReturn(
+        uint256 collateralReturned = curve.calculateMintReturn(
             hub,
-            I_MeToken(_meToken).totalSupply(),
+            meToken.totalSupply(),
             meTokenDetails.balancePooled,
             burnReturn
         );
@@ -106,16 +112,16 @@ contract Foundry {
         // TODO: Update balance pooled
 
         // Burn metoken from user
-        // NOTE: this will break if msg.sender tries to burn more meTokens than what they own
-        I_MeToken(_meToken).burn(msg.sender, burnReturn);
+        meToken.burn(msg.sender, burnReturn);
 
         // Send collateral from vault
-        address collateralAsset = I_Vault(hubDetails.vault).getCollateralAsset();
-        I_ERC20(collateralAsset).transferFrom(hubDetails.vault, msg.sender, collateralReturned);        
+        collateralAsset.transferFrom(hubDetails.vault, msg.sender, collateralReturned);        
 
         // Transfer fees
-        // TODO: track increment in fees over transfering
-        I_MeToken(_meToken).transfer(fees.feeRecipient(), fee);
+        // TODO: Would fees be in meToken
+        meToken.transfer(fees.feeRecipient(), fee);
+        if (fee > 0) {vault.addFee(fee);}
+
     }
 
 
