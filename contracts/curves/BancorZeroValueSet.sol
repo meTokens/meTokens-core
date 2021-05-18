@@ -24,8 +24,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint base_y;
         uint256 reserveWeight;
 
-        uint256 blockStart;
-        uint256 blockTarget;
+        uint256 startTime;
+        uint256 endTime;
         bool targetReached;
     }
 
@@ -50,8 +50,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     function updateValueSet(
         uint256 _hubId,
         bytes32 _encodedTargetValueSet, // TODO: unencode
-        uint256 _blockStart,
-        uint256 _blockTarget
+        uint256 _startTime,
+        uint256 _endTime
     ) external override {
         require(msg.sender == hub.getHubOwner(_hubId), "msg.sender not hub owner");
         
@@ -62,29 +62,26 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
         _validateValueSet(_base_x, _base_y, _reserveWeight);
 
+        // TODO: determine where to place these requires so that a new curve 
+        //  will include them within their `updateValueSet()`
         require(
-            _blockStart - block.number >= migrations.minBlocksUntilStart() &&
-            _blockStart - block.number <= migrations.maxBlocksUntilStart(),
-            "Unacceptable _blockStart"
+            _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
+            _startTime - block.timestamp <= migrations.maxSecondsUntilStart(),
+            "Unacceptable _startTime"
         );
-
         require(
-            _blockTarget - _blockStart >= migrations.minUpdateBlockDuration() &&
-            _blockTarget - _blockStart <= migrations.maxUpdateBlockDuration(),
+            _endTime - _startTime >= migrations.minUpdateDuration() &&
+            _endTime - _startTime <= migrations.maxUpdateDuration(),
             "Unacceptable update duration"
         );
-
-
-        require(_blockStart - minBlocksUntilStart >= block.number, "_blockStart too soon");
-        require(_blockTarget - _blockStart >= minUpdateBlockDuration, "Update period too short");
 
         // Create target value set mapped to the hub
         TargetValueSet memory targetValueSet = TargetValueSet(
             _base_x,
             _base_y,
             _reserveWeight,
-            _blockStart,
-            _blockTarget,
+            _startTime,
+            _endTime,
             false
         );
         targetValueSets[_hubId] = targetValueSet;
@@ -145,7 +142,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             TargetValueSet memory t = targetValueSets[_hubId];
 
             // Only calculate weighted amount if update is live
-            if (t.blockStart > block.number) {
+            if (t.startTime > block.timestamp) {
                 if (_supply > 0) {
                     uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -165,7 +162,9 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                 meTokenAmount = _calculateWeightedAmount(
                     meTokenAmount,
                     targetMeTokenAmount,
-                    t
+                    _hubId,
+                    t.startTime,
+                    t.endTime
                 );
             }
         }
@@ -191,7 +190,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         if (v.updating) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
-            uint256 targetAmount = _calculateBurnReturn(
+            uint256 targetCollateralTokenAmount =  (
                 _burnAmount,
                 t.reserveWeight,
                 _supply,
@@ -199,10 +198,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             );
             collateralTokenAmount = _calculateWeightedAmount(
                 collateralTokenAmount,
-                targetAmount,
+                targetCollateralTokenAmount,
                 _hubId,
-                t.blockStart,
-                t.blockTarget
+                t.startTime,
+                t.endTime
             );
         }
     }
@@ -213,18 +212,18 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _amount,
         uint256 _targetAmount,
         uint256 _hubId,
-        uint256 _blockStart,
-        uint256 _blockTarget
+        uint256 _startTime,
+        uint256 _endTime
     ) private returns (uint256 weightedAmount) {
         uint256 targetWeight;
 
-        if (block.number <= _blockTarget) { 
+        if (block.timestamp > _endTime) { 
        // Finish update if complete
             _finishUpdate(_hubId);
             targetWeight = PRECISION;
         } else {
-            uint256 targetProgress = block.number - _blockStart;
-            uint256 targetLength = _blockTarget - _blockStart;
+            uint256 targetProgress = block.timestamp - _startTime;
+            uint256 targetLength = _endTime - _startTime;
             // TODO: is this calculation right?
             targetWeight = PRECISION * targetProgress / targetLength;
         }

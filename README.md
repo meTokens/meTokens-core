@@ -11,3 +11,10 @@
 
 ### Vault
 * Stores all collateral assets
+
+
+### TODO
+* [x] switch BancorZeroValueSet and Migrations from block number to timestamp
+* [ ] Unencode `BancorZeroValueSet.updateValueSet`
+* [ ] Increment Vault.accruedFees from minting and burning
+    * Don't update when fee rate is 0

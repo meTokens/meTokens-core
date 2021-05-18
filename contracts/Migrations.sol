@@ -8,70 +8,71 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice contract to manage migration settings
 contract Migrations is Ownable {
 
-    event SetMinBlocksUntilStart(uint256 blocks);
-    event SetMaxBlocksUntilStart(uint256 blocks);
-    event SetMinUpdateBlockDuration(uint256 blocks);
-    event SetMaxUpdateBlockDuration(uint256 blocks);
+    event SetMinSecondsUntilStart(uint256 amount);
+    event SetMaxSecondsUntilStart(uint256 amount);
+    event SetMinUpdateDuration(uint256 amount);
+    event SetMaxUpdateDuration(uint256 amount);
 
     // TODO: set a reasonable block max
     uint256 private BLOCK_MAX = 10**18;
 
-    uint256 private _minBlocksUntilStart = 50;
-    uint256 private _maxBlocksUntilStart = 50;
-    uint256 private _minUpdateBlockDuration = 1000;
-    uint256 private _maxUpdateBlockDuration = 1000;
+    // TODO: Figure out what these would be
+    uint256 private _minSecondsUntilStart;
+    uint256 private _maxSecondsUntilStart;
+    uint256 private _minUpdateDuration;
+    uint256 private _maxUpdateDuration;
 
     constructor(
-        uint256 minBlocksUntilStart_,
-        uint256 maxBlocksUntilStart_,
-        uint256 minUpdateBlockDuration_,
-        uint256 maxUpdateBlockDuration_
+        uint256 minSecondsUntilStart_,
+        uint256 maxSecondsUntilStart_,
+        uint256 minUpdateDuration_,
+        uint256 maxUpdateDuration_
     ) {
-        _minBlocksUntilStart = minBlocksUntilStart_;
-        _maxBlocksUntilStart = maxBlocksUntilStart_;
-        _minUpdateBlockDuration = minUpdateBlockDuration_;
-        _maxUpdateBlockDuration = maxUpdateBlockDuration_;
+        _minSecondsUntilStart = minSecondsUntilStart_;
+        _maxSecondsUntilStart = maxSecondsUntilStart_;
+        _minUpdateDuration = minUpdateDuration_;
+        _maxUpdateDuration = maxUpdateDuration_;
     }
 
-    function setMinBlocksUntilStart(uint256 blocks) external onlyOwner {
-        require(blocks != _minBlocksUntilStart && blocks < BLOCK_MAX, "out of range");
-        _minBlocksUntilStart = blocks;
-        emit SetMinBlocksUntilStart(blocks);
+    function setMinSecondsUntilStart(uint256 amount) external onlyOwner {
+        require(amount != _minSecondsUntilStart && amount < BLOCK_MAX, "out of range");
+        _minSecondsUntilStart = amount;
+        emit SetMinSecondsUntilStart(amount);
     }
 
-    function setMaxBlocksUntilStart(uint256 blocks) external onlyOwner {
-        require(blocks != _maxBlocksUntilStart && blocks < BLOCK_MAX, "out of range");
-        _maxBlocksUntilStart = blocks;
-        emit SetMaxBlocksUntilStart(blocks);
+    function setMaxSecondsUntilStart(uint256 amount) external onlyOwner {
+        require(amount != _maxSecondsUntilStart && amount < BLOCK_MAX, "out of range");
+        _maxSecondsUntilStart = amount;
+        emit SetMaxSecondsUntilStart(amount);
     }
 
-    function setMinUpdateBlockDuration(uint256 blocks) external onlyOwner {
-        require(blocks != _minUpdateBlockDuration && blocks < BLOCK_MAX, "out of range");
-        _minUpdateBlockDuration = blocks;
-        emit SetMinUpdateBlockDuration(blocks);
+    function setMinUpdateDuration(uint256 amount) external onlyOwner {
+        require(amount != _minUpdateDuration && amount < BLOCK_MAX, "out of range");
+        _minUpdateDuration = amount;
+        emit SetMinUpdateDuration(amount);
     }
 
-    function setMaxUpdateBlockDuration(uint256 blocks) external onlyOwner {
-        require(blocks != _maxUpdateBlockDuration && blocks < BLOCK_MAX, "out of range");
-        _maxUpdateBlockDuration = blocks;
-        emit SetMaxUpdateBlockDuration(blocks);
+    function setMaxUpdateDuration(uint256 amount) external onlyOwner {
+        require(amount != _maxUpdateDuration && amount < BLOCK_MAX, "out of range");
+        _maxUpdateDuration = amount;
+        emit SetMaxUpdateDuration(amount);
     }
 
 
-    function minBlocksUntilStart() public view returns (uint256) {
-        return _minBlocksUntilStart;
+    function minSecondsUntilStart() public view returns (uint256) {
+        return _minSecondsUntilStart;
     }
 
-    function maxBlocksUntilStart() public view returns (uint256) {
-        return _maxBlocksUntilStart;
+    function maxSecondsUntilStart() public view returns (uint256) {
+        return _maxSecondsUntilStart;
     }
 
-    function minUpdateBlockDuration() public view returns (uint256) {
-        return _minUpdateBlockDuration;
+    function minUpdateDuration() public view returns (uint256) {
+        return _minUpdateDuration;
     }
 
-    function maxUpdateBlockDuration() public view returns (uint256) {
-        return _maxUpdateBlockDuration;
+    function maxUpdateDuration() public view returns (uint256) {
+        return _maxUpdateDuration;
     }
 
 }
