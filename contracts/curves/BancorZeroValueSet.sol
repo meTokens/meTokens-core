@@ -60,6 +60,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         ValueSet storage valueSet = valueSets[_hubId];
         require(!valueSet.updating, "ValueSet already updating");
 
+        // NOTE: this validates parameters are within the bounds before setting to value set
+        // This is needed to register future value sets of different curves, as they may have different
+        // arguments within Hub.registerValueSet()
+        uint256 base_x;
+        uint256 base_y;
+        uint256 reserveWeight;
+        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
         _validateValueSet(_base_x, _base_y, _reserveWeight);
 
         // TODO: determine where to place these requires so that a new curve 
@@ -97,13 +104,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         bytes32 _encodedValueSet
     ) external override {
         // TODO: access control
+
         uint256 base_x;
         uint256 base_y;
         uint256 reserveWeight;
-
-        // NOTE: this validates parameters are within the bounds before setting to value set
-        // This is needed to register future value sets of different curves, as they may have different
-        // arguments within Hub.registerValueSet()
         (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
         _validateValueSet(base_x, base_y, reserveWeight);
 
@@ -218,7 +222,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 targetWeight;
 
         if (block.timestamp > _endTime) { 
-       // Finish update if complete
+            // Finish update if complete
             _finishUpdate(_hubId);
             targetWeight = PRECISION;
         } else {
