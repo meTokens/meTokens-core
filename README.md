@@ -17,4 +17,3 @@
 * [x] switch BancorZeroValueSet and Migrations from block number to timestamp
 * [x] Unencode `BancorZeroValueSet.updateValueSet`
 * [ ] Increment Vault.accruedFees from minting and burning
-    * `fees.feeRecipient()` - should withdrawing fees only get sent to a specific address?

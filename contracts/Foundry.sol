@@ -54,9 +54,8 @@ contract Foundry {
         collateralToken.transferFrom(msg.sender, address(this), collateralDeposited);
         meTokenDetails.balancePooled += collateralDepositedAfterFees; // TODO
 
-        // Send fees to recipient
+        // Transfer fees
         if (fee > 0) {vault.addFee(fee);}
-        // collateralToken.transferFrom(msg.sender, fees.feeRecipient(), fee);
 
         // Mint meToken to user
         meToken.mint(_recipient, meTokensMinted);

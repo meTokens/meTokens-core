@@ -15,7 +15,6 @@ contract Fees is Ownable {
     event SetInterestFee(uint256 rate);
     event SetYieldFee(uint256 rate);
     event SetOwner(address owner);
-	event SetFeeRecipient(address recipient);
 
     uint256 private FEE_MAX = 10**18;
 	/// @dev for when a meToken is minted
@@ -30,8 +29,6 @@ contract Fees is Ownable {
     uint256 private _interestFee;
     /// @dev Generated from liquidity mining
 	uint256 private _yieldFee;
-
-	address public feeRecipient;
 
 	constructor(
         uint256 mintFee_,
@@ -83,12 +80,6 @@ contract Fees is Ownable {
         require(rate != _yieldFee && rate < FEE_MAX, "out of range");
 		_yieldFee = rate;
 		emit SetYieldFee(rate);
-	}
-
-	function setFeeRecipient(address _recipient) external onlyOwner {
-        require(feeRecipient != _recipient, "feeRecipient == _recipient");
-		feeRecipient = _recipient;
-		emit SetFeeRecipient(_recipient);
 	}
 
     function mintFee() public view returns (uint256) {

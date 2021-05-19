@@ -24,6 +24,20 @@ contract Vault {
         accruedFees = accruedFees + amount;
     }
 
+
+    function withdrawFees(bool _max, uint256 _amount, address _to) external {
+        require(msg.sender == gov, "!gov");
+        if (_max) {
+            _amount = accruedFees;
+        } else {
+            require(_amount <= accruedFees, "_amount cannot exceed feeBalance");
+        }
+
+        I_ERC20(collateralAsset).transfer(_to, _amount);
+        emit WithdrawFees(_amount, _to);
+    }
+
+
     function getCollateralAsset() external view returns (address) {
         return collateralAsset;
     }

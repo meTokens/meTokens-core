@@ -7,7 +7,6 @@ interface I_Fees {
     function setInterestFee(uint256 amount) external;
     function setYieldFee(uint256 amount) external;
     function setOwner(address _owner) external;
-    function setFeeRecipient(address _recipient) external;
     function mintFee() external view returns (uint256);
     function burnBuyerFee() external view returns (uint256);
     function burnOwnerFee() external view returns (uint256);
