@@ -16,7 +16,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         address indexed owner,
         string name,
         string symbol,
-        uint256 hub
+        uint256 hubId
     );
     event TransferMeTokenOwnership(address from, address to, address meToken);
 
@@ -29,10 +29,10 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
     struct MeTokenDetails {
         address owner;
-        uint256 hub;
+        uint256 hubId;
 		uint256 balancePooled;
 		uint256 balanceLocked;
-        bool migrating;
+        bool migrating; // TODO: validate
 	}
 
     constructor(address _meTokenFactory, address _hub) public {
@@ -49,7 +49,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     ) external {
         // TODO: access control
         require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
-        require(hub.getHubStatus(_hubId) != "INACTIVE", "Hub not active");
+        require(hub.getHubStatus(_hubId) != "INACTIVE", "Hub not active"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
@@ -75,18 +75,18 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         meTokenOwners[msg.sender] = true;
 
         // Get curve information from hub
-        I_CurveValueSet curveValueSet = I_CurveValueSet(hub.getHubCurve);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve);
 
-        uint256 meTokensMinted = curveValueSet.calculateMintReturn(
-            _collateralDeposited,   // _deposit_amount
-            _hubId,                   // _hubId
+        uint256 meTokensMinted = curve.calculateMintReturn(
+            _collateralDeposited,  // _deposit_amount
+            _hubId,                // _hubId
             0,                      // _supply
             0                       // _balancePooled
         );
 
         // Transfer collateral to vault and return the minted meToken
         I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
-        I_MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+        I_ERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
 
         emit RegisterMeToken(_meToken, msg.sender, _name, _symbol, _hubId);
     }
@@ -103,6 +103,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
     }
+
+
+    function update
 
 
     /// @inheritdoc I_MeTokenRegistry
@@ -138,12 +141,23 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         return meTokenDetails.hub;
     }
 
-    /// @inheritdoc I_MeTokenRegistry
-    function getMeTokenDetails(address _meToken) external view override returns (MeTokenDetails calldata) {
+    /// @inheritdoc I_MeTokenRegistry // TODO
+    function getMeTokenDetails(
+        address _meToken
+    ) external view override returns (
+        address owner,
+        uint256 hubId,
+        uint256 balancePooled,
+        uint256 balanceLocked,
+        bool migrating
+    ) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails;
+        owner = meTokenDetails.owner;
+        hubId = meTokenDetails.hubId;
+        balancePooled = meTokenDetails.balancePooled;
+        balanceLocked = meTokenDetails.balanceLocked;
+        migrating = meTokenDetails.migrating;
     }
-
 
     // TODO
     // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
