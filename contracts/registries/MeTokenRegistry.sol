@@ -19,6 +19,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 hubId
     );
     event TransferMeTokenOwnership(address from, address to, address meToken);
+    event IncrementBalancePooled(bool add, address meToken, uint256 amount);
+    event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
     I_MeTokenFactory public meTokenFactory;
     I_Hub public hub;
@@ -105,7 +107,28 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    function update
+    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external {
+        MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
+        if (add) {
+            meTokenDetails.balancePooled = meTokenDetails.balancePooled + _amount;
+        } else {
+            meTokenDetails.balancePooled = meTokenDetails.balancePooled - _amount;
+        }
+        
+        emit IncrementBalancePooled(add, _meToken, _amount);
+    }
+
+
+    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external {
+        MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
+        if (add) {
+            meTokenDetails.balanceLocked = meTokenDetails.balanceLocked + _amount;
+        } else {
+            meTokenDetails.balanceLocked = meTokenDetails.balanceLocked - _amount;
+        }
+        
+        emit IncrementBalanceLocked(add, _meToken, _amount);
+    }
 
 
     /// @inheritdoc I_MeTokenRegistry

@@ -55,7 +55,11 @@ contract Foundry {
         // Send collateral to vault and update balance pooled
         collateralToken.transferFrom(msg.sender, address(vault), _collateralDeposited);
 
-        meTokenDetails.balancePooled += collateralDepositedAfterFees; // TODO
+        meTokenRegistry.incrementBalancePooled(
+            true,
+            _meToken,
+            collateralDepositedAfterFees
+        ); // TODO: validate
 
         // Transfer fees
         if (fee > 0) {vault.addFee(fee);}
@@ -115,9 +119,27 @@ contract Foundry {
         // Send collateral from vault
         collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
 
-        // TODO: Update balances pooled & locked
-        meTokenDetails.balancePooled -= collateralReturned;
-        meTokenDetails.balancedLocked += (collateralReturned - collateralReturnedWeighted);
+        meTokenRegistry.incrementBalancePooled(
+            false,
+            _meToken,
+            collateralReturnedAfterFees
+        ); // TODO: validate
+
+        if (collateralReturnedWeighted > collateralReturned) {
+            // Is owner
+            meTokenRegistry.incrementBalanceLocked(
+                false,
+                _meToken,
+                collateralReturnedWeighted - collateralReturned
+            );
+        } else {
+            // Is buyer
+            meTokenRegistry.incrementBalanceLocked(
+                true,
+                _meToken,
+                collateralReturned - collateralReturnedWeighted // TODO
+            );
+        }
 
         // Transfer fees
         if (fee > 0) {vault.addFee(fee);}
