@@ -34,6 +34,8 @@ contract Vault {
         }
 
         I_ERC20(collateralAsset).transfer(_to, _amount);
+        accruedFees = accruedFees - _amount;
+        
         emit WithdrawFees(_amount, _to);
     }
 
