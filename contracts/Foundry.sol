@@ -6,6 +6,7 @@ import "./interfaces/I_MeToken.sol";
 import "./interfaces/I_ERC20.sol";
 import "./interfaces/I_CurveValueSet.sol";
 import "./interfaces/I_Vault.sol";
+import "./interfaces/I_Hub.sol";
 
 
 contract Foundry {
@@ -14,6 +15,7 @@ contract Foundry {
 
     I_Fees public fees;
     I_MeTokenRegistry public meTokenRegistry;
+    I_Hub public hub;
 
     constructor(
         address _fees,
@@ -33,12 +35,11 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!migrating, "meToken is migrating");
 
-        HubDetails memory hubDetails = hubs[hubId];
-        require(hubDetails.status != "INACTIVE", "Hub inactive");
+        require(hub.getHubStatus(hubId) != "INACTIVE", "Hub inactive");
 
         I_MeToken meToken = I_MeToken(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(huDetails.curve);
-        I_Vault vault = I_Vault(hubDetails.vault);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
+        I_Vault vault = I_Vault(hub.getHubVault(hubId));
         I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
@@ -80,12 +81,12 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!migrating, "meToken is migrating");
 
-        HubDetails memory hubDetails = hubs[hubId];
-        require(hubDetails.status != "INACTIVE", "Hub inactive");
+        // TODO: should all the hub.functions be converted to Hub.getHubDetails()?
+        require(hub.getHubStatus(hubId) != "INACTIVE", "Hub inactive");
 
         I_MeToken meToken = I_MeToken(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(huDetails.curve);
-        I_Vault vault = I_Vault(hubDetails.vault);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
+        I_Vault vault = I_Vault(hub.getHubVault(hubId));
         I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
         
         // Calculate how many collateral tokens are returned
@@ -116,33 +117,33 @@ contract Foundry {
         // Burn metoken from user
         meToken.burn(msg.sender, _meTokensBurned);
 
-        // Send collateral from vault
-        collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
-
         meTokenRegistry.incrementBalancePooled(
             false,
             _meToken,
-            collateralReturnedAfterFees
-        ); // TODO: validate
+            collateralReturned
+        );
 
         if (collateralReturnedWeighted > collateralReturned) {
-            // Is owner
+            // Is owner, subtract from balance locked
             meTokenRegistry.incrementBalanceLocked(
                 false,
                 _meToken,
                 collateralReturnedWeighted - collateralReturned
             );
         } else {
-            // Is buyer
+            // Is buyer, add to balance locked
             meTokenRegistry.incrementBalanceLocked(
                 true,
                 _meToken,
-                collateralReturned - collateralReturnedWeighted // TODO
+                collateralReturned - collateralReturnedWeighted
             );
         }
 
         // Transfer fees
         if (fee > 0) {vault.addFee(fee);}
+
+        // Send collateral from vault
+        collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
 
     }
 
