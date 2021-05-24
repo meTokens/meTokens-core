@@ -129,18 +129,6 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         return meTokenOwners[_owner];
     }
 
-    // TODO: natspec
-    function getMeTokenOwner(address _meToken) public view override returns (address) {
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.owner;
-    }
-
-    /// @inheritdoc I_MeTokenRegistry
-    function getMeTokenHub(address _meToken) external view override returns (uint256) {
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        return meTokenDetails.hub;
-    }
-
     /// @inheritdoc I_MeTokenRegistry // TODO
     function getMeTokenDetails(
         address _meToken

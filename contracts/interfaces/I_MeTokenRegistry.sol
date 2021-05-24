@@ -23,16 +23,17 @@ interface I_MeTokenRegistry {
     /// @return TODO
     function isMeTokenOwner(address _owner) external view returns (bool);
 
-
     /// @notice TODO
     /// @param _meToken TODO
     /// @return TODO
-    function getMeTokenHub(address _meToken) external view returns (uint256);
-
-    /// @notice TODO
-    /// @param _meToken TODO
-    /// @return TODO
-    function getMeTokenDetails(address _meToken) external view returns (MeTokenDetails 
-
+    function getMeTokenDetails(
+        address _meToken
+    ) external view returns (
+        address owner,
+        uint256 hubId,
+        uint256 balancePooled,
+        uint256 balanceLocked,
+        bool migrating
+    );
 
 }
