@@ -47,7 +47,7 @@ contract Foundry {
         // Calculate how much meToken is minted
         uint256 meTokensMinted = curve.calculateMintReturn(
             collateralDepositedAfterFees,
-            hub,
+            hubId,
             meToken.totalSupply(),
             balancePooled
         );
@@ -87,7 +87,7 @@ contract Foundry {
         // Calculate how many collateral tokens are returned
         uint256 collateralReturned = curve.calculateBurnReturn(
             _meTokensBurned,
-            hub,
+            hubId,
             meToken.totalSupply(),
             balancePooled
         );
