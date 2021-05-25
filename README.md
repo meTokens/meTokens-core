@@ -26,3 +26,4 @@
 * [x] `Hub.sol` - does `HubDetails` need `valueSet` identifier if it's always the same? - no
 * [ ] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
 * [ ] updating `refundRatio` within `Hub`
+* [ ] Hub status
