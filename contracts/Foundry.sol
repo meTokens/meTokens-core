@@ -81,7 +81,6 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!migrating, "meToken is migrating");
 
-        // TODO: should all the hub.functions be converted to Hub.getHubDetails()?
         require(hub.getHubStatus(hubId) != "INACTIVE", "Hub inactive");
 
         I_MeToken meToken = I_MeToken(_meToken);

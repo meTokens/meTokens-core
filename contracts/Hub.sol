@@ -16,6 +16,11 @@ contract Hub is I_Hub {
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event DeactivateHub(uint256 hub);
 
+    modifier hubExists(uint256 _hubId) {
+        require(_hubId <= hubCount, "_hubId exceeds hubCount");
+        _;
+    }
+
     uint256 private immutable PRECISION = 10**18;
     address public gov;
     I_Curve public curve;
@@ -26,7 +31,7 @@ contract Hub is I_Hub {
     uint256 private hubCount;
 
     enum Status { INACTIVE, ACTIVE, UPDATING, MIGRATING }
-    struct HubDetails {    
+    struct HubDetails {
         string name;
         address owner;
         address vault;
@@ -35,14 +40,6 @@ contract Hub is I_Hub {
         uint256 refundRatio;
         Status status;
     }
-
-    struct MeTokenDetails {
-        address owner;
-        uint256 hub;
-		uint256 balancePooled;
-		uint256 balanceLocked;
-        bool migrating;
-	}
 
     constructor(
         address _gov,
@@ -93,15 +90,13 @@ contract Hub is I_Hub {
             _refundRatio,
             ACTIVE
         );
-        hubs[hubCount] = hubDetails;
-        hubCount++;
+        hubs[hubCount++] = hubDetails;
     }
     
 
     /// @inheritdoc I_Hub
-    function deactivateHub(uint256 _hubId) external override {
+    function deactivateHub(uint256 _hubId) external override hubExists(_hubId) {
         // TODO: access control
-        require(_hubId <= hubCount, "_hubId exceeds hubCount");
         HubDetails storage hubDetails = hubs[_hubId];
 
         require(hubDetails.active, "Hub not active");
@@ -109,25 +104,28 @@ contract Hub is I_Hub {
         emit DeactivateHub(_hubId);
     }
 
+    function setRefundRatio(uint256 _hubId, uint256 _refundRatio) external {
 
-    function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) {
+    }
+
+    function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
         // TODO: access control
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
 
-        HubDetails storage hubDetails = hubs[_hubId];
+        HubDetails memory hubDetails = hubs[_hubId];
         require(_curve != hubDetails.curve, "Cannot set curve to the same curve");
 
         I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
     }
+
+    function 
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
 
     // TODO: natspec
-    function getHubOwner(uint256 _hubId) public view override returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+    function getHubOwner(uint256 _hubId) public view override returns (address) hubExists(_hubId) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.owner;
     }
@@ -135,23 +133,42 @@ contract Hub is I_Hub {
 
     /// @inheritdoc I_Hub
     function getHubStatus(uint256 _hubId) public view override returns (Status) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.status;
     }
 
 
     /// @inheritdoc I_Hub
-    function getHubDetails(uint256 _hubId) external view override returns (HubDetails calldata) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+    function getHubDetails(
+        uint256 _hubId
+    ) external view override hubExists(_hubd) returns (
+        string name,
+        address owner,
+        address vault,
+        address curve,
+        uint256 valueSet,
+        uint256 refundRatio,
+        Status status
+    ) {
         HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails;
+        name = hubDetails.name;
+        owner = hubDetails.owner;
+        vault = hubDetails.vault;
+        curve = hubDetails.curve;
+        valueSet = hubDetails.valueSet;
+        refundRatio = hubDetails.refundRatio;
+        status = hubDetails.status;
     }
 
+    /// @inheritdoc I_Hub
+    function getHubCurve(uint256 _hubId) external view override returns (address) {
+        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.curve;
+    }
 
     /// @inheritdoc I_Hub
     function getHubVault(uint256 _hubId) external view override returns (address) {
-        // TODO: is this excessive require from MeTokenRegistry already using this.isActiveHub()?
         require(_hubId < hubCount, "_hubId exceeds hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
