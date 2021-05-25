@@ -79,7 +79,7 @@ contract Hub is I_Hub {
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _curve, _collateralAsset, _encodedVaultAdditionalArgs);
+        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails memory hubDetails = HubDetails(

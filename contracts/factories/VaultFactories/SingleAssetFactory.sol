@@ -30,14 +30,12 @@ contract SingleAssetFactory {
 	/// @notice function to create and register a new vault to the vault registry
     /// @param _name name of vault
     /// @param _owner owner of vault
-    /// @param _valueSetAddress address of {Curve}ValueSet.sol
     /// @param _collateralAsset address of vault collateral asset
     /// @param _encodedVaultAdditionalArgs Additional arguments passed to create a vault
     /// @return address of new vault
     function createVault(
         string calldata _name,
         address _owner,
-        address _valueSetAddress,
         address _collateralAsset,
         bytes4 _encodedVaultAdditionalArgs // NOTE: potentially needed for other vaults 
     ) onlyHub external returns (address) {
