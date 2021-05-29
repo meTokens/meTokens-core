@@ -30,7 +30,9 @@ contract Hub is I_Hub {
     mapping(uint256 => HubDetails) private hubs;
     uint256 private hubCount;
 
-    enum Status { INACTIVE, ACTIVE, UPDATING, MIGRATING }
+    enum Status { INACTIVE, ACTIVE,
+        UPDATING, SHIFTING, RECOLLATERALIZING, MIGRATING }
+    
     struct HubDetails {
         string name;
         address owner;
