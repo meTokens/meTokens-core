@@ -22,17 +22,13 @@ contract Hub is I_Hub {
     }
 
     uint256 private immutable PRECISION = 10**18;
+
+    uint256 private hubCount;
     address public gov;
     I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
 
-    mapping(uint256 => HubDetails) private hubs;
-    uint256 private hubCount;
-
-    enum Status { INACTIVE, ACTIVE,
-        UPDATING, SHIFTING, RECOLLATERALIZING, MIGRATING }
-    
     struct HubDetails {
         string name;
         address owner;
@@ -42,6 +38,10 @@ contract Hub is I_Hub {
         uint256 refundRatio;
         Status status;
     }
+    mapping(uint256 => HubDetails) private hubs;
+
+    enum Status { INACTIVE, ACTIVE,
+        RECONFIGURING, SHIFTING, RECOLLATERALIZING, MIGRATING }
 
     constructor(
         address _gov,
@@ -106,9 +106,6 @@ contract Hub is I_Hub {
         emit DeactivateHub(_hubId);
     }
 
-    function setRefundRatio(uint256 _hubId, uint256 _refundRatio) external {
-
-    }
 
     function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
         // TODO: access control
@@ -120,14 +117,12 @@ contract Hub is I_Hub {
         I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
     }
 
-    function 
-
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
 
     // TODO: natspec
-    function getHubOwner(uint256 _hubId) public view override returns (address) hubExists(_hubId) {
+    function getHubOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.owner;
     }

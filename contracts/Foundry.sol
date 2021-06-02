@@ -30,12 +30,23 @@ contract Foundry {
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        uint256 migrating;
-        (, hubId, balancePooled, balanceLocked, migrating) = meTokenRegistry.getMeTokenDetails(_meToken);
+        uint256 resubscribing;
+        (, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getMeTokenDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
-        require(!migrating, "meToken is migrating");
+        require(!resubscribing, "meToken is resubscribing");
 
-        require(hub.getHubStatus(hubId) != "INACTIVE", "Hub inactive");
+        uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
+        require(hubStatus != 1, "Hub inactive");
+
+        bool migrating;
+        // bool reconfiguring;  NOTE: this is done on the valueSet level
+        bool recollateralizing;
+
+        if (hubStatus == 4) { // UPDATING
+            (, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+        }
+
 
         I_MeToken meToken = I_MeToken(_meToken);
         I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
@@ -52,8 +63,26 @@ contract Foundry {
             meToken.totalSupply(),
             balancePooled
         );
+        if (migrating) {
+            // Do something
+            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
+            targetMeTokensMinted = targetCurve.calculateMintReturn(
+                collateralDepositedAfterFees,
+                hubId,
+                meToken.totalSupply(),
+                balancePooled
+            );
+            meTokensMinted = calculateWeightedAmount(
+                meTokensMinted,
+                targetMeTokensMinted,
+                // _hubId,  // TODO: remove this argument?
+                startTime,
+                endTime
+            );
+        }
         
         // Send collateral to vault and update balance pooled
+        if (!recollateralizing)
         collateralToken.transferFrom(msg.sender, address(vault), _collateralDeposited);
 
         meTokenRegistry.incrementBalancePooled(
@@ -76,12 +105,23 @@ contract Foundry {
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        uint256 migrating;
-        (owner, hubId, balancePooled, balanceLocked, migrating) = meTokenRegistry.getMeTokenDetails(_meToken);
+        uint256 resubscribing;
+        (owner, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getMeTokenDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
-        require(!migrating, "meToken is migrating");
+        require(!resubscribing, "meToken is resubscribing");
 
-        require(hub.getHubStatus(hubId) != "INACTIVE", "Hub inactive");
+        uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
+        require(hubStatus != 1, "Hub inactive");
+
+        bool migrating;
+        bool shifting;
+        // bool reconfiguring;  NOTE: this is done on the valueSet level
+        bool recollateralizing;
+
+        if (hubStatus == 4) { // UPDATING
+            (shifting, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+        }
 
         I_MeToken meToken = I_MeToken(_meToken);
         I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
@@ -95,6 +135,24 @@ contract Foundry {
             meToken.totalSupply(),
             balancePooled
         );
+        if (migrating) {
+            // Do something
+            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
+            targetMeTokensMinted = targetCurve.calculateMintReturn(
+                collateralDepositedAfterFees,
+                hubId,
+                meToken.totalSupply(),
+                balancePooled
+            );
+            meTokensMinted = calculateWeightedAmount(
+                meTokensMinted,
+                targetMeTokensMinted,
+                // _hubId,  // TODO: remove this argument?
+                startTime,
+                endTime
+            );
+        }
+
 
         uint256 feeRate;
         uint256 collateralMultiplier;
@@ -106,6 +164,15 @@ contract Foundry {
         } else {
             feeRate = fees.burnBuyerFee();
             collateralMultiplier = PRECISION - hubDetails.refundRatio;
+            if (shifting) {
+                targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(_hubId);
+                collateralMultiplier = calculateWeightedAmount(
+                    collateralMultiplier,
+                    targetCollateralMultiplier,
+                    startTime,
+                    endTime
+                );
+            }
         }
 
         uint256 collateralReturnedWeighted = collateralReturned * collateralMultiplier / PRECISION;
