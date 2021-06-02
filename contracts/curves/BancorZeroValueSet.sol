@@ -18,6 +18,14 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 		uint256 reserveWeight;
         bool updating;
 	}
+    struct TargetValueSet {
+        uint256 base_x;
+		uint256 base_y;
+		uint256 reserveWeight;
+        uint256 startTime;
+        uint256 endTime;
+    }
+
 
     event Updated(uint256 indexed hubId);
 
@@ -37,23 +45,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     }
 
 
-    /// TODO: natspec
-    function validate(bytes32 _encodedValueSet) public returns (
-        uint256 base_x,
-        uint256 base_y,
-        uint256 reserveWeight
-    )
-    {
-        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
-        _validate(base_x, base_y, reserveWeight);
-    }
-
-    function _validate(uint256 _base_x, uint256 _base_y, uint256 _reserveWeight) private {
-        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
-        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
-        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
-    }
-
     /// @inheritdoc I_ValueSet
 	function registerValueSet(
         uint256 _hubId,
@@ -66,6 +57,40 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         ValueSet memory valueSet = ValueSet(x, y, r, false);
         valueSets[_hubId] = valueSet;
     }
+
+    function registerValueSet(
+        uint256 _hubId,
+        bytes32 _encodedValueSet,
+        uint256 _startTime,
+        uint256 _endTime
+    ) external override {
+        // TODO: access control
+
+        (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
+
+        ValueSet memory valueSet = ValueSet(x, y, r, _startTime, _endTime);
+        valueSets[_hubId] = valueSet;
+    }
+
+
+    /// TODO: natspec
+    function validate(bytes32 _encodedValueSet) public returns (
+        uint256 base_x,
+        uint256 base_y,
+        uint256 reserveWeight
+    )
+    {
+        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
+        _validate(base_x, base_y, reserveWeight);
+    }
+
+
+    function _validate(uint256 _base_x, uint256 _base_y, uint256 _reserveWeight) private {
+        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
+        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
+        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+    }
+
 
 
     /// @inheritdoc I_ValueSet
