@@ -16,7 +16,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
-        bool updating;
+        bool reconfiguring;
 	}
     struct TargetValueSet {
         uint256 base_x;
@@ -58,7 +58,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         valueSets[_hubId] = valueSet;
     }
 
-    function registerValueSet(
+    function registerTargetValueSet(
         uint256 _hubId,
         bytes32 _encodedValueSet,
         uint256 _startTime,
@@ -68,8 +68,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
         (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
 
-        ValueSet memory valueSet = ValueSet(x, y, r, _startTime, _endTime);
-        valueSets[_hubId] = valueSet;
+        ValueSet memory targetValueSet = TargetValueSet(x, y, r, _startTime, _endTime);
+        targetValueSets[_hubId] = targetValueSet;
     }
 
 
@@ -90,7 +90,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
     }
-
 
 
     /// @inheritdoc I_ValueSet
@@ -118,12 +117,12 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             );
         }
 
-        if (v.updating) {
+        if (v.reconfiguring) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
 
             // Only calculate weighted amount if update is live
-            if (t.startTime > block.timestamp) {
+            if (block.timestamp > t.startTime) {
                 if (_supply > 0) {
                     uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -132,7 +131,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                         _balancePooled
                     );
                 } else {
-                    // TODO: can supply == 0 when updating?
                     uint256 targetMeTokenAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
@@ -140,13 +138,21 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                         t.base_y
                     );
                 }
-                meTokenAmount = _calculateWeightedAmount(
-                    meTokenAmount,
-                    targetMeTokenAmount,
-                    _hubId,
-                    t.startTime,
-                    t.endTime
-                );
+                
+                // If update is finished, only return target me token amounts
+                if (block.timestamp > t.endTime) {
+                    _finishUpdate(_hubId);
+                    meTokenAmount = targetMeTokenAmount;
+                } else {
+                    meTokenAmount = _calculateWeightedAmount(
+                        meTokenAmount,
+                        targetMeTokenAmount,
+                        _hubId,
+                        t.startTime,
+                        t.endTime
+                    );
+                }
+
             }
         }
     }
@@ -168,23 +174,51 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             _balancePooled
         );
         
-        if (v.updating) {
+        if (v.reconfiguring) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
-            uint256 targetCollateralTokenAmount =  (
-                _burnAmount,
-                t.reserveWeight,
-                _supply,
-                _balancePooled
-            );
-            collateralTokenAmount = _calculateWeightedAmount(
-                collateralTokenAmount,
-                targetCollateralTokenAmount,
-                _hubId,
-                t.startTime,
-                t.endTime
-            );
+
+            // Only calculate weighted amount if update is live
+            if (block.number > t.startTime) {
+                uint256 targetCollateralTokenAmount =  _calculateBurnReturn(
+                    _burnAmount,
+                    t.reserveWeight,
+                    _supply,
+                    _balancePooled
+                );
+
+                // if update is finished, only return target collateral amount
+                if (block.number > t.endTime) {
+                    _finishUpdate(_hubId);
+                    collateralTokenAmount = targetCollateralTokenAmount;
+                } else {
+                    collateralTokenAmount = _calculateWeightedAmount(
+                        collateralTokenAmount,
+                        targetCollateralTokenAmount,
+                        _hubId,
+                        t.startTime,
+                        t.endTime
+                    );
+
+                }
+            }
         }
+    }
+
+        // TODO: natspec
+    function _finishUpdate(uint256 _hubId) private {
+
+        ValueSet storage v = valueSets[_hubId];
+        TargetValueSet storage t = targetValueSets[_hubId];
+
+        v.base_x = t.base_x;
+        v.base_y = t.base_y;
+        v.reserveWeight = t.reserveWeight;
+        v.updating = false;
+
+        delete(t);
+
+        emit Updated(_hubId);
     }
 
 }
