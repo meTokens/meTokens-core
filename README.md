@@ -28,8 +28,16 @@
 * [ ] updating `refundRatio` within `Hub`
 
 
-#### 5.25
-* [ ] Hub status
+#### 5.29
+* [x] Determine where to place `TargetValueSet`
+* [ ] Determine where to place `min` and `max` timeframe
+* [ ] Figure out how to convert `_calculateWeightedAmount` to a library
+
+
+#### 06.02
+
+
+#### Updates & Migrations
 * Migrations
     * Migrating from one vault to another (switch collateral token)
     * Migrating from one curve to another (bancor => stepwise)
