@@ -40,8 +40,7 @@ contract Hub is I_Hub {
     }
     mapping(uint256 => HubDetails) private hubs;
 
-    enum Status { INACTIVE, ACTIVE,
-        RECONFIGURING, SHIFTING, RECOLLATERALIZING, MIGRATING }
+    enum Status { INACTIVE, ACTIVE, UPDATING}
 
     constructor(
         address _gov,
