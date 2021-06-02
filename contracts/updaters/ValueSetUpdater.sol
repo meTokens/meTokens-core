@@ -1,26 +1,16 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Updater.sol"; // TODO
+import "../interfaces/I_Migrations.sol"; // TODO
 
 contract ValueSetUpdater {
 
     I_Hub public hub;
-    I_Updater public updater;
+    I_Updater public migrations;
 
-    struct TargetValueSet {
-        // uint base_x;
-        // uint base_y;
-        // uint256 reserveWeight;
-        bytes32 encodedArgs;
-        uint256 startTime;
-        uint256 endTime;
-        // bool targetReached;
-    }
-
-    constructor(address _hub, address _updater) {
+    constructor(address _hub, address _migrations) {
         hub = _hub;
-        updater = _updater;
+        migrations = _migrations;
     }
 
 
@@ -33,13 +23,13 @@ contract ValueSetUpdater {
 
         // TODO: determine where to place these
         require(
-            _startTime - block.timestamp >= updater.minSecondsUntilStart() &&
-            _startTime - block.timestamp <= updater.maxSecondsUntilStart(),
+            _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
+            _startTime - block.timestamp <= migrations.maxSecondsUntilStart(),
             "Unacceptable _startTime"
         );
         require(
-            _endTime - _startTime >= updater.minUpdateDuration() &&
-            _endTime - _startTime <= updater.maxUpdateDuration(),
+            _endTime - _startTime >= migrations.minUpdateDuration() &&
+            _endTime - _startTime <= migrations.maxUpdateDuration(),
             "Unacceptable update duration"
         );
 
