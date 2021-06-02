@@ -48,15 +48,44 @@ contract Updater {
         );
 
         // is valid curve
+        if (_targetCurve != address(0)) {
+            // TODO
+            curveRegistry.isRegisteredCurve(_targetCurve);
+        }
 
         // is valid vault
+        if (_targetVault != address(0)) {
+            require(vaultFactory.isActiveVault(_targetVault), "!active");
+        }
 
         // is valid refundRatio
+        if (_targetRefundRatio != 0) {
+            // TODO
+            require(_targetRefundRatio <= MAX_TARGET_REFUND_RATIO);
+        }
 
         // is valid targetValueSet
+        if (_targetEncodedValueSet == '') { // TODO: validate bytes32 == ''
+            I_Curve(_targetCurve).registerTargetValueSet(
+                _hubId,
+                _targetEncodedValueSet,
+                _startTime,
+                _endTime
+            );
+        }
+
+        UpdateDetails memory updateDetails = UpdateDetails(
+            _hubId,
+            _startTime,
+            _endTime,
+            _targetVault,
+            _targetRefundRatio,
+            _targetCurve,
+            _targetEncodedValueSet
+        );
 
         // TODO
-        hub.startUpdateStatus(_startTime, _endTime);
+        hub.setStatus(_hubId, status.UPDATING);
 
     }
 
