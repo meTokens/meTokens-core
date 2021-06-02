@@ -45,6 +45,11 @@ contract Foundry {
         if (hubStatus == 4) { // UPDATING
             (, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+            
+            if (block.number > endTime) {
+                // End update
+                
+            }
         }
 
 
@@ -115,7 +120,6 @@ contract Foundry {
 
         bool migrating;
         bool shifting;
-        // bool reconfiguring;  NOTE: this is done on the valueSet level
         bool recollateralizing;
 
         if (hubStatus == 4) { // UPDATING
@@ -135,8 +139,8 @@ contract Foundry {
             meToken.totalSupply(),
             balancePooled
         );
+
         if (migrating) {
-            // Do something
             I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
             targetMeTokensMinted = targetCurve.calculateMintReturn(
                 collateralDepositedAfterFees,
@@ -152,7 +156,6 @@ contract Foundry {
                 endTime
             );
         }
-
 
         uint256 feeRate;
         uint256 collateralMultiplier;
@@ -183,6 +186,7 @@ contract Foundry {
         // Burn metoken from user
         meToken.burn(msg.sender, _meTokensBurned);
 
+        // Subtract collateral returned from balance pooled
         meTokenRegistry.incrementBalancePooled(
             false,
             _meToken,
