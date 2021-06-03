@@ -17,8 +17,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 		uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
-        bool reconfiguring;
 	}
+    
     struct TargetValueSet {
         uint256 base_x;
 		uint256 base_y;
@@ -55,7 +55,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
         (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
 
-        ValueSet memory valueSet = ValueSet(x, y, r, false);
+        ValueSet memory valueSet = ValueSet(x, y, r);
         valueSets[_hubId] = valueSet;
     }
 
@@ -63,7 +63,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _hubId,
         bytes32 _encodedValueSet
     ) external override {
-        // TODO: access control
+        require(msg.sender == updater, "!updater");
 
         (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
 
@@ -117,7 +117,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             );
         }
 
-        if (updater.isUpdating(_hubId)) {
+        if (updater.isReconfiguring(_hubId)) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
@@ -175,13 +175,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             _balancePooled
         );
         
-        if (updater.isUpdating(_hubId)) {
+        if (updater.isReconfiguring(_hubId)) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
-            if (block.number > t.startTime) {
+            if (block.number > startTime) {
                 uint256 targetCollateralTokenAmount =  _calculateBurnReturn(
                     _burnAmount,
                     t.reserveWeight,
@@ -190,7 +190,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                 );
 
                 // if update is finished, only return target collateral amount
-                if (block.number > t.endTime) {
+                if (block.number > endTime) {
                     _finishUpdate(_hubId);
                     collateralTokenAmount = targetCollateralTokenAmount;
                 } else {
@@ -198,8 +198,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                         collateralTokenAmount,
                         targetCollateralTokenAmount,
                         _hubId,
-                        t.startTime,
-                        t.endTime
+                        startTime,
+                        endTime
                     );
 
                 }
@@ -216,7 +216,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
-        v.reconfiguring = false;
 
         delete(t);
 

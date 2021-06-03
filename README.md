@@ -31,7 +31,8 @@
 #### 5.29
 * [x] Determine where to place `TargetValueSet`
     * Within `{}ValueSet.sol` contracts
-* [ ] Determine where to place `min` and `max` timeframe
+* [x] Determine where to place `min` and `max` timeframe
+    * Within `Migrations.sol`
 * [ ] Figure out how to convert `_calculateWeightedAmount` to a library
 
 
@@ -47,12 +48,13 @@
 
 #### 6.03
 * [ ] When modifying reserveWeight, either `base_x` or `base_y` has to change (probably `base_y`)
+    * Chris will look at
     * Otherwise if supply = 0, it would calculate a different reserve weight
     * https://docs.google.com/spreadsheets/d/1KEZOTU8EzNGWLNRs535FoUoyS4wkPZhvBXUwU1jpKxE/edit#gid=1822115388
 * [ ] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
 * [ ] Move `reconfiguring` from bancor value set to updater
-
-
+* [ ] Disable migrating when configuring and vise versa
+* [ ] End update when block.number > endTime within Foundry
 
 
 

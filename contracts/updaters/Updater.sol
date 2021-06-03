@@ -31,12 +31,11 @@ contract Updater {
         uint256 _hubId,
         uint256 _startTime,
         uint256 _endTime,
-        address _targetVault,
         uint256 _targetRefundRatio,
+        address _targetVault,
         address _targetCurve,
         bytes32 _targetEncodedValueSet
     ) external {
-
         // TODO: access control
 
         require(
@@ -73,7 +72,7 @@ contract Updater {
                 _hubId,
                 _targetEncodedValueSets
             );
-            
+            reconfigurings[_hubId] = true;
         }
 
         UpdateDetails memory updateDetails = UpdateDetails(
@@ -91,6 +90,10 @@ contract Updater {
 
     }
 
+
+    function isReconfinguring(uint256 _hubId) external view returns (bool) {
+        return reconfigurings[_hubId];
+    }
 
     function getUpdateDetails(uint256 _hubId) external view returns (address) {}
 
