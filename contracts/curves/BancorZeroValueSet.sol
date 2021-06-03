@@ -2,6 +2,7 @@ pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
+import "../interfaces/I_Updater.sol"; // TODO
 import "../interfaces/I_ValueSet.sol";
 import "../interfaces/I_Migrations.sol";
 
@@ -22,8 +23,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 base_x;
 		uint256 base_y;
 		uint256 reserveWeight;
-        uint256 startTime;
-        uint256 endTime;
     }
 
 
@@ -38,10 +37,12 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     constructor(
         address _hub,
-        address _migrations
+        address _migrations,
+        address _updater
     ) {
         hub = I_Hub(_hub);
         migrations = I_Migrations(_migrations);
+        updater = I_Updater(_updater);
     }
 
 
@@ -60,15 +61,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     function registerTargetValueSet(
         uint256 _hubId,
-        bytes32 _encodedValueSet,
-        uint256 _startTime,
-        uint256 _endTime
+        bytes32 _encodedValueSet
     ) external override {
         // TODO: access control
 
         (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
 
-        ValueSet memory targetValueSet = TargetValueSet(x, y, r, _startTime, _endTime);
+        ValueSet memory targetValueSet = TargetValueSet(x, y, r);
         targetValueSets[_hubId] = targetValueSet;
     }
 
@@ -86,6 +85,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
 
     function _validate(uint256 _base_x, uint256 _base_y, uint256 _reserveWeight) private {
+        // TODO: validate new base_x and base_y match _reserveWeight
         require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
         require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
@@ -117,12 +117,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             );
         }
 
-        if (v.reconfiguring) {
+        if (updater.isUpdating(_hubId)) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
-            if (block.timestamp > t.startTime) {
+            if (block.timestamp > startTime) {
                 if (_supply > 0) {
                     uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -140,7 +141,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                 }
                 
                 // If update is finished, only return target me token amounts
-                if (block.timestamp > t.endTime) {
+                if (block.timestamp > endTime) {
                     _finishUpdate(_hubId);
                     meTokenAmount = targetMeTokenAmount;
                 } else {
@@ -148,8 +149,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                         meTokenAmount,
                         targetMeTokenAmount,
                         _hubId,
-                        t.startTime,
-                        t.endTime
+                        startTime,
+                        endTime
                     );
                 }
 
@@ -174,9 +175,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             _balancePooled
         );
         
-        if (v.reconfiguring) {
+        if (updater.isUpdating(_hubId)) {
             // Calculate return using weights
             TargetValueSet memory t = targetValueSets[_hubId];
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
             if (block.number > t.startTime) {
@@ -214,7 +216,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         v.base_x = t.base_x;
         v.base_y = t.base_y;
         v.reserveWeight = t.reserveWeight;
-        v.updating = false;
+        v.reconfiguring = false;
 
         delete(t);
 

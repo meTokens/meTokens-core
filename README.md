@@ -30,11 +30,30 @@
 
 #### 5.29
 * [x] Determine where to place `TargetValueSet`
+    * Within `{}ValueSet.sol` contracts
 * [ ] Determine where to place `min` and `max` timeframe
 * [ ] Figure out how to convert `_calculateWeightedAmount` to a library
 
 
 #### 06.02
+* [ ] Remove `hubId` from `calculateWeightedAmount`
+* [ ] Set `reconfiguring` to false when a curve is done reconfiguring
+* [x] Add min and max to `base_x` and `base_y`
+    * Doesn't matter much as these variables only apply when supply = 0, which is rarely ever
+* [ ] Add all update stats to Updater
+* [x] `startTime` and `endTime` locations
+    * Removed from `targetValueSet`
+
+
+#### 6.03
+* [ ] When modifying reserveWeight, either `base_x` or `base_y` has to change (probably `base_y`)
+    * Otherwise if supply = 0, it would calculate a different reserve weight
+    * https://docs.google.com/spreadsheets/d/1KEZOTU8EzNGWLNRs535FoUoyS4wkPZhvBXUwU1jpKxE/edit#gid=1822115388
+* [ ] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
+* [ ] Move `reconfiguring` from bancor value set to updater
+
+
+
 
 
 #### Updates & Migrations

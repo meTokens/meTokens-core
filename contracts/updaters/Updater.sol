@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "./interfaces/I_Migrations.sol";
-import "./interfaces/I_Hub.sol";
+import "../interfaces/I_Migrations.sol";
+import "../interfaces/I_Hub.sol";
 
 
 contract Updater {
@@ -18,9 +18,12 @@ contract Updater {
     I_Migrations public migrations;
     I_Hub public hub;
 
+    // NOTE: keys are hubId's, used for valueSet calculations
+    mapping (uint256 => bool) private reconfigurings;
+
     constructor(address _migrations, address _hub) {
-        I_Migrations migrations = I_Migrations(_migrations);
-        I_Hub hub = I_Hub(_hub);
+        migrations = I_Migrations(_migrations);
+        hub = I_Hub(_hub);
     }
 
     // TODO: args
@@ -68,10 +71,9 @@ contract Updater {
         if (_targetEncodedValueSet == '') { // TODO: validate bytes32 == ''
             I_Curve(_targetCurve).registerTargetValueSet(
                 _hubId,
-                _targetEncodedValueSet,
-                _startTime,
-                _endTime
+                _targetEncodedValueSets
             );
+            
         }
 
         UpdateDetails memory updateDetails = UpdateDetails(
