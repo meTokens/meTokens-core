@@ -37,7 +37,7 @@
 
 
 #### 06.02
-* [ ] Remove `hubId` from `calculateWeightedAmount`
+* [x] Remove `hubId` from `calculateWeightedAmount`
 * [ ] Set `reconfiguring` to false when a curve is done reconfiguring
 * [x] Add min and max to `base_x` and `base_y`
     * Doesn't matter much as these variables only apply when supply = 0, which is rarely ever
@@ -54,8 +54,13 @@
 * [ ] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
 * [ ] Move `reconfiguring` from bancor value set to updater
 * [ ] Disable migrating when configuring and vise versa
+    * Wouldn't reconfiguring need to happen when migrating?
 * [ ] End update when block.number > endTime within Foundry
 
+#### 6.04
+* [ ] _calculateWeightedAmount
+    * [ ] Validate calculations
+    * [ ] Remove `block.timestamp > endTime` ?
 
 
 #### Updates & Migrations

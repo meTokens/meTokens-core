@@ -8,9 +8,9 @@ contract Updater {
 
     struct UpdateDetails {
         // bool reconfiguring;
-        bool migrating;
-        bool shifting;
-        bool recollateralizing;
+        address migrating;
+        uint256 shifting;
+        address recollateralizing;
         uint256 startTime;
         uint256 endTime;
     }
@@ -37,6 +37,7 @@ contract Updater {
         bytes32 _targetEncodedValueSet
     ) external {
         // TODO: access control
+        address migrating;
 
         require(
             _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
@@ -118,15 +119,12 @@ contract Updater {
     function _calculateWeightedAmount(
         uint256 _amount,
         uint256 _targetAmount,
-        uint256 _hubId,
         uint256 _startTime,
         uint256 _endTime
     ) private returns (uint256 weightedAmount) {
         uint256 targetWeight;
 
         if (block.timestamp > _endTime) { 
-            // Finish update if complete
-            _finishUpdate(_hubId);
             targetWeight = PRECISION;
         } else {
             uint256 targetProgress = block.timestamp - _startTime;
