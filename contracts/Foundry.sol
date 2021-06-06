@@ -43,12 +43,15 @@ contract Foundry {
         bool recollateralizing;
 
         if (hubStatus == 4) { // UPDATING
-            (, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
             
             if (block.number > endTime) {
                 // End update
-                
+                updater.finishUpdate(_hubId);
+                migrating = false;
+                recollateralizing = false;
+            } else {
+                (, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
             }
         }
 
@@ -118,13 +121,18 @@ contract Foundry {
         uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
         require(hubStatus != 1, "Hub inactive");
 
-        bool migrating;
-        bool shifting;
-        bool recollateralizing;
+        address migrating;
+        uint256 shifting;
+        address recollateralizing;
 
         if (hubStatus == 4) { // UPDATING
-            (shifting, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+            if (block.timestamp > endTime) {
+                updater.finishUpdate(hubId);
+            } else {
+                (shifting, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
+                (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+            }
+
         }
 
         I_MeToken meToken = I_MeToken(_meToken);

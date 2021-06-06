@@ -105,6 +105,13 @@ contract Hub is I_Hub {
         emit DeactivateHub(_hubId);
     }
 
+    
+    function setHubStatus(uint256 _hubId, Status status) external {
+        require(msg.sender == updater, "!updater");
+        require(_hubId < hubCount, "_hubId > hubCount");
+        HubDetails storage hubDetails = hubs[_hubId];
+    }
+
 
     function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
         // TODO: access control
@@ -158,14 +165,14 @@ contract Hub is I_Hub {
 
     /// @inheritdoc I_Hub
     function getHubCurve(uint256 _hubId) external view override returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.curve;
     }
 
     /// @inheritdoc I_Hub
     function getHubVault(uint256 _hubId) external view override returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
     }
