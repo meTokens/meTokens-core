@@ -122,11 +122,6 @@ contract Updater {
         emit FinishUpdate(_hubId);
     }
 
-
-    function isReconfinguring(uint256 _hubId) external view returns (bool) {
-        return reconfigurings[_hubId];
-    }
-
     function getUpdateDetails(uint256 _hubId) external view returns (
         bool reconfiguring,
         address migrating,
@@ -136,6 +131,7 @@ contract Updater {
         uint256 endTime
     ) {
         updateDetails memory updateDetails = updates[_hubId];
+        reconfiguring = updateDetails.reconfiguring;
         migrating = updateDetails.migrating;
         recollateralizing = updateDetails.recollateralizing;
         shifting = updateDetails.shifting;
