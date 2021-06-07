@@ -25,8 +25,8 @@
 * [x] Validate incrementBalancePooled() and incrementBalanceLocked()
 * [x] `Hub.sol` - does `HubDetails` need `valueSet` identifier if it's always the same? - no
 * [ ] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
-* [ ] updating `refundRatio` within `Hub`
-
+* [x] updating `refundRatio` within `Hub`
+    * Done with Updater
 
 #### 5.29
 * [x] Determine where to place `TargetValueSet`
@@ -52,15 +52,24 @@
     * Otherwise if supply = 0, it would calculate a different reserve weight
     * https://docs.google.com/spreadsheets/d/1KEZOTU8EzNGWLNRs535FoUoyS4wkPZhvBXUwU1jpKxE/edit#gid=1822115388
 * [ ] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
-* [ ] Move `reconfiguring` from bancor value set to updater
-* [ ] Disable migrating when configuring and vise versa
-    * Wouldn't reconfiguring need to happen when migrating?
+* [x] Move `reconfiguring` from bancor value set to updater
+* [x] Disable migrating when reconfiguring and vise versa
+    * When migrating, `_targetValueSet` is set to the ValueSet
+    * When reconfiguring, `_targetValueSet` is set to the TargetValueSet
 * [ ] End update when block.number > endTime within Foundry
+
 
 #### 6.04
 * [ ] _calculateWeightedAmount
     * [ ] Validate calculations
     * [ ] Remove `block.timestamp > endTime` ?
+* [ ] `hub.getHubStatus` to return uint
+
+
+#### 6.07
+* [ ] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
+* [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
+
 
 
 #### Updates & Migrations

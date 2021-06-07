@@ -7,7 +7,6 @@ import "../interfaces/I_Hub.sol";
 contract Updater {
 
     struct UpdateDetails {
-        // bool reconfiguring;
         address migrating;
         address recollateralizing;
         uint256 shifting;
@@ -30,15 +29,14 @@ contract Updater {
     // TODO: args
     function startUpdate(
         uint256 _hubId,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _targetRefundRatio,
-        address _targetVault,
         address _targetCurve,
-        bytes32 _targetEncodedValueSet
+        address _targetVault,
+        uint256 _targetRefundRatio,
+        bytes32 _targetEncodedValueSet,
+        uint256 _startTime,
+        uint256 _endTime
     ) external {
         // TODO: access control
-        address migrating;
 
         require(
             _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
@@ -61,6 +59,8 @@ contract Updater {
         if (_targetVault != address(0)) {
             require(vaultFactory.isActiveVault(_targetVault), "!active");
             require(_targetVault != hub.getHubVault(_hubId), "_targetVault == vault");
+            // TODO: validate
+            require(_targetEncodedValueSet != '', "_targetEncodedValueSet required");
         }
 
         // is valid refundRatio
@@ -69,23 +69,30 @@ contract Updater {
             require(_targetRefundRatio != hub.getHubRefundRatio(_hubId), "_targetRefundRatio == refundRatio");
         }
 
-        // is valid targetValueSet
-        if (_targetEncodedValueSet == '') { // TODO: validate bytes32 == ''
-            I_Curve(_targetCurve).registerTargetValueSet(
-                _hubId,
-                _targetEncodedValueSets
-            );
-            reconfigurings[_hubId] = true;
+        bool reconfiguring;
+        if (_targetEncodedValueSet != '') { // TODO: validate bytes32 == ''
+            if (_targetCurve =! address(0)) {
+                // curve migrating, point to new valueSet
+                I_Curve(_targetCurve).registerValueSet(
+                    _hubId,
+                    _targetEncodedValueSet
+                );
+            } else {
+                I_Curve(hub.getHubCurve(_hubId)).registerTargetValueSet(
+                    _hubId,
+                    _targetEncodedValueSet
+                );
+                reconfiguring = true;
+            }
         }
 
         UpdateDetails memory updateDetails = UpdateDetails(
-            _hubId,
-            _startTime,
-            _endTime,
+            reconfiguring,
+            _targetCurve,
             _targetVault,
             _targetRefundRatio,
-            _targetCurve,
-            _targetEncodedValueSet
+            _startTime,
+            _endTime
         );
 
         updates[_hubId] = updateDetails;
@@ -100,6 +107,7 @@ contract Updater {
         require(block.timestamp > updateDetails.endTime, "!finished");
 
         hub.setStatus(_hubId, 2);
+        reconfigurings[_hubId] = false;
         delete updates[_hubId]; // TODO: verify
     }
 
@@ -109,6 +117,7 @@ contract Updater {
     }
 
     function getUpdateDetails(uint256 _hubId) external view returns (
+        bool reconfiguring,
         address migrating,
         address recollateralizing,
         uint256 shifting,
@@ -119,6 +128,15 @@ contract Updater {
         migrating = updateDetails.migrating;
         recollateralizing = updateDetails.recollateralizing;
         shifting = updateDetails.shifting;
+        startTime = updateDetails.startTime;
+        endTime = updateDetails.endTime;
+    }
+
+    function getUpdateTimes(uint256 _hubId) external view returns (
+        uint256 startTime,
+        uint256 endTime
+    ) {
+        UpdateDetails memory updateDetails = updates[_hubId];
         startTime = updateDetails.startTime;
         endTime = updateDetails.endTime;
     }

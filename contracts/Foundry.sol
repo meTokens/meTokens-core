@@ -7,23 +7,27 @@ import "./interfaces/I_ERC20.sol";
 import "./interfaces/I_CurveValueSet.sol";
 import "./interfaces/I_Vault.sol";
 import "./interfaces/I_Hub.sol";
+import "./libs/Weighted.sol";  // TODO
 
 
 contract Foundry {
     
     uint256 private PRECISION = 10**18;
 
+    I_Hub public hub;
     I_Fees public fees;
     I_MeTokenRegistry public meTokenRegistry;
-    I_Hub public hub;
 
     constructor(
+        address _hub,
         address _fees,
         address _meTokenRegistry
     ) {
+        hub = I_Hub(_hub);
         fees = I_Fees(_fees);
         meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
     }
+
 
     function mint(address _meToken, address _recipient, uint256 _collateralDeposited) external override {
 
@@ -38,23 +42,22 @@ contract Foundry {
         uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
         require(hubStatus != 1, "Hub inactive");
 
-        bool migrating;
-        // bool reconfiguring;  NOTE: this is done on the valueSet level
-        bool recollateralizing;
+        // bool reconfiguring;  // NOTE: this is done on the valueSet level
+        address migrating;
+        address recollateralizing;
 
         if (hubStatus == 4) { // UPDATING
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
-            
+            uint256 startTime;
+            uint256 endTime;
+            (migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
             if (block.number > endTime) {
                 // End update
                 updater.finishUpdate(_hubId);
-                migrating = false;
-                recollateralizing = false;
-            } else {
-                (, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
+                reconfiguring = false;
+                migrating = address(0);
+                recollateralizing = address(0);
             }
         }
-
 
         I_MeToken meToken = I_MeToken(_meToken);
         I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
@@ -71,7 +74,8 @@ contract Foundry {
             meToken.totalSupply(),
             balancePooled
         );
-        if (migrating) {
+
+        if (migrating != address(0)) {
             // Do something
             I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
             targetMeTokensMinted = targetCurve.calculateMintReturn(
@@ -80,18 +84,19 @@ contract Foundry {
                 meToken.totalSupply(),
                 balancePooled
             );
-            meTokensMinted = calculateWeightedAmount(
+            meTokensMinted = Weighted.calculateWeightedAmount(
                 meTokensMinted,
                 targetMeTokensMinted,
-                // _hubId,  // TODO: remove this argument?
                 startTime,
+                block.timestamp,
                 endTime
             );
         }
         
         // Send collateral to vault and update balance pooled
-        if (!recollateralizing)
-        collateralToken.transferFrom(msg.sender, address(vault), _collateralDeposited);
+        if (recollateralizing != address(0)) {
+            collateralToken.transferFrom(msg.sender, address(vault), _collateralDeposited);
+        }
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -118,21 +123,22 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
+        uint256 hubStatus = hub.getHubStatus(hubId);
         require(hubStatus != 1, "Hub inactive");
 
+        // bool reconfiguring;
         address migrating;
-        uint256 shifting;
         address recollateralizing;
+        uint256 shifting;
 
-        if (hubStatus == 4) { // UPDATING
+        if (hubStatus == 4) { // UPDATING - TODO
+            uint256 startTime;
+            uint256 endTime;
             if (block.timestamp > endTime) {
-                updater.finishUpdate(hubId);
+                updater.finishUpdate(hubId); // TODO
             } else {
-                (shifting, migrating, recollateralizing) = updater.getUpdateDetails(_hubId);
-                (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+                (migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(_hubId);
             }
-
         }
 
         I_MeToken meToken = I_MeToken(_meToken);
@@ -145,22 +151,24 @@ contract Foundry {
             _meTokensBurned,
             hubId,
             meToken.totalSupply(),
-            balancePooled
+            balancePooled,
+            startTime,
+            endTime
         );
 
-        if (migrating) {
+        if (migrating != address(0)) {
             I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
-            targetMeTokensMinted = targetCurve.calculateMintReturn(
+            targetMeTokensBurned = targetCurve.calculateBurnReturn(
                 collateralDepositedAfterFees,
                 hubId,
                 meToken.totalSupply(),
                 balancePooled
             );
-            meTokensMinted = calculateWeightedAmount(
-                meTokensMinted,
-                targetMeTokensMinted,
-                // _hubId,  // TODO: remove this argument?
+            meTokensMinted = Weighted.calculateWeightedAmount(
+                meTokensBurned,
+                targetMeTokensBurned,
                 startTime,
+                block.timestamp,
                 endTime
             );
         }
@@ -177,7 +185,7 @@ contract Foundry {
             collateralMultiplier = PRECISION - hubDetails.refundRatio;
             if (shifting) {
                 targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(_hubId);
-                collateralMultiplier = calculateWeightedAmount(
+                collateralMultiplier = Weighted.calculateWeightedAmount(
                     collateralMultiplier,
                     targetCollateralMultiplier,
                     startTime,

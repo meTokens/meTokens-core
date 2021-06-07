@@ -53,7 +53,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _hubId,
         bytes32 _encodedValueSet
     ) external override {
-        // TODO: access control
+        require(msg.sender == hub || msg.sender == updater, "!hub && !updater");
 
         (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
 
@@ -96,6 +96,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     /// @inheritdoc I_ValueSet
     function calculateMintReturn(
+        bool reconfiguring,
         uint256 _depositAmount,
         uint256 _hubId,
         uint256 _supply,
@@ -120,12 +121,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         }
 
         if (updater.isReconfiguring(_hubId)) {
-            // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hubId];
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
             if (block.timestamp > startTime) {
+
+                // Calculate return using weights
+                TargetValueSet memory t = targetValueSets[_hubId];
                 if (_supply > 0) {
                     uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -142,19 +144,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     );
                 }
                 
-                // If update is finished, only return target me token amounts
-                if (block.timestamp > endTime) {
-                    _finishUpdate(_hubId);
-                    meTokenAmount = targetMeTokenAmount;
-                } else {
-                    meTokenAmount = Weighted.calculateWeightedAmount(
-                        meTokenAmount,
-                        targetMeTokenAmount,
-                        _hubId,
-                        startTime,
-                        endTime
-                    );
-                }
+                meTokenAmount = Weighted.calculateWeightedAmount(
+                    meTokenAmount,
+                    targetMeTokenAmount,
+                    _hubId,
+                    startTime,
+                    endTime
+                );
 
             }
         }
@@ -178,12 +174,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         );
         
         if (updater.isReconfiguring(_hubId)) {
-            // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hubId];
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
             if (block.number > startTime) {
+
+                // Calculate return using weights
+                TargetValueSet memory t = targetValueSets[_hubId];
                 uint256 targetCollateralTokenAmount =  _calculateBurnReturn(
                     _burnAmount,
                     t.reserveWeight,
@@ -191,20 +188,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     _balancePooled
                 );
 
-                // if update is finished, only return target collateral amount
-                if (block.number > endTime) {
-                    _finishUpdate(_hubId);
-                    collateralTokenAmount = targetCollateralTokenAmount;
-                } else {
-                    collateralTokenAmount = Weighted.calculateWeightedAmount(
-                        collateralTokenAmount,
-                        targetCollateralTokenAmount,
-                        _hubId,
-                        startTime,
-                        endTime
-                    );
-
-                }
+                collateralTokenAmount = Weighted.calculateWeightedAmount(
+                    collateralTokenAmount,
+                    targetCollateralTokenAmount,
+                    _hubId,
+                    startTime,
+                    endTime
+                );
             }
         }
     }
