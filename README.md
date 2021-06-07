@@ -68,14 +68,14 @@
 
 
 #### 6.07
-* [ ] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
+* [x] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
 * [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
 * [x] Remove `_finishUpdate` from `bancorZeroValueSet`
     * Still needed to set TargetValueSet to ValueSet
 * [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
 * [ ] Vault recollateralizing
     * [ ] MeToken balances
-    * [ ] Returning collateral
+    * [ ] Returning collateral  
 
 
 #### Updates & Migrations
