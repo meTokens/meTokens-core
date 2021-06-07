@@ -106,10 +106,11 @@ contract Hub is I_Hub {
     }
 
     
-    function setHubStatus(uint256 _hubId, Status status) external {
+    function setHubStatus(uint256 _hubId, uint256 _status) external {
         require(msg.sender == updater, "!updater");
         require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails storage hubDetails = hubs[_hubId];
+        require(_status != uint256(hubDetails.status), "_status == status");
     }
 
 
@@ -135,32 +136,38 @@ contract Hub is I_Hub {
 
 
     /// @inheritdoc I_Hub
-    function getHubStatus(uint256 _hubId) public view override returns (Status) {
+    function getHubStatus(uint256 _hubId) public view override returns (uint) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.status;
+    }
+
+
+    function getHubRefundRatio(uint256 _hubId) public view override returns (uint256) {
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.refundRatio;
     }
 
 
     /// @inheritdoc I_Hub
     function getHubDetails(
         uint256 _hubId
-    ) external view override hubExists(_hubd) returns (
+    ) external view override hubExists(_hubId) returns (
         string name,
         address owner,
         address vault,
-        address curve,
+        address curve_,
         uint256 valueSet,
         uint256 refundRatio,
-        Status status
+        uint256 status
     ) {
         HubDetails memory hubDetails = hubs[_hubId];
         name = hubDetails.name;
         owner = hubDetails.owner;
         vault = hubDetails.vault;
-        curve = hubDetails.curve;
+        curve_ = hubDetails.curve;
         valueSet = hubDetails.valueSet;
         refundRatio = hubDetails.refundRatio;
-        status = hubDetails.status;
+        status = hubDetails.status; // TODO: return int
     }
 
     /// @inheritdoc I_Hub
