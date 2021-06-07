@@ -106,12 +106,35 @@ contract Hub is I_Hub {
     }
 
     
-    function setHubStatus(uint256 _hubId, uint256 _status) external {
+    function startUpdate(uint256 _hubId) external {
         require(msg.sender == updater, "!updater");
-        require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails storage hubDetails = hubs[_hubId];
-        require(_status != uint256(hubDetails.status), "_status == status");
+        hubDetails.status = status.UPDATING; // TODO: validate
     }
+
+
+    function finishUpdate(
+        uint256 _hubId,
+        address _migrating,
+        address _recollateralizing,
+        uint256 _shifting
+    ) external (
+        require(msg.sender == updater, "!updater");
+        HubDetails storage hubDetails = hubs[_hubId];
+        
+        if (_migrating != address(0)) {
+            hubDetails.curve = migrating;
+        }
+
+        if (_recollateralizing != address(0)) {
+            hubDetails.vault = _recollateralizing;
+        }
+
+        if (_shifting != 0) {
+            hubDetails.refundRatio = _shifting;
+        }
+        hubDetails.status = status.ACTIVE; // TODO: validate
+    )
 
 
     function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {

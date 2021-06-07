@@ -39,10 +39,10 @@
 
 #### 06.02
 * [x] Remove `hubId` from `calculateWeightedAmount`
-* [ ] Set `reconfiguring` to false when a curve is done reconfiguring
+* [x] Set `reconfiguring` to false when a curve is done reconfiguring
 * [x] Add min and max to `base_x` and `base_y`
     * Doesn't matter much as these variables only apply when supply = 0, which is rarely ever
-* [ ] Add all update stats to Updater
+* [x] Add all update stats to Updater
 * [x] `startTime` and `endTime` locations
     * Removed from `targetValueSet`
 
@@ -57,7 +57,7 @@
 * [x] Disable migrating when reconfiguring and vise versa
     * When migrating, `_targetValueSet` is set to the ValueSet
     * When reconfiguring, `_targetValueSet` is set to the TargetValueSet
-* [ ] End update when block.number > endTime within `Foundry`
+* [x] End update when block.number > endTime within `Foundry`
 
 
 #### 6.04
@@ -70,8 +70,12 @@
 #### 6.07
 * [ ] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
 * [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
-* [ ] Remove `_finishUpdate` from `bancorZeroValueSet`
+* [x] Remove `_finishUpdate` from `bancorZeroValueSet`
+    * Still needed to set TargetValueSet to ValueSet
 * [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
+* [ ] Vault recollateralizing
+    * [ ] MeToken balances
+    * [ ] Returning collateral
 
 
 #### Updates & Migrations

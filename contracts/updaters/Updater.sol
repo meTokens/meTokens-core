@@ -6,6 +6,8 @@ import "../interfaces/I_Hub.sol";
 
 contract Updater {
 
+    event StartUpdate(); // TODO
+    event FinishUpdate(uint256 _hubId);
     struct UpdateDetails {
         bool reconfiguring;
         address migrating;
@@ -96,12 +98,11 @@ contract Updater {
         );
 
         updates[_hubId] = updateDetails;
-        // TODO
-        hub.setStatus(_hubId, 3);
+        hub.startUpdate(_hubId);
     }
 
+
     function finishUpdate(uint256 _hubId) external {
-        // require(msg.sender == foundry, "!foundry");
 
         UpdateDetails storage updateDetails = updates[_hubId];
         require(block.timestamp > updateDetails.endTime, "!finished");
@@ -109,10 +110,16 @@ contract Updater {
         if (updateDetails.reconfiguring) {
             I_Curve(updateDetails.curve).finishUpdate(_hubId);
         }
-        
-        hub.setStatus(_hubId, 2);
 
-        delete updates[_hubId]; // TODO: verify
+        hub.finishUpdate(
+            _hubId,
+            hubDetails.migrating,
+            hubDetails.recollateralizing,
+            hubDetails.shifting  
+        );        
+
+        delete (updateDetails); // TODO: verify
+        emit FinishUpdate(_hubId);
     }
 
 

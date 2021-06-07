@@ -132,11 +132,11 @@ contract Foundry {
         address recollateralizing;
         uint256 shifting;
 
-        if (hubStatus == 4) { // UPDATING - TODO
+        if (hubStatus == 3) { // UPDATING - TODO
             uint256 startTime;
             uint256 endTime;
             if (block.timestamp > endTime) {
-                updater.finishUpdate(hubId); // TODO
+                updater.finishUpdate(hubId);
             } else {
                 (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(_hubId);
             }
