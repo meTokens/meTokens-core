@@ -96,11 +96,13 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     /// @inheritdoc I_ValueSet
     function calculateMintReturn(
-        bool reconfiguring,
         uint256 _depositAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled
+        uint256 _balancePooled,
+        bool _reconfiguring,
+        uint256 _startTime,
+        uint256 _endTime
     ) external view override returns (uint256 meTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -120,11 +122,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             );
         }
 
-        if (updater.isReconfiguring(_hubId)) {
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+        if (_reconfiguring) {
 
             // Only calculate weighted amount if update is live
-            if (block.timestamp > startTime) {
+            if (block.timestamp > _startTime) {
 
                 // Calculate return using weights
                 TargetValueSet memory t = targetValueSets[_hubId];
@@ -148,8 +149,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     meTokenAmount,
                     targetMeTokenAmount,
                     _hubId,
-                    startTime,
-                    endTime
+                    _startTime,
+                    _endTime
                 );
 
             }
@@ -162,7 +163,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _burnAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled
+        uint256 _balancePooled,
+        bool _reconfiguring,
+        uint256 _startTime,
+        uint256 _endTime
     ) external view override returns (uint256 collateralTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -173,11 +177,12 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             _balancePooled
         );
         
-        if (updater.isReconfiguring(_hubId)) {
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+        if (_reconfiguring) {
+            // TODO: this is passed with arguments, more succinct way?
+            // (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
-            if (block.number > startTime) {
+            if (block.timestamp > _startTime) {
 
                 // Calculate return using weights
                 TargetValueSet memory t = targetValueSets[_hubId];
@@ -192,15 +197,15 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     collateralTokenAmount,
                     targetCollateralTokenAmount,
                     _hubId,
-                    startTime,
-                    endTime
+                    _startTime,
+                    _endTime
                 );
             }
         }
     }
 
-        // TODO: natspec
-    function _finishUpdate(uint256 _hubId) private {
+    // TODO: natspec
+    function finishUpdate(uint256 _hubId) external {
 
         ValueSet storage v = valueSets[_hubId];
         TargetValueSet storage t = targetValueSets[_hubId];
@@ -210,7 +215,6 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         v.reserveWeight = t.reserveWeight;
 
         delete(t);
-
         emit Updated(_hubId);
     }
 

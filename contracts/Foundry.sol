@@ -42,14 +42,14 @@ contract Foundry {
         uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
         require(hubStatus != 1, "Hub inactive");
 
-        // bool reconfiguring;  // NOTE: this is done on the valueSet level
+        bool reconfiguring;  // NOTE: this is done on the valueSet level
         address migrating;
         address recollateralizing;
 
         if (hubStatus == 4) { // UPDATING
             uint256 startTime;
             uint256 endTime;
-            (migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
+            (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
             if (block.number > endTime) {
                 // End update
                 updater.finishUpdate(_hubId);
@@ -82,7 +82,8 @@ contract Foundry {
                 collateralDepositedAfterFees,
                 hubId,
                 meToken.totalSupply(),
-                balancePooled
+                balancePooled,
+                reconfiguring
             );
             meTokensMinted = Weighted.calculateWeightedAmount(
                 meTokensMinted,
@@ -126,7 +127,7 @@ contract Foundry {
         uint256 hubStatus = hub.getHubStatus(hubId);
         require(hubStatus != 1, "Hub inactive");
 
-        // bool reconfiguring;
+        bool reconfiguring;
         address migrating;
         address recollateralizing;
         uint256 shifting;
@@ -137,7 +138,7 @@ contract Foundry {
             if (block.timestamp > endTime) {
                 updater.finishUpdate(hubId); // TODO
             } else {
-                (migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(_hubId);
+                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(_hubId);
             }
         }
 
@@ -152,6 +153,7 @@ contract Foundry {
             hubId,
             meToken.totalSupply(),
             balancePooled,
+            reconfiguring,
             startTime,
             endTime
         );
@@ -162,7 +164,10 @@ contract Foundry {
                 collateralDepositedAfterFees,
                 hubId,
                 meToken.totalSupply(),
-                balancePooled
+                balancePooled,
+                reconfiguring,
+                startTime,
+                endTime
             );
             meTokensMinted = Weighted.calculateWeightedAmount(
                 meTokensBurned,

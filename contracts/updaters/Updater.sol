@@ -7,6 +7,7 @@ import "../interfaces/I_Hub.sol";
 contract Updater {
 
     struct UpdateDetails {
+        bool reconfiguring;
         address migrating;
         address recollateralizing;
         uint256 shifting;
@@ -18,7 +19,6 @@ contract Updater {
     I_Hub public hub;
 
     // NOTE: keys are hubId's, used for valueSet calculations
-    mapping (uint256 => bool) private reconfigurings;
     mapping (uint256 => UpdateDetails) private updates;
 
     constructor(address _migrations, address _hub) {
@@ -101,13 +101,17 @@ contract Updater {
     }
 
     function finishUpdate(uint256 _hubId) external {
-        require(msg.sender == foundry, "!foundry");
+        // require(msg.sender == foundry, "!foundry");
 
-        UpdateDetails memory updateDetails = updates[_hubId];
+        UpdateDetails storage updateDetails = updates[_hubId];
         require(block.timestamp > updateDetails.endTime, "!finished");
 
+        if (updateDetails.reconfiguring) {
+            I_Curve(updateDetails.curve).finishUpdate(_hubId);
+        }
+        
         hub.setStatus(_hubId, 2);
-        reconfigurings[_hubId] = false;
+
         delete updates[_hubId]; // TODO: verify
     }
 

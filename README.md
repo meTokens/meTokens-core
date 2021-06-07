@@ -24,7 +24,8 @@
 #### 5.24
 * [x] Validate incrementBalancePooled() and incrementBalanceLocked()
 * [x] `Hub.sol` - does `HubDetails` need `valueSet` identifier if it's always the same? - no
-* [ ] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
+* [x] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
+    * Moved to Updater
 * [x] updating `refundRatio` within `Hub`
     * Done with Updater
 
@@ -33,7 +34,7 @@
     * Within `{}ValueSet.sol` contracts
 * [x] Determine where to place `min` and `max` timeframe
     * Within `Migrations.sol`
-* [ ] Figure out how to convert `_calculateWeightedAmount` to a library
+* [x] Figure out how to convert `_calculateWeightedAmount` to a library
 
 
 #### 06.02
@@ -56,7 +57,7 @@
 * [x] Disable migrating when reconfiguring and vise versa
     * When migrating, `_targetValueSet` is set to the ValueSet
     * When reconfiguring, `_targetValueSet` is set to the TargetValueSet
-* [ ] End update when block.number > endTime within Foundry
+* [ ] End update when block.number > endTime within `Foundry`
 
 
 #### 6.04
@@ -69,7 +70,8 @@
 #### 6.07
 * [ ] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
 * [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
-
+* [ ] Remove `_finishUpdate` from `bancorZeroValueSet`
+* [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
 
 
 #### Updates & Migrations
