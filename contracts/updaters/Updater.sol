@@ -53,19 +53,20 @@ contract Updater {
 
         // is valid curve
         if (_targetCurve != address(0)) {
-            // TODO
-            curveRegistry.isRegisteredCurve(_targetCurve);
+            require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
+            require(_targetCurve != hub.getHubCurve(_hubId), "_targetCurve == curve");
         }
 
         // is valid vault
         if (_targetVault != address(0)) {
             require(vaultFactory.isActiveVault(_targetVault), "!active");
+            require(_targetVault != hub.getHubVault(_hubId), "_targetVault == vault");
         }
 
         // is valid refundRatio
         if (_targetRefundRatio != 0) {
-            // TODO
-            require(_targetRefundRatio <= MAX_TARGET_REFUND_RATIO);
+            require(_targetRefundRatio <= MAX_TARGET_REFUND_RATIO, "_targetRefundRatio > max");
+            require(_targetRefundRatio != hub.getHubRefundRatio(_hubId), "_targetRefundRatio == refundRatio");
         }
 
         // is valid targetValueSet
@@ -89,7 +90,7 @@ contract Updater {
 
         updates[_hubId] = updateDetails;
         // TODO
-        hub.setStatus(_hubId, status.UPDATING);
+        hub.setStatus(_hubId, 3);
     }
 
     function finishUpdate(uint256 _hubId) external {
@@ -98,7 +99,7 @@ contract Updater {
         UpdateDetails memory updateDetails = updates[_hubId];
         require(block.timestamp > updateDetails.endTime, "!finished");
 
-        hub.setStatus(_hubId, status.ACTIVE);
+        hub.setStatus(_hubId, 2);
         delete updates[_hubId]; // TODO: verify
     }
 
