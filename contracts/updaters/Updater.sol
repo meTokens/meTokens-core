@@ -9,8 +9,8 @@ contract Updater {
     struct UpdateDetails {
         // bool reconfiguring;
         address migrating;
-        uint256 shifting;
         address recollateralizing;
+        uint256 shifting;
         uint256 startTime;
         uint256 endTime;
     }
@@ -108,20 +108,34 @@ contract Updater {
         return reconfigurings[_hubId];
     }
 
-    function getUpdateDetails(uint256 _hubId) external view returns (address) {}
-
-    function getUpdateTimes(uint256 _hubId) external view returns (uint256, uint256) {}
+    function getUpdateDetails(uint256 _hubId) external view returns (
+        address migrating,
+        address recollateralizing,
+        uint256 shifting,
+        uint256 startTime,
+        uint256 endTime
+    ) {
+        updateDetails memory updateDetails = updates[_hubId];
+        migrating = updateDetails.migrating;
+        recollateralizing = updateDetails.recollateralizing;
+        shifting = updateDetails.shifting;
+        startTime = updateDetails.startTime;
+        endTime = updateDetails.endTime;
+    }
 
     function getTargetCurve(uint256 _hubId) external view returns (address) {
-        // TODO
+        UpdateDetails memory updateDetails = updates[_hubId];
+        return updateDetails.migrating;
     }
 
     function getTargetRefundRatio(uint256 _hubId) external view returns (uint256) {
-        // TODO
+        UpdateDetails memory updateDetails = updates[_hubId];
+        return updateDetails.refundRatio;
     }
 
     function getTargetVault(uint256 _hubId) external view returns (uint256) {
-        // TODO
+        UpdateDetails memory updateDetails = updates[_hubId];
+        return updateDetails.vault;
     }
 
 }
