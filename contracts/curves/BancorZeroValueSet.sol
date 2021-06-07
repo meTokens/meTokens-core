@@ -5,6 +5,7 @@ import "../interfaces/I_Hub.sol";
 import "../interfaces/I_Updater.sol"; // TODO
 import "../interfaces/I_ValueSet.sol";
 import "../interfaces/I_Migrations.sol";
+import "../libs/Weighted.sol"; // TODO: validate
 
 
 /// @title Bancor curve registry and calculator
@@ -34,6 +35,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     I_Hub public hub;
     I_Migrations public migrations;
+    I_Updater public updater;
 
     constructor(
         address _hub,
@@ -145,7 +147,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     _finishUpdate(_hubId);
                     meTokenAmount = targetMeTokenAmount;
                 } else {
-                    meTokenAmount = _calculateWeightedAmount(
+                    meTokenAmount = Weighted.calculateWeightedAmount(
                         meTokenAmount,
                         targetMeTokenAmount,
                         _hubId,
@@ -194,7 +196,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     _finishUpdate(_hubId);
                     collateralTokenAmount = targetCollateralTokenAmount;
                 } else {
-                    collateralTokenAmount = _calculateWeightedAmount(
+                    collateralTokenAmount = Weighted.calculateWeightedAmount(
                         collateralTokenAmount,
                         targetCollateralTokenAmount,
                         _hubId,
