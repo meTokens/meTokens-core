@@ -148,7 +148,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                 meTokenAmount = Weighted.calculateWeightedAmount(
                     meTokenAmount,
                     targetMeTokenAmount,
-                    _hubId,
+                    block.timestamp,
                     _startTime,
                     _endTime
                 );
@@ -196,8 +196,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                 collateralTokenAmount = Weighted.calculateWeightedAmount(
                     collateralTokenAmount,
                     targetCollateralTokenAmount,
-                    _hubId,
                     _startTime,
+                    block.timestamp,
                     _endTime
                 );
             }

@@ -1,3 +1,4 @@
+
 pragma solidity ^0.8.0;
 
 import "./interfaces/I_Fees.sol";
@@ -39,14 +40,14 @@ contract Foundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getHubStatus(hubId);  // TODO
-        require(hubStatus != 1, "Hub inactive");
+        uint256 hubStatus = hub.getHubStatus(hubId);
+        require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;  // NOTE: this is done on the valueSet level
         address migrating;
         address recollateralizing;
 
-        if (hubStatus == 4) { // UPDATING
+        if (hubStatus == 2) { // UPDATING
             uint256 startTime;
             uint256 endTime;
             (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
@@ -125,14 +126,14 @@ contract Foundry {
         require(!resubscribing, "meToken is resubscribing");
 
         uint256 hubStatus = hub.getHubStatus(hubId);
-        require(hubStatus != 1, "Hub inactive");
+        require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;
         address migrating;
         address recollateralizing;
         uint256 shifting;
 
-        if (hubStatus == 3) { // UPDATING - TODO
+        if (hubStatus == 2) {  // UPDATING
             uint256 startTime;
             uint256 endTime;
             if (block.timestamp > endTime) {
@@ -194,6 +195,7 @@ contract Foundry {
                     collateralMultiplier,
                     targetCollateralMultiplier,
                     startTime,
+                    block.timestamp,
                     endTime
                 );
             }

@@ -72,7 +72,7 @@ contract Updater {
         }
 
         bool reconfiguring;
-        if (_targetEncodedValueSet != '') { // TODO: validate bytes32 == ''
+        if (_targetEncodedValueSet.length > 0) {
             if (_targetCurve =! address(0)) {
                 // curve migrating, point to new valueSet
                 I_Curve(_targetCurve).registerValueSet(

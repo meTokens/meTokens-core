@@ -52,7 +52,8 @@
     * Chris will look at
     * Otherwise if supply = 0, it would calculate a different reserve weight
     * https://docs.google.com/spreadsheets/d/1KEZOTU8EzNGWLNRs535FoUoyS4wkPZhvBXUwU1jpKxE/edit#gid=1822115388
-* [ ] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
+* [x] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
+    * {variable}.length == 0 
 * [x] Move `reconfiguring` from bancor value set to updater
 * [x] Disable migrating when reconfiguring and vise versa
     * When migrating, `_targetValueSet` is set to the ValueSet
@@ -64,8 +65,8 @@
 * [ ] _calculateWeightedAmount
     * [ ] Validate calculations
     * [ ] Remove `block.timestamp > endTime` ?
-* [ ] `hub.getHubStatus` to return uint
-
+* [x] `hub.getHubStatus` to return uint
+    * similar to arrays
 
 #### 6.07
 * [x] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve

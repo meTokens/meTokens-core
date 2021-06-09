@@ -89,7 +89,7 @@ contract Hub is I_Hub {
             vault,
             _curve,
             _refundRatio,
-            ACTIVE
+            status.ACTIVE
         );
         hubs[hubCount++] = hubDetails;
     }
@@ -109,7 +109,7 @@ contract Hub is I_Hub {
     function startUpdate(uint256 _hubId) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
-        hubDetails.status = status.UPDATING; // TODO: validate
+        hubDetails.status = status.UPDATING;
     }
 
 
@@ -133,7 +133,7 @@ contract Hub is I_Hub {
         if (_shifting != 0) {
             hubDetails.refundRatio = _shifting;
         }
-        hubDetails.status = status.ACTIVE; // TODO: validate
+        hubDetails.status = status.ACTIVE;
     )
 
 
@@ -159,9 +159,9 @@ contract Hub is I_Hub {
 
 
     /// @inheritdoc I_Hub
-    function getHubStatus(uint256 _hubId) public view override returns (uint) {
+    function getHubStatus(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.status;
+        return uint256(hubDetails.status);
     }
 
 
