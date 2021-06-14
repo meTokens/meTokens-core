@@ -50,21 +50,21 @@ contract BancorZeroFormula is Power {
 
     /// @notice Given a deposit amount (in the collateral token,) meToken supply of 0, connector weight,
     ///     constant x and constant y, calculates the return for a given conversion (in the meToken)
-    /// @dev _base_x and _base_y are needed as Bancor formula breaks from a divide-by-0 when supply = 0
+    /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply = 0
     /// @param _depositAmount   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
-    /// @param _base_x          constant X 
-    /// @param _base_y          constant y
+    /// @param _baseX          constant X 
+    /// @param _baseY          constant y
     /// @return meTokenAmount   amount of meTokens minted
     function _calculateMintReturnFromZero(
         uint256 _depositAmount,
         uint32 _reserveWeight,
-        uint256 _base_x,
-        uint256 _base_y
+        uint256 _baseX,
+        uint256 _baseY
     ) private view returns (uint256 meTokenAmount) {
-        uint256 numerator = _base_y;
+        uint256 numerator = _baseY;
         uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
-        uint256 denominator = _base_x ** exponent;
+        uint256 denominator = _baseX ** exponent;
         meTokenAmount = numerator/denominator * _depositAmount** exponent;
     }
 

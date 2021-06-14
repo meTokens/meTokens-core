@@ -2,8 +2,10 @@ pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
+import "../interfaces/I_Updater.sol"; // TODO
 import "../interfaces/I_ValueSet.sol";
 import "../interfaces/I_Migrations.sol";
+import "../libs/Weighted.sol"; // TODO: validate
 
 
 /// @title Bancor curve registry and calculator
@@ -11,23 +13,19 @@ import "../interfaces/I_Migrations.sol";
 /// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
+    uint256 private BASE_X = PRECISION;
+
     // NOTE: each valueSet is for a curve
     struct ValueSet {
-		uint256 base_x;
-		uint256 base_y;
+		uint256 baseY;
 		uint256 reserveWeight;
-        bool updating;
 	}
-
+    
     struct TargetValueSet {
-        uint base_x;
-        uint base_y;
-        uint256 reserveWeight;
-
-        uint256 startTime;
-        uint256 endTime;
-        bool targetReached;
+		uint256 baseY;
+		uint256 reserveWeight;
     }
+
 
     event Updated(uint256 indexed hubId);
 
@@ -37,64 +35,16 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     I_Hub public hub;
     I_Migrations public migrations;
+    I_Updater public updater;
 
     constructor(
         address _hub,
-        address _migrations
+        address _migrations,
+        address _updater
     ) {
         hub = I_Hub(_hub);
         migrations = I_Migrations(_migrations);
-    }
-
-    /// @inheritdoc I_ValueSet
-    function updateValueSet(
-        uint256 _hubId,
-        bytes32 _encodedTargetValueSet, // TODO: unencode
-        uint256 _startTime,
-        uint256 _endTime
-    ) external override {
-        require(msg.sender == hub.getHubOwner(_hubId), "msg.sender not hub owner");
-        
-        // TODO: validate hub is not updating
-
-        ValueSet storage valueSet = valueSets[_hubId];
-        require(!valueSet.updating, "ValueSet already updating");
-
-        // NOTE: this validates parameters are within the bounds before setting to value set
-        // This is needed to register future value sets of different curves, as they may have different
-        // arguments within Hub.registerValueSet()
-        uint256 base_x;
-        uint256 base_y;
-        uint256 reserveWeight;
-        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
-        _validateValueSet(_base_x, _base_y, _reserveWeight);
-
-        // TODO: determine where to place these requires so that a new curve 
-        //  will include them within their `updateValueSet()`
-        require(
-            _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
-            _startTime - block.timestamp <= migrations.maxSecondsUntilStart(),
-            "Unacceptable _startTime"
-        );
-        require(
-            _endTime - _startTime >= migrations.minUpdateDuration() &&
-            _endTime - _startTime <= migrations.maxUpdateDuration(),
-            "Unacceptable update duration"
-        );
-
-        // Create target value set mapped to the hub
-        TargetValueSet memory targetValueSet = TargetValueSet(
-            _base_x,
-            _base_y,
-            _reserveWeight,
-            _startTime,
-            _endTime,
-            false
-        );
-        targetValueSets[_hubId] = targetValueSet;
-
-        // Set valueSet updating to true
-        valueSet.updating = true;
+        updater = I_Updater(_updater);
     }
 
 
@@ -103,17 +53,34 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _hubId,
         bytes32 _encodedValueSet
     ) external override {
-        // TODO: access control
+        require(msg.sender == hub || msg.sender == updater, "!hub && !updater");
 
-        uint256 base_x;
-        uint256 base_y;
-        uint256 reserveWeight;
-        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
-        _validateValueSet(base_x, base_y, reserveWeight);
+        (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256));
+        require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
+        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
-        ValueSet memory valueSet = ValueSet(base_x, base_y, reserveWeight, false);
+        ValueSet memory valueSet = ValueSet(baseY, reserveWeight);
         valueSets[_hubId] = valueSet;
     }
+
+
+    function registerTargetValueSet(
+        uint256 _hubId,
+        bytes32 _encodedValueSet
+    ) external override {
+        require(msg.sender == updater, "!updater");
+
+        (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint256));
+        require(targetReserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+
+        // New baseY = (old baseY * oldR) / newR
+        ValueSet memory valueSet = valueSets[_hubId];
+        uint256 targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
+
+        ValueSet memory targetValueSet = TargetValueSet(targetBaseY, targetReserveWeight);
+        targetValueSets[_hubId] = targetValueSet;
+    }
+
 
 
     /// @inheritdoc I_ValueSet
@@ -121,7 +88,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _depositAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled
+        uint256 _balancePooled,
+        bool _reconfiguring,
+        uint256 _startTime,
+        uint256 _endTime
     ) external view override returns (uint256 meTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -136,17 +106,18 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             meTokenAmount = _calculateMintReturnFromZero(
                 _depositAmount,
                 v.reserveWeight,
-                v.base_x,
-                v.base_y
+                BASE_X,
+                v.baseY
             );
         }
 
-        if (v.updating) {
-            // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hubId];
+        if (_reconfiguring) {
 
             // Only calculate weighted amount if update is live
-            if (t.startTime > block.timestamp) {
+            if (block.timestamp > _startTime) {
+
+                // Calculate return using weights
+                TargetValueSet memory t = targetValueSets[_hubId];
                 if (_supply > 0) {
                     uint256 targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -155,21 +126,22 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                         _balancePooled
                     );
                 } else {
-                    // TODO: can supply == 0 when updating?
                     uint256 targetMeTokenAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
-                        t.base_x,
-                        t.base_y
+                        BASE_X,
+                        t.baseY
                     );
                 }
-                meTokenAmount = _calculateWeightedAmount(
+                
+                meTokenAmount = Weighted.calculateWeightedAmount(
                     meTokenAmount,
                     targetMeTokenAmount,
-                    _hubId,
-                    t.startTime,
-                    t.endTime
+                    block.timestamp,
+                    _startTime,
+                    _endTime
                 );
+
             }
         }
     }
@@ -180,7 +152,10 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         uint256 _burnAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled
+        uint256 _balancePooled,
+        bool _reconfiguring,
+        uint256 _startTime,
+        uint256 _endTime
     ) external view override returns (uint256 collateralTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -191,75 +166,43 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             _balancePooled
         );
         
-        if (v.updating) {
-            // Calculate return using weights
-            TargetValueSet memory t = targetValueSets[_hubId];
-            uint256 targetCollateralTokenAmount =  (
-                _burnAmount,
-                t.reserveWeight,
-                _supply,
-                _balancePooled
-            );
-            collateralTokenAmount = _calculateWeightedAmount(
-                collateralTokenAmount,
-                targetCollateralTokenAmount,
-                _hubId,
-                t.startTime,
-                t.endTime
-            );
+        if (_reconfiguring) {
+            // TODO: this is passed with arguments, more succinct way?
+            // (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+
+            // Only calculate weighted amount if update is live
+            if (block.timestamp > _startTime) {
+
+                // Calculate return using weights
+                TargetValueSet memory t = targetValueSets[_hubId];
+                uint256 targetCollateralTokenAmount =  _calculateBurnReturn(
+                    _burnAmount,
+                    t.reserveWeight,
+                    _supply,
+                    _balancePooled
+                );
+
+                collateralTokenAmount = Weighted.calculateWeightedAmount(
+                    collateralTokenAmount,
+                    targetCollateralTokenAmount,
+                    _startTime,
+                    block.timestamp,
+                    _endTime
+                );
+            }
         }
     }
 
-
     // TODO: natspec
-    function _calculateWeightedAmount(
-        uint256 _amount,
-        uint256 _targetAmount,
-        uint256 _hubId,
-        uint256 _startTime,
-        uint256 _endTime
-    ) private returns (uint256 weightedAmount) {
-        uint256 targetWeight;
-
-        if (block.timestamp > _endTime) { 
-            // Finish update if complete
-            _finishUpdate(_hubId);
-            targetWeight = PRECISION;
-        } else {
-            uint256 targetProgress = block.timestamp - _startTime;
-            uint256 targetLength = _endTime - _startTime;
-            // TODO: is this calculation right?
-            targetWeight = PRECISION * targetProgress / targetLength;
-        }
-
-        // TODO: validate these calculations
-        uint256 weighted_v = _amount * (PRECISION - targetWeight);
-        uint256 weighted_t = _targetAmount * targetWeight;
-        weightedAmount = weighted_v + weighted_t;
-    }
-
-
-    /// TODO: natspec
-    function _validateValueSet(uint256 base_x, uint256 base_y, uint256 reserveWeight) private {
-        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
-        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
-        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
-    }
-
-
-    // TODO: natspec
-    function _finishUpdate(uint256 _hubId) private {
+    function finishUpdate(uint256 _hubId) external {
 
         ValueSet storage v = valueSets[_hubId];
         TargetValueSet storage t = targetValueSets[_hubId];
 
-        v.base_x = t.base_x;
-        v.base_y = t.base_y;
+        v.baseY = t.baseY;
         v.reserveWeight = t.reserveWeight;
-        v.updating = false;
 
         delete(t);
-
         emit Updated(_hubId);
     }
 

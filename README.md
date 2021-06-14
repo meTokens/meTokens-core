@@ -24,12 +24,60 @@
 #### 5.24
 * [x] Validate incrementBalancePooled() and incrementBalanceLocked()
 * [x] `Hub.sol` - does `HubDetails` need `valueSet` identifier if it's always the same? - no
-* [ ] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
-* [ ] updating `refundRatio` within `Hub`
+* [x] `!migrating` within `Foundry.sol` is for when curve is updating - adjust?
+    * Moved to Updater
+* [x] updating `refundRatio` within `Hub`
+    * Done with Updater
+
+#### 5.29
+* [x] Determine where to place `TargetValueSet`
+    * Within `{}ValueSet.sol` contracts
+* [x] Determine where to place `min` and `max` timeframe
+    * Within `Migrations.sol`
+* [x] Figure out how to convert `_calculateWeightedAmount` to a library
 
 
-#### 5.25
-* [ ] Hub status
+#### 06.02
+* [x] Remove `hubId` from `calculateWeightedAmount`
+* [x] Set `reconfiguring` to false when a curve is done reconfiguring
+* [x] Add min and max to `base_x` and `base_y`
+    * Doesn't matter much as these variables only apply when supply = 0, which is rarely ever
+* [x] Add all update stats to Updater
+* [x] `startTime` and `endTime` locations
+    * Removed from `targetValueSet`
+
+
+#### 6.03
+* [x] When modifying reserveWeight, either `base_x` or `base_y` has to change (probably `base_y`)
+    * New baseY = (old baseY * oldR) / newR
+* [x] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
+    * {variable}.length == 0 
+* [x] Move `reconfiguring` from bancor value set to updater
+* [x] Disable migrating when reconfiguring and vise versa
+    * When migrating, `_targetValueSet` is set to the ValueSet
+    * When reconfiguring, `_targetValueSet` is set to the TargetValueSet
+* [x] End update when block.number > endTime within `Foundry`
+
+
+#### 6.04
+* [ ] _calculateWeightedAmount
+    * [ ] Validate calculations
+    * [ ] Remove `block.timestamp > endTime` ?
+* [x] `hub.getHubStatus` to return uint
+    * similar to arrays
+
+#### 6.07
+* [x] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
+* [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
+* [x] Remove `_finishUpdate` from `bancorZeroValueSet`
+    * Still needed to set TargetValueSet to ValueSet
+* [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
+* [ ] Vault recollateralizing
+    * [ ] MeToken balances
+    * [ ] Returning collateral  
+
+
+#### Updates & Migrations
 * Migrations
     * Migrating from one vault to another (switch collateral token)
     * Migrating from one curve to another (bancor => stepwise)

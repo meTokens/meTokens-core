@@ -51,7 +51,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     ) external {
         // TODO: access control
         require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
-        require(hub.getHubStatus(_hubId) != "INACTIVE", "Hub not active"); // TODO: validate
+        require(hub.getHubStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault

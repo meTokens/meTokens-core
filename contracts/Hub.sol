@@ -22,15 +22,13 @@ contract Hub is I_Hub {
     }
 
     uint256 private immutable PRECISION = 10**18;
+
+    uint256 private hubCount;
     address public gov;
     I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
 
-    mapping(uint256 => HubDetails) private hubs;
-    uint256 private hubCount;
-
-    enum Status { INACTIVE, ACTIVE, UPDATING, MIGRATING }
     struct HubDetails {
         string name;
         address owner;
@@ -40,6 +38,9 @@ contract Hub is I_Hub {
         uint256 refundRatio;
         Status status;
     }
+    mapping(uint256 => HubDetails) private hubs;
+
+    enum Status { INACTIVE, ACTIVE, UPDATING}
 
     constructor(
         address _gov,
@@ -88,7 +89,7 @@ contract Hub is I_Hub {
             vault,
             _curve,
             _refundRatio,
-            ACTIVE
+            status.ACTIVE
         );
         hubs[hubCount++] = hubDetails;
     }
@@ -104,9 +105,37 @@ contract Hub is I_Hub {
         emit DeactivateHub(_hubId);
     }
 
-    function setRefundRatio(uint256 _hubId, uint256 _refundRatio) external {
-
+    
+    function startUpdate(uint256 _hubId) external {
+        require(msg.sender == updater, "!updater");
+        HubDetails storage hubDetails = hubs[_hubId];
+        hubDetails.status = status.UPDATING;
     }
+
+
+    function finishUpdate(
+        uint256 _hubId,
+        address _migrating,
+        address _recollateralizing,
+        uint256 _shifting
+    ) external (
+        require(msg.sender == updater, "!updater");
+        HubDetails storage hubDetails = hubs[_hubId];
+        
+        if (_migrating != address(0)) {
+            hubDetails.curve = migrating;
+        }
+
+        if (_recollateralizing != address(0)) {
+            hubDetails.vault = _recollateralizing;
+        }
+
+        if (_shifting != 0) {
+            hubDetails.refundRatio = _shifting;
+        }
+        hubDetails.status = status.ACTIVE;
+    )
+
 
     function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
         // TODO: access control
@@ -118,58 +147,62 @@ contract Hub is I_Hub {
         I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
     }
 
-    function 
-
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
 
     // TODO: natspec
-    function getHubOwner(uint256 _hubId) public view override returns (address) hubExists(_hubId) {
+    function getHubOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.owner;
     }
 
 
     /// @inheritdoc I_Hub
-    function getHubStatus(uint256 _hubId) public view override returns (Status) {
+    function getHubStatus(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.status;
+        return uint256(hubDetails.status);
+    }
+
+
+    function getHubRefundRatio(uint256 _hubId) public view override returns (uint256) {
+        HubDetails memory hubDetails = hubs[_hubId];
+        return hubDetails.refundRatio;
     }
 
 
     /// @inheritdoc I_Hub
     function getHubDetails(
         uint256 _hubId
-    ) external view override hubExists(_hubd) returns (
+    ) external view override hubExists(_hubId) returns (
         string name,
         address owner,
         address vault,
-        address curve,
+        address curve_,
         uint256 valueSet,
         uint256 refundRatio,
-        Status status
+        uint256 status
     ) {
         HubDetails memory hubDetails = hubs[_hubId];
         name = hubDetails.name;
         owner = hubDetails.owner;
         vault = hubDetails.vault;
-        curve = hubDetails.curve;
+        curve_ = hubDetails.curve;
         valueSet = hubDetails.valueSet;
         refundRatio = hubDetails.refundRatio;
-        status = hubDetails.status;
+        status = hubDetails.status; // TODO: return int
     }
 
     /// @inheritdoc I_Hub
     function getHubCurve(uint256 _hubId) external view override returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.curve;
     }
 
     /// @inheritdoc I_Hub
     function getHubVault(uint256 _hubId) external view override returns (address) {
-        require(_hubId < hubCount, "_hubId exceeds hubCount");
+        require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
     }
