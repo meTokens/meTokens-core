@@ -13,16 +13,16 @@ import "../libs/Weighted.sol"; // TODO: validate
 /// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
+    uint256 private BASE_X = PRECISION;
+
     // NOTE: each valueSet is for a curve
     struct ValueSet {
-		uint256 base_x;
-		uint256 base_y;
+		uint256 baseY;
 		uint256 reserveWeight;
 	}
     
     struct TargetValueSet {
-        uint256 base_x;
-		uint256 base_y;
+		uint256 baseY;
 		uint256 reserveWeight;
     }
 
@@ -55,11 +55,14 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     ) external override {
         require(msg.sender == hub || msg.sender == updater, "!hub && !updater");
 
-        (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
+        (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256));
+        require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
+        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
-        ValueSet memory valueSet = ValueSet(x, y, r);
+        ValueSet memory valueSet = ValueSet(baseY, reserveWeight);
         valueSets[_hubId] = valueSet;
     }
+
 
     function registerTargetValueSet(
         uint256 _hubId,
@@ -67,31 +70,17 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     ) external override {
         require(msg.sender == updater, "!updater");
 
-        (uint256 x, uint256 y, uint256 r) = validate(_encodedValueSet);
+        (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint256));
+        require(targetReserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
-        ValueSet memory targetValueSet = TargetValueSet(x, y, r);
+        // New baseY = (old baseY * oldR) / newR
+        ValueSet memory valueSet = valueSets[_hubId];
+        uint256 targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
+
+        ValueSet memory targetValueSet = TargetValueSet(targetBaseY, targetReserveWeight);
         targetValueSets[_hubId] = targetValueSet;
     }
 
-
-    /// TODO: natspec
-    function validate(bytes32 _encodedValueSet) public returns (
-        uint256 base_x,
-        uint256 base_y,
-        uint256 reserveWeight
-    )
-    {
-        (base_x, base_y, reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256, uint256));
-        _validate(base_x, base_y, reserveWeight);
-    }
-
-
-    function _validate(uint256 _base_x, uint256 _base_y, uint256 _reserveWeight) private {
-        // TODO: validate new base_x and base_y match _reserveWeight
-        require(base_x > 0 && base_x <= PRECISION, "base_x not in range");
-        require(base_y > 0 && base_y <= PRECISION, "base_y not in range");
-        require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
-    }
 
 
     /// @inheritdoc I_ValueSet
@@ -117,8 +106,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
             meTokenAmount = _calculateMintReturnFromZero(
                 _depositAmount,
                 v.reserveWeight,
-                v.base_x,
-                v.base_y
+                BASE_X,
+                v.baseY
             );
         }
 
@@ -140,8 +129,8 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     uint256 targetMeTokenAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
-                        t.base_x,
-                        t.base_y
+                        BASE_X,
+                        t.baseY
                     );
                 }
                 
@@ -210,8 +199,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         ValueSet storage v = valueSets[_hubId];
         TargetValueSet storage t = targetValueSets[_hubId];
 
-        v.base_x = t.base_x;
-        v.base_y = t.base_y;
+        v.baseY = t.baseY;
         v.reserveWeight = t.reserveWeight;
 
         delete(t);

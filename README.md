@@ -48,10 +48,8 @@
 
 
 #### 6.03
-* [ ] When modifying reserveWeight, either `base_x` or `base_y` has to change (probably `base_y`)
-    * Chris will look at
-    * Otherwise if supply = 0, it would calculate a different reserve weight
-    * https://docs.google.com/spreadsheets/d/1KEZOTU8EzNGWLNRs535FoUoyS4wkPZhvBXUwU1jpKxE/edit#gid=1822115388
+* [x] When modifying reserveWeight, either `base_x` or `base_y` has to change (probably `base_y`)
+    * New baseY = (old baseY * oldR) / newR
 * [x] validate bytes32 == '' for Updater.sol with `targetEncodedValueSet`
     * {variable}.length == 0 
 * [x] Move `reconfiguring` from bancor value set to updater

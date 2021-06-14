@@ -19,7 +19,7 @@ interface I_ValueSet {
     ) external;
 
 
-    /// @notice Given a hub, base_x, base_y and connector weight, add the configuration to the
+    /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
     /// BancorZero ValueSet registry
     /// @dev ValueSet need to be encoded as the Hub may register ValueSets for different curves
     ///      that may contain different ValueSet arguments

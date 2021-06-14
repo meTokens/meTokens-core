@@ -95,9 +95,9 @@ contract Foundry {
             );
         }
         
-        // Send collateral to vault and update balance pooled
+        // Send collateral to new vault and update balance pooled
         if (recollateralizing != address(0)) {
-            collateralToken.transferFrom(msg.sender, address(vault), _collateralDeposited);
+            collateralToken.transferFrom(msg.sender, recollateralizing, _collateralDeposited);
         }
 
         meTokenRegistry.incrementBalancePooled(
