@@ -47,10 +47,15 @@ contract Foundry {
         address migrating;
         address recollateralizing;
 
-        if (hubStatus == 2) { // UPDATING
+        if (hubStatus > 1) { // QUEUED, UPDATING
             uint256 startTime;
             uint256 endTime;
             (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
+
+            if (hubStatus == 2 && block.timestamp > startTime) {
+                // updater.
+            }
+
             if (block.number > endTime) {
                 // End update
                 updater.finishUpdate(_hubId);

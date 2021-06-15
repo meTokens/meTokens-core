@@ -77,6 +77,11 @@
     * [ ] Returning collateral  
 
 
+#### 6.15
+* Vaults will use a migration vault and start with Uniswap v2
+* Migrations directory for different types of migrations (uniswap v2, balancer, 0x, etc.)
+
+
 #### Updates & Migrations
 * Migrations
     * Migrating from one vault to another (switch collateral token)

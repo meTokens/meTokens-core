@@ -14,7 +14,8 @@ import "./interfaces/I_CurveValueSet.sol";
 contract Hub is I_Hub {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
-    event DeactivateHub(uint256 hub);
+    event SetHubStatus(uint256 hubId, uint256 status);
+    event DeactivateHub(uint256 hubId);
 
     modifier hubExists(uint256 _hubId) {
         require(_hubId <= hubCount, "_hubId exceeds hubCount");
@@ -40,7 +41,9 @@ contract Hub is I_Hub {
     }
     mapping(uint256 => HubDetails) private hubs;
 
-    enum Status { INACTIVE, ACTIVE, UPDATING}
+    // TODO: ensure this is properly checked
+    // TODO: FINISHING (?)
+    enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
 
     constructor(
         address _gov,
@@ -109,9 +112,16 @@ contract Hub is I_Hub {
     function startUpdate(uint256 _hubId) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
-        hubDetails.status = status.UPDATING;
+        hubDetails.status = status.QUEUED;
     }
 
+    function setHubStatus(uint256 _hubId, uint256 status) public {
+        // TODO: access control
+        HubDetails storage hubDetails = hubs[_hubId];
+        require(uint256(hubDetails.status) != status, "Cannot set to same status");
+        hubDetails.status = status;
+        emit SetHubStatus(_hubId, status);
+    }
 
     function finishUpdate(
         uint256 _hubId,
