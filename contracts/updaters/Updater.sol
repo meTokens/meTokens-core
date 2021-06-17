@@ -2,12 +2,11 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/I_Migrations.sol";
 import "../interfaces/I_Hub.sol";
+import "../interfaces/I_Updater.sol";
 
 
-contract Updater {
+contract Updater is I_Updater {
 
-    event StartUpdate(); // TODO
-    event FinishUpdate(uint256 _hubId);
     struct UpdateDetails {
         bool reconfiguring;
         address migrating;
