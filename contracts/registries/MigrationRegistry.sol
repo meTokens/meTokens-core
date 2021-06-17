@@ -1,23 +1,25 @@
 pragma solidity ^0.8.0;
 
 
-/// @title Migration registry
+/// @title Recollaterlization registry
 /// @author Carl Farterson (@carlfarterson)
-/// @notice Keeps track of all used migration strategies 
-contract MigrationRegistry {
+/// @notice Keeps track of all used Recollaterlization strategies 
+contract RecollaterlizationRegistry {
 
-	mapping (uint256 => MigrationDetails) migrations;
+	mapping (uint256 => RecollaterlizationDetails) Recollaterlizations;
 
-    struct MigrationDetails {
+    struct RecollaterlizationDetails {
         uint256 fromHub;
         uint256 toHub;
-        address migrationVault;
+        address RecollaterlizationVault;
         uint256 blockStart;
         uint256 blockTarget;
         bool targetReached;
     }
 
-    function registerMigration() external returns(uint256) {}
-    function deactivateMigration() external returns(uint256) {}
-    function reactivateMigration() external returns(uint256) {}
+    function registerRecollaterlization(
+        address _recollaterlization
+    ) external returns(uint256) {}
+    function deactivateRecollaterlization() external returns(uint256) {}
+    function reactivateRecollaterlization() external returns(uint256) {}
 }

@@ -22,8 +22,8 @@ contract MeTokenFactory {
     }
 
     /// @notice create a meToken
-    /// @param _name name of meToken
     /// @param _owner owner of meToken
+    /// @param _name name of meToken
     /// @param _symbol symbol of meToken
     function createMeToken(
         address _owner,

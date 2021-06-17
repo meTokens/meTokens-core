@@ -24,7 +24,7 @@ contract SingleAssetFactory {
 
     constructor(address _hub, address _vaultRegistry) public {
         hub = _hub;
-        vaultRegistry = _vaultRegistry;
+        vaultRegistry = I_VaultRegistry(_vaultRegistry);
     }
     
 	/// @notice function to create and register a new vault to the vault registry

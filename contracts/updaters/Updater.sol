@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_Migrations.sol";
+import "../interfaces/I_Recollateralization.sol";
 import "../interfaces/I_Hub.sol";
 import "../interfaces/I_Updater.sol";
 
@@ -16,14 +16,14 @@ contract Updater is I_Updater {
         uint256 endTime;
     }
 
-    I_Migrations public migrations;
+    I_Recollateralization public recollateralizations;
     I_Hub public hub;
 
     // NOTE: keys are hubId's, used for valueSet calculations
     mapping (uint256 => UpdateDetails) private updates;
 
-    constructor(address _migrations, address _hub) {
-        migrations = I_Migrations(_migrations);
+    constructor(address _recollateralizations, address _hub) {
+        recollateralizations = I_Recollateralization(_recollateralizations);
         hub = I_Hub(_hub);
     }
 
@@ -40,13 +40,13 @@ contract Updater is I_Updater {
         // TODO: access control
 
         require(
-            _startTime - block.timestamp >= migrations.minSecondsUntilStart() &&
-            _startTime - block.timestamp <= migrations.maxSecondsUntilStart(),
+            _startTime - block.timestamp >= recollateralizations.minSecondsUntilStart() &&
+            _startTime - block.timestamp <= recollateralizations.maxSecondsUntilStart(),
             "Unacceptable _startTime"
         );
         require(
-            _endTime - _startTime >= migrations.minUpdateDuration() &&
-            _endTime - _startTime <= migrations.maxUpdateDuration(),
+            _endTime - _startTime >= recollateralizations.minUpdateDuration() &&
+            _endTime - _startTime <= recollateralizations.maxUpdateDuration(),
             "Unacceptable update duration"
         );
 
