@@ -1,7 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenRegistry.sol";
 
@@ -33,14 +31,12 @@ contract MeTokenFactory {
         string calldata _symbol
     ) onlyRegistry external returns (address) {
 
-        // TODO: is _owner the right data type?
-        address meTokenAddress = Create2.deploy(_owner, type(MeToken).creationCode);
-
         // Create our meToken
-        MeToken(meTokenAddress).initialize(_name, _symbol);
+        // TODO: Validate
+        MeToken meToken = new MeToken(_name, _symbol);
 
-        emit CreateMeToken(meTokenAddress);
-        return meTokenAddress;
+        emit CreateMeToken(address(meToken));
+        return address(meToken);
     }
 
 }

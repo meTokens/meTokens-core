@@ -132,7 +132,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
 
     /// @inheritdoc I_MeTokenRegistry
-    function toggleUpdating() override returns (bool) {
+    function toggleUpdating() public override returns (bool) {
         require(msg.sender == 0x0, ""); // TODO
         updating = !updating;
         emit ToggleUpdating(updating);
@@ -140,7 +140,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
 
     /// @inheritdoc I_MeTokenRegistry
-    function toggleMigrating() override returns (bool) {    
+    function toggleMigrating() public override returns (bool) {    
         require(msg.sender == 0x0, ""); // TODO
         migrating = !migrating;
         emit ToggleMigrating(migrating);
