@@ -2,10 +2,10 @@ pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Updater.sol"; // TODO
+import "../interfaces/I_Updater.sol";
 import "../interfaces/I_ValueSet.sol";
 import "../interfaces/I_Migrations.sol";
-import "../libs/Weighted.sol"; // TODO: validate
+import "../libs/WeightedAverage.sol";
 
 
 /// @title Bancor curve registry and calculator
