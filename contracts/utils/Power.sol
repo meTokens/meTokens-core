@@ -10,34 +10,27 @@ contract Power {
   uint8 private constant MIN_PRECISION = 32;
   uint8 private constant MAX_PRECISION = 127;
 
-  /**
-    The values below depend on MAX_PRECISION. If you choose to change it:
-    Apply the same change in file 'PrintIntScalingFactors.py', run it and paste the results below.
-  */
+  
+  // The values below depend on MAX_PRECISION. If you choose to change it:
+  // Apply the same change in file 'PrintIntScalingFactors.py', run it and paste the results below.
   uint256 private constant FIXED_1 = 0x080000000000000000000000000000000;
   uint256 private constant FIXED_2 = 0x100000000000000000000000000000000;
   uint256 private constant MAX_NUM = 0x200000000000000000000000000000000;
 
-  /**
-      Auto-generated via 'PrintLn2ScalingFactors.py'
-  */
+  // Auto-generated via 'PrintLn2ScalingFactors.py'
   uint256 private constant LN2_NUMERATOR   = 0x3f80fe03f80fe03f80fe03f80fe03f8;
   uint256 private constant LN2_DENOMINATOR = 0x5b9de1d10bf4103d647b0955897ba80;
 
-  /**
-      Auto-generated via 'PrintFunctionOptimalLog.py' and 'PrintFunctionOptimalExp.py'
-  */
+  // Auto-generated via 'PrintFunctionOptimalLog.py' and 'PrintFunctionOptimalExp.py'
   uint256 private constant OPT_LOG_MAX_VAL =
   0x15bf0a8b1457695355fb8ac404e7a79e3;
   uint256 private constant OPT_EXP_MAX_VAL =
   0x800000000000000000000000000000000;
 
-  /**
-    The values below depend on MIN_PRECISION and MAX_PRECISION. If you choose to change either one of them:
-    Apply the same change in file 'PrintFunctionBancorFormula.py', run it and paste the results below.
-  */
+  // The values below depend on MIN_PRECISION and MAX_PRECISION. If you choose to change either one of them:
+  // Apply the same change in file 'PrintFunctionBancorFormula.py', run it and paste the results below.
   uint256[128] private maxExpArray;
-  constructor() public {
+  constructor() {
     maxExpArray[32] = 0x1c35fedd14ffffffffffffffffffffffff;
     maxExpArray[33] = 0x1b0ce43b323fffffffffffffffffffffff;
     maxExpArray[34] = 0x19f0028ec1ffffffffffffffffffffffff;

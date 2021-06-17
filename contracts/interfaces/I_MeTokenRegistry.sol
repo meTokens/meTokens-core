@@ -23,9 +23,7 @@ interface I_MeTokenRegistry {
     /// @return TODO
     function isMeTokenOwner(address _owner) external view returns (bool);
 
-    /// @notice TODO
-    /// @param _meToken TODO
-    /// @return TODO
+    // TODO
     function getMeTokenDetails(
         address _meToken
     ) external view returns (

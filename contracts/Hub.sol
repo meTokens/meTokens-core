@@ -26,7 +26,6 @@ contract Hub is I_Hub {
 
     uint256 private hubCount;
     address public gov;
-    I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
 
@@ -128,7 +127,7 @@ contract Hub is I_Hub {
         address _migrating,
         address _recollateralizing,
         uint256 _shifting
-    ) external (
+    ) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
         
@@ -144,7 +143,7 @@ contract Hub is I_Hub {
             hubDetails.refundRatio = _shifting;
         }
         hubDetails.status = status.ACTIVE;
-    )
+    }
 
 
     function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
@@ -200,7 +199,7 @@ contract Hub is I_Hub {
         curve_ = hubDetails.curve;
         valueSet = hubDetails.valueSet;
         refundRatio = hubDetails.refundRatio;
-        status = hubDetails.status; // TODO: return int
+        status = uint256(hubDetails.status);
     }
 
     /// @inheritdoc I_Hub

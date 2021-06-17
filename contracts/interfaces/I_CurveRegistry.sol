@@ -56,7 +56,7 @@ interface I_CurveRegistry {
     /// @param _curveId TODO
     /// @return TODO
     // TODO: import CurveDetails struct
-    function getCurveDetails(
-        uint256 _curveId
-    ) external view returns (CurveDetails);
+    // function getCurveDetails(
+    //     uint256 _curveId
+    // ) external view returns (CurveDetails);
 }

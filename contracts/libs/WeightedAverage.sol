@@ -1,8 +1,8 @@
 pragma solidity ^0.8.0;
 
-library Weighted {
+library WeightedAverage {
 
-    uint256 PRECISION = 10**18;
+    uint256 constant PRECISION = 10**18;
 
     function calculate(
         uint256 amount,
@@ -25,6 +25,6 @@ library Weighted {
         }
         uint256 amountWeighted = amount * (PRECISION - targetWeight);
         uint256 targetAmountWeighted = targetAmount * targetWeight;
-        return amountWeighted + target
+        return amountWeighted + targetAmountWeighted;
     } 
 }

@@ -40,19 +40,30 @@ interface I_Hub {
     /// @param _hubId TODO
     /// @return Status TODO
     // TODO: import Status struct 
-    function getHubStatus(uint256 _hubId) external view returns (Status);
+    function getHubStatus(uint256 _hubId) external view returns (uint256);
 
     // TODO
     function getHubOwner(uint256 _hubId) external view returns (address);
 
-    /// @notice TODO
-    /// @param _hubId TODO
-    /// @return HubDetails TODO
-    // TODO: import HubDetails struct
-    function getHubDetails(uint256 _hubId) external view returns (HubDetails);
+    // TODO
+    function getHubDetails(uint256 _hubId) external view returns (
+        string calldata name,
+        address owner,
+        address vault,
+        address curve_,
+        uint256 valueSet,
+        uint256 refundRatio,
+        uint256 status
+    );
 
     /// @notice TODO
     /// @param _hubId TODO
     /// @return TODO
     function getHubVault(uint256 _hubId) external view returns (address);
+
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @return TODO
+    function getHubCurve(uint256 _hubId) external view returns (address);
+    
 }

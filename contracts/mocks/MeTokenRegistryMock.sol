@@ -4,10 +4,10 @@ contract MeTokenRegistryMock {
     
     mapping(address => bool) public owners;
 
-    constructor () public {
+    constructor () {
     }
 
-    /// @dev: use default values of "", _owner, "", 0
+    // NOTE: use default values of "", _owner, "", 0
     function registerMeToken(
         string calldata _name,
         address _owner,
