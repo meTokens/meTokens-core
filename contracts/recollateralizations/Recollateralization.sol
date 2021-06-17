@@ -1,19 +1,16 @@
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_RecollateralizationRegistry.sol";
 
 contract Recollateralization {
 
-    uint256 fromHub;
-    uint256 toHub;
-
-    address collateralTokenStart;
-    address collateralTokenIntra;
-    address collateralTokenEnd;
+    I_RecollateralizationRegistry public recollateralizationRegistry = 
+        I_RecollateralizationRegistry(address(0));  // TODO
 
     constructor() {}
 
     function finish() public virtual {
-        // send ending to new hub
+        // send ending collateral to new hub
     }
 
 }
