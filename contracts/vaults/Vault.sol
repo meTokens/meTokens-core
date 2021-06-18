@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "../interfaces/I_VaultRegistry.sol";
@@ -18,7 +19,7 @@ contract Vault {
     I_VaultRegistry public vaultRegistry = I_VaultRegistry(address(0)); // TODO
 
     address public owner;
-	address private collateralAsset;
+	address public collateralAsset;
     uint256 accruedFees;
 
     function addFee(uint256 amount) external {
