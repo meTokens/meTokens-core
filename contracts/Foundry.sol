@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 
 pragma solidity ^0.8.0;
 
@@ -8,8 +9,9 @@ import "./interfaces/I_ERC20.sol";
 import "./interfaces/I_CurveValueSet.sol";
 import "./interfaces/I_Vault.sol";
 import "./interfaces/I_Hub.sol";
-import "./libs/Weighted.sol";  // TODO
+import "./libs/WeightedAverage.sol";
 
+import "./interfaces/I_Updater.sol";
 
 contract Foundry {
     
@@ -18,15 +20,18 @@ contract Foundry {
     I_Hub public hub;
     I_Fees public fees;
     I_MeTokenRegistry public meTokenRegistry;
+    I_Updater public updater;
 
     constructor(
         address _hub,
         address _fees,
-        address _meTokenRegistry
+        address _meTokenRegistry,
+        address _updater
     ) {
         hub = I_Hub(_hub);
         fees = I_Fees(_fees);
         meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
+        updater = I_Updater(_updater);
     }
 
 
@@ -46,14 +51,19 @@ contract Foundry {
         bool reconfiguring;  // NOTE: this is done on the valueSet level
         address migrating;
         address recollateralizing;
+        uint256 startTime;
+        uint256 endTime;
 
-        if (hubStatus == 2) { // UPDATING
-            uint256 startTime;
-            uint256 endTime;
-            (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(_hubId);
+        if (hubStatus > 1) { // QUEUED, UPDATING
+            (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(hubId);
+            if (hubStatus == 2 && block.timestamp > startTime) { // QUEUED
+                // TODO: set hub status to UDPATING and trigger new vault if needed
+                // updater.
+            }
+
             if (block.number > endTime) {
                 // End update
-                updater.finishUpdate(_hubId);
+                updater.finishUpdate(hubId);
                 reconfiguring = false;
                 migrating = address(0);
                 recollateralizing = address(0);
@@ -78,15 +88,15 @@ contract Foundry {
 
         if (migrating != address(0)) {
             // Do something
-            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
-            targetMeTokensMinted = targetCurve.calculateMintReturn(
+            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(hubId));
+            uint256 targetMeTokensMinted = targetCurve.calculateMintReturn(
                 collateralDepositedAfterFees,
                 hubId,
                 meToken.totalSupply(),
                 balancePooled,
                 reconfiguring
             );
-            meTokensMinted = Weighted.calculateWeightedAmount(
+            meTokensMinted = WeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
                 startTime,
@@ -117,6 +127,7 @@ contract Foundry {
 
     function burn(address _meToken, uint256 _meTokensBurned) external {
 
+        address owner;
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
@@ -132,14 +143,14 @@ contract Foundry {
         address migrating;
         address recollateralizing;
         uint256 shifting;
+        uint256 startTime;
+        uint256 endTime;
 
         if (hubStatus == 2) {  // UPDATING
-            uint256 startTime;
-            uint256 endTime;
             if (block.timestamp > endTime) {
                 updater.finishUpdate(hubId);
             } else {
-                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(_hubId);
+                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(hubId);
             }
         }
 
@@ -160,9 +171,10 @@ contract Foundry {
         );
 
         if (migrating != address(0)) {
-            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(_hubId));
-            targetMeTokensBurned = targetCurve.calculateBurnReturn(
-                collateralDepositedAfterFees,
+            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(hubId));
+            uint256 targetCollateralReturned = targetCurve.calculateBurnReturn(
+                _meTokensBurned,
+                // collateralDepositedAfterFees, // TODO: do we need to calculate after fees?
                 hubId,
                 meToken.totalSupply(),
                 balancePooled,
@@ -170,9 +182,9 @@ contract Foundry {
                 startTime,
                 endTime
             );
-            meTokensMinted = Weighted.calculateWeightedAmount(
-                meTokensBurned,
-                targetMeTokensBurned,
+            collateralReturned = WeightedAverage.calculateWeightedAmount(
+                collateralReturned,
+                targetCollateralReturned,
                 startTime,
                 block.timestamp,
                 endTime
@@ -188,10 +200,11 @@ contract Foundry {
             collateralMultiplier = PRECISION + PRECISION * balanceLocked / meToken.totalSupply();
         } else {
             feeRate = fees.burnBuyerFee();
-            collateralMultiplier = PRECISION - hubDetails.refundRatio;
+            // TODO
+            // collateralMultiplier = PRECISION - hubDetails.refundRatio;
             if (shifting) {
-                targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(_hubId);
-                collateralMultiplier = Weighted.calculateWeightedAmount(
+                uint256 targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(hubId);
+                collateralMultiplier = WeightedAverage.calculate(
                     collateralMultiplier,
                     targetCollateralMultiplier,
                     startTime,
@@ -236,7 +249,7 @@ contract Foundry {
         if (fee > 0) {vault.addFee(fee);}
 
         // Send collateral from vault
-        collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
+        // collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
 
     }
 

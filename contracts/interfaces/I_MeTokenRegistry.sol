@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 interface I_MeTokenRegistry {
@@ -24,16 +25,20 @@ interface I_MeTokenRegistry {
     function isMeTokenOwner(address _owner) external view returns (bool);
 
     /// @notice TODO
-    /// @param _meToken TODO
-    /// @return TODO
+    /// @param meToken Address of meToken queried
+    /// @return owner Owner of MeToken
+    /// @return hubId Hub to which the meToken is subscribed
+    /// @return balancePooled Units of collateral pooled
+    /// @return balanceLocked Units of collateral locked
+    /// @return resubscribing Is meToken changing hubs? 
     function getMeTokenDetails(
-        address _meToken
+        address meToken
     ) external view returns (
         address owner,
         uint256 hubId,
         uint256 balancePooled,
         uint256 balanceLocked,
-        bool migrating
+        bool resubscribing 
     );
 
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 interface I_VaultRegistry {
@@ -32,5 +33,5 @@ interface I_VaultRegistry {
     /// @notice TODO
     /// @param _factory TODO
     /// @return TODO
-    function isApprovedVaultFactory(address _factory) external view returns (bool)
+    function isApprovedVaultFactory(address _factory) external view returns (bool);
 }

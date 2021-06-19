@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/Create2.sol";
@@ -20,11 +21,12 @@ contract SingleAssetFactory {
     event CreateVault(address vault);
 
     address public hub;
+    uint256 private deployCount;
     I_VaultRegistry public vaultRegistry;
 
-    constructor(address _hub, address _vaultRegistry) public {
+    constructor(address _hub, address _vaultRegistry) {
         hub = _hub;
-        vaultRegistry = _vaultRegistry;
+        vaultRegistry = I_VaultRegistry(_vaultRegistry);
     }
     
 	/// @notice function to create and register a new vault to the vault registry
@@ -39,9 +41,8 @@ contract SingleAssetFactory {
         address _collateralAsset,
         bytes4 _encodedVaultAdditionalArgs // NOTE: potentially needed for other vaults 
     ) onlyHub external returns (address) {
-        uint256 vaultId = vaultRegistry.vaultCount();
-        // TODO: validate salt of vaultId is correct type
-        address vaultAddress = Create2.deploy(vaultId, type(SingleAsset).creationCode);
+        // TODO: validate salt of deployCount is correct type
+        address vaultAddress = Create2.deploy(deployCount, type(SingleAsset).creationCode);
 
         // create our vault
         SingleAsset(vaultAddress).initialize(
@@ -52,6 +53,7 @@ contract SingleAssetFactory {
         // Add vault to vaultRegistry
         vaultRegistry.registerVault(_name, vaultAddress, address(this));
 
+        deployCount++;
         emit CreateVault(vaultAddress);
         return vaultAddress;
     }

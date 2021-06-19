@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "../interfaces/I_VaultRegistry.sol";
@@ -68,7 +69,7 @@ contract VaultRegistry is I_VaultRegistry {
 
 
     /// @inheritdoc I_VaultRegistry
-    function isActiveVault(address _vault) external view returns (bool) {
+    function isActiveVault(address _vault) external view override returns (bool) {
         // TODO: import VaultDetails struct
         VaultDetails memory vaultDetails = vaults[_vault];
         return vaultDetails.active;
@@ -76,7 +77,7 @@ contract VaultRegistry is I_VaultRegistry {
 
 
     /// @inheritdoc I_VaultRegistry
-    function isApprovedVaultFactory(address _factory) external view returns (bool) {
+    function isApprovedVaultFactory(address _factory) external view override returns (bool) {
         return approvedVaultFactories[_factory];
     }
 }

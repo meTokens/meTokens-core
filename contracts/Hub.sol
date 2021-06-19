@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "./interfaces/I_Hub.sol";
@@ -5,6 +6,7 @@ import "./interfaces/I_VaultFactory.sol";
 import "./interfaces/I_VaultRegistry.sol";
 import "./interfaces/I_CurveRegistry.sol";
 import "./interfaces/I_CurveValueSet.sol";
+import "./interfaces/I_Updater.sol";
 
 
 /// @title meToken hub
@@ -14,7 +16,8 @@ import "./interfaces/I_CurveValueSet.sol";
 contract Hub is I_Hub {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
-    event DeactivateHub(uint256 hub);
+    event SetHubStatus(uint256 hubId, uint256 status);
+    event DeactivateHub(uint256 hubId);
 
     modifier hubExists(uint256 _hubId) {
         require(_hubId <= hubCount, "_hubId exceeds hubCount");
@@ -25,9 +28,9 @@ contract Hub is I_Hub {
 
     uint256 private hubCount;
     address public gov;
-    I_Curve public curve;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
+    I_Updater public updater;
 
     struct HubDetails {
         string name;
@@ -40,16 +43,20 @@ contract Hub is I_Hub {
     }
     mapping(uint256 => HubDetails) private hubs;
 
-    enum Status { INACTIVE, ACTIVE, UPDATING}
+    // TODO: ensure this is properly checked
+    // TODO: FINISHING (?)
+    enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
 
     constructor(
         address _gov,
         address _vaultRegistry,
-        address _curveRegistry
+        address _curveRegistry,
+        address _updater
     ) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
         curveRegistry = I_CurveRegistry(_curveRegistry);
+        updater = I_Updater(_updater);
     }
 
 
@@ -69,7 +76,7 @@ contract Hub is I_Hub {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
-        require(_refundRatio <= PRECISION, "_refundRatio > PRECISION");
+        require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
@@ -80,7 +87,7 @@ contract Hub is I_Hub {
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
+        address vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails memory hubDetails = HubDetails(
@@ -89,7 +96,7 @@ contract Hub is I_Hub {
             vault,
             _curve,
             _refundRatio,
-            status.ACTIVE
+            Status.ACTIVE
         );
         hubs[hubCount++] = hubDetails;
     }
@@ -101,29 +108,40 @@ contract Hub is I_Hub {
         HubDetails storage hubDetails = hubs[_hubId];
 
         require(hubDetails.active, "Hub not active");
-        hubDetails.active = false;
+        hubDetails.status = Status.INACTIVE;
         emit DeactivateHub(_hubId);
     }
+
+    // TODO: is this needed?
+    // function reactivateHub() returns (uint256) {}
+
 
     
     function startUpdate(uint256 _hubId) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
-        hubDetails.status = status.UPDATING;
+        hubDetails.status = Status.QUEUED;
     }
 
+    function setHubStatus(uint256 _hubId, uint256 status) public {
+        // TODO: access control
+        HubDetails storage hubDetails = hubs[_hubId];
+        require(uint256(hubDetails.status) != status, "Cannot set to same status");
+        hubDetails.status = status;
+        emit SetHubStatus(_hubId, status);
+    }
 
     function finishUpdate(
         uint256 _hubId,
         address _migrating,
         address _recollateralizing,
         uint256 _shifting
-    ) external (
+    ) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
         
         if (_migrating != address(0)) {
-            hubDetails.curve = migrating;
+            hubDetails.curve = _migrating;
         }
 
         if (_recollateralizing != address(0)) {
@@ -133,22 +151,8 @@ contract Hub is I_Hub {
         if (_shifting != 0) {
             hubDetails.refundRatio = _shifting;
         }
-        hubDetails.status = status.ACTIVE;
-    )
-
-
-    function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
-        // TODO: access control
-        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
-
-        HubDetails memory hubDetails = hubs[_hubId];
-        require(_curve != hubDetails.curve, "Cannot set curve to the same curve");
-
-        I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
+        hubDetails.status = Status.ACTIVE;
     }
-
-    // TODO: is this needed?
-    // function reactivateHub() returns (uint256) {}
 
 
     // TODO: natspec
@@ -190,7 +194,7 @@ contract Hub is I_Hub {
         curve_ = hubDetails.curve;
         valueSet = hubDetails.valueSet;
         refundRatio = hubDetails.refundRatio;
-        status = hubDetails.status; // TODO: return int
+        status = uint256(hubDetails.status);
     }
 
     /// @inheritdoc I_Hub

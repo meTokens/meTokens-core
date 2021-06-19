@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 interface I_CurveRegistry {
@@ -56,7 +57,7 @@ interface I_CurveRegistry {
     /// @param _curveId TODO
     /// @return TODO
     // TODO: import CurveDetails struct
-    function getCurveDetails(
-        uint256 _curveId
-    ) external view returns (CurveDetails);
+    // function getCurveDetails(
+    //     uint256 _curveId
+    // ) external view returns (CurveDetails);
 }

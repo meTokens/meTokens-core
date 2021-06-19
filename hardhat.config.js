@@ -7,8 +7,7 @@ require("dotenv").config();
 module.exports = {
   solidity: {
     compilers: [
-      {version: "0.6.6"} //,
-      // {version: "0.8.0"}
+      {version: "0.8.0"}
     ]
   },
   mocha: {
@@ -17,7 +16,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url: `${config.alchemy}/${process.env.ALCHEMY_KEY}`
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_KEY}`
       },
       gas: 'auto',
       blockGasLimit: 0x1fffffffffffff,

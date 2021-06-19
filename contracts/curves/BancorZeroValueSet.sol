@@ -1,11 +1,13 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Updater.sol"; // TODO
+import "../interfaces/I_Updater.sol";
 import "../interfaces/I_ValueSet.sol";
 import "../interfaces/I_Migrations.sol";
-import "../libs/Weighted.sol"; // TODO: validate
+import "../libs/WeightedAverage.sol";
+import "../utils/Power.sol";
 
 
 /// @title Bancor curve registry and calculator
@@ -51,9 +53,9 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     /// @inheritdoc I_ValueSet
 	function registerValueSet(
         uint256 _hubId,
-        bytes32 _encodedValueSet
+        bytes32 memory _encodedValueSet
     ) external override {
-        require(msg.sender == hub || msg.sender == updater, "!hub && !updater");
+        require(msg.sender == address(hub) || msg.sender == address(updater), "!hub && !updater");
 
         (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256));
         require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
@@ -66,12 +68,12 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
     function registerTargetValueSet(
         uint256 _hubId,
-        bytes32 _encodedValueSet
+        bytes32 memory _encodedValueSet
     ) external override {
-        require(msg.sender == updater, "!updater");
+        require(msg.sender == address(updater), "!updater");
 
         (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint256));
-        require(targetReserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+        require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         // New baseY = (old baseY * oldR) / newR
         ValueSet memory valueSet = valueSets[_hubId];
@@ -118,15 +120,16 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
 
                 // Calculate return using weights
                 TargetValueSet memory t = targetValueSets[_hubId];
+                uint256 targetMeTokenAmount;
                 if (_supply > 0) {
-                    uint256 targetMeTokenAmount = _calculateMintReturn(
+                    targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
                         t.reserveWeight,
                         _supply,
                         _balancePooled
                     );
                 } else {
-                    uint256 targetMeTokenAmount = _calculateMintReturnFromZero(
+                    targetMeTokenAmount = _calculateMintReturnFromZero(
                         _depositAmount,
                         t.reserveWeight,
                         BASE_X,
@@ -134,7 +137,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     );
                 }
                 
-                meTokenAmount = Weighted.calculateWeightedAmount(
+                meTokenAmount = WeightedAverage.calculateWeightedAmount(
                     meTokenAmount,
                     targetMeTokenAmount,
                     block.timestamp,
@@ -182,7 +185,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     _balancePooled
                 );
 
-                collateralTokenAmount = Weighted.calculateWeightedAmount(
+                collateralTokenAmount = WeightedAverage.calculateWeightedAmount(
                     collateralTokenAmount,
                     targetCollateralTokenAmount,
                     _startTime,

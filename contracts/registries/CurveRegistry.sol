@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "../interfaces/I_CurveRegistry.sol";
@@ -10,12 +11,12 @@ contract CurveRegistry is I_CurveRegistry {
     event RegisterCurve(string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);
 
-    address public dao = address(0x0) // TODO
+    address public dao = address(0x0); // TODO
     mapping (uint256 => CurveDetails) private curves;
     mapping (string => bool) private namedCurves;
     uint256 private curveCount;
 
-    struct Curve{
+    struct CurveDetails {
         string name; // BancorZero
         address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
         address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)

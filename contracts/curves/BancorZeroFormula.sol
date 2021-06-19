@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import "../utils/Power.sol";
@@ -10,7 +11,7 @@ import "../utils/Power.sol";
 contract BancorZeroFormula is Power {
 
    uint32 public MAX_WEIGHT = 1000000;
-   uint256 private PRECISION = 10**18;
+   uint256 public PRECISION = 10**18;
 
     /// @notice Given a deposit amount (in the connector token), connector weight, meToken supply and 
     ///     calculates the return for a given conversion (in the meToken)
@@ -25,7 +26,7 @@ contract BancorZeroFormula is Power {
         uint32 _reserveWeight,
         uint256 _supply,
         uint256 _balancePooled
-    ) private view returns (uint256 meTokenAmount) {
+    ) internal view returns (uint256 meTokenAmount) {
         // validate input
         require(_balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT);
         // special case for 0 deposit amount
@@ -61,7 +62,7 @@ contract BancorZeroFormula is Power {
         uint32 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
-    ) private view returns (uint256 meTokenAmount) {
+    ) internal view returns (uint256 meTokenAmount) {
         uint256 numerator = _baseY;
         uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
         uint256 denominator = _baseX ** exponent;
@@ -82,7 +83,7 @@ contract BancorZeroFormula is Power {
         uint32 _reserveWeight,
         uint256 _supply,
         uint256 _balancePooled
-    ) private view returns (uint256 reserveTokenAmount) {
+    ) internal view returns (uint256 reserveTokenAmount) {
         // validate input
         require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT && _burnAmount <= _supply);
         // special case for 0 sell amount
