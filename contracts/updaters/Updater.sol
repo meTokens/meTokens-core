@@ -4,6 +4,9 @@ pragma solidity ^0.8.0;
 import "../interfaces/I_Recollateralization.sol";
 import "../interfaces/I_Hub.sol";
 import "../interfaces/I_Updater.sol";
+import "../interfaces/I_VaultRegistry.sol";
+import "../interfaces/I_CurveRegistry.sol";
+import "../interfaces/I_CurveValueSet.sol";
 
 
 contract Updater is I_Updater {
@@ -17,15 +20,25 @@ contract Updater is I_Updater {
         uint256 endTime;
     }
 
+    uint256 private PRECISION = 10**18;
     I_Recollateralization public recollateralizations;
     I_Hub public hub;
+    I_VaultRegistry public vaultRegistry;
+    I_CurveRegistry public curveRegistry;
 
     // NOTE: keys are hubId's, used for valueSet calculations
     mapping (uint256 => UpdateDetails) private updates;
 
-    constructor(address _recollateralizations, address _hub) {
+    constructor(
+        address _recollateralizations,
+        address _hub,
+        address _vaultRegistry,
+        address _curveRegistry
+    ) {
         recollateralizations = I_Recollateralization(_recollateralizations);
         hub = I_Hub(_hub);
+        vaultRegistry = I_VaultRegistry(_vaultRegistry);
+        curveRegistry = I_CurveRegistry(_curveRegistry);
     }
 
     // TODO: args
@@ -33,11 +46,12 @@ contract Updater is I_Updater {
         uint256 _hubId,
         address _targetCurve,
         address _targetVault,
+        address _recollateralizationFactory,
         uint256 _targetRefundRatio,
         bytes32 _targetEncodedValueSet,
         uint256 _startTime,
         uint256 _endTime
-    ) external {
+    ) external override {
         // TODO: access control
 
         require(
@@ -55,11 +69,13 @@ contract Updater is I_Updater {
         if (_targetCurve != address(0)) {
             require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
             require(_targetCurve != hub.getHubCurve(_hubId), "_targetCurve == curve");
+
+            // TODO
         }
 
         // is valid vault
         if (_targetVault != address(0)) {
-            require(vaultFactory.isActiveVault(_targetVault), "!active");
+            require(vaultRegistry.isActiveVault(_targetVault), "!active");
             require(_targetVault != hub.getHubVault(_hubId), "_targetVault == vault");
             // TODO: validate
             require(_targetEncodedValueSet != '', "_targetEncodedValueSet required");
@@ -67,7 +83,7 @@ contract Updater is I_Updater {
 
         // is valid refundRatio
         if (_targetRefundRatio != 0) {
-            require(_targetRefundRatio <= MAX_TARGET_REFUND_RATIO, "_targetRefundRatio > max");
+            require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
             require(_targetRefundRatio != hub.getHubRefundRatio(_hubId), "_targetRefundRatio == refundRatio");
         }
 
@@ -75,12 +91,12 @@ contract Updater is I_Updater {
         if (_targetEncodedValueSet.length > 0) {
             if (_targetCurve =! address(0)) {
                 // curve migrating, point to new valueSet
-                I_Curve(_targetCurve).registerValueSet(
+                I_CurveValueSet(_targetCurve).registerValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
             } else {
-                I_Curve(hub.getHubCurve(_hubId)).registerTargetValueSet(
+                I_CurveValueSet(hub.getHubCurve(_hubId)).registerTargetValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
@@ -108,14 +124,14 @@ contract Updater is I_Updater {
         require(block.timestamp > updateDetails.endTime, "!finished");
 
         if (updateDetails.reconfiguring) {
-            I_Curve(updateDetails.curve).finishUpdate(_hubId);
+            I_CurveValueSet(updateDetails.curve).finishUpdate(_hubId);
         }
 
         hub.finishUpdate(
             _hubId,
-            hubDetails.migrating,
-            hubDetails.recollateralizing,
-            hubDetails.shifting  
+            updateDetails.migrating,
+            updateDetails.recollateralizing,
+            updateDetails.shifting  
         );        
 
         delete (updateDetails); // TODO: verify
@@ -130,7 +146,7 @@ contract Updater is I_Updater {
         uint256 startTime,
         uint256 endTime
     ) {
-        updateDetails memory updateDetails = updates[_hubId];
+        UpdateDetails memory updateDetails = updates[_hubId];
         reconfiguring = updateDetails.reconfiguring;
         migrating = updateDetails.migrating;
         recollateralizing = updateDetails.recollateralizing;

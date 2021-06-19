@@ -16,7 +16,7 @@ contract CurveRegistry is I_CurveRegistry {
     mapping (string => bool) private namedCurves;
     uint256 private curveCount;
 
-    struct Curve{
+    struct CurveDetails {
         string name; // BancorZero
         address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
         address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)

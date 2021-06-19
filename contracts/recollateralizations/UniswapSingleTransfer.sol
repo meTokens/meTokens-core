@@ -18,8 +18,8 @@ contract UniswapSingleTransfer is Recollateralization, Initializable {
         address _targetVault
     ) external {
         require(recollateralizationRegistry.isApprovedRecollateralizationFactory(msg.sender), "!approved");
-
-
     }
+
+    
 
 }

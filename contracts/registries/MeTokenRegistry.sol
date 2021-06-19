@@ -5,7 +5,9 @@ import "../interfaces/I_MeTokenRegistry.sol";
 import "../MeToken.sol";
 import "../interfaces/I_MeTokenFactory.sol";
 import "../interfaces/I_Hub.sol";
-
+import "../interfaces/I_Vault.sol";
+import "../interfaces/I_ERC20.sol";
+import "../interfaces/I_CurveValueSet.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
@@ -35,7 +37,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 hubId;
 		uint256 balancePooled;
 		uint256 balanceLocked;
-        bool migrating; // TODO: validate
+        bool resubscribing; // TODO: validate
 	}
 
     constructor(address _meTokenFactory, address _hub) public {
@@ -45,8 +47,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
     /// @inheritdoc I_MeTokenRegistry
     function registerMeToken(
-        string _name,
-        string _symbol,
+        string calldata _name,
+        string calldata _symbol,
         uint256 _hubId,
         uint256 _collateralDeposited
     ) external {
@@ -91,7 +93,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
         I_ERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
 
-        emit RegisterMeToken(_meToken, msg.sender, _name, _symbol, _hubId);
+        emit RegisterMeToken(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
 
@@ -133,27 +135,11 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
 
     /// @inheritdoc I_MeTokenRegistry
-    function toggleUpdating() public override returns (bool) {
-        require(msg.sender == 0x0, ""); // TODO
-        updating = !updating;
-        emit ToggleUpdating(updating);
-    }
-
-
-    /// @inheritdoc I_MeTokenRegistry
-    function toggleMigrating() public override returns (bool) {    
-        require(msg.sender == 0x0, ""); // TODO
-        migrating = !migrating;
-        emit ToggleMigrating(migrating);
-    }
-
-
-    /// @inheritdoc I_MeTokenRegistry
     function isMeTokenOwner(address _owner) external view override returns (bool) {
         return meTokenOwners[_owner];
     }
 
-    /// @inheritdoc I_MeTokenRegistry // TODO
+    /// @inheritdoc I_MeTokenRegistry
     function getMeTokenDetails(
         address _meToken
     ) external view override returns (
@@ -161,16 +147,16 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 hubId,
         uint256 balancePooled,
         uint256 balanceLocked,
-        bool migrating
+        bool resubscribing
     ) {
         MeTokenDetails memory meTokenDetails = meTokens[_meToken];
         owner = meTokenDetails.owner;
         hubId = meTokenDetails.hubId;
         balancePooled = meTokenDetails.balancePooled;
         balanceLocked = meTokenDetails.balanceLocked;
-        migrating = meTokenDetails.migrating;
+        resubscribing = meTokenDetails.resubscribing;
     }
 
     // TODO
-    // function migrate(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
+    // function resubscribe(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
 }

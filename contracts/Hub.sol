@@ -6,6 +6,7 @@ import "./interfaces/I_VaultFactory.sol";
 import "./interfaces/I_VaultRegistry.sol";
 import "./interfaces/I_CurveRegistry.sol";
 import "./interfaces/I_CurveValueSet.sol";
+import "./interfaces/I_Updater.sol";
 
 
 /// @title meToken hub
@@ -29,6 +30,7 @@ contract Hub is I_Hub {
     address public gov;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
+    I_Updater public updater;
 
     struct HubDetails {
         string name;
@@ -48,11 +50,13 @@ contract Hub is I_Hub {
     constructor(
         address _gov,
         address _vaultRegistry,
-        address _curveRegistry
+        address _curveRegistry,
+        address _updater
     ) public {
         gov = _gov;
         vaultRegistry = I_VaultRegistry(_vaultRegistry);
         curveRegistry = I_CurveRegistry(_curveRegistry);
+        updater = I_Updater(_updater);
     }
 
 
@@ -72,7 +76,7 @@ contract Hub is I_Hub {
         // TODO: access control
         require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
-        require(_refundRatio <= PRECISION, "_refundRatio > PRECISION");
+        require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
@@ -83,7 +87,7 @@ contract Hub is I_Hub {
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
+        address vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails memory hubDetails = HubDetails(
@@ -92,7 +96,7 @@ contract Hub is I_Hub {
             vault,
             _curve,
             _refundRatio,
-            status.ACTIVE
+            Status.ACTIVE
         );
         hubs[hubCount++] = hubDetails;
     }
@@ -104,15 +108,19 @@ contract Hub is I_Hub {
         HubDetails storage hubDetails = hubs[_hubId];
 
         require(hubDetails.active, "Hub not active");
-        hubDetails.active = false;
+        hubDetails.status = Status.INACTIVE;
         emit DeactivateHub(_hubId);
     }
+
+    // TODO: is this needed?
+    // function reactivateHub() returns (uint256) {}
+
 
     
     function startUpdate(uint256 _hubId) external {
         require(msg.sender == updater, "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
-        hubDetails.status = status.QUEUED;
+        hubDetails.status = Status.QUEUED;
     }
 
     function setHubStatus(uint256 _hubId, uint256 status) public {
@@ -133,7 +141,7 @@ contract Hub is I_Hub {
         HubDetails storage hubDetails = hubs[_hubId];
         
         if (_migrating != address(0)) {
-            hubDetails.curve = migrating;
+            hubDetails.curve = _migrating;
         }
 
         if (_recollateralizing != address(0)) {
@@ -143,22 +151,8 @@ contract Hub is I_Hub {
         if (_shifting != 0) {
             hubDetails.refundRatio = _shifting;
         }
-        hubDetails.status = status.ACTIVE;
+        hubDetails.status = Status.ACTIVE;
     }
-
-
-    function setCurve(uint256 _hubId, address _curve, bytes _encodedValueSetArgs) external hubExists(_hubId) {
-        // TODO: access control
-        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
-
-        HubDetails memory hubDetails = hubs[_hubId];
-        require(_curve != hubDetails.curve, "Cannot set curve to the same curve");
-
-        I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
-    }
-
-    // TODO: is this needed?
-    // function reactivateHub() returns (uint256) {}
 
 
     // TODO: natspec

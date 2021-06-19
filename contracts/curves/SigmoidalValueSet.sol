@@ -23,7 +23,7 @@ contract SigmoidalValues is SigmoidalFormula {
     event Updated(uint256 indexed hubId);
 
     // NOTE: keys will be the hub
-	mapping (uint256 => HubValueSet) hubValueSets;
+	// mapping (uint256 => HubValueSet) hubValueSets;
 
 	function registerValueSet(
         // TODO: arguments

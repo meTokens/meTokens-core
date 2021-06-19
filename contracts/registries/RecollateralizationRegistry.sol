@@ -11,6 +11,7 @@ contract RecollateralizationRegistry {
     event ApproveRecollateralizationFactory(address factory);
     event UnapproveRecollateralizationFactory(address factory);
 
+    uint256 private _recollateralizationCount;
 	mapping (address => RecollaterlizationDetails) recollaterlizations;
     mapping (address => bool) private approvedRecollateralizationFactories;
 

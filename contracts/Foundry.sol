@@ -54,9 +54,10 @@ contract Foundry {
         uint256 startTime;
         uint256 endTime;
 
-        if (hubStatus == 1) { // QUEUED, UPDATING
+        if (hubStatus > 1) { // QUEUED, UPDATING
             (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getUpdateDetails(hubId);
-            if (hubStatus == 2 && block.timestamp > startTime) {
+            if (hubStatus == 2 && block.timestamp > startTime) { // QUEUED
+                // TODO: set hub status to UDPATING and trigger new vault if needed
                 // updater.
             }
 
