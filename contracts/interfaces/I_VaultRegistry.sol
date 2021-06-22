@@ -34,4 +34,15 @@ interface I_VaultRegistry {
     /// @param _factory TODO
     /// @return TODO
     function isApprovedVaultFactory(address _factory) external view returns (bool);
+
+    /// @notice TODO
+    /// @param TODO
+    /// @return TODO
+    /// @return TODO
+    /// @return TODO
+    function getDetails(address vault) external view returns (
+        string memory name,
+        address factory,
+        bool active
+    ) 
 }

@@ -138,7 +138,7 @@ contract Updater is I_Updater {
         emit FinishUpdate(_hubId);
     }
 
-    function getUpdateDetails(uint256 _hubId) external view returns (
+    function getDetails(uint256 _hubId) external view returns (
         bool reconfiguring,
         address migrating,
         address recollateralizing,

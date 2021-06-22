@@ -60,9 +60,18 @@ contract CurveRegistry is I_CurveRegistry {
 
 
     /// @inheritdoc I_CurveRegistry
-    function getCurveDetails(uint256 _curveId) external view override returns (CurveDetails memory) {
+    function getDetails(uint256 _curveId) external view override returns (
+        string memory name,
+        address formula,
+        address valueSet,
+        bool active
+    ) {
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         CurveDetails memory curveDetails = curves[_curveId];
-        return curveDetails;
+        
+        name = curveDetails.name; // BancorZero
+        formula = curveDetails.formula; // see BancorZeroFormula.sol as an example of an address that could be registered
+        valueSet = curveDetails.valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
+        active = curveDetails.active;
     }
 }

@@ -40,7 +40,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         bool resubscribing; // TODO: validate
 	}
 
-    constructor(address _meTokenFactory, address _hub) public {
+    constructor(address _meTokenFactory, address _hub) {
         meTokenFactory = I_MeTokenFactory(_meTokenFactory);
         hub = I_Hub(_hub);
     }
@@ -67,20 +67,25 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
         // Create meToken erc20 contract
         address meTokenAddr = meTokenFactory.createMeToken(
-            _name, msg.sender, _symbol
+            msg.sender, _name, _symbol
         );
 
         // Add meToken to registry
-        MeTokenDetails memory meTokenDetails = MeTokenDetails(
-            msg.sender, _hubId, _collateralDeposited, 0, false
-        );
+        MeTokenDetails storage meTokenDetails = MeTokenDetails({
+            owner: msg.sender,
+            hubId: _hubId,
+            balancePooled: _collateralDeposited,
+            balanceLocked: 0,
+            resubscribing: false            
+        });
+
         meTokens[meTokenAddr] = meTokenDetails;
 
         // Register the address which created a meToken
         meTokenOwners[msg.sender] = true;
 
         // Get curve information from hub
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(_hubId));
 
         uint256 meTokensMinted = curve.calculateMintReturn(
             _collateralDeposited,  // _deposit_amount
@@ -113,9 +118,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external {
         MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
         if (add) {
-            meTokenDetails.balancePooled = meTokenDetails.balancePooled + _amount;
+            meTokenDetails.balancePooled += _amount;
         } else {
-            meTokenDetails.balancePooled = meTokenDetails.balancePooled - _amount;
+            meTokenDetails.balancePooled -= _amount;
         }
         
         emit IncrementBalancePooled(add, _meToken, _amount);
@@ -125,9 +130,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external {
         MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
         if (add) {
-            meTokenDetails.balanceLocked = meTokenDetails.balanceLocked + _amount;
+            meTokenDetails.balanceLocked += _amount;
         } else {
-            meTokenDetails.balanceLocked = meTokenDetails.balanceLocked - _amount;
+            meTokenDetails.balanceLocked -= _amount;
         }
         
         emit IncrementBalanceLocked(add, _meToken, _amount);
@@ -139,8 +144,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         return meTokenOwners[_owner];
     }
 
-    /// @inheritdoc I_MeTokenRegistry
-    function getMeTokenDetails(
+    // @inheritdoc I_MeTokenRegistry
+    function getDetails(
         address _meToken
     ) external view override returns (
         address owner,

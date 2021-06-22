@@ -12,7 +12,7 @@ contract RecollateralizationRegistry {
     event UnapproveRecollateralizationFactory(address factory);
 
     uint256 private _recollateralizationCount;
-	mapping (address => RecollaterlizationDetails) recollaterlizations;
+	mapping (address => RecollaterlizationDetails) recollateralizations;
     mapping (address => bool) private approvedRecollateralizationFactories;
 
     struct RecollaterlizationDetails {
@@ -41,7 +41,7 @@ contract RecollateralizationRegistry {
             _collateralTokenEnd,
             true
         );
-        recollaterlizations[_recollateralization] = r;
+        recollateralizations[_recollateralization] = r;
 
         emit RegisterRecollateralization(_recollateralization);
     }
@@ -68,4 +68,13 @@ contract RecollateralizationRegistry {
     function isApprovedRecollateralizationFactory(address _factory) external view override returns (bool) {
         return approvedRecollateralizationFactories[_factory];
     }
+
+    // function getDetails(address recollater) external view override returns (
+    //     address recollateralization,
+    //     address targetVault,
+    //     address collateralTokenStart,
+    //     address collateralTokenIntra,
+    //     address collateralTokenEnd,
+    //     bool active
+    // )
 }

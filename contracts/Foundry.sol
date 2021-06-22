@@ -40,8 +40,8 @@ contract Foundry {
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        uint256 resubscribing;
-        (, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getMeTokenDetails(_meToken);
+        bool resubscribing;
+        (, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
@@ -70,8 +70,8 @@ contract Foundry {
             }
         }
 
-        I_MeToken meToken = I_MeToken(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
+        I_ERC20 meToken = I_ERC20(_meToken);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(hubId));
         I_Vault vault = I_Vault(hub.getHubVault(hubId));
         I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
 
@@ -131,8 +131,8 @@ contract Foundry {
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        uint256 resubscribing;
-        (owner, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getMeTokenDetails(_meToken);
+        bool resubscribing;
+        (owner, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
@@ -150,7 +150,7 @@ contract Foundry {
             if (block.timestamp > endTime) {
                 updater.finishUpdate(hubId);
             } else {
-                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getUpdateDetails(hubId);
+                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getDetails(hubId);
             }
         }
 

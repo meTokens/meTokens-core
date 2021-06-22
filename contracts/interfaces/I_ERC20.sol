@@ -6,6 +6,8 @@ pragma solidity ^0.8.0;
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface I_ERC20 {
+    function mint(address to, uint256 amount) external;
+    function burn(address from, uint256 amount) external;
     /**
      * @dev Returns the amount of tokens in existence.
      */

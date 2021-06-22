@@ -53,11 +53,18 @@ interface I_CurveRegistry {
     /// @return TODO
     function getCurveCount() external view returns (uint256);
 
-    /// @notice TODO
-    /// @param _curveId TODO
-    /// @return TODO
-    // TODO: import CurveDetails struct
-    // function getCurveDetails(
-    //     uint256 _curveId
-    // ) external view returns (CurveDetails);
+    // / @notice TODO
+    // / @param _curveId TODO
+    // / @return TODO
+    // / @return TODO
+    // / @return TODO
+    // / @return TODO
+    function getDetails(
+        uint256 _curveId
+    ) external view returns (
+        string memory name,
+        address formula,
+        address valueSet,
+        bool active
+    );
 }

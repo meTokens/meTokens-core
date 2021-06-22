@@ -3,9 +3,8 @@ pragma solidity ^0.8.0;
 
 interface I_MeTokenFactory {
     function createMeToken(
-        string calldata name,
         address owner,
-        string calldata symbol,
-        uint256 hub
+        string calldata name,
+        string calldata symbol
     ) external returns (address);
 }

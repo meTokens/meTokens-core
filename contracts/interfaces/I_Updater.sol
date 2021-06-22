@@ -18,7 +18,7 @@ interface I_Updater {
 
     function finishUpdate(uint256 _hubId) external;
 
-    function getUpdateDetails(uint256 _hubId) external view returns (
+    function getDetails(uint256 _hubId) external view returns (
         bool reconfiguring,
         address migrating,
         address recollateralizing,

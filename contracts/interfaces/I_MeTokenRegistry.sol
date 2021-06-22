@@ -31,7 +31,7 @@ interface I_MeTokenRegistry {
     /// @return balancePooled Units of collateral pooled
     /// @return balanceLocked Units of collateral locked
     /// @return resubscribing Is meToken changing hubs? 
-    function getMeTokenDetails(
+    function getDetails(
         address meToken
     ) external view returns (
         address owner,

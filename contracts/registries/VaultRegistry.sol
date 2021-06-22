@@ -80,4 +80,17 @@ contract VaultRegistry is I_VaultRegistry {
     function isApprovedVaultFactory(address _factory) external view override returns (bool) {
         return approvedVaultFactories[_factory];
     }
+
+    
+    /// @inheritdoc I_VaultRegistry
+    function getDetails(address vault) external view override returns (
+        string memory name,
+        address factory,
+        bool active
+    ) {
+        VaultDetails memory vaultDetails = vaults[vault];
+        name = vaultDetails.name;
+        factory = vaultDetails.factory;
+        active = vaultDetails.active;
+    }
 }
