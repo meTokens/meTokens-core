@@ -9,8 +9,34 @@
 * Stores curve contract
 * 1 Hub = 1 Vault
 
-### Vault
-* Stores all collateral assets
+#### Updates & Migrations
+* Migrations
+    * Migrating from one vault to another (switch collateral token)
+    * Migrating from one curve to another (bancor => stepwise)
+    * Migrating a meToken to a new hub
+        * Vault - TODO: balancer feedback
+            * Could migrate to another vault with the same collateral token
+            * Could migrate to another vault with a different collateral token
+            * Could stay the same
+        * Curve
+            * Could be the same curve with the same valueset
+            * Could be the same curve with updated valueset
+            * Could be a new curve with a new valueset
+        * Refund ratio
+            * Could be the same
+            * Could be different
+* Updates
+    * Update valueset for a curve within a hub
+    * Update refundRatio within a hub
+
+
+#### We'll need to
+* Update valueSets - valueSet level
+* Update refundRatios - hub level
+* Recollateralize vaults - hub level
+* Migrate curves - hub level
+    * ValueSet ID stays the same, as it's the hubId
+    * ValueSet arguments will be different
 
 
 ### TODO
@@ -73,7 +99,8 @@
     * Still needed to set TargetValueSet to ValueSet
 * [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
 * [ ] Vault recollateralizing
-    * [ ] MeToken balances
+    * [x] MeToken balances
+        * Multiplier to return balance after swaps
     * [ ] Returning collateral  
 
 
@@ -81,32 +108,26 @@
 * Vaults will use a migration vault and start with Uniswap v2
 * Migrations directory for different types of migrations (uniswap v2, balancer, 0x, etc.)
 
+#### 6.17
+* [ ] Figure out how to do hubDetails.refundRatio within `Foundry`
+* [ ] Foundry to convert `QUEUED` status into `UPDATING`
+    * Generic function that `mint()` and burn()` could call?
+* [ ] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
+* [ ] Figure out if we need to return `getCurveDetails()` with CurveRegistry/interface 
+    * Yes, as well as getDetails functions for other registries
+* [x] Recollateralization interfaces
+* [ ] `recollateralizations.minSecondsUntilStart()` and friends within Updater
 
-#### Updates & Migrations
-* Migrations
-    * Migrating from one vault to another (switch collateral token)
-    * Migrating from one curve to another (bancor => stepwise)
-    * Migrating a meToken to a new hub
-        * Vault - TODO: balancer feedback
-            * Could migrate to another vault with the same collateral token
-            * Could migrate to another vault with a different collateral token
-            * Could stay the same
-        * Curve
-            * Could be the same curve with the same valueset
-            * Could be the same curve with updated valueset
-            * Could be a new curve with a new valueset
-        * Refund ratio
-            * Could be the same
-            * Could be different
-* Updates
-    * Update valueset for a curve within a hub
-    * Update refundRatio within a hub
+#### 6.18
+* [x] Do we want `SetCurve()` within hub?
+    * No, that is specifically for the `Updater`
+* [x] Move BancorZeroFormula within BancorZeroValueSet because of private variables?
+    * No, can use `internal`
+* [x] `MAX_TARGET_REFUND_RATIO` value within Updater
+    * Would be same as PRECISION, where Hub checks `_refundRatio < PRECISION` in hub creation
+* [ ] Function to see if an issuer address is passed in, which meToken they own
+* [ ] Updater to create recollateralization
+* [ ] Within factories, validate salt of deployCount is correct type for CREATE2
 
 
-We'll need to
-* Update valueSets - valueSet level
-* Update refundRatios - hub level
-* Recollateralize vaults - hub level
-* Migrate curves - hub level
-    * ValueSet ID stays the same, as it's the hubId
-    * ValueSet arguments will be different
+
