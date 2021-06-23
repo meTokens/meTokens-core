@@ -113,7 +113,7 @@
 * [ ] Foundry to convert `QUEUED` status into `UPDATING`
     * Generic function that `mint()` and burn()` could call?
 * [ ] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
-* [ ] Figure out if we need to return `getCurveDetails()` with CurveRegistry/interface 
+* [x] Figure out if we need to return `getCurveDetails()` with CurveRegistry/interface 
     * Yes, as well as getDetails functions for other registries
 * [x] Recollateralization interfaces
 * [ ] `recollateralizations.minSecondsUntilStart()` and friends within Updater
@@ -125,9 +125,10 @@
     * No, can use `internal`
 * [x] `MAX_TARGET_REFUND_RATIO` value within Updater
     * Would be same as PRECISION, where Hub checks `_refundRatio < PRECISION` in hub creation
-* [ ] Function to see if an issuer address is passed in, which meToken they own
+* [x] Function to see if an issuer address is passed in, which meToken they own
 * [ ] Updater to create recollateralization
 * [ ] Within factories, validate salt of deployCount is correct type for CREATE2
 
-
+#### 6.22
+* [ ] Storage vs. memory for MeTokenRegistry
 

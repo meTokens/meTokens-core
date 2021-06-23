@@ -29,7 +29,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     I_Hub public hub;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
-    mapping (address => bool) private meTokenOwners;  // key: address of owner, value: address of meToken
+    mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
     struct MeTokenDetails {
@@ -53,7 +53,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         uint256 _collateralDeposited
     ) external {
         // TODO: access control
-        require(!meTokenOwners[msg.sender], "msg.sender already owns a meToken");        
+        require(!isMeTokenOwner(msg.sender);, "msg.sender already owns a meToken");        
         require(hub.getHubStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
@@ -82,7 +82,7 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         meTokens[meTokenAddr] = meTokenDetails;
 
         // Register the address which created a meToken
-        meTokenOwners[msg.sender] = true;
+        meTokenOwners[msg.sender] = meTokenAddr;
 
         // Get curve information from hub
         I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(_hubId));
@@ -107,9 +107,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         require(msg.sender == meTokenDetails.owner, "!owner");
 
-        meTokenOwners[msg.sender] = false;
-        meTokenOwners[_newOwner] = true;
         meTokenDetails.owner = _newOwner;
+        meTokenOwners[msg.sender] = address(0);
+        meTokenOwners[_newOwner] = _meToken;
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
     }
@@ -140,9 +140,16 @@ contract MeTokenRegistry is I_MeTokenRegistry {
 
 
     /// @inheritdoc I_MeTokenRegistry
-    function isMeTokenOwner(address _owner) external view override returns (bool) {
+    function isMeTokenOwner(address _owner) public view override returns (bool) {
+        return meTokenOwners[_owner] != address(0);
+    }
+
+
+    /// @inheritdoc I_MeTokenRegistry
+    function getMeTokenByOwner(address _owner) external view override returns (address) {
         return meTokenOwners[_owner];
     }
+
 
     // @inheritdoc I_MeTokenRegistry
     function getDetails(

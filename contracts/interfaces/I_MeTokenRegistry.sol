@@ -25,6 +25,11 @@ interface I_MeTokenRegistry {
     function isMeTokenOwner(address _owner) external view returns (bool);
 
     /// @notice TODO
+    /// @param _owner TODO
+    /// @return TODO
+    function getMeTokenByOwner(address _owner) external view returns (address);
+
+    /// @notice TODO
     /// @param meToken Address of meToken queried
     /// @return owner Owner of MeToken
     /// @return hubId Hub to which the meToken is subscribed
