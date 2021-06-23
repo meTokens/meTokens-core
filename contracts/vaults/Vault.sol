@@ -2,13 +2,14 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/I_VaultRegistry.sol";
+import "../interfaces/I_Vault.sol";
 import "../interfaces/I_ERC20.sol";
 
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base vault contract inherited by all vaults
-contract Vault {
+abstract contract Vault is I_Vault {
 
     event WithdrawFees(uint256 amount, address to);
 
@@ -22,12 +23,15 @@ contract Vault {
 	address public collateralAsset;
     uint256 accruedFees;
 
-    function addFee(uint256 amount) external {
+    
+    /// @inheritdoc I_Vault
+    function addFee(uint256 amount) external override {
         accruedFees = accruedFees + amount;
     }
 
 
-    function withdrawFees(bool _max, uint256 _amount, address _to) external {
+    /// @inheritdoc I_Vault
+    function withdrawFees(bool _max, uint256 _amount, address _to) external override {
         require(msg.sender == gov, "!gov");
         if (_max) {
             _amount = accruedFees;
@@ -42,7 +46,8 @@ contract Vault {
     }
 
 
-    function getCollateralAsset() external view returns (address) {
+    /// @inheritdoc I_Vault
+    function getCollateralAsset() external view override returns (address) {
         return collateralAsset;
     }
 

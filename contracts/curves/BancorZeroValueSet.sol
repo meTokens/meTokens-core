@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./BancorZeroFormula.sol";
 import "../interfaces/I_Hub.sol";
 import "../interfaces/I_Updater.sol";
-import "../interfaces/I_ValueSet.sol";
+import "../interfaces/I_CurveValueSet.sol";
 import "../interfaces/I_Migrations.sol";
 import "../libs/WeightedAverage.sol";
 import "../utils/Power.sol";
@@ -13,19 +13,19 @@ import "../utils/Power.sol";
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
+abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
 
     uint256 private BASE_X = PRECISION;
 
     // NOTE: each valueSet is for a curve
     struct ValueSet {
 		uint256 baseY;
-		uint256 reserveWeight;
+		uint32 reserveWeight;
 	}
     
     struct TargetValueSet {
 		uint256 baseY;
-		uint256 reserveWeight;
+		uint32 reserveWeight;
     }
 
 
@@ -50,42 +50,49 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     }
 
 
-    /// @inheritdoc I_ValueSet
+    /// @inheritdoc I_CurveValueSet
 	function registerValueSet(
         uint256 _hubId,
-        bytes32 memory _encodedValueSet
+        bytes calldata _encodedValueSet
     ) external override {
         require(msg.sender == address(hub) || msg.sender == address(updater), "!hub && !updater");
 
-        (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint256));
+        (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint32));
         require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
-        ValueSet memory valueSet = ValueSet(baseY, reserveWeight);
+        ValueSet memory valueSet = ValueSet({
+            baseY: baseY,
+            reserveWeight: reserveWeight
+        });
         valueSets[_hubId] = valueSet;
     }
 
 
+    /// @inheritdoc I_CurveValueSet
     function registerTargetValueSet(
         uint256 _hubId,
-        bytes32 memory _encodedValueSet
+        bytes calldata _encodedValueSet
     ) external override {
         require(msg.sender == address(updater), "!updater");
 
-        (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint256));
+        (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
         require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         // New baseY = (old baseY * oldR) / newR
         ValueSet memory valueSet = valueSets[_hubId];
         uint256 targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
 
-        ValueSet memory targetValueSet = TargetValueSet(targetBaseY, targetReserveWeight);
+        TargetValueSet memory targetValueSet = TargetValueSet({
+            baseY: targetBaseY,
+            reserveWeight: targetReserveWeight
+        });
         targetValueSets[_hubId] = targetValueSet;
     }
 
 
 
-    /// @inheritdoc I_ValueSet
+    /// @inheritdoc I_CurveValueSet
     function calculateMintReturn(
         uint256 _depositAmount,
         uint256 _hubId,
@@ -137,11 +144,11 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     );
                 }
                 
-                meTokenAmount = WeightedAverage.calculateWeightedAmount(
+                meTokenAmount = WeightedAverage.calculate(
                     meTokenAmount,
                     targetMeTokenAmount,
-                    block.timestamp,
                     _startTime,
+                    block.timestamp,
                     _endTime
                 );
 
@@ -150,7 +157,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     }
 
 
-    /// @inheritdoc I_ValueSet
+    /// @inheritdoc I_CurveValueSet
     function calculateBurnReturn(
         uint256 _burnAmount,
         uint256 _hubId,
@@ -185,7 +192,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
                     _balancePooled
                 );
 
-                collateralTokenAmount = WeightedAverage.calculateWeightedAmount(
+                collateralTokenAmount = WeightedAverage.calculate(
                     collateralTokenAmount,
                     targetCollateralTokenAmount,
                     _startTime,
@@ -197,7 +204,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
     }
 
     // TODO: natspec
-    function finishUpdate(uint256 _hubId) external {
+    function finishUpdate(uint256 _hubId) external override {
 
         ValueSet storage v = valueSets[_hubId];
         TargetValueSet storage t = targetValueSets[_hubId];
@@ -205,7 +212,7 @@ contract BancorZeroFormulaValues is I_ValueSet, BancorZeroFormula {
         v.baseY = t.baseY;
         v.reserveWeight = t.reserveWeight;
 
-        delete(t);
+        delete(targetValueSets[_hubId]);
         emit Updated(_hubId);
     }
 

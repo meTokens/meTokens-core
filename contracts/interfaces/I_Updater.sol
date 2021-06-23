@@ -10,6 +10,7 @@ interface I_Updater {
         uint256 _hubId,
         address _targetCurve,
         address _targetVault,
+        address _recollateralizationFactory,
         uint256 _targetRefundRatio,
         bytes32 _targetEncodedValueSet,
         uint256 _startTime,

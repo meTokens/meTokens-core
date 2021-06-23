@@ -12,7 +12,7 @@ import "../interfaces/I_CurveValueSet.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is I_MeTokenRegistry {
+abstract contract MeTokenRegistry is I_MeTokenRegistry {
 
     event RegisterMeToken(
         address indexed meToken,
@@ -51,9 +51,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
         string calldata _symbol,
         uint256 _hubId,
         uint256 _collateralDeposited
-    ) external {
+    ) external override {
         // TODO: access control
-        require(!isMeTokenOwner(msg.sender);, "msg.sender already owns a meToken");        
+        require(!isMeTokenOwner(msg.sender), "msg.sender already owns a meToken");        
         require(hub.getHubStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
@@ -91,7 +91,10 @@ contract MeTokenRegistry is I_MeTokenRegistry {
             _collateralDeposited,  // _deposit_amount
             _hubId,                // _hubId
             0,                      // _supply
-            0                       // _balancePooled
+            0,                      // _balancePooled
+            false,
+            0,
+            0
         );
 
         // Transfer collateral to vault and return the minted meToken
@@ -102,8 +105,9 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    function transferMeTokenOwnership(address _meToken, address _newOwner) external {
-        require(!meTokenOwners[_newOwner], "_newOwner already owns a meToken");
+    /// @inheritdoc I_MeTokenRegistry
+    function transferMeTokenOwnership(address _meToken, address _newOwner) external override {
+        require(!isMeTokenOwner(_newOwner), "_newOwner already owns a meToken");
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         require(msg.sender == meTokenDetails.owner, "!owner");
 
@@ -115,7 +119,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external {
+    /// @inheritdoc I_MeTokenRegistry
+    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
         MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
         if (add) {
             meTokenDetails.balancePooled += _amount;
@@ -127,7 +132,8 @@ contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external {
+    /// @inheritdoc I_MeTokenRegistry
+    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
         MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
         if (add) {
             meTokenDetails.balanceLocked += _amount;

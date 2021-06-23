@@ -9,11 +9,12 @@ import "./interfaces/I_ERC20.sol";
 import "./interfaces/I_CurveValueSet.sol";
 import "./interfaces/I_Vault.sol";
 import "./interfaces/I_Hub.sol";
+import "./interfaces/I_Foundry.sol";
 import "./libs/WeightedAverage.sol";
 
 import "./interfaces/I_Updater.sol";
 
-contract Foundry {
+contract Foundry is I_Foundry {
     
     uint256 private PRECISION = 10**18;
 
@@ -35,7 +36,8 @@ contract Foundry {
     }
 
 
-    function mint(address _meToken, address _recipient, uint256 _collateralDeposited) external override {
+    /// @inheritdoc I_Foundry
+    function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
         uint256 hubId;
         uint256 balancePooled;
@@ -83,7 +85,10 @@ contract Foundry {
             collateralDepositedAfterFees,
             hubId,
             meToken.totalSupply(),
-            balancePooled
+            balancePooled,
+            reconfiguring,
+            startTime,
+            endTime
         );
 
         if (migrating != address(0)) {
@@ -94,7 +99,9 @@ contract Foundry {
                 hubId,
                 meToken.totalSupply(),
                 balancePooled,
-                reconfiguring
+                reconfiguring,
+                startTime,
+                endTime
             );
             meTokensMinted = WeightedAverage.calculate(
                 meTokensMinted,
@@ -124,8 +131,8 @@ contract Foundry {
     }
 
 
-
-    function burn(address _meToken, uint256 _meTokensBurned) external {
+    /// @inheritdoc I_Foundry
+    function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
         address owner;
         uint256 hubId;
@@ -154,8 +161,8 @@ contract Foundry {
             }
         }
 
-        I_MeToken meToken = I_MeToken(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve());
+        I_ERC20 meToken = I_ERC20(_meToken);
+        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(hubId));
         I_Vault vault = I_Vault(hub.getHubVault(hubId));
         I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
         
@@ -182,7 +189,7 @@ contract Foundry {
                 startTime,
                 endTime
             );
-            collateralReturned = WeightedAverage.calculateWeightedAmount(
+            collateralReturned = WeightedAverage.calculate(
                 collateralReturned,
                 targetCollateralReturned,
                 startTime,
@@ -202,7 +209,7 @@ contract Foundry {
             feeRate = fees.burnBuyerFee();
             // TODO
             // collateralMultiplier = PRECISION - hubDetails.refundRatio;
-            if (shifting) {
+            if (shifting > 0) {
                 uint256 targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(hubId);
                 collateralMultiplier = WeightedAverage.calculate(
                     collateralMultiplier,
@@ -249,7 +256,7 @@ contract Foundry {
         if (fee > 0) {vault.addFee(fee);}
 
         // Send collateral from vault
-        // collateralAsset.transferFrom(address(vault), msg.sender, collateralReturnedAfterFees);
+        // collateralAsset.transferFrom(address(vault), _recipient, collateralReturnedAfterFees);
 
     }
 

@@ -44,5 +44,5 @@ interface I_VaultRegistry {
         string memory name,
         address factory,
         bool active
-    ) 
+    );
 }

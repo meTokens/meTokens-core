@@ -42,6 +42,7 @@ contract Updater is I_Updater {
     }
 
     // TODO: args
+    /// @inheritdoc I_Updater
     function startUpdate(
         uint256 _hubId,
         address _targetCurve,
@@ -118,7 +119,7 @@ contract Updater is I_Updater {
     }
 
 
-    function finishUpdate(uint256 _hubId) external {
+    function finishUpdate(uint256 _hubId) external override {
 
         UpdateDetails storage updateDetails = updates[_hubId];
         require(block.timestamp > updateDetails.endTime, "!finished");
@@ -138,7 +139,7 @@ contract Updater is I_Updater {
         emit FinishUpdate(_hubId);
     }
 
-    function getDetails(uint256 _hubId) external view returns (
+    function getDetails(uint256 _hubId) external view override returns (
         bool reconfiguring,
         address migrating,
         address recollateralizing,
@@ -155,7 +156,7 @@ contract Updater is I_Updater {
         endTime = updateDetails.endTime;
     }
 
-    function getUpdateTimes(uint256 _hubId) external view returns (
+    function getUpdateTimes(uint256 _hubId) external view override returns (
         uint256 startTime,
         uint256 endTime
     ) {
@@ -164,17 +165,17 @@ contract Updater is I_Updater {
         endTime = updateDetails.endTime;
     }
 
-    function getTargetCurve(uint256 _hubId) external view returns (address) {
+    function getTargetCurve(uint256 _hubId) external view override returns (address) {
         UpdateDetails memory updateDetails = updates[_hubId];
         return updateDetails.migrating;
     }
 
-    function getTargetRefundRatio(uint256 _hubId) external view returns (uint256) {
+    function getTargetRefundRatio(uint256 _hubId) external view override returns (uint256) {
         UpdateDetails memory updateDetails = updates[_hubId];
         return updateDetails.refundRatio;
     }
 
-    function getTargetVault(uint256 _hubId) external view returns (uint256) {
+    function getTargetVault(uint256 _hubId) external view override returns (uint256) {
         UpdateDetails memory updateDetails = updates[_hubId];
         return updateDetails.vault;
     }

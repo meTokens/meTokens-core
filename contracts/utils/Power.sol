@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 /// @title Power function by Bancor
 /// @dev https://github.com/bancorprotocol/contracts
 /// @notice Modified from the original by Slava Balasanov & Tarrence van As
-contract Power {
+abstract contract Power {
   string public version = "0.3";
 
   uint256 private constant ONE = 1;

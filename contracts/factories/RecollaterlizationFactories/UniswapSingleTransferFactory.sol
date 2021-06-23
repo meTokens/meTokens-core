@@ -26,7 +26,7 @@ contract UniswapSingleTransferFactory {
         string calldata _name,
         address _owner,
         address _targetVault,
-        bytes4 _encodedRecollateralizationAdditionalArgs // NOTE: potentially needed for other recollateralizations
+        bytes memory _encodedRecollateralizationAdditionalArgs // NOTE: potentially needed for other recollateralizations
     ) external returns (address) {
         // TODO: access control
         uint256 recollateralizationId = recollateralizationRegistry.recollateralizationCount();

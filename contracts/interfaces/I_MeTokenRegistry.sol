@@ -5,14 +5,14 @@ interface I_MeTokenRegistry {
 
     /// @notice TODO
     /// @param _name TODO
-    /// @param _owner TODO
     /// @param _symbol TODO
     /// @param _hubId TODO
+    /// @param _collateralDeposited TODO
     function registerMeToken(
         string calldata _name,
-        address _owner,
         string calldata _symbol,
-        uint256 _hubId
+        uint256 _hubId,
+        uint256 _collateralDeposited
     ) external;
 
     /// @notice TODO
@@ -46,4 +46,7 @@ interface I_MeTokenRegistry {
         bool resubscribing 
     );
 
+    function transferMeTokenOwnership(address _meToken, address _newOwner) external;
+    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external;
+    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external;
 }

@@ -10,6 +10,8 @@ interface I_Hub {
     /// @param _vaultOwner TODO
     /// @param _vaultFactory TODO
     /// @param _curve TODO
+    /// @param _collateralAsset TODO
+    /// @param _refundRatio TODO
     /// @param _encodedValueSetArgs TODO
     /// @param _encodedVaultAdditionalArgs TODO
     function registerHub(
@@ -19,8 +21,10 @@ interface I_Hub {
         address _vaultOwner,
         address _vaultFactory,
         address _curve,
-        bytes4 _encodedValueSetArgs,
-        bytes4 _encodedVaultAdditionalArgs
+        address _collateralAsset,
+        uint256 _refundRatio,
+        bytes memory _encodedValueSetArgs,
+        bytes memory _encodedVaultAdditionalArgs
     ) external;
 
     /// @notice TODO
@@ -47,12 +51,14 @@ interface I_Hub {
     function getHubOwner(uint256 _hubId) external view returns (address);
 
     // TODO
-    function getHubDetails(uint256 _hubId) external view returns (
+    function getHubRefundRatio(uint256 _hubid) external view returns (uint256);
+
+    // TODO
+    function getDetails(uint256 _hubId) external view returns (
         string calldata name,
         address owner,
         address vault,
         address curve_,
-        uint256 valueSet,
         uint256 refundRatio,
         uint256 status
     );

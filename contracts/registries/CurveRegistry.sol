@@ -6,7 +6,7 @@ import "../interfaces/I_CurveRegistry.sol";
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
-contract CurveRegistry is I_CurveRegistry {
+abstract contract CurveRegistry is I_CurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);

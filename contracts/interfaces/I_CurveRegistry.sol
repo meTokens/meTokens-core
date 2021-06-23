@@ -17,37 +17,19 @@ interface I_CurveRegistry {
     /// @param _curveId TODO
     function deactivateCurve(uint256 _curveId) external;
     
-    /// @notice TODO
-    /// @param _formula TODO
-    function approveFormula(address _formula) external;
+    // function approveFormula(address _formula) external;
     
-    /// @notice TODO
-    /// @param _valueSet TODO
-    function approveValueSet(address _valueSet) external;
+    // function approveValueSet(address _valueSet) external;
     
-    /// @notice TODO
-    /// @param _formula TODO
-    function unapproveFormula(address _formula) external;
+    // function unapproveFormula(address _formula) external;
     
-    /// @notice TODO
-    /// @param _valueSet TODO
-    function unapproveValueSet(address _valueSet) external;
+    // function unapproveValueSet(address _valueSet) external;
     
-    /// @notice TODO
-    /// @param _curveId TODO
-    /// @return TODO
-    function isActiveCurve(uint256 _curveId) external view returns (bool);
+    // function isActiveCurve(uint256 _curveId) external view returns (bool);
 
-    /// @notice TODO
-    /// @param _formula TODO
-    /// @return TODO
-    function isApprovedFormula(address _formula) external view returns (bool);
+    // function isApprovedFormula(address _formula) external view returns (bool);
     
-    /// @notice TODO
-    /// @param _valueSet TODO
-    /// @return TODO
     function isApprovedValueSet(address _valueSet) external view returns (bool);
-
 
     /// @notice TODO
     /// @return TODO

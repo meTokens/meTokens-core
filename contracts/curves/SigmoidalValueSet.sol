@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "../interfaces/I_CurveValueSet.sol";
 import "./SigmoidalFormula.sol";
 
 /// @title Sigmoidal curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses SigmoidalFormula.sol for private methods
-contract SigmoidalValues is SigmoidalFormula {
+abstract contract SigmoidalValueSet is I_CurveValueSet, SigmoidalFormula {
 
     /*
     struct ValueSet{
@@ -25,9 +26,4 @@ contract SigmoidalValues is SigmoidalFormula {
     // NOTE: keys will be the hub
 	// mapping (uint256 => HubValueSet) hubValueSets;
 
-	function registerValueSet(
-        // TODO: arguments
-    ) external virtual override {
-        // TODO
-    }
 }
