@@ -63,7 +63,7 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
 
         ValueSet memory valueSet = ValueSet({
             baseY: baseY,
-            reserveWeight: reserveWeight
+            reserveWeight: uint32(reserveWeight)
         });
         valueSets[_hubId] = valueSet;
     }
@@ -85,7 +85,7 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
 
         TargetValueSet memory targetValueSet = TargetValueSet({
             baseY: targetBaseY,
-            reserveWeight: targetReserveWeight
+            reserveWeight: uint32(targetReserveWeight)
         });
         targetValueSets[_hubId] = targetValueSet;
     }

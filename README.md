@@ -127,8 +127,8 @@
     * Would be same as PRECISION, where Hub checks `_refundRatio < PRECISION` in hub creation
 * [x] Function to see if an issuer address is passed in, which meToken they own
 * [ ] Updater to create recollateralization
-* [ ] Within factories, validate salt of deployCount is correct type for CREATE2
+* [x] Within factories, validate salt of deployCount is correct type for CREATE2
+    * Done using OZ Clones and bytes32
 
 #### 6.22
 * [ ] Storage vs. memory for MeTokenRegistry
-

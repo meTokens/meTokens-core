@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-
 import "../../recollateralizations/UniswapSingleTransfer.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+
 import "../../interfaces/I_RecollateralizationRegistry.sol";
 import "../../interfaces/I_Vault.sol";
 
@@ -12,13 +12,15 @@ contract UniswapSingleTransferFactory {
 
     event CreateRecollateralization(address recollateralization);
 
+    uint256 public deployCount;
     address public hub;
-    uint256 private deployCount;
+    address public implementation;
     I_RecollateralizationRegistry public recollateralizationRegistry;
 
-    constructor(address _hub, address _recollateralizationRegistry) {
+    constructor(address _hub, address _recollateralizationRegistry, address _implementation) {
         hub = _hub;
         recollateralizationRegistry = I_RecollateralizationRegistry(_recollateralizationRegistry);
+        implementation = _implementation;
     }
     
 
@@ -29,9 +31,7 @@ contract UniswapSingleTransferFactory {
         bytes memory _encodedRecollateralizationAdditionalArgs // NOTE: potentially needed for other recollateralizations
     ) external returns (address) {
         // TODO: access control
-        uint256 recollateralizationId = recollateralizationRegistry.recollateralizationCount();
-        // TODO: validate salt of recollateralizationId is correct type
-        address recollateralizationAddress = Create2.deploy(deployCount, type(UniswapSingleTransfer).creationCode);
+        address recollateralizationAddress = Clones.cloneDeterministic(implementation, bytes32(deployCount));
 
         // create our recollateralization
         UniswapSingleTransfer(recollateralizationAddress).initialize(
@@ -40,7 +40,12 @@ contract UniswapSingleTransferFactory {
         );
 
         // Add recollateralization to recollateralizationRegistry
-        recollateralizationRegistry.registerRecollateralization(_name, recollateralizationAddress, address(this));
+        recollateralizationRegistry.registerRecollateralization(
+            recollateralizationAddress,
+            _targetVault,
+            I_Vault(_targetVault).getCollateralAsset(),
+            I_Vault(recollateralizationAddress).getCollateralAsset()
+        );
 
         deployCount++;
         emit CreateRecollateralization(recollateralizationAddress);
