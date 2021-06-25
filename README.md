@@ -112,7 +112,7 @@
 * [ ] Figure out how to do hubDetails.refundRatio within `Foundry`
 * [ ] Foundry to convert `QUEUED` status into `UPDATING`
     * Generic function that `mint()` and burn()` could call?
-* [ ] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
+* [x] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
 * [x] Figure out if we need to return `getCurveDetails()` with CurveRegistry/interface 
     * Yes, as well as getDetails functions for other registries
 * [x] Recollateralization interfaces

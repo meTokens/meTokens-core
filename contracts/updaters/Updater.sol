@@ -21,10 +21,17 @@ contract Updater is I_Updater {
     }
 
     uint256 private PRECISION = 10**18;
+    
+    uint256 private _minSecondsUntilStart;
+    uint256 private _maxSecondsUntilStart;
+    uint256 private _minDuration;
+    uint256 private _maxDuration;
+    
     I_Recollateralization public recollateralizations;
     I_Hub public hub;
     I_VaultRegistry public vaultRegistry;
     I_CurveRegistry public curveRegistry;
+
 
     // NOTE: keys are hubId's, used for valueSet calculations
     mapping (uint256 => UpdateDetails) private updates;
@@ -51,18 +58,19 @@ contract Updater is I_Updater {
         uint256 _targetRefundRatio,
         bytes32 _targetEncodedValueSet,
         uint256 _startTime,
-        uint256 _endTime
+        uint256 _duration
+        // uint256 _endTime
     ) external override {
         // TODO: access control
 
         require(
-            _startTime - block.timestamp >= recollateralizations.minSecondsUntilStart() &&
-            _startTime - block.timestamp <= recollateralizations.maxSecondsUntilStart(),
+            _startTime - block.timestamp >= _minSecondsUntilStart &&
+            _startTime - block.timestamp <= _maxSecondsUntilStart,
             "Unacceptable _startTime"
         );
         require(
-            _endTime - _startTime >= recollateralizations.minUpdateDuration() &&
-            _endTime - _startTime <= recollateralizations.maxUpdateDuration(),
+            _minDuration <= _duration &&
+            _maxDuration >= _duration,
             "Unacceptable update duration"
         );
 
@@ -111,7 +119,7 @@ contract Updater is I_Updater {
             _targetVault,
             _targetRefundRatio,
             _startTime,
-            _endTime
+            _startTime + _duration
         );
 
         updates[_hubId] = updateDetails;
@@ -179,5 +187,10 @@ contract Updater is I_Updater {
         UpdateDetails memory updateDetails = updates[_hubId];
         return updateDetails.vault;
     }
+
+    function minSecondsUntilStart() external view returns (uint256) {return _minSecondsUntilStart;}
+    function maxSecondsUntilStart() external view returns (uint256) {return _maxSecondsUntilStart;}
+    function minUpdateDuration() external view returns (uint256) {return _minDuration;}
+    function maxUpdateDuration() external view returns (uint256) {return _maxDuration;}
 
 }

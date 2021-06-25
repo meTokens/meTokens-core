@@ -71,15 +71,13 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
         );
 
         // Add meToken to registry
-        MeTokenDetails storage meTokenDetails = MeTokenDetails({
+        meTokens[meTokenAddr] = MeTokenDetails({
             owner: msg.sender,
             hubId: _hubId,
             balancePooled: _collateralDeposited,
             balanceLocked: 0,
             resubscribing: false            
         });
-
-        meTokens[meTokenAddr] = meTokenDetails;
 
         // Register the address which created a meToken
         meTokenOwners[msg.sender] = meTokenAddr;
@@ -121,7 +119,7 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
 
     /// @inheritdoc I_MeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
-        MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
+        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
             meTokenDetails.balancePooled += _amount;
         } else {
@@ -134,7 +132,7 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
 
     /// @inheritdoc I_MeTokenRegistry
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
-        MeTokenDetails storage meTokenDetails = MeTokenDetails[_meToken];
+        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
             meTokenDetails.balanceLocked += _amount;
         } else {

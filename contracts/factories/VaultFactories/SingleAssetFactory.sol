@@ -39,7 +39,6 @@ abstract contract SingleAssetFactory is I_VaultFactory {
         address _collateralAsset,
         bytes calldata _encodedVaultAdditionalArgs // NOTE: potentially needed for other vaults 
     ) external override returns (address) {
-        // TODO: validate salt of deployCount is correct type
         address vaultAddress = Clones.cloneDeterministic(
             implementation,
             bytes32(deployCount)
