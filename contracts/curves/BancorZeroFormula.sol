@@ -57,17 +57,17 @@ abstract contract BancorZeroFormula is Power {
     /// @param _baseX          constant X 
     /// @param _baseY          constant y
     /// @return meTokenAmount   amount of meTokens minted
-    function _calculateMintReturnFromZero(
-        uint256 _depositAmount,
-        uint256 _reserveWeight,
-        uint256 _baseX,
-        uint256 _baseY
-    ) internal view returns (uint256 meTokenAmount) {
-        uint256 numerator = _baseY;
-        uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
-        uint256 denominator = _baseX ** exponent;
-        meTokenAmount = numerator/denominator * _depositAmount** exponent;
-    }
+function _calculateMintReturnFromZero(
+    uint256 _depositAmount,
+    uint256 _reserveWeight,
+    uint256 _baseX,
+    uint256 _baseY
+) internal view returns (uint256 returnedAmount) {
+    uint256 numerator = _baseY;
+    uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
+    uint256 denominator = _baseX ** exponent;
+    returnedAmount = numerator/denominator * _depositAmount** exponent;
+}
 
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
