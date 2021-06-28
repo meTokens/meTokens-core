@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_Recollateralization.sol";
-import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Updater.sol";
-import "../interfaces/I_VaultRegistry.sol";
-import "../interfaces/I_CurveRegistry.sol";
-import "../interfaces/I_CurveValueSet.sol";
+import "../interfaces/IRecollateralization.sol";
+import "../interfaces/IHub.sol";
+import "../interfaces/IUpdater.sol";
+import "../interfaces/IVaultRegistry.sol";
+import "../interfaces/ICurveRegistry.sol";
+import "../interfaces/ICurveValueSet.sol";
 
 
-contract Updater is I_Updater {
+contract Updater is IUpdater {
 
     struct UpdateDetails {
         bool reconfiguring;
@@ -27,10 +27,10 @@ contract Updater is I_Updater {
     uint256 private _minDuration;
     uint256 private _maxDuration;
     
-    I_Recollateralization public recollateralizations;
-    I_Hub public hub;
-    I_VaultRegistry public vaultRegistry;
-    I_CurveRegistry public curveRegistry;
+    IRecollateralization public recollateralizations;
+    IHub public hub;
+    IVaultRegistry public vaultRegistry;
+    ICurveRegistry public curveRegistry;
 
 
     // NOTE: keys are hubId's, used for valueSet calculations
@@ -42,14 +42,14 @@ contract Updater is I_Updater {
         address _vaultRegistry,
         address _curveRegistry
     ) {
-        recollateralizations = I_Recollateralization(_recollateralizations);
-        hub = I_Hub(_hub);
-        vaultRegistry = I_VaultRegistry(_vaultRegistry);
-        curveRegistry = I_CurveRegistry(_curveRegistry);
+        recollateralizations = IRecollateralization(_recollateralizations);
+        hub = IHub(_hub);
+        vaultRegistry = IVaultRegistry(_vaultRegistry);
+        curveRegistry = ICurveRegistry(_curveRegistry);
     }
 
     // TODO: args
-    /// @inheritdoc I_Updater
+    /// @inheritdoc IUpdater
     function startUpdate(
         uint256 _hubId,
         address _targetCurve,
@@ -100,12 +100,12 @@ contract Updater is I_Updater {
         if (_targetEncodedValueSet.length > 0) {
             if (_targetCurve =! address(0)) {
                 // curve migrating, point to new valueSet
-                I_CurveValueSet(_targetCurve).registerValueSet(
+                ICurveValueSet(_targetCurve).registerValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
             } else {
-                I_CurveValueSet(hub.getHubCurve(_hubId)).registerTargetValueSet(
+                ICurveValueSet(hub.getHubCurve(_hubId)).registerTargetValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
@@ -133,7 +133,7 @@ contract Updater is I_Updater {
         require(block.timestamp > updateDetails.endTime, "!finished");
 
         if (updateDetails.reconfiguring) {
-            I_CurveValueSet(updateDetails.curve).finishUpdate(_hubId);
+            ICurveValueSet(updateDetails.curve).finishUpdate(_hubId);
         }
 
         hub.finishUpdate(

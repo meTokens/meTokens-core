@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-interface I_VaultFactory {
+interface IVaultFactory {
 
     /// @notice function to create and register a new vault to the vault registry
     /// @param _name name of vault

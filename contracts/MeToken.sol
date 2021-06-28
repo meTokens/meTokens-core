@@ -17,7 +17,7 @@ contract MeToken is Initializable, ERC20Burnable {
 
     // For person that creates meToken, may not be the designated owner
     // For example, someone creates ANDRE coin on his behalf and he takes ownership later
-    // TODO: is I_Hub needed?
+    // TODO: is IHub needed?
     address public hub = address(0x0); // TODO
     address public meTokenRegistry = address(0x0); // TODO
 

@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /// @title Curve ValueSet Interface
 /// @author Carl Farterson (@carlfarterson)
 /// @dev Required for all Curve ValueSets
-interface I_CurveValueSet {
+interface ICurveValueSet {
 
     /// @notice Update a ValueSet to new parameters
     /// @param _hubId                   unique hub identifier

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_CurveRegistry.sol";
+import "../interfaces/ICurveRegistry.sol";
 
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
-abstract contract CurveRegistry is I_CurveRegistry {
+abstract contract CurveRegistry is ICurveRegistry {
 
     event RegisterCurve(string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);
@@ -23,7 +23,7 @@ abstract contract CurveRegistry is I_CurveRegistry {
         bool active;
     }
 
-    /// @inheritdoc I_CurveRegistry
+    /// @inheritdoc ICurveRegistry
     function registerCurve(
         string calldata _name,
         address _formula,
@@ -41,7 +41,7 @@ abstract contract CurveRegistry is I_CurveRegistry {
     }
 
 
-    /// @inheritdoc I_CurveRegistry
+    /// @inheritdoc ICurveRegistry
     function deactivateCurve(uint256 _curveId) external override {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
@@ -53,13 +53,13 @@ abstract contract CurveRegistry is I_CurveRegistry {
     }
 
 
-    /// @inheritdoc I_CurveRegistry
+    /// @inheritdoc ICurveRegistry
     function getCurveCount() external view override returns (uint256) {
         return curveCount;
     }
 
 
-    /// @inheritdoc I_CurveRegistry
+    /// @inheritdoc ICurveRegistry
     function getDetails(uint256 _curveId) external view override returns (
         string memory name,
         address formula,

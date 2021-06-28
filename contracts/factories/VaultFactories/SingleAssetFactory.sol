@@ -4,15 +4,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../../vaults/SingleAsset.sol";
 
-import "../../interfaces/I_VaultRegistry.sol";
-import "../../interfaces/I_VaultFactory.sol";
+import "../../interfaces/IVaultRegistry.sol";
+import "../../interfaces/IVaultFactory.sol";
 
-// TODO: Should I_Hub be imported?
+// TODO: Should IHub be imported?
 
 /// @title Factory contract to erc20-collateral vaults
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Deploys a single collateral vault (non-LP token)
-abstract contract SingleAssetFactory is I_VaultFactory {
+abstract contract SingleAssetFactory is IVaultFactory {
 
     modifier onlyHub() {
         require(msg.sender == hub, "!hub");
@@ -24,15 +24,15 @@ abstract contract SingleAssetFactory is I_VaultFactory {
     uint256 private deployCount;
     address public hub;
     address public implementation;  // TODO: this will be the SingleAsset contract
-    I_VaultRegistry public vaultRegistry;
+    IVaultRegistry public vaultRegistry;
 
     constructor(address _hub, address _vaultRegistry, address _implementation) {
         hub = _hub;
-        vaultRegistry = I_VaultRegistry(_vaultRegistry);
+        vaultRegistry = IVaultRegistry(_vaultRegistry);
         implementation = _implementation;
     }
     
-    /// @inheritdoc I_VaultFactory
+    /// @inheritdoc IVaultFactory
     function createVault(
         string calldata _name,
         address _owner,

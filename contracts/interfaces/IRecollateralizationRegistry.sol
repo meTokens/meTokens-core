@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-interface I_RecollateralizationRegistry {
+interface IRecollateralizationRegistry {
     function registerRecollateralization(
         address _recollateralization,
         address _targetVault,

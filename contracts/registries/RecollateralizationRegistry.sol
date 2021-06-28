@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_RecollateralizationRegistry.sol";
+import "../interfaces/IRecollateralizationRegistry.sol";
 
 /// @title Recollateralization registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all used Recollateralization strategies 
-abstract contract RecollateralizationRegistry is I_RecollateralizationRegistry {
+abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
 
     event RegisterRecollateralization(address recollateralization);
     event ApproveRecollateralizationFactory(address factory);
@@ -67,7 +67,7 @@ abstract contract RecollateralizationRegistry is I_RecollateralizationRegistry {
         return approvedRecollateralizationFactories[_factory];
     }
 
-    /// @inheritdoc I_RecollateralizationRegistry
+    /// @inheritdoc IRecollateralizationRegistry
     function recollateralizationCount() external view override returns (uint256) {
         return _recollateralizationCount;
     }

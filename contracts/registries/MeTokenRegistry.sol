@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_MeTokenRegistry.sol";
+import "../interfaces/IMeTokenRegistry.sol";
 import "../MeToken.sol";
-import "../interfaces/I_MeTokenFactory.sol";
-import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Vault.sol";
-import "../interfaces/I_ERC20.sol";
-import "../interfaces/I_CurveValueSet.sol";
+import "../interfaces/IMeTokenFactory.sol";
+import "../interfaces/IHub.sol";
+import "../interfaces/IVault.sol";
+import "../interfaces/IERC20.sol";
+import "../interfaces/ICurveValueSet.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-abstract contract MeTokenRegistry is I_MeTokenRegistry {
+abstract contract MeTokenRegistry is IMeTokenRegistry {
 
     event RegisterMeToken(
         address indexed meToken,
@@ -25,8 +25,8 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
-    I_MeTokenFactory public meTokenFactory;
-    I_Hub public hub;
+    IMeTokenFactory public meTokenFactory;
+    IHub public hub;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
     mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
@@ -41,11 +41,11 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
 	}
 
     constructor(address _meTokenFactory, address _hub) {
-        meTokenFactory = I_MeTokenFactory(_meTokenFactory);
-        hub = I_Hub(_hub);
+        meTokenFactory = IMeTokenFactory(_meTokenFactory);
+        hub = IHub(_hub);
     }
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function registerMeToken(
         string calldata _name,
         string calldata _symbol,
@@ -59,9 +59,9 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
         address vault = hub.getHubVault(_hubId);
-        address collateralAsset = I_Vault(vault).getCollateralAsset();
+        address collateralAsset = IVault(vault).getCollateralAsset();
         require(
-            I_ERC20(collateralAsset).balanceOf(msg.sender) <= _collateralDeposited,
+            IERC20(collateralAsset).balanceOf(msg.sender) <= _collateralDeposited,
             "Collateral deposited cannot exceed balance"
         );
 
@@ -83,7 +83,7 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
         meTokenOwners[msg.sender] = meTokenAddr;
 
         // Get curve information from hub
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(_hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(_hubId));
 
         uint256 meTokensMinted = curve.calculateMintReturn(
             _collateralDeposited,  // _deposit_amount
@@ -96,14 +96,14 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
         );
 
         // Transfer collateral to vault and return the minted meToken
-        I_ERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
-        I_ERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
+        IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
+        IERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
 
         emit RegisterMeToken(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _meToken, address _newOwner) external override {
         require(!isMeTokenOwner(_newOwner), "_newOwner already owns a meToken");
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
@@ -117,7 +117,7 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
@@ -130,7 +130,7 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
         MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
@@ -143,19 +143,19 @@ abstract contract MeTokenRegistry is I_MeTokenRegistry {
     }
 
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function isMeTokenOwner(address _owner) public view override returns (bool) {
         return meTokenOwners[_owner] != address(0);
     }
 
 
-    /// @inheritdoc I_MeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function getMeTokenByOwner(address _owner) external view override returns (address) {
         return meTokenOwners[_owner];
     }
 
 
-    // @inheritdoc I_MeTokenRegistry
+    // @inheritdoc IMeTokenRegistry
     function getDetails(
         address _meToken
     ) external view override returns (

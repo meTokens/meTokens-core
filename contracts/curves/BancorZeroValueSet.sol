@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "./BancorZeroFormula.sol";
-import "../interfaces/I_Hub.sol";
-import "../interfaces/I_Updater.sol";
-import "../interfaces/I_CurveValueSet.sol";
-import "../interfaces/I_Migrations.sol";
+import "../interfaces/IHub.sol";
+import "../interfaces/IUpdater.sol";
+import "../interfaces/ICurveValueSet.sol";
+import "../interfaces/IMigrations.sol";
 import "../libs/WeightedAverage.sol";
 import "../utils/Power.sol";
 
@@ -13,7 +13,7 @@ import "../utils/Power.sol";
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
+abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula {
 
     uint256 private BASE_X = PRECISION;
 
@@ -35,22 +35,22 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
-    I_Hub public hub;
-    I_Migrations public migrations;
-    I_Updater public updater;
+    IHub public hub;
+    IMigrations public migrations;
+    IUpdater public updater;
 
     constructor(
         address _hub,
         address _migrations,
         address _updater
     ) {
-        hub = I_Hub(_hub);
-        migrations = I_Migrations(_migrations);
-        updater = I_Updater(_updater);
+        hub = IHub(_hub);
+        migrations = IMigrations(_migrations);
+        updater = IUpdater(_updater);
     }
 
 
-    /// @inheritdoc I_CurveValueSet
+    /// @inheritdoc ICurveValueSet
 	function registerValueSet(
         uint256 _hubId,
         bytes calldata _encodedValueSet
@@ -69,7 +69,7 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
     }
 
 
-    /// @inheritdoc I_CurveValueSet
+    /// @inheritdoc ICurveValueSet
     function registerTargetValueSet(
         uint256 _hubId,
         bytes calldata _encodedValueSet
@@ -92,7 +92,7 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
 
 
 
-    /// @inheritdoc I_CurveValueSet
+    /// @inheritdoc ICurveValueSet
     function calculateMintReturn(
         uint256 _depositAmount,
         uint256 _hubId,
@@ -157,7 +157,7 @@ abstract contract BancorZeroValueSet is I_CurveValueSet, BancorZeroFormula {
     }
 
 
-    /// @inheritdoc I_CurveValueSet
+    /// @inheritdoc ICurveValueSet
     function calculateBurnReturn(
         uint256 _burnAmount,
         uint256 _hubId,

@@ -2,26 +2,26 @@
 
 pragma solidity ^0.8.0;
 
-import "./interfaces/I_Fees.sol";
-import "./interfaces/I_MeTokenRegistry.sol";
-import "./interfaces/I_MeToken.sol";
-import "./interfaces/I_ERC20.sol";
-import "./interfaces/I_CurveValueSet.sol";
-import "./interfaces/I_Vault.sol";
-import "./interfaces/I_Hub.sol";
-import "./interfaces/I_Foundry.sol";
+import "./interfaces/IFees.sol";
+import "./interfaces/IMeTokenRegistry.sol";
+import "./interfaces/IMeToken.sol";
+import "./interfaces/IERC20.sol";
+import "./interfaces/ICurveValueSet.sol";
+import "./interfaces/IVault.sol";
+import "./interfaces/IHub.sol";
+import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 
-import "./interfaces/I_Updater.sol";
+import "./interfaces/IUpdater.sol";
 
-contract Foundry is I_Foundry {
+contract Foundry is IFoundry {
     
     uint256 private PRECISION = 10**18;
 
-    I_Hub public hub;
-    I_Fees public fees;
-    I_MeTokenRegistry public meTokenRegistry;
-    I_Updater public updater;
+    IHub public hub;
+    IFees public fees;
+    IMeTokenRegistry public meTokenRegistry;
+    IUpdater public updater;
 
     constructor(
         address _hub,
@@ -29,14 +29,14 @@ contract Foundry is I_Foundry {
         address _meTokenRegistry,
         address _updater
     ) {
-        hub = I_Hub(_hub);
-        fees = I_Fees(_fees);
-        meTokenRegistry = I_MeTokenRegistry(_meTokenRegistry);
-        updater = I_Updater(_updater);
+        hub = IHub(_hub);
+        fees = IFees(_fees);
+        meTokenRegistry = IMeTokenRegistry(_meTokenRegistry);
+        updater = IUpdater(_updater);
     }
 
 
-    /// @inheritdoc I_Foundry
+    /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
         uint256 hubId;
@@ -72,10 +72,10 @@ contract Foundry is I_Foundry {
             }
         }
 
-        I_ERC20 meToken = I_ERC20(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(hubId));
-        I_Vault vault = I_Vault(hub.getHubVault(hubId));
-        I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
+        IERC20 meToken = IERC20(_meToken);
+        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(hubId));
+        IVault vault = IVault(hub.getHubVault(hubId));
+        IERC20 collateralToken = IERC20(vault.getCollateralAsset());
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
         uint256 collateralDepositedAfterFees = _collateralDeposited - fee;
@@ -93,7 +93,7 @@ contract Foundry is I_Foundry {
 
         if (migrating != address(0)) {
             // Do something
-            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(hubId));
+            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(hubId));
             uint256 targetMeTokensMinted = targetCurve.calculateMintReturn(
                 collateralDepositedAfterFees,
                 hubId,
@@ -131,7 +131,7 @@ contract Foundry is I_Foundry {
     }
 
 
-    /// @inheritdoc I_Foundry
+    /// @inheritdoc IFoundry
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
         address owner;
@@ -161,10 +161,10 @@ contract Foundry is I_Foundry {
             }
         }
 
-        I_ERC20 meToken = I_ERC20(_meToken);
-        I_CurveValueSet curve = I_CurveValueSet(hub.getHubCurve(hubId));
-        I_Vault vault = I_Vault(hub.getHubVault(hubId));
-        I_ERC20 collateralToken = I_ERC20(vault.getCollateralAsset());
+        IERC20 meToken = IERC20(_meToken);
+        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(hubId));
+        IVault vault = IVault(hub.getHubVault(hubId));
+        IERC20 collateralToken = IERC20(vault.getCollateralAsset());
         
         // Calculate how many collateral tokens are returned
         uint256 collateralReturned = curve.calculateBurnReturn(
@@ -178,7 +178,7 @@ contract Foundry is I_Foundry {
         );
 
         if (migrating != address(0)) {
-            I_CurveValueSet targetCurve = I_CurveValueSet(updater.getTargetCurve(hubId));
+            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(hubId));
             uint256 targetCollateralReturned = targetCurve.calculateBurnReturn(
                 _meTokensBurned,
                 // collateralDepositedAfterFees, // TODO: do we need to calculate after fees?

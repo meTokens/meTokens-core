@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "../../recollateralizations/UniswapSingleTransfer.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../../interfaces/I_RecollateralizationRegistry.sol";
-import "../../interfaces/I_Vault.sol";
+import "../../interfaces/IRecollateralizationRegistry.sol";
+import "../../interfaces/IVault.sol";
 
 
 contract UniswapSingleTransferFactory {
@@ -15,11 +15,11 @@ contract UniswapSingleTransferFactory {
     uint256 public deployCount;
     address public hub;
     address public implementation;
-    I_RecollateralizationRegistry public recollateralizationRegistry;
+    IRecollateralizationRegistry public recollateralizationRegistry;
 
     constructor(address _hub, address _recollateralizationRegistry, address _implementation) {
         hub = _hub;
-        recollateralizationRegistry = I_RecollateralizationRegistry(_recollateralizationRegistry);
+        recollateralizationRegistry = IRecollateralizationRegistry(_recollateralizationRegistry);
         implementation = _implementation;
     }
     
@@ -36,15 +36,15 @@ contract UniswapSingleTransferFactory {
         // create our recollateralization
         UniswapSingleTransfer(recollateralizationAddress).initialize(
             _owner,
-            I_Vault(_targetVault).getCollateralAsset()
+            IVault(_targetVault).getCollateralAsset()
         );
 
         // Add recollateralization to recollateralizationRegistry
         recollateralizationRegistry.registerRecollateralization(
             recollateralizationAddress,
             _targetVault,
-            I_Vault(_targetVault).getCollateralAsset(),
-            I_Vault(recollateralizationAddress).getCollateralAsset()
+            IVault(_targetVault).getCollateralAsset(),
+            IVault(recollateralizationAddress).getCollateralAsset()
         );
 
         deployCount++;

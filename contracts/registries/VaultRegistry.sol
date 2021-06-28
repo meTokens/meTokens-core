@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/I_VaultRegistry.sol";
+import "../interfaces/IVaultRegistry.sol";
 
 
 /// @title vault registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all active vaults and available vault factories 
-contract VaultRegistry is I_VaultRegistry {
+contract VaultRegistry is IVaultRegistry {
 
     event RegisterVault(string name, address vault, address factory);
     event DeactivateVault(address vault);
@@ -25,7 +25,7 @@ contract VaultRegistry is I_VaultRegistry {
         bool active;  // NOTE: can be inactive after vault migration
     }
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function registerVault(
         string calldata _name,
         address _vault,
@@ -39,7 +39,7 @@ contract VaultRegistry is I_VaultRegistry {
         emit RegisterVault(_name, _vault, _factory);
     }
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function approveVaultFactory(address _factory) external override {
         // TODO: access control
         require(!approvedVaultFactories[_factory], "Factory already approved");
@@ -48,7 +48,7 @@ contract VaultRegistry is I_VaultRegistry {
     }
 
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function deactivateVault(address _vault) external override {
         // TODO: access control
         VaultDetails storage vaultDetails = vaults[_vault];
@@ -56,7 +56,7 @@ contract VaultRegistry is I_VaultRegistry {
         vaultDetails.active = false;
     }
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function unapproveVaultFactory(address _factory) external override {
         // TODO: access control
         require(approvedVaultFactories[_factory], "Factory not approved");
@@ -68,7 +68,7 @@ contract VaultRegistry is I_VaultRegistry {
     // function reactivateVault(uint256 vaultId) public {}
 
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function isActiveVault(address _vault) external view override returns (bool) {
         // TODO: import VaultDetails struct
         VaultDetails memory vaultDetails = vaults[_vault];
@@ -76,13 +76,13 @@ contract VaultRegistry is I_VaultRegistry {
     }
 
 
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function isApprovedVaultFactory(address _factory) external view override returns (bool) {
         return approvedVaultFactories[_factory];
     }
 
     
-    /// @inheritdoc I_VaultRegistry
+    /// @inheritdoc IVaultRegistry
     function getDetails(address vault) external view override returns (
         string memory name,
         address factory,

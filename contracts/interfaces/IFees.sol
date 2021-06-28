@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-interface I_Fees {
+interface IFees {
     function setBurnBuyerFee(uint256 amount) external;
     function setBurnOwnerFee(uint256 amount) external;
     function setTransferFee(uint256 amount) external;

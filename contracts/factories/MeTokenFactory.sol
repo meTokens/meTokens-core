@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
-import "../interfaces/I_MeTokenRegistry.sol";
+import "../interfaces/IMeTokenRegistry.sol";
 
 /// @title meToken factory
 /// @author Carl Farterson (@carlfarterson)

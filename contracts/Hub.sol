@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "./interfaces/I_Hub.sol";
-import "./interfaces/I_VaultFactory.sol";
-import "./interfaces/I_VaultRegistry.sol";
-import "./interfaces/I_CurveRegistry.sol";
-import "./interfaces/I_CurveValueSet.sol";
-import "./interfaces/I_Updater.sol";
+import "./interfaces/IHub.sol";
+import "./interfaces/IVaultFactory.sol";
+import "./interfaces/IVaultRegistry.sol";
+import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/ICurveValueSet.sol";
+import "./interfaces/IUpdater.sol";
 
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens 
-abstract contract Hub is I_Hub {
+abstract contract Hub is IHub {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
     event SetHubStatus(uint256 hubId, uint256 status);
@@ -28,9 +28,9 @@ abstract contract Hub is I_Hub {
 
     uint256 private hubCount;
     address public gov;
-    I_VaultRegistry public vaultRegistry;
-    I_CurveRegistry public curveRegistry;
-    I_Updater public updater;
+    IVaultRegistry public vaultRegistry;
+    ICurveRegistry public curveRegistry;
+    IUpdater public updater;
 
     struct HubDetails {
         string name;
@@ -53,13 +53,13 @@ abstract contract Hub is I_Hub {
         address _updater
     ) {
         gov = _gov;
-        vaultRegistry = I_VaultRegistry(_vaultRegistry);
-        curveRegistry = I_CurveRegistry(_curveRegistry);
-        updater = I_Updater(_updater);
+        vaultRegistry = IVaultRegistry(_vaultRegistry);
+        curveRegistry = ICurveRegistry(_curveRegistry);
+        updater = IUpdater(_updater);
     }
 
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function registerHub(
         string calldata _name,
         address _owner,
@@ -81,12 +81,12 @@ abstract contract Hub is I_Hub {
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
         // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
         // abi.encodePacked();
-        I_CurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
+        ICurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
         
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        address vault = I_VaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
         HubDetails memory hubDetails = HubDetails(
@@ -101,7 +101,7 @@ abstract contract Hub is I_Hub {
     }
     
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function deactivateHub(uint256 _hubId) external override hubExists(_hubId) {
         // TODO: access control
         HubDetails storage hubDetails = hubs[_hubId];
@@ -161,21 +161,21 @@ abstract contract Hub is I_Hub {
     }
 
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function getHubStatus(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
         return uint256(hubDetails.status);
     }
 
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function getHubRefundRatio(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.refundRatio;
     }
 
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function getDetails(
         uint256 _hubId
     ) external view override hubExists(_hubId) returns (
@@ -195,14 +195,14 @@ abstract contract Hub is I_Hub {
         status = uint256(hubDetails.status);
     }
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function getHubCurve(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.curve;
     }
 
-    /// @inheritdoc I_Hub
+    /// @inheritdoc IHub
     function getHubVault(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];

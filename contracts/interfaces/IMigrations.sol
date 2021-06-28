@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /// @title meToken Migrations
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage migration settings
-interface I_Migrations {
+interface IMigrations {
 
     function setMinBlocksUntilStart(uint256 blocks) external;
     function setMaxBlocksUntilStart(uint256 blocks) external;

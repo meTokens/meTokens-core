@@ -23,7 +23,7 @@ contract SingleAsset is Vault, Initializable {
         collateralAsset = _collateralAsset;
 
         // Approve Foundry to spend all collateral in vault
-        I_ERC20(collateralAsset).approve(foundry, 2**256 - 1);
+        IERC20(collateralAsset).approve(foundry, 2**256 - 1);
     }
 
 }
