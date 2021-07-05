@@ -56,7 +56,7 @@ abstract contract BancorZeroFormula is Power {
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _baseX          constant X 
     /// @param _baseY          constant y
-    /// @return meTokenAmount   amount of meTokens minted
+    /// @return returnedAmount amount of meTokens minted
 function _calculateMintReturnFromZero(
     uint256 _depositAmount,
     uint256 _reserveWeight,
