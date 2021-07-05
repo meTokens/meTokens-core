@@ -109,7 +109,7 @@
 * Migrations directory for different types of migrations (uniswap v2, balancer, 0x, etc.)
 
 #### 6.17
-* [ ] Figure out how to do hubDetails.refundRatio within `Foundry`
+* [ ] Figure out how to do hubDetails.refundRatio within `Foundry.sol`
 * [ ] Foundry to convert `QUEUED` status into `UPDATING`
     * Generic function that `mint()` and burn()` could call?
 * [x] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
@@ -131,4 +131,16 @@
     * Done using OZ Clones and bytes32
 
 #### 6.22
-* [ ] Storage vs. memory for MeTokenRegistry
+* [x] Storage vs. memory for MeTokenRegistry
+
+#### 6.25
+* [ ] `curveRegistry.isRegisteredCurve()` within Updater to work
+* [ ] Standardize Curve & Vault registries to be more similar
+
+#### 6.28
+* [ ] Refactor
+    * [x] I_{Contract}.sol => I{Contract}.sol
+    * [ ] Move events to interfaces
+    * [ ] Contract state variables to interfaces (?)
+
+#### 7.5
