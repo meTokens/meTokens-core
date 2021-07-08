@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 
 interface IUpdater {
 
-    event StartUpdate(); // TODO
-    event FinishUpdate(uint256 _hubId);
+    event FinishUpdate(uint256 hubId);
+    event SetMinSecondsUntilStart(uint256 amount);
+    event SetMaxSecondsUntilStart(uint256 amount);
+    event SetMinDuration(uint256 amount);
+    event SetMaxDuration(uint256 amount);
 
     function startUpdate(
         uint256 _hubId,
@@ -35,5 +38,15 @@ interface IUpdater {
     function getTargetRefundRatio(uint256 _hubId) external view returns (uint256);
 
     function getTargetVault(uint256 _hubId) external view returns (uint256);
+
+    function setMinSecondsUntilStart(uint256 amount) external;
+    function setMaxSecondsUntilStart(uint256 amount) external;
+    function setMinDuration(uint256 amount) external;
+    function setMaxDuration(uint256 amount) external;
+
+    function minSecondsUntilStart() external view returns (uint256);
+    function maxSecondsUntilStart() external view returns (uint256);
+    function minDuration() external view returns (uint256);
+    function maxDuration() external view returns (uint256);
 
 }

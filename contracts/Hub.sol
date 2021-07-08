@@ -16,7 +16,7 @@ import "./interfaces/IUpdater.sol";
 abstract contract Hub is IHub {
 
     event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
-    event SetHubStatus(uint256 hubId, uint256 status);
+    event SetStatus(uint256 hubId, uint256 status);
     event DeactivateHub(uint256 hubId);
 
     modifier hubExists(uint256 _hubId) {
@@ -122,12 +122,12 @@ abstract contract Hub is IHub {
         hubDetails.status = Status.QUEUED;
     }
 
-    function setHubStatus(uint256 _hubId, uint256 status) public {
+    function setStatus(uint256 _hubId, uint256 status) public {
         // TODO: access control
         HubDetails storage hubDetails = hubs[_hubId];
         require(uint256(hubDetails.status) != status, "Cannot set to same status");
         hubDetails.status = Status(status);
-        emit SetHubStatus(_hubId, status);
+        emit SetStatus(_hubId, status);
     }
 
     function finishUpdate(

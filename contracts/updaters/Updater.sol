@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "../interfaces/IUpdater.sol";
 import "../interfaces/IRecollateralization.sol";
 import "../interfaces/IHub.sol";
-import "../interfaces/IUpdater.sol";
 import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/ICurveRegistry.sol";
 import "../interfaces/ICurveValueSet.sol";
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Updater is IUpdater {
+
+contract Updater is IUpdater, Ownable {
 
     struct UpdateDetails {
         bool reconfiguring;
@@ -27,30 +29,30 @@ contract Updater is IUpdater {
     uint256 private _minDuration;
     uint256 private _maxDuration;
     
-    IRecollateralization public recollateralizations;
-    IHub public hub;
-    IVaultRegistry public vaultRegistry;
-    ICurveRegistry public curveRegistry;
+    // TODO
+    IRecollateralization public recollateralizations = IRecollateralization(address(0));
+    IHub public hub = IHub(address(0));
+    IVaultRegistry public vaultRegistry = IVaultRegistry(address(0));
+    ICurveRegistry public curveRegistry = ICurveRegistry(address(0));
 
 
     // NOTE: keys are hubId's, used for valueSet calculations
     mapping (uint256 => UpdateDetails) private updates;
 
     constructor(
-        address _recollateralizations,
-        address _hub,
-        address _vaultRegistry,
-        address _curveRegistry
+        uint256 minSecondsUntilStart_,
+        uint256 maxSecondsUntilStart_,
+        uint256 minDuration_,
+        uint256 maxDuration_
     ) {
-        recollateralizations = IRecollateralization(_recollateralizations);
-        hub = IHub(_hub);
-        vaultRegistry = IVaultRegistry(_vaultRegistry);
-        curveRegistry = ICurveRegistry(_curveRegistry);
+        _minSecondsUntilStart = minSecondsUntilStart_;
+        _maxSecondsUntilStart = maxSecondsUntilStart_;
+        _minDuration = minDuration_;
+        _maxDuration = maxDuration_;
     }
 
     // TODO: args
-    /// @inheritdoc IUpdater
-    function startUpdate(
+    function initUpdate(
         uint256 _hubId,
         address _targetCurve,
         address _targetVault,
@@ -59,8 +61,7 @@ contract Updater is IUpdater {
         bytes32 _targetEncodedValueSet,
         uint256 _startTime,
         uint256 _duration
-        // uint256 _endTime
-    ) external override {
+    ) external {
         // TODO: access control
 
         require(
@@ -77,7 +78,10 @@ contract Updater is IUpdater {
         // is valid curve
         if (_targetCurve != address(0)) {
             require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
-            require(_targetCurve != hub.getHubCurve(_hubId), "_targetCurve == curve");
+            require(
+                _targetCurve != hub.getHubCurve(_hubId),
+                "_targetCurve == curve"
+            );
 
             // TODO
         }
@@ -85,25 +89,33 @@ contract Updater is IUpdater {
         // is valid vault
         if (_targetVault != address(0)) {
             require(vaultRegistry.isActiveVault(_targetVault), "!active");
-            require(_targetVault != hub.getHubVault(_hubId), "_targetVault == vault");
+            require(
+                _targetVault != hub.getHubVault(_hubId),
+                "_targetVault == vault"
+            );
             // TODO: validate
-            require(_targetEncodedValueSet != '', "_targetEncodedValueSet required");
+            require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
         }
 
         // is valid refundRatio
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-            require(_targetRefundRatio != hub.getHubRefundRatio(_hubId), "_targetRefundRatio == refundRatio");
+            require(
+                _targetRefundRatio != hub.getHubRefundRatio(_hubId),
+                "_targetRefundRatio == refundRatio"
+            );
         }
 
         bool reconfiguring;
         if (_targetEncodedValueSet.length > 0) {
+
+            // curve migrating, point to new valueSet
             if (_targetCurve =! address(0)) {
-                // curve migrating, point to new valueSet
                 ICurveValueSet(_targetCurve).registerValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
+            // We're still using the same curve, start reconfiguring the value set
             } else {
                 ICurveValueSet(hub.getHubCurve(_hubId)).registerTargetValueSet(
                     _hubId,
@@ -126,6 +138,12 @@ contract Updater is IUpdater {
         hub.startUpdate(_hubId);
     }
 
+    function startUpdate(uint256 _hubId) external {
+        // TODO: access control
+
+        UpdateDetails storage updateDetails = updates[_hubId];
+
+    }
 
     function finishUpdate(uint256 _hubId) external override {
 
@@ -145,6 +163,48 @@ contract Updater is IUpdater {
 
         delete (updateDetails); // TODO: verify
         emit FinishUpdate(_hubId);
+    }
+
+    function setMinSecondsUntilStart(uint256 amount) external onlyOwner override {
+        require(
+            amount > 0 && 
+            amount != _minSecondsUntilStart &&
+            amount < _maxSecondsUntilStart,
+            "out of range"
+        );
+        _minSecondsUntilStart = amount;
+        emit SetMinSecondsUntilStart(amount);
+    }
+
+    function setMaxSecondsUntilStart(uint256 amount) external onlyOwner override {
+        require(
+            amount != _maxSecondsUntilStart &&
+            amount > _minSecondsUntilStart,
+            "out of range"
+        );
+        _maxSecondsUntilStart = amount;
+        emit SetMaxSecondsUntilStart(amount);
+    }
+
+    function setMinDuration(uint256 amount) external onlyOwner override {
+        require(
+            amount > 0 &&
+            amount != _minDuration &&
+            amount < _maxDuration,
+            "out of range"
+        );
+        _minDuration = amount;
+        emit SetMinDuration(amount);
+    }
+
+    function setMaxDuration(uint256 amount) external onlyOwner override {
+        require(
+            amount != _maxSecondsUntilStart && 
+            amount  > _minDuration,
+            "out of range"
+        );
+        _maxDuration = amount;
+        emit SetMaxDuration(amount);
     }
 
     function getDetails(uint256 _hubId) external view override returns (
@@ -188,9 +248,10 @@ contract Updater is IUpdater {
         return updateDetails.vault;
     }
 
-    function minSecondsUntilStart() external view returns (uint256) {return _minSecondsUntilStart;}
-    function maxSecondsUntilStart() external view returns (uint256) {return _maxSecondsUntilStart;}
-    function minUpdateDuration() external view returns (uint256) {return _minDuration;}
-    function maxUpdateDuration() external view returns (uint256) {return _maxDuration;}
+
+    function minSecondsUntilStart() external view override returns (uint256) {return _minSecondsUntilStart;}
+    function maxSecondsUntilStart() external view override returns (uint256) {return _maxSecondsUntilStart;}
+    function minDuration() external view override returns (uint256) {return _minDuration;}
+    function maxDuration() external view override returns (uint256) {return _maxDuration;}
 
 }

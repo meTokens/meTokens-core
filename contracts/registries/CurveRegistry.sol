@@ -53,6 +53,10 @@ abstract contract CurveRegistry is ICurveRegistry {
     }
 
 
+    function isRegisteredCurve(address curve) external view returns (bool) {
+        
+    }
+
     /// @inheritdoc ICurveRegistry
     function getCurveCount() external view override returns (uint256) {
         return curveCount;

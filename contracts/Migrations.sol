@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice contract to manage migration settings
 contract Migrations is Ownable {
 
+    event FinishUpdate(uint256 hubId);
     event SetMinSecondsUntilStart(uint256 amount);
     event SetMaxSecondsUntilStart(uint256 amount);
     event SetMinUpdateDuration(uint256 amount);

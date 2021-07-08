@@ -144,3 +144,5 @@
     * [ ] Contract state variables to interfaces (?)
 
 #### 7.5
+* [ ] Access control to create/modify a hub
+* [ ] Migration factory with encoding
