@@ -24,6 +24,11 @@ contract Updater is IUpdater, Ownable {
 
     uint256 private PRECISION = 10**18;
     
+    uint256 private _minGracePeriod;
+    uint256 private _maxGracePeriod;
+    uint256 private _minVotePeriod;
+    uint256 private _maxVotePeriod;
+
     uint256 private _minSecondsUntilStart;
     uint256 private _maxSecondsUntilStart;
     uint256 private _minDuration;
@@ -54,7 +59,7 @@ contract Updater is IUpdater, Ownable {
     // TODO: args
     function initUpdate(
         uint256 _hubId,
-        address _targetCurve,
+        uint256 _targetCurveId,
         address _targetVault,
         address _recollateralizationFactory,
         uint256 _targetRefundRatio,
@@ -79,7 +84,7 @@ contract Updater is IUpdater, Ownable {
         if (_targetCurve != address(0)) {
             require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
             require(
-                _targetCurve != hub.getHubCurve(_hubId),
+                _targetCurve != hub.getCurve(_hubId),
                 "_targetCurve == curve"
             );
 
@@ -90,7 +95,7 @@ contract Updater is IUpdater, Ownable {
         if (_targetVault != address(0)) {
             require(vaultRegistry.isActiveVault(_targetVault), "!active");
             require(
-                _targetVault != hub.getHubVault(_hubId),
+                _targetVault != hub.getVault(_hubId),
                 "_targetVault == vault"
             );
             // TODO: validate
@@ -101,7 +106,7 @@ contract Updater is IUpdater, Ownable {
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
             require(
-                _targetRefundRatio != hub.getHubRefundRatio(_hubId),
+                _targetRefundRatio != hub.getRefundRatio(_hubId),
                 "_targetRefundRatio == refundRatio"
             );
         }
@@ -117,7 +122,7 @@ contract Updater is IUpdater, Ownable {
                 );
             // We're still using the same curve, start reconfiguring the value set
             } else {
-                ICurveValueSet(hub.getHubCurve(_hubId)).registerTargetValueSet(
+                ICurveValueSet(hub.getCurve(_hubId)).registerTargetValueSet(
                     _hubId,
                     _targetEncodedValueSet
                 );
@@ -138,11 +143,24 @@ contract Updater is IUpdater, Ownable {
         hub.startUpdate(_hubId);
     }
 
+
+    function executeProposal(uint256 _hubId) public {
+        uint256 hubStatus = hub.getStatus(_hubId);
+        require(hubStatus == 3, "!QUEUED");
+
+        UpdateDetails storage update = updates[_hubId];
+        require(
+            block.timestamp > update.startTime &&
+            block.timestamp < update.endTime)
+        require(update.)
+    } 
+
+
+
     function startUpdate(uint256 _hubId) external {
         // TODO: access control
 
         UpdateDetails storage updateDetails = updates[_hubId];
-
     }
 
     function finishUpdate(uint256 _hubId) external override {

@@ -146,3 +146,7 @@
 #### 7.5
 * [ ] Access control to create/modify a hub
 * [ ] Migration factory with encoding
+
+#### 7.8
+* [ ]  does `meTokenRegistry.getDetails(_meToken);` need to return a `resubscribing` variable, or should `isResubscribing` be called elsewhere?
+* [ ] Do we need `deactivateHub()` and `reactivateHub()` within Hub.sol?

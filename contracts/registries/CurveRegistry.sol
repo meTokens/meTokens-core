@@ -12,9 +12,9 @@ abstract contract CurveRegistry is ICurveRegistry {
     event DeactivateCurve(uint256 curveId);
 
     address public dao = address(0x0); // TODO
-    mapping (uint256 => CurveDetails) private curves;
-    mapping (string => bool) private namedCurves;
     uint256 private curveCount;
+    
+    mapping (string => bool) private namedCurves;
 
     struct CurveDetails {
         string name; // BancorZero
@@ -22,6 +22,7 @@ abstract contract CurveRegistry is ICurveRegistry {
         address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
         bool active;
     }
+    mapping (uint256 => CurveDetails) private curves;
 
     /// @inheritdoc ICurveRegistry
     function registerCurve(
@@ -34,7 +35,7 @@ abstract contract CurveRegistry is ICurveRegistry {
 
         // Add curve details to storage
         CurveDetails memory curveDetails = CurveDetails(_name, _formula, _valueSet, true);
-        curves[curveCount++] = curveDetails;
+        curves[++curveCount] = curveDetails;
         namedCurves[_name] = true;
     
         emit RegisterCurve(_name, _formula, _valueSet);

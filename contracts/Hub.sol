@@ -43,7 +43,6 @@ abstract contract Hub is IHub {
     mapping(uint256 => HubDetails) private hubs;
 
     // TODO: ensure this is properly checked
-    // TODO: FINISHING (?)
     enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
 
     constructor(
@@ -114,7 +113,6 @@ abstract contract Hub is IHub {
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
-
     
     function startUpdate(uint256 _hubId) external {
         require(msg.sender == address(updater), "!updater");
@@ -124,6 +122,7 @@ abstract contract Hub is IHub {
 
     function setStatus(uint256 _hubId, uint256 status) public {
         // TODO: access control
+        // Can only be from Foundry when setting to QUEUED > UPDATING
         HubDetails storage hubDetails = hubs[_hubId];
         require(uint256(hubDetails.status) != status, "Cannot set to same status");
         hubDetails.status = Status(status);
@@ -155,21 +154,21 @@ abstract contract Hub is IHub {
 
 
     // TODO: natspec
-    function getHubOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
+    function getOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.owner;
     }
 
 
     /// @inheritdoc IHub
-    function getHubStatus(uint256 _hubId) public view override returns (uint256) {
+    function getStatus(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
         return uint256(hubDetails.status);
     }
 
 
     /// @inheritdoc IHub
-    function getHubRefundRatio(uint256 _hubId) public view override returns (uint256) {
+    function getRefundRatio(uint256 _hubId) public view override returns (uint256) {
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.refundRatio;
     }
@@ -196,14 +195,14 @@ abstract contract Hub is IHub {
     }
 
     /// @inheritdoc IHub
-    function getHubCurve(uint256 _hubId) external view override returns (address) {
+    function getCurve(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.curve;
     }
 
     /// @inheritdoc IHub
-    function getHubVault(uint256 _hubId) external view override returns (address) {
+    function getVault(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
         HubDetails memory hubDetails = hubs[_hubId];
         return hubDetails.vault;
