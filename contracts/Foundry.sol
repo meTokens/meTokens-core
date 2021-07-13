@@ -47,7 +47,7 @@ contract Foundry is IFoundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getHubStatus(hubId);
+        uint256 hubStatus = hub.getStatus(hubId);
         require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;  // NOTE: this is done on the valueSet level
@@ -73,8 +73,8 @@ contract Foundry is IFoundry {
         }
 
         IERC20 meToken = IERC20(_meToken);
-        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(hubId));
-        IVault vault = IVault(hub.getHubVault(hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getCurve(hubId));
+        IVault vault = IVault(hub.getVault(hubId));
         IERC20 collateralToken = IERC20(vault.getCollateralAsset());
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
@@ -143,7 +143,7 @@ contract Foundry is IFoundry {
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getHubStatus(hubId);
+        uint256 hubStatus = hub.getStatus(hubId);
         require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;
@@ -162,8 +162,8 @@ contract Foundry is IFoundry {
         }
 
         IERC20 meToken = IERC20(_meToken);
-        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(hubId));
-        IVault vault = IVault(hub.getHubVault(hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getCurve(hubId));
+        IVault vault = IVault(hub.getVault(hubId));
         IERC20 collateralToken = IERC20(vault.getCollateralAsset());
         
         // Calculate how many collateral tokens are returned
@@ -208,9 +208,8 @@ contract Foundry is IFoundry {
         } else {
             feeRate = fees.burnBuyerFee();
             // TODO
-            // collateralMultiplier = PRECISION - hubDetails.refundRatio;
             if (shifting > 0) {
-                uint256 targetCollateralMultiplier = PRECISION - updater.getTargetRefundRatio(hubId);
+                uint256 targetCollateralMultiplier = PRECISION - shifting;
                 collateralMultiplier = WeightedAverage.calculate(
                     collateralMultiplier,
                     targetCollateralMultiplier,

@@ -1,6 +1,13 @@
 # meTokens-core
 🎛  Core smart contracts of meTokens
 
+```
+CompilerError: Stack too deep, try removing local variables.
+  --> contracts/Foundry.sol:80:23:
+   |
+80 |         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
+   |                       ^^^^^^^^^^^^^^^^^^^^
+```
 
 ## Relationship between Hub & Vault
 ### Hub
@@ -150,3 +157,6 @@
 #### 7.8
 * [ ]  does `meTokenRegistry.getDetails(_meToken);` need to return a `resubscribing` variable, or should `isResubscribing` be called elsewhere?
 * [ ] Do we need `deactivateHub()` and `reactivateHub()` within Hub.sol?
+
+#### 7.13
+* [ ] Add `finishUpdate()` to curveValueSet.sol `if (updateDetails.reconfiguring)` within Updater.sol

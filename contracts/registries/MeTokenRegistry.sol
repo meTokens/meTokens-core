@@ -54,11 +54,11 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
     ) external override {
         // TODO: access control
         require(!isMeTokenOwner(msg.sender), "msg.sender already owns a meToken");        
-        require(hub.getHubStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
+        require(hub.getStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
-        address vault = hub.getHubVault(_hubId);
+        address vault = hub.getVault(_hubId);
         address collateralAsset = IVault(vault).getCollateralAsset();
         require(
             IERC20(collateralAsset).balanceOf(msg.sender) <= _collateralDeposited,
@@ -83,7 +83,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         meTokenOwners[msg.sender] = meTokenAddr;
 
         // Get curve information from hub
-        ICurveValueSet curve = ICurveValueSet(hub.getHubCurve(_hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getCurve(_hubId));
 
         uint256 meTokensMinted = curve.calculateMintReturn(
             _collateralDeposited,  // _deposit_amount
@@ -97,7 +97,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
 
         // Transfer collateral to vault and return the minted meToken
         IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
-        IERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
+        MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
 
         emit RegisterMeToken(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }

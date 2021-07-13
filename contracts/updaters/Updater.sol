@@ -11,13 +11,13 @@ import "../interfaces/ICurveValueSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-contract Updater is IUpdater, Ownable {
+abstract contract Updater is IUpdater, Ownable {
 
     struct UpdateDetails {
         bool reconfiguring;
         address migrating;
         address recollateralizing;
-        uint256 shifting;
+        uint256 shifting;  // NOTE: For refundRatio
         uint256 startTime;
         uint256 endTime;
     }
@@ -66,7 +66,7 @@ contract Updater is IUpdater, Ownable {
         bytes32 _targetEncodedValueSet,
         uint256 _startTime,
         uint256 _duration
-    ) external {
+    ) external override {
         // TODO: access control
 
         require(
@@ -80,24 +80,27 @@ contract Updater is IUpdater, Ownable {
             "Unacceptable update duration"
         );
 
+        address vault;
+        address curveId;
+        uint256 refundRatio;
+        (,,vault, curveId, refundRatio,) = hub.getDetails(_hubId);
+
         // is valid curve
-        if (_targetCurve != address(0)) {
-            require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
-            require(
-                _targetCurve != hub.getCurve(_hubId),
-                "_targetCurve == curve"
-            );
+        if (_targetCurveId > 0) {
+            (, , address valueSet, bool active) = curveRegistry.getDetails(_targetCurveId);
 
             // TODO
+            // require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
+            // require(
+            //     _targetCurveId != hub.getCurve(_hubId),
+            //     "Cannot set target curve to the same curve ID"
+            // );
         }
 
         // is valid vault
         if (_targetVault != address(0)) {
             require(vaultRegistry.isActiveVault(_targetVault), "!active");
-            require(
-                _targetVault != hub.getVault(_hubId),
-                "_targetVault == vault"
-            );
+            require(_targetVault != vault, "_targetVault == vault");
             // TODO: validate
             require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
         }
@@ -105,41 +108,47 @@ contract Updater is IUpdater, Ownable {
         // is valid refundRatio
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-            require(
-                _targetRefundRatio != hub.getRefundRatio(_hubId),
-                "_targetRefundRatio == refundRatio"
-            );
+            require(_targetRefundRatio != refundRatio, "_targetRefundRatio == refundRatio");
         }
 
         bool reconfiguring;
-        if (_targetEncodedValueSet.length > 0) {
+        // if (_targetEncodedValueSet.length > 0) {
 
-            // curve migrating, point to new valueSet
-            if (_targetCurve =! address(0)) {
-                ICurveValueSet(_targetCurve).registerValueSet(
-                    _hubId,
-                    _targetEncodedValueSet
-                );
-            // We're still using the same curve, start reconfiguring the value set
-            } else {
-                ICurveValueSet(hub.getCurve(_hubId)).registerTargetValueSet(
-                    _hubId,
-                    _targetEncodedValueSet
-                );
-                reconfiguring = true;
-            }
-        }
+        //     // curve migrating, point to new valueSet
+        //     if (_targetCurve =! address(0)) {
+        //         ICurveValueSet(_targetCurve).registerValueSet(
+        //             _hubId,
+        //             _targetEncodedValueSet
+        //         );
+        //     // We're still using the same curve, start reconfiguring the value set
+        //     } else {
+        //         ICurveValueSet(hub.getCurve(_hubId)).registerTargetValueSet(
+        //             _hubId,
+        //             _targetEncodedValueSet
+        //         );
+        //         reconfiguring = true;
+        //     }
+        // }
+        
+        // UpdateDetails storage updateDetails = UpdateDetails(
+        //     reconfiguring,
+        //     _targetCurveId,
+        //     _targetVault,
+        //     _targetRefundRatio,
+        //     _startTime,
+        //     _startTime + _duration
+        // );
 
-        UpdateDetails memory updateDetails = UpdateDetails(
-            reconfiguring,
-            _targetCurve,
-            _targetVault,
-            _targetRefundRatio,
-            _startTime,
-            _startTime + _duration
-        );
 
-        updates[_hubId] = updateDetails;
+        UpdateDetails storage updateDetails = updates[_hubId];
+        updateDetails.reconfiguring =      reconfiguring;
+        // TODO
+        updateDetails.migrating =          address(0); // _targetCurveId;
+        updateDetails.recollateralizing =  _targetVault;
+        updateDetails.shifting =           _targetRefundRatio;
+        updateDetails.startTime =          _startTime;
+        updateDetails.endTime =            _startTime + _duration;
+
         hub.startUpdate(_hubId);
     }
 
@@ -151,13 +160,14 @@ contract Updater is IUpdater, Ownable {
         UpdateDetails storage update = updates[_hubId];
         require(
             block.timestamp > update.startTime &&
-            block.timestamp < update.endTime)
-        require(update.)
+            block.timestamp < update.endTime
+        );
+        // require(update.)
     } 
 
 
 
-    function startUpdate(uint256 _hubId) external {
+    function startUpdate(uint256 _hubId) external override {
         // TODO: access control
 
         UpdateDetails storage updateDetails = updates[_hubId];
@@ -168,9 +178,10 @@ contract Updater is IUpdater, Ownable {
         UpdateDetails storage updateDetails = updates[_hubId];
         require(block.timestamp > updateDetails.endTime, "!finished");
 
-        if (updateDetails.reconfiguring) {
-            ICurveValueSet(updateDetails.curve).finishUpdate(_hubId);
-        }
+        // TODO
+        // if (updateDetails.reconfiguring) {
+        //     ICurveValueSet(updateDetails.curve).finishUpdate(_hubId);
+        // }
 
         hub.finishUpdate(
             _hubId,
@@ -179,7 +190,7 @@ contract Updater is IUpdater, Ownable {
             updateDetails.shifting  
         );        
 
-        delete (updateDetails); // TODO: verify
+        delete updates[_hubId];
         emit FinishUpdate(_hubId);
     }
 
@@ -258,12 +269,12 @@ contract Updater is IUpdater, Ownable {
 
     function getTargetRefundRatio(uint256 _hubId) external view override returns (uint256) {
         UpdateDetails memory updateDetails = updates[_hubId];
-        return updateDetails.refundRatio;
+        return updateDetails.shifting;
     }
 
-    function getTargetVault(uint256 _hubId) external view override returns (uint256) {
+    function getTargetVault(uint256 _hubId) external view override returns (address) {
         UpdateDetails memory updateDetails = updates[_hubId];
-        return updateDetails.vault;
+        return updateDetails.recollateralizing;
     }
 
 

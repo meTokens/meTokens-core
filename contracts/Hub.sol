@@ -28,6 +28,7 @@ abstract contract Hub is IHub {
 
     uint256 private hubCount;
     address public gov;
+    address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
     IUpdater public updater;
@@ -47,11 +48,13 @@ abstract contract Hub is IHub {
 
     constructor(
         address _gov,
+        address _foundry,
         address _vaultRegistry,
         address _curveRegistry,
         address _updater
     ) {
         gov = _gov;
+        foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
         updater = IUpdater(_updater);
@@ -114,7 +117,7 @@ abstract contract Hub is IHub {
     // function reactivateHub() returns (uint256) {}
 
     
-    function startUpdate(uint256 _hubId) external {
+    function startUpdate(uint256 _hubId) external override {
         require(msg.sender == address(updater), "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
         hubDetails.status = Status.QUEUED;
@@ -122,7 +125,13 @@ abstract contract Hub is IHub {
 
     function setStatus(uint256 _hubId, uint256 status) public {
         // TODO: access control
-        // Can only be from Foundry when setting to QUEUED > UPDATING
+        // Can only be from Foundry when setting to QUEUED > UPDATING,
+        // Or from Updater when setting a curve to QUEUED
+        require(
+            msg.sender == address(updater) || msg.sender == foundry,
+            "!updater && !foundry"
+        );
+
         HubDetails storage hubDetails = hubs[_hubId];
         require(uint256(hubDetails.status) != status, "Cannot set to same status");
         hubDetails.status = Status(status);
@@ -134,7 +143,7 @@ abstract contract Hub is IHub {
         address _migrating,
         address _recollateralizing,
         uint256 _shifting
-    ) external {
+    ) external override {
         require(msg.sender == address(updater), "!updater");
         HubDetails storage hubDetails = hubs[_hubId];
         

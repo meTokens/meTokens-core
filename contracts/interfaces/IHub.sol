@@ -3,6 +3,14 @@ pragma solidity ^0.8.0;
 
 interface IHub {
 
+    function startUpdate(uint256 _hubId) external;
+    function finishUpdate(
+        uint256 _hubId,
+        address _migrating,
+        address _recollateralizing,
+        uint256 _shifting
+    ) external;
+    
     /// @notice TODO
     /// @param _name TODO
     /// @param _owner TODO
@@ -45,13 +53,13 @@ interface IHub {
     /// @param _hubId TODO
     /// @return Status TODO
     // TODO: import Status struct 
-    function getHubStatus(uint256 _hubId) external view returns (uint256);
+    function getStatus(uint256 _hubId) external view returns (uint256);
 
     // TODO
-    function getHubOwner(uint256 _hubId) external view returns (address);
+    function getOwner(uint256 _hubId) external view returns (address);
 
     // TODO
-    function getHubRefundRatio(uint256 _hubid) external view returns (uint256);
+    function getRefundRatio(uint256 _hubid) external view returns (uint256);
 
     // TODO
     function getDetails(uint256 _hubId) external view returns (
@@ -66,11 +74,11 @@ interface IHub {
     /// @notice TODO
     /// @param _hubId TODO
     /// @return TODO
-    function getHubVault(uint256 _hubId) external view returns (address);
+    function getVault(uint256 _hubId) external view returns (address);
 
     /// @notice TODO
     /// @param _hubId TODO
     /// @return TODO
-    function getHubCurve(uint256 _hubId) external view returns (address);
+    function getCurve(uint256 _hubId) external view returns (address);
     
 }
