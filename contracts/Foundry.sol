@@ -35,6 +35,10 @@ contract Foundry is IFoundry {
         updater = IUpdater(_updater);
     }
 
+    function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {}
+    function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {}
+
+/*
 
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
@@ -258,5 +262,5 @@ contract Foundry is IFoundry {
         // collateralAsset.transferFrom(address(vault), _recipient, collateralReturnedAfterFees);
 
     }
-
+    */
 }
