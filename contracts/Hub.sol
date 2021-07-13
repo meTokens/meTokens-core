@@ -47,19 +47,22 @@ abstract contract Hub is IHub {
     enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
 
     constructor(
-        address _gov,
-        address _foundry,
         address _vaultRegistry,
         address _curveRegistry,
-        address _updater
     ) {
-        gov = _gov;
-        foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
-        updater = IUpdater(_updater);
     }
 
+    function setLaterVariables(
+        address _gov,
+        address _foundry,
+        address _updater
+    ) public {
+        gov = _gov;
+        foundry = _foundry;
+        updater = IUpdater(_updater);
+    }
 
     /// @inheritdoc IHub
     function registerHub(
