@@ -160,3 +160,7 @@ CompilerError: Stack too deep, try removing local variables.
 
 #### 7.13
 * [ ] Add `finishUpdate()` to curveValueSet.sol `if (updateDetails.reconfiguring)` within Updater.sol
+
+#### 7.14
+* [ ] Within BancorZeroValueSet.sol, is there a `updater` replacement that can fetch `startTime` & `endTime`?
+* [ ] Access control for `registerValueSet()` within BancorZeroValueSet.sol
