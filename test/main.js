@@ -1,8 +1,6 @@
 const { network: { provider }, expect } = require('hardhat');
 
-const Timelock = artifacts.require("ArrayTimelock");
-const Curve = artifacts.require("Curve");
-const ArrayToken = artifacts.require("ArrayToken");
+const CurveRegistry = artifacts.require("CurveRegistry");
 
 const fs = require('fs')
 require('dotenv').config();
@@ -12,7 +10,7 @@ require('dotenv').config();
 async function main() {
 
     // deploy array token
-    let arrayToken = await ArrayToken.new("Array Token", "ARRAY");
+    let curveRegistry = await CurveRegistry.new();
     console.log(arrayToken.address);
 
 }
