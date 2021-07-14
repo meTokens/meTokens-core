@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./BancorZeroFormula.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IUpdater.sol";
 import "../interfaces/ICurveValueSet.sol";
-import "../interfaces/IMigrations.sol";
 import "../libs/WeightedAverage.sol";
 import "../utils/Power.sol";
 
@@ -13,7 +14,7 @@ import "../utils/Power.sol";
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula {
+abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     uint256 private BASE_X = PRECISION;
 
@@ -36,18 +37,17 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula {
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
     IHub public hub;
-    IMigrations public migrations;
     IUpdater public updater;
 
     constructor(
         address _hub,
-        address _migrations,
         address _updater
     ) {
         hub = IHub(_hub);
-        migrations = IMigrations(_migrations);
         updater = IUpdater(_updater);
     }
+
+    function var(address _updater)
 
 
     /// @inheritdoc ICurveValueSet
@@ -178,6 +178,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula {
         
         if (_reconfiguring) {
             // TODO: this is passed with arguments, more succinct way?
+            
             // (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live

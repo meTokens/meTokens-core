@@ -30,7 +30,7 @@ abstract contract CurveRegistry is ICurveRegistry {
         address _formula,
         address _valueSet
     ) external override {
-        require(msg.sender == dao, "!dao");
+        // require(msg.sender == dao, "!dao");
         require(!namedCurves[_name], "Curve name already chosen");
 
         // Add curve details to storage
