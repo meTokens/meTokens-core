@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./BancorZeroFormula.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IUpdater.sol";
-import "../interfaces/ICurveValueSet.sol";
 import "../libs/WeightedAverage.sol";
 import "../utils/Power.sol";
+
+import "../interfaces/ICurveValueSet.sol";
+// import "../interfaces/IUpdater.sol";
 
 
 /// @title Bancor curve registry and calculator
@@ -36,18 +36,14 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
-    IHub public hub;
-    IUpdater public updater;
+    // IUpdater public updater;
 
     constructor(
-        address _hub,
-        address _updater
+        // address _updater
     ) {
-        hub = IHub(_hub);
-        updater = IUpdater(_updater);
+        // updater = IUpdater(_updater);
     }
 
-    function var(address _updater)
 
 
     /// @inheritdoc ICurveValueSet
@@ -55,7 +51,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external override {
-        require(msg.sender == address(hub) || msg.sender == address(updater), "!hub && !updater");
+        // TODO: access control
 
         (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint32));
         require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
@@ -74,7 +70,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external override {
-        require(msg.sender == address(updater), "!updater");
+        // TODO: access control
 
         (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
         require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
@@ -175,10 +171,11 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             _supply,
             _balancePooled
         );
-        
+    }
+        /*
         if (_reconfiguring) {
             // TODO: this is passed with arguments, more succinct way?
-            
+
             // (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
@@ -203,6 +200,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             }
         }
     }
+    */
 
     // TODO: natspec
     function finishUpdate(uint256 _hubId) external override {
