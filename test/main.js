@@ -1,6 +1,8 @@
 const { network: { provider }, expect } = require('hardhat');
 
 const CurveRegistry = artifacts.require("CurveRegistry");
+const VaultRegistry = artifacts.require("VaultRegistry");
+const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 
 const fs = require('fs')
 require('dotenv').config();
@@ -9,9 +11,10 @@ require('dotenv').config();
 
 async function main() {
 
-    // deploy array token
+    // deploy registries
     let curveRegistry = await CurveRegistry.new();
-    console.log(arrayToken.address);
+    let vaultRegistry = await VaultRegistry.new();
+    let bancorZeroValueSet = await BancorZeroValueSet.new();
 
 }
 
