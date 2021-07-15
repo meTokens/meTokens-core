@@ -11,7 +11,7 @@ interface ICurveRegistry {
         string calldata _name,
         address _formula,
         address _valueSet
-    ) external;
+    ) external returns (uint256);
 
     /// @notice TODO
     /// @param _curveId TODO

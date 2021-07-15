@@ -8,7 +8,7 @@ import "../interfaces/ICurveRegistry.sol";
 /// @notice This contract keeps track of active curve types and their base values
 abstract contract CurveRegistry is ICurveRegistry {
 
-    event RegisterCurve(string name, address formula, address values);
+    event RegisterCurve(uint256 id, string name, address formula, address values);
     event DeactivateCurve(uint256 curveId);
 
     address public dao = address(0x0); // TODO
@@ -29,7 +29,7 @@ abstract contract CurveRegistry is ICurveRegistry {
         string calldata _name,
         address _formula,
         address _valueSet
-    ) external override {
+    ) external override returns (uint256) {
         // require(msg.sender == dao, "!dao");
         require(!namedCurves[_name], "Curve name already chosen");
 
@@ -38,7 +38,8 @@ abstract contract CurveRegistry is ICurveRegistry {
         curves[++curveCount] = curveDetails;
         namedCurves[_name] = true;
     
-        emit RegisterCurve(_name, _formula, _valueSet);
+        emit RegisterCurve(curveCount, _name, _formula, _valueSet);
+        return curveCount;
     }
 
 
