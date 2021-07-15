@@ -7,6 +7,10 @@ describe("Hub.sol", function () {
 
     });
 
+    it("Create new hub", async function () {
+        // Do something
+    });
+
     it("Register new hub", async function () {
         // Do something
     });
