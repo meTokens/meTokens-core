@@ -1,11 +1,13 @@
-const { network: { provider }, expect } = require('hardhat');
+require("hardhat");
+
+const fs = require('fs')
+require('dotenv').config();
+
 
 const CurveRegistry = artifacts.require("CurveRegistry");
 const VaultRegistry = artifacts.require("VaultRegistry");
 const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 
-const fs = require('fs')
-require('dotenv').config();
 
 
 
