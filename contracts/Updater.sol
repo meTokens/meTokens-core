@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/IUpdater.sol";
-import "../interfaces/IRecollateralization.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IVaultRegistry.sol";
-import "../interfaces/ICurveRegistry.sol";
-import "../interfaces/ICurveValueSet.sol";
+import "./interfaces/IUpdater.sol";
+import "./interfaces/IRecollateralization.sol";
+import "./interfaces/IHub.sol";
+import "./interfaces/IVaultRegistry.sol";
+import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/ICurveValueSet.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
