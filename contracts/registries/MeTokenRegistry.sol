@@ -6,7 +6,6 @@ import "../MeToken.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
-// import "../interfaces/IERC20.sol";
 import "../interfaces/ICurveValueSet.sol";
 
 /// @title meToken registry
