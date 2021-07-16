@@ -164,3 +164,6 @@ CompilerError: Stack too deep, try removing local variables.
 #### 7.14
 * [ ] Within BancorZeroValueSet.sol, is there a `updater` replacement that can fetch `startTime` & `endTime`?
 * [ ] Access control for `registerValueSet()` within BancorZeroValueSet.sol
+
+#### 7.15
+* [ ] Move curve valuesets / formulas into nested "valuesets"/"formulas" directories
