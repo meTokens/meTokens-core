@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../utils/Power.sol";
+import "../../utils/Power.sol";
 
 /// @title Bancor formula by Bancor
 /// @author Carl Farterson (@carlfarterson), originally by Slava Blasanov
