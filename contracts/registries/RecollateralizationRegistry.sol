@@ -13,10 +13,10 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     event Unapprove(address factory);
 
     uint256 private _recollateralizationCount;
-	mapping (address => RecollaterlizationDetails) recollateralizations;
+	mapping (address => Details) recollateralizations;
     mapping (address => bool) private approved;
 
-    struct RecollaterlizationDetails {
+    struct Details {
         address recollateralization;
         address targetVault;
         address collateralTokenStart;
@@ -32,7 +32,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     ) external override {
         require(approved[msg.sender], "!approved");
         // Add recollateralization details to storage
-        RecollaterlizationDetails memory r = RecollaterlizationDetails(
+        Details memory r = Details(
             _recollateralization,
             _targetVault,
             _collateralTokenStart,
@@ -63,8 +63,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     }
 
 
-    function deactivateRecollateralization() external returns(uint256) {}
-    function reactivateRecollateralization() external returns(uint256) {}
+    function deactivate() external returns(uint256) {}
 
     // TODO: function isActiveRecollateralization ?
 

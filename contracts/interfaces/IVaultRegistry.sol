@@ -33,7 +33,7 @@ interface IVaultRegistry {
     /// @notice TODO
     /// @param _vault TODO
     /// @return TODO
-    function isActiveVault(address _vault) external view returns (bool);
+    function isActive(address _vault) external view returns (bool);
 
 
 

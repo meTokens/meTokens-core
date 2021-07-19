@@ -14,15 +14,13 @@ abstract contract CurveRegistry is ICurveRegistry {
     address public dao = address(0x0); // TODO
     uint256 private curveCount;
     
-    mapping (string => bool) private namedCurves;
-
-    struct CurveDetails {
+    struct Details {
         string name; // BancorZero
         address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
         address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
         bool active;
     }
-    mapping (uint256 => CurveDetails) private curves;
+    mapping (uint256 => Details) private curves;
 
     /// @inheritdoc ICurveRegistry
     function register(
@@ -31,12 +29,10 @@ abstract contract CurveRegistry is ICurveRegistry {
         address _valueSet
     ) external override returns (uint256) {
         // require(msg.sender == dao, "!dao");
-        require(!namedCurves[_name], "Curve name already chosen");
 
         // Add curve details to storage
-        CurveDetails memory curveDetails = CurveDetails(_name, _formula, _valueSet, true);
-        curves[++curveCount] = curveDetails;
-        namedCurves[_name] = true;
+        Details memory details = Details(_name, _formula, _valueSet, true);
+        curves[++curveCount] = details;
     
         emit Register(curveCount, _name, _formula, _valueSet);
         return curveCount;
@@ -48,9 +44,9 @@ abstract contract CurveRegistry is ICurveRegistry {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         // TODO: is this memory or storage?
-        CurveDetails storage curveDetails = curves[_curveId];
-        require(curveDetails.active, "curve not active");
-        curveDetails.active = false;
+        Details storage details = curves[_curveId];
+        require(details.active, "curve not active");
+        details.active = false;
         emit Deactivate(_curveId);
     }
 
@@ -59,8 +55,9 @@ abstract contract CurveRegistry is ICurveRegistry {
         
     }
 
-    function isActive(string memory name) external view returns (bool) {
-        return namedCurves[name];
+    function isActive(uint256 _curveId) external view returns (bool) {
+        Details memory details = curves[_curveId];
+        return details.active;
     }
 
     /// @inheritdoc ICurveRegistry
@@ -77,11 +74,11 @@ abstract contract CurveRegistry is ICurveRegistry {
         bool active
     ) {
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
-        CurveDetails memory curveDetails = curves[_curveId];
+        Details memory details = curves[_curveId];
         
-        name = curveDetails.name; // BancorZero
-        formula = curveDetails.formula; // see BancorZeroFormula.sol as an example of an address that could be registered
-        valueSet = curveDetails.valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
-        active = curveDetails.active;
+        name = details.name; // BancorZero
+        formula = details.formula; // see BancorZeroFormula.sol as an example of an address that could be registered
+        valueSet = details.valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
+        active = details.active;
     }
 }

@@ -8,9 +8,9 @@ describe("VaultRegistry.sol", function () {
         let vaultRegistry = await VaultRegistry.new();
     });
 
-    describe("Register vault", function () {
+    describe("Register()", function () {
 
-        it("Emits a RegisterVault(string, address, address", async function () {
+        it("Emits a Register(string, address, address)", async function () {
             await expect(
                 vaultRegistry.registerVault("Test Vault", vault.address, factory.address)
             ).to.emit(vaultRegistry, "RegisterVault")
@@ -19,17 +19,24 @@ describe("VaultRegistry.sol", function () {
 
     });
     
-    it("Approve vault factory", async function () {
+    it("approveFactory()", async function () {
         // Do something
         it("Vault is not yet approved", async function () {
             await expect(
                 vaultRegistry.isApprovedVaultFactory("0x0")
-            ).to
+            ).to.
         });
 
     });
 
-    it("Unapprove vault factory", async function () {
+    it("unapproveFactory()", async function () {
         // Do something
+        it("Uninitialized vault is already unapproved", async function () {
+            await expect(
+                vaultRegistry.isApprovedVaultFactory("0x0")
+            ).to.revert;
+        });
     });
+
+    
 });

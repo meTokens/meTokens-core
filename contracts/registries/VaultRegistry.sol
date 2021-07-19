@@ -10,16 +10,16 @@ import "../interfaces/IVaultRegistry.sol";
 contract VaultRegistry is IVaultRegistry {
 
     event Register(string name, address vault, address factory);
-    event DeactivateVault(address vault);
+    event Deactivate(address vault);
     event Approve(address factory);
     event Unapprove(address factory);
 
-    mapping (address => VaultDetails) private vaults;
+    mapping (address => Details) private vaults;
     // NOTE: approved vault factories could be for
     // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
-	mapping (address => bool) private approvedFactories;
+	mapping (address => bool) private approved;
 
-    struct VaultDetails {
+    struct Details {
         string name;
         address factory; // NOTE: references factories/VaultFactories/{}.sol
         bool active;  // NOTE: can be inactive after vault migration
@@ -31,10 +31,10 @@ contract VaultRegistry is IVaultRegistry {
         address _vault,
         address _factory
     ) external override {
-        require(approvedFactories[msg.sender], "Only vault factories can register vaults");
+        require(approved[msg.sender], "Only vault factories can register vaults");
         // Add vault details to storage
-        VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);
-        vaults[_vault] = vaultDetails;
+        Details memory details = Details(_name, _factory, true);
+        vaults[_vault] = details;
 
         emit Register(_name, _vault, _factory);
     }
@@ -42,25 +42,25 @@ contract VaultRegistry is IVaultRegistry {
     /// @inheritdoc IVaultRegistry
     function approve(address _factory) external override {
         // TODO: access control
-        require(!approvedFactories[_factory], "Factory already approved");
-        approvedFactories[_factory] = true;
+        require(!approved[_factory], "Factory already approved");
+        approved[_factory] = true;
         emit Approve(_factory);
     }
 
 
     /// @inheritdoc IVaultRegistry
-    function deactivateVault(address _vault) external override {
+    function deactivate(address _vault) external override {
         // TODO: access control
-        VaultDetails storage vaultDetails = vaults[_vault];
-        require(vaultDetails.active != false, "Vault not active");
-        vaultDetails.active = false;
+        Details storage details = vaults[_vault];
+        require(details.active != false, "Vault not active");
+        details.active = false;
     }
 
     /// @inheritdoc IVaultRegistry
     function unapprove(address _factory) external override {
         // TODO: access control
-        require(approvedFactories[_factory], "Factory not approved");
-        approvedFactories[_factory] = false;
+        require(approved[_factory], "Factory not approved");
+        approved[_factory] = false;
         emit Unapprove(_factory);
     }
 
@@ -69,16 +69,15 @@ contract VaultRegistry is IVaultRegistry {
 
 
     /// @inheritdoc IVaultRegistry
-    function isActiveVault(address _vault) external view override returns (bool) {
-        // TODO: import VaultDetails struct
-        VaultDetails memory vaultDetails = vaults[_vault];
-        return vaultDetails.active;
+    function isActive(address _vault) external view override returns (bool) {
+        Details memory details = vaults[_vault];
+        return details.active;
     }
 
 
     /// @inheritdoc IVaultRegistry
-    function isApprovedVaultFactory(address _factory) external view override returns (bool) {
-        return approvedFactories[_factory];
+    function isApproved(address _factory) external view override returns (bool) {
+        return approved[_factory];
     }
 
     
@@ -88,9 +87,9 @@ contract VaultRegistry is IVaultRegistry {
         address factory,
         bool active
     ) {
-        VaultDetails memory vaultDetails = vaults[vault];
-        name = vaultDetails.name;
-        factory = vaultDetails.factory;
-        active = vaultDetails.active;
+        Details memory details = vaults[vault];
+        name = details.name;
+        factory = details.factory;
+        active = details.active;
     }
 }

@@ -27,11 +27,11 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
 
-    mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
+    mapping (address => Details) private meTokens; // key pair: ERC20 address
     mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
-    struct MeTokenDetails {
+    struct Details {
         address owner;
         uint256 hubId;
 		uint256 balancePooled;
@@ -70,7 +70,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         );
 
         // Add meToken to registry
-        meTokens[meTokenAddr] = MeTokenDetails({
+        meTokens[meTokenAddr] = Details({
             owner: msg.sender,
             hubId: _hubId,
             balancePooled: _collateralDeposited,
@@ -105,10 +105,10 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
     /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _meToken, address _newOwner) external override {
         require(!isMeTokenOwner(_newOwner), "_newOwner already owns a meToken");
-        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
-        require(msg.sender == meTokenDetails.owner, "!owner");
+        Details storage details = meTokens[_meToken];
+        require(msg.sender == details.owner, "!owner");
 
-        meTokenDetails.owner = _newOwner;
+        details.owner = _newOwner;
         meTokenOwners[msg.sender] = address(0);
         meTokenOwners[_newOwner] = _meToken;
 
@@ -118,11 +118,11 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
-        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        Details storage details = meTokens[_meToken];
         if (add) {
-            meTokenDetails.balancePooled += _amount;
+            details.balancePooled += _amount;
         } else {
-            meTokenDetails.balancePooled -= _amount;
+            details.balancePooled -= _amount;
         }
         
         emit IncrementBalancePooled(add, _meToken, _amount);
@@ -131,11 +131,11 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
-        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        Details storage details = meTokens[_meToken];
         if (add) {
-            meTokenDetails.balanceLocked += _amount;
+            details.balanceLocked += _amount;
         } else {
-            meTokenDetails.balanceLocked -= _amount;
+            details.balanceLocked -= _amount;
         }
         
         emit IncrementBalanceLocked(add, _meToken, _amount);
@@ -164,12 +164,12 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         uint256 balanceLocked,
         bool resubscribing
     ) {
-        MeTokenDetails memory meTokenDetails = meTokens[_meToken];
-        owner = meTokenDetails.owner;
-        hubId = meTokenDetails.hubId;
-        balancePooled = meTokenDetails.balancePooled;
-        balanceLocked = meTokenDetails.balanceLocked;
-        resubscribing = meTokenDetails.resubscribing;
+        Details memory details = meTokens[_meToken];
+        owner = details.owner;
+        hubId = details.hubId;
+        balancePooled = details.balancePooled;
+        balanceLocked = details.balanceLocked;
+        resubscribing = details.resubscribing;
     }
 
     // TODO
