@@ -46,7 +46,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
 
 
     /// @inheritdoc ICurveValueSet
-	function registerValueSet(
+	function register(
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external override {
@@ -65,13 +65,15 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
 
 
     /// @inheritdoc ICurveValueSet
-    function registerTargetValueSet(
+    function registerTarget(
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external override {
         // TODO: access control
 
         (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
+
+        // TODO: also require targetReserveWeight != currentReserveWeight
         require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         // New baseY = (old baseY * oldR) / newR

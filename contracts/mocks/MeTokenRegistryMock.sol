@@ -9,7 +9,7 @@ contract MeTokenRegistryMock {
     }
 
     // NOTE: use default values of "", _owner, "", 0
-    function registerMeToken(
+    function register
         string calldata _name,
         address _owner,
         string calldata _symbol,

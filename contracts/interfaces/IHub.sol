@@ -22,7 +22,7 @@ interface IHub {
     /// @param _refundRatio TODO
     /// @param _encodedValueSetArgs TODO
     /// @param _encodedVaultAdditionalArgs TODO
-    function registerHub(
+    function register(
         string calldata _name,
         address _owner,
         string calldata _vaultName,

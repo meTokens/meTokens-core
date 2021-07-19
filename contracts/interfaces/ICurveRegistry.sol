@@ -7,7 +7,7 @@ interface ICurveRegistry {
     /// @param _name TODO
     /// @param _formula TODO
     /// @param _valueSet TODO
-    function registerCurve(
+    function register(
         string calldata _name,
         address _formula,
         address _valueSet
@@ -15,7 +15,7 @@ interface ICurveRegistry {
 
     /// @notice TODO
     /// @param _curveId TODO
-    function deactivateCurve(uint256 _curveId) external;
+    function deactivate(uint256 _curveId) external;
     
     // function approveFormula(address _formula) external;
     

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IRecollateralizationRegistry {
-    function registerRecollateralization(
+    function register(
         address _recollateralization,
         address _targetVault,
         address _collateralTokenStart,

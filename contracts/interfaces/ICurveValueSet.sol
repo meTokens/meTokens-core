@@ -25,7 +25,7 @@ interface ICurveValueSet {
     ///      that may contain different ValueSet arguments
     /// @param _hubId               unique hub identifier
     /// @param _encodedValueSet     encoded ValueSet arguments
-    function registerValueSet(
+    function register(
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external;
@@ -33,7 +33,7 @@ interface ICurveValueSet {
     /// @notice TODO
     /// @param _hubId               unique hub identifier
     /// @param _encodedValueSet     encoded target ValueSet arguments
-    function registerTargetValueSet(
+    function registerTarget(
         uint256 _hubId,
         bytes calldata _encodedValueSet
     ) external;

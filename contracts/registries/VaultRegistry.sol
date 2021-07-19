@@ -9,7 +9,7 @@ import "../interfaces/IVaultRegistry.sol";
 /// @notice Keeps track of all active vaults and available vault factories 
 contract VaultRegistry is IVaultRegistry {
 
-    event RegisterVault(string name, address vault, address factory);
+    event Register(string name, address vault, address factory);
     event DeactivateVault(address vault);
     event ApproveVaultFactory(address factory);
     event UnapproveVaultFactory(address factory);
@@ -26,7 +26,7 @@ contract VaultRegistry is IVaultRegistry {
     }
 
     /// @inheritdoc IVaultRegistry
-    function registerVault(
+    function register(
         string calldata _name,
         address _vault,
         address _factory
@@ -36,7 +36,7 @@ contract VaultRegistry is IVaultRegistry {
         VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);
         vaults[_vault] = vaultDetails;
 
-        emit RegisterVault(_name, _vault, _factory);
+        emit Register(_name, _vault, _factory);
     }
 
     /// @inheritdoc IVaultRegistry

@@ -13,7 +13,7 @@ import "../interfaces/ICurveValueSet.sol";
 /// @notice This contract tracks basic information about all meTokens
 abstract contract MeTokenRegistry is IMeTokenRegistry {
 
-    event RegisterMeToken(
+    event Register(
         address indexed meToken,
         address indexed owner,
         string name,
@@ -45,7 +45,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function registerMeToken(
+    function register(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
@@ -65,7 +65,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         );
 
         // Create meToken erc20 contract
-        address meTokenAddr = meTokenFactory.createMeToken(
+        address meTokenAddr = meTokenFactory.create(
             msg.sender, _name, _symbol
         );
 
@@ -98,7 +98,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
         MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
 
-        emit RegisterMeToken(meTokenAddr, msg.sender, _name, _symbol, _hubId);
+        emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
 

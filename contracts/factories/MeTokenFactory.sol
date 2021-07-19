@@ -36,6 +36,8 @@ contract MeTokenFactory {
         // TODO: Validate
         MeToken meToken = new MeToken(_name, _symbol);
 
+        // TODO: register meToken
+
         emit Create(address(meToken));
         return address(meToken);
     }

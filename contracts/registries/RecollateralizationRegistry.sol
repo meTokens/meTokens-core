@@ -8,9 +8,9 @@ import "../interfaces/IRecollateralizationRegistry.sol";
 /// @notice Keeps track of all used Recollateralization strategies 
 abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
 
-    event RegisterRecollateralization(address recollateralization);
-    event ApproveRecollateralizationFactory(address factory);
-    event UnapproveRecollateralizationFactory(address factory);
+    event Register(address recollateralization);
+    event ApproveFactory(address factory);
+    event UnapproveFactory(address factory);
 
     uint256 private _recollateralizationCount;
 	mapping (address => RecollaterlizationDetails) recollateralizations;
@@ -24,7 +24,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         bool active; // TODO: is this needed?
     }
 
-    function registerRecollateralization(
+    function Register(
         address _recollateralization,
         address _targetVault,
         address _collateralTokenStart,
@@ -41,7 +41,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         );
         recollateralizations[_recollateralization] = r;
 
-        emit RegisterRecollateralization(_recollateralization);
+        emit Register(_recollateralization);
     }
 
     function approveRecollateralizationFactory(address _factory) external override {
@@ -51,11 +51,11 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         emit ApproveRecollateralizationFactory(_factory);
     }
 
-    function unapproveRecollateralizationFactory(address _factory) external override {
+    actory(address _factory) external override {
         // TODO: access control
         require(approvedRecollateralizationFactories[_factory], "!approved");
-        approvedRecollateralizationFactories[_factory] = false;
-        emit UnapproveRecollateralizationFactory(_factory);
+        approvenFactories[_factory] = false;
+        emit UnapproveFactory(_factory);
     }
 
     function deactivateRecollateralization() external returns(uint256) {}

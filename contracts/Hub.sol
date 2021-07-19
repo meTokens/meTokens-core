@@ -15,7 +15,7 @@ import "./interfaces/IUpdater.sol";
 ///     and their respective subscribed meTokens 
 abstract contract Hub is IHub {
 
-    event RegisterHub(string name, address indexed vault);  // TODO: decide on arguments
+    event Register(string name, address indexed vault);  // TODO: decide on arguments
     event SetStatus(uint256 hubId, uint256 status);
     event DeactivateHub(uint256 hubId);
 
@@ -63,7 +63,7 @@ abstract contract Hub is IHub {
     }
 
     /// @inheritdoc IHub
-    function registerHub(
+    function register(
         string calldata _name,
         address _owner,
         string calldata _vaultName,
@@ -84,15 +84,15 @@ abstract contract Hub is IHub {
         // TODO: validate encoding with an additional parameter in function call (ie. hubCount)
         // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
         // abi.encodePacked();
-        ICurveValueSet(_curve).registerValueSet(hubCount, _encodedValueSetArgs);
+        ICurveValueSet(_curve).register(hubCount, _encodedValueSetArgs);
         
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        address vault = IVaultFactory(_vaultFactory).createVault(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        HubDetails memory hubDetails = HubDetails(
+        hubs[hubCount++] = HubDetails(
             _name,
             _owner,
             vault,
@@ -100,7 +100,6 @@ abstract contract Hub is IHub {
             _refundRatio,
             Status.ACTIVE
         );
-        hubs[hubCount++] = hubDetails;
     }
     
 

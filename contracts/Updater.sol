@@ -90,7 +90,7 @@ abstract contract Updater is IUpdater, Ownable {
             (, , address valueSet, bool active) = curveRegistry.getDetails(_targetCurveId);
 
             // TODO
-            // require(curveRegistry.isRegisteredCurve(_targetCurve), "!registered");
+            // require(curveRegistry.isRegistered(_targetCurve), "!registered");
             // require(
             //     _targetCurveId != hub.getCurve(_hubId),
             //     "Cannot set target curve to the same curve ID"
@@ -116,13 +116,13 @@ abstract contract Updater is IUpdater, Ownable {
 
         //     // curve migrating, point to new valueSet
         //     if (_targetCurve =! address(0)) {
-        //         ICurveValueSet(_targetCurve).registerValueSet(
+        //         ICurveValueSet(_targetCurve).register(
         //             _hubId,
         //             _targetEncodedValueSet
         //         );
         //     // We're still using the same curve, start reconfiguring the value set
         //     } else {
-        //         ICurveValueSet(hub.getCurve(_hubId)).registerTargetValueSet(
+        //         ICurveValueSet(hub.getCurve(_hubId)).registerTarget(
         //             _hubId,
         //             _targetEncodedValueSet
         //         );
@@ -140,7 +140,10 @@ abstract contract Updater is IUpdater, Ownable {
         // );
 
 
-        UpdateDetails storage updateDetails = updates[_hubId];
+        updates[_hubId] = UpdateDetails({
+            migrating: address(0),
+            recollateralizating
+        });
         updateDetails.reconfiguring =      reconfiguring;
         // TODO
         updateDetails.migrating =          address(0); // _targetCurveId;

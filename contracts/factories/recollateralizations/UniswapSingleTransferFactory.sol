@@ -40,7 +40,7 @@ contract UniswapSingleTransferFactory {
         );
 
         // Add recollateralization to recollateralizationRegistry
-        recollateralizationRegistry.registerRecollateralization(
+        recollateralizationRegistry.register(
             recollateralizationAddress,
             _targetVault,
             IVault(_targetVault).getCollateralAsset(),

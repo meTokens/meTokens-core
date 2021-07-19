@@ -8,8 +8,8 @@ import "../interfaces/ICurveRegistry.sol";
 /// @notice This contract keeps track of active curve types and their base values
 abstract contract CurveRegistry is ICurveRegistry {
 
-    event RegisterCurve(uint256 id, string name, address formula, address values);
-    event DeactivateCurve(uint256 curveId);
+    event Register(uint256 id, string name, address formula, address values);
+    event Deactivate(uint256 curveId);
 
     address public dao = address(0x0); // TODO
     uint256 private curveCount;
@@ -25,7 +25,7 @@ abstract contract CurveRegistry is ICurveRegistry {
     mapping (uint256 => CurveDetails) private curves;
 
     /// @inheritdoc ICurveRegistry
-    function registerCurve(
+    function register(
         string calldata _name,
         address _formula,
         address _valueSet
@@ -38,7 +38,7 @@ abstract contract CurveRegistry is ICurveRegistry {
         curves[++curveCount] = curveDetails;
         namedCurves[_name] = true;
     
-        emit RegisterCurve(curveCount, _name, _formula, _valueSet);
+        emit Register(curveCount, _name, _formula, _valueSet);
         return curveCount;
     }
 
@@ -51,11 +51,11 @@ abstract contract CurveRegistry is ICurveRegistry {
         CurveDetails storage curveDetails = curves[_curveId];
         require(curveDetails.active, "curve not active");
         curveDetails.active = false;
-        emit DeactivateCurve(_curveId);
+        emit Deactivate(_curveId);
     }
 
 
-    function isRegisteredCurve(address curve) external view returns (bool) {
+    function isRegistered(address curve) external view returns (bool) {
         
     }
 

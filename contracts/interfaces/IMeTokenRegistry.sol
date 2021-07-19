@@ -8,7 +8,7 @@ interface IMeTokenRegistry {
     /// @param _symbol TODO
     /// @param _hubId TODO
     /// @param _collateralDeposited TODO
-    function registerMeToken(
+    function register(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,

@@ -51,7 +51,7 @@ abstract contract SingleAssetFactory is IVaultFactory {
         );
 
         // Add vault to vaultRegistry
-        vaultRegistry.registerVault(_name, vaultAddress, address(this));
+        vaultRegistry.register(_name, vaultAddress, address(this));
 
         deployCount++;
         emit Create(vaultAddress);
