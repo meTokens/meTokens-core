@@ -48,7 +48,7 @@ abstract contract Hub is IHub {
 
     constructor(
         address _vaultRegistry,
-        address _curveRegistry,
+        address _curveRegistry
     ) {
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);

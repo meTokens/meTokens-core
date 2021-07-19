@@ -4,13 +4,16 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../interfaces/ICurveValueSet.sol";
+import "../formulas/BancorZeroFormula.sol";
+import "../../libs/WeightedAverage.sol";
 // import "../interfaces/IUpdater.sol";
+
 
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-abstract contract BancorZeroValueSet is ICurveValueSet, Ownable {
+abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     uint256 private BASE_X = PRECISION;
 
