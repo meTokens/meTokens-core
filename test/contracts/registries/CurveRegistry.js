@@ -13,7 +13,14 @@ describe("CurveRegistry.sol", function () {
         let valueSet = BancorZeroValueSet.new();
     });
 
-    describe("Register new curve", function () {
+    describe("register()", function () {
+
+        it("Reverts when the curve name is already chosen", async function () {
+            await curveRegistry.registerCurve("Test Curve", formula, valueSet)
+            await expect(
+                curveRegistry.registerCurve("Test Curve", formula, valueSet)
+            ).to.be.reverted;
+        });
         
         it("Emits a 'RegisterCurve' event", async function () {
             await expect(
@@ -21,7 +28,7 @@ describe("CurveRegistry.sol", function () {
             ).to.emit(curveRegistry, "")
         });
         
-        it("Returns a uint256 of the curve ID", async function () {
+        it("Returns uint256 = curveID", async function () {
             await expect(
                 curveRegistry.registerCurve("Test Curve", formula, valueSet)
             ).to.equal(1);
@@ -30,7 +37,7 @@ describe("CurveRegistry.sol", function () {
     });
 
 
-    it("Deactivate existing curve", async function () {
+    it("deactivate()", async function () {
         // Do something
     });
 });
