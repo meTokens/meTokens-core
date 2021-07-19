@@ -1,14 +1,6 @@
 # meTokens-core
 🎛  Core smart contracts of meTokens
 
-```
-CompilerError: Stack too deep, try removing local variables.
-  --> contracts/Foundry.sol:80:23:
-   |
-80 |         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
-   |                       ^^^^^^^^^^^^^^^^^^^^
-```
-
 ## Relationship between Hub & Vault
 ### Hub
 * Stores no collateral assets
