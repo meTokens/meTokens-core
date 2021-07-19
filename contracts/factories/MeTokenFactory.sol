@@ -14,7 +14,7 @@ contract MeTokenFactory {
         _;
     }
 
-    event CreateMeToken(address meToken);
+    event Create(address meToken);
 
     address public meTokenRegistry;
     
@@ -26,7 +26,7 @@ contract MeTokenFactory {
     /// @param _owner owner of meToken
     /// @param _name name of meToken
     /// @param _symbol symbol of meToken
-    function createMeToken(
+    function create(
         address _owner,
         string calldata _name,
         string calldata _symbol
@@ -36,7 +36,7 @@ contract MeTokenFactory {
         // TODO: Validate
         MeToken meToken = new MeToken(_name, _symbol);
 
-        emit CreateMeToken(address(meToken));
+        emit Create(address(meToken));
         return address(meToken);
     }
 

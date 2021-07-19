@@ -19,7 +19,7 @@ abstract contract SingleAssetFactory is IVaultFactory {
         _;
     }
 
-    event CreateVault(address vault);
+    event Create(address vault);
 
     uint256 private deployCount;
     address public hub;
@@ -33,7 +33,7 @@ abstract contract SingleAssetFactory is IVaultFactory {
     }
     
     /// @inheritdoc IVaultFactory
-    function createVault(
+    function create(
         string calldata _name,
         address _owner,
         address _collateralAsset,
@@ -54,7 +54,7 @@ abstract contract SingleAssetFactory is IVaultFactory {
         vaultRegistry.registerVault(_name, vaultAddress, address(this));
 
         deployCount++;
-        emit CreateVault(vaultAddress);
+        emit Create(vaultAddress);
         return vaultAddress;
     }
 }

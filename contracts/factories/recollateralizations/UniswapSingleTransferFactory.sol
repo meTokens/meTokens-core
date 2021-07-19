@@ -10,7 +10,7 @@ import "../../interfaces/IVault.sol";
 
 contract UniswapSingleTransferFactory {
 
-    event CreateRecollateralization(address recollateralization);
+    event Create(address recollateralization);
 
     uint256 public deployCount;
     address public hub;
@@ -24,7 +24,7 @@ contract UniswapSingleTransferFactory {
     }
     
 
-    function createRecollateralization(
+    function create(
         string calldata _name,
         address _owner,
         address _targetVault,
@@ -48,7 +48,7 @@ contract UniswapSingleTransferFactory {
         );
 
         deployCount++;
-        emit CreateRecollateralization(recollateralizationAddress);
+        emit Create(recollateralizationAddress);
         return recollateralizationAddress;
     }
 }

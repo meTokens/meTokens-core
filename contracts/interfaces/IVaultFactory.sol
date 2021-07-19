@@ -9,7 +9,7 @@ interface IVaultFactory {
     /// @param _collateralAsset address of vault collateral asset
     /// @param _encodedVaultAdditionalArgs Additional arguments passed to create a vault
     /// @return address of new vault
-    function createVault(
+    function create(
         string calldata _name,
         address _owner,
         address _collateralAsset,
