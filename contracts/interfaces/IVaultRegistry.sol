@@ -14,15 +14,21 @@ interface IVaultRegistry {
     
     /// @notice TODO
     /// @param _factory TODO
-    function approveVaultFactory(address _factory) external;
-
-    /// @notice TODO
-    /// @param _vault TODO    
-    function deactivateVault(address _vault) external;
+    function approve(address _factory) external;
 
     /// @notice TODO
     /// @param _factory TODO
-    function unapproveVaultFactory(address _factory) external;
+    function unapprove(address _factory) external;
+
+    /// @notice TODO
+    /// @param _factory TODO
+    /// @return TODO
+    function isApproved(address _factory) external view returns (bool);
+
+    /// @notice TODO
+    /// @param _vault TODO    
+    function deactivate(address _vault) external;
+
 
     /// @notice TODO
     /// @param _vault TODO
@@ -30,10 +36,6 @@ interface IVaultRegistry {
     function isActiveVault(address _vault) external view returns (bool);
 
 
-    /// @notice TODO
-    /// @param _factory TODO
-    /// @return TODO
-    function isApprovedVaultFactory(address _factory) external view returns (bool);
 
     /// @notice TODO
     /// @param vault TODO

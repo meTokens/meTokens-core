@@ -11,13 +11,13 @@ contract VaultRegistry is IVaultRegistry {
 
     event Register(string name, address vault, address factory);
     event DeactivateVault(address vault);
-    event ApproveVaultFactory(address factory);
-    event UnapproveVaultFactory(address factory);
+    event Approve(address factory);
+    event Unapprove(address factory);
 
     mapping (address => VaultDetails) private vaults;
     // NOTE: approved vault factories could be for
     // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
-	mapping (address => bool) private approvedVaultFactories;
+	mapping (address => bool) private approvedFactories;
 
     struct VaultDetails {
         string name;
@@ -31,7 +31,7 @@ contract VaultRegistry is IVaultRegistry {
         address _vault,
         address _factory
     ) external override {
-        require(approvedVaultFactories[msg.sender], "Only vault factories can register vaults");
+        require(approvedFactories[msg.sender], "Only vault factories can register vaults");
         // Add vault details to storage
         VaultDetails memory vaultDetails = VaultDetails(_name, _factory, true);
         vaults[_vault] = vaultDetails;
@@ -40,11 +40,11 @@ contract VaultRegistry is IVaultRegistry {
     }
 
     /// @inheritdoc IVaultRegistry
-    function approveVaultFactory(address _factory) external override {
+    function approve(address _factory) external override {
         // TODO: access control
-        require(!approvedVaultFactories[_factory], "Factory already approved");
-        approvedVaultFactories[_factory] = true;
-        emit ApproveVaultFactory(_factory);
+        require(!approvedFactories[_factory], "Factory already approved");
+        approvedFactories[_factory] = true;
+        emit Approve(_factory);
     }
 
 
@@ -57,11 +57,11 @@ contract VaultRegistry is IVaultRegistry {
     }
 
     /// @inheritdoc IVaultRegistry
-    function unapproveVaultFactory(address _factory) external override {
+    function unapprove(address _factory) external override {
         // TODO: access control
-        require(approvedVaultFactories[_factory], "Factory not approved");
-        approvedVaultFactories[_factory] = false;
-        emit UnapproveVaultFactory(_factory);
+        require(approvedFactories[_factory], "Factory not approved");
+        approvedFactories[_factory] = false;
+        emit Unapprove(_factory);
     }
 
     // TODO: are reactivate funcs needed?
@@ -78,7 +78,7 @@ contract VaultRegistry is IVaultRegistry {
 
     /// @inheritdoc IVaultRegistry
     function isApprovedVaultFactory(address _factory) external view override returns (bool) {
-        return approvedVaultFactories[_factory];
+        return approvedFactories[_factory];
     }
 
     

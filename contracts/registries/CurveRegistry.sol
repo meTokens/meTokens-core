@@ -44,7 +44,7 @@ abstract contract CurveRegistry is ICurveRegistry {
 
 
     /// @inheritdoc ICurveRegistry
-    function deactivateCurve(uint256 _curveId) external override {
+    function deactivate(uint256 _curveId) external override {
         // TODO: access control
         require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
         // TODO: is this memory or storage?
@@ -57,6 +57,10 @@ abstract contract CurveRegistry is ICurveRegistry {
 
     function isRegistered(address curve) external view returns (bool) {
         
+    }
+
+    function isActive(string memory name) external view returns (bool) {
+        return namedCurves[name];
     }
 
     /// @inheritdoc ICurveRegistry

@@ -141,17 +141,14 @@ abstract contract Updater is IUpdater, Ownable {
 
 
         updates[_hubId] = UpdateDetails({
-            migrating: address(0),
-            recollateralizating
+            // TODO: handle migrating to _targetCurveId, which is uint
+            migrating: address(0), // targetCurveId
+            recollateralizating: _targetVault,
+            shifting: _targetRefundRatio,
+            startTime: _startTime,
+            endTime: _startTime + _duration
         });
-        updateDetails.reconfiguring =      reconfiguring;
-        // TODO
-        updateDetails.migrating =          address(0); // _targetCurveId;
-        updateDetails.recollateralizing =  _targetVault;
-        updateDetails.shifting =           _targetRefundRatio;
-        updateDetails.startTime =          _startTime;
-        updateDetails.endTime =            _startTime + _duration;
-
+        
         hub.startUpdate(_hubId);
     }
 

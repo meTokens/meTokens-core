@@ -9,12 +9,12 @@ import "../interfaces/IRecollateralizationRegistry.sol";
 abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
 
     event Register(address recollateralization);
-    event ApproveFactory(address factory);
-    event UnapproveFactory(address factory);
+    event Approve(address factory);
+    event Unapprove(address factory);
 
     uint256 private _recollateralizationCount;
 	mapping (address => RecollaterlizationDetails) recollateralizations;
-    mapping (address => bool) private approvedRecollateralizationFactories;
+    mapping (address => bool) private approved;
 
     struct RecollaterlizationDetails {
         address recollateralization;
@@ -24,13 +24,13 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         bool active; // TODO: is this needed?
     }
 
-    function Register(
+    function register(
         address _recollateralization,
         address _targetVault,
         address _collateralTokenStart,
         address _collateralTokenIntra
     ) external override {
-        require(approvedRecollateralizationFactories[msg.sender], "!authorized");
+        require(approved[msg.sender], "!approved");
         // Add recollateralization details to storage
         RecollaterlizationDetails memory r = RecollaterlizationDetails(
             _recollateralization,
@@ -44,28 +44,30 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         emit Register(_recollateralization);
     }
 
-    function approveRecollateralizationFactory(address _factory) external override {
+    function approve(address _factory) external override {
         // TODO: access control
-        require(!approvedRecollateralizationFactories[_factory], "Already approved");
-        approvedRecollateralizationFactories[_factory] = true;
-        emit ApproveRecollateralizationFactory(_factory);
+        require(!approved[_factory], "Already approved");
+        approved[_factory] = true;
+        emit Approve(_factory);
     }
 
-    actory(address _factory) external override {
+    function unapprove(address _factory) external override {
         // TODO: access control
-        require(approvedRecollateralizationFactories[_factory], "!approved");
-        approvenFactories[_factory] = false;
-        emit UnapproveFactory(_factory);
+        require(approved[_factory], "!approved");
+        approved[_factory] = false;
+        emit Unapprove(_factory);
     }
+
+    function isApproved(address _factory) external view override returns (bool) {
+        return approved[_factory];
+    }
+
 
     function deactivateRecollateralization() external returns(uint256) {}
     function reactivateRecollateralization() external returns(uint256) {}
 
     // TODO: function isActiveRecollateralization ?
 
-    function isApprovedRecollateralizationFactory(address _factory) external view override returns (bool) {
-        return approvedRecollateralizationFactories[_factory];
-    }
 
     /// @inheritdoc IRecollateralizationRegistry
     function recollateralizationCount() external view override returns (uint256) {

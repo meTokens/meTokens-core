@@ -8,8 +8,8 @@ interface IRecollateralizationRegistry {
         address _collateralTokenStart,
         address _collateralTokenIntra
     ) external;
-    function unapproveRecollateralizationFactory(address _factory) external;
-    function approveRecollateralizationFactory(address _factory) external;
-    function isApprovedRecollateralizationFactory(address factory) external view returns (bool);
+    function unapprove(address _factory) external;
+    function approve(address _factory) external;
+    function isApproved(address factory) external view returns (bool);
     function recollateralizationCount() external view returns (uint256);
 }
