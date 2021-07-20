@@ -17,7 +17,7 @@ contract SingleAsset is Vault, Initializable {
         address _owner,
         address _collateralAsset
     ) initializer public {
-        require(vaultRegistry.isApprovedVaultFactory(msg.sender), "msg.sender not approved vault factory");
+        require(vaultRegistry.isApproved(msg.sender), "msg.sender not approved vault factory");
 
         owner = _owner;
         collateralAsset = _collateralAsset;

@@ -26,7 +26,7 @@ contract UniswapSingleTransfer is Recollateralization, Initializable {
         address _owner,
         address _targetVault
     ) external {
-        require(recollateralizationRegistry.isApprovedRecollateralizationFactory(msg.sender), "!approved");
+        require(recollateralizationRegistry.isApproved(msg.sender), "!approved");
     }
 
     

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "../../interfaces/ICurveValueSet.sol";
 import "../formulas/BancorZeroFormula.sol";
 import "../../libs/WeightedAverage.sol";
-// import "../interfaces/IUpdater.sol";
+import "../../interfaces/IUpdater.sol";
 
 
 
@@ -35,12 +35,12 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
 	mapping (uint256 => ValueSet) private valueSets;
 	mapping (uint256 => TargetValueSet) private targetValueSets;
 
-    // IUpdater public updater;
+    IUpdater public updater;
 
     constructor(
-        // address _updater
+        address _updater
     ) {
-        // updater = IUpdater(_updater);
+        updater = IUpdater(_updater);
     }
 
 
@@ -117,7 +117,10 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             );
         }
 
-        if (_reconfiguring) {
+        // check the updater to see if the curve is reconfiguring
+        if (updater.isReconfiguring(_hubId)) {
+
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
             if (block.timestamp > _startTime) {
@@ -172,12 +175,10 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             _supply,
             _balancePooled
         );
-    }
-        /*
-        if (_reconfiguring) {
-            // TODO: this is passed with arguments, more succinct way?
 
-            // (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+        if (updater.isReconfiguring(_hubId)) {
+
+            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
             if (block.timestamp > _startTime) {
@@ -201,7 +202,6 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             }
         }
     }
-    */
 
     // TODO: natspec
     function finishUpdate(uint256 _hubId) external override {

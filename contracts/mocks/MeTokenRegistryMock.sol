@@ -8,15 +8,7 @@ contract MeTokenRegistryMock {
     constructor () {
     }
 
-    // NOTE: use default values of "", _owner, "", 0
-    function register
-        string calldata _name,
-        address _owner,
-        string calldata _symbol,
-        uint256 _hubId
-    ) external {
-        owners[_owner] = true;
-    }
+    function setOwner(address _owner) public {owners[_owner]=true;}
 
     function isOwner(
         address _owner

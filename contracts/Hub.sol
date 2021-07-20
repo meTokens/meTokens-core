@@ -74,7 +74,7 @@ contract Hub is IHub {
     ) external override {
         // TODO: access control
         require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory not approved");
-        require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
+        // require(curveRegistry.isActive(_curve), "_curve not approved");  TODO
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}ValueSet.sol`

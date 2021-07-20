@@ -6,7 +6,7 @@ import "../interfaces/ICurveRegistry.sol";
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
-abstract contract CurveRegistry is ICurveRegistry {
+contract CurveRegistry is ICurveRegistry {
 
     event Register(uint256 id, string name, address formula, address values);
     event Deactivate(uint256 curveId);
@@ -55,7 +55,7 @@ abstract contract CurveRegistry is ICurveRegistry {
         
     }
 
-    function isActive(uint256 _curveId) external view returns (bool) {
+    function isActive(uint256 _curveId) external view override returns (bool) {
         Details memory details = curves[_curveId];
         return details.active;
     }

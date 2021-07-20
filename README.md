@@ -161,3 +161,5 @@
 * [x] Move curve valuesets / formulas into nested "valuesets"/"formulas" directories
 
 #### 7.20
+* [ ] `curveRegistry.isApprovedValueSet()` within Hub.sol - should that function be changed to `isApproved()`?
+* [ ] `executeProposal()` within Updater.sol

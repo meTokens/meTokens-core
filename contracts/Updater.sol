@@ -11,9 +11,9 @@ import "./interfaces/ICurveValueSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
-abstract contract Updater is IUpdater, Ownable {
+contract Updater is IUpdater, Ownable {
 
-    struct UpdateDetails {
+    struct Details {
         bool reconfiguring;
         address migrating;
         address recollateralizing;
@@ -24,15 +24,15 @@ abstract contract Updater is IUpdater, Ownable {
 
     uint256 private PRECISION = 10**18;
     
-    uint256 private _minGracePeriod;
-    uint256 private _maxGracePeriod;
-    uint256 private _minVotePeriod;
-    uint256 private _maxVotePeriod;
+    uint256 private _minGracePeriod = 0; // TODO
+    uint256 private _maxGracePeriod = 0; // TODO
+    uint256 private _minVotePeriod = 0; // TODO
+    uint256 private _maxVotePeriod = 0; // TODO
 
-    uint256 private _minSecondsUntilStart;
-    uint256 private _maxSecondsUntilStart;
-    uint256 private _minDuration;
-    uint256 private _maxDuration;
+    uint256 private _minSecondsUntilStart = 0; // TODO
+    uint256 private _maxSecondsUntilStart = 0; // TODO
+    uint256 private _minDuration = 0; // TODO
+    uint256 private _maxDuration = 0; // TODO
     
     // TODO
     IRecollateralization public recollateralizations = IRecollateralization(address(0));
@@ -42,21 +42,11 @@ abstract contract Updater is IUpdater, Ownable {
 
 
     // NOTE: keys are hubId's, used for valueSet calculations
-    mapping (uint256 => UpdateDetails) private updates;
+    mapping (uint256 => Details) private updates;
 
-    constructor(
-        uint256 minSecondsUntilStart_,
-        uint256 maxSecondsUntilStart_,
-        uint256 minDuration_,
-        uint256 maxDuration_
-    ) {
-        _minSecondsUntilStart = minSecondsUntilStart_;
-        _maxSecondsUntilStart = maxSecondsUntilStart_;
-        _minDuration = minDuration_;
-        _maxDuration = maxDuration_;
-    }
+    constructor() {}
 
-    // TODO: args
+    /// @inheritdoc IUpdater
     function initUpdate(
         uint256 _hubId,
         uint256 _targetCurveId,
@@ -99,7 +89,7 @@ abstract contract Updater is IUpdater, Ownable {
 
         // is valid vault
         if (_targetVault != address(0)) {
-            require(vaultRegistry.isActiveVault(_targetVault), "!active");
+            require(vaultRegistry.isActive(_targetVault), "!active");
             require(_targetVault != vault, "_targetVault == vault");
             // TODO: validate
             require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
@@ -130,7 +120,7 @@ abstract contract Updater is IUpdater, Ownable {
         //     }
         // }
         
-        // UpdateDetails storage updateDetails = UpdateDetails(
+        // Details storage Details = Details(
         //     reconfiguring,
         //     _targetCurveId,
         //     _targetVault,
@@ -140,10 +130,11 @@ abstract contract Updater is IUpdater, Ownable {
         // );
 
 
-        updates[_hubId] = UpdateDetails({
-            // TODO: handle migrating to _targetCurveId, which is uint
+        updates[_hubId] = Details({
+            // TODO: handle
+            reconfiguring: false,
             migrating: address(0), // targetCurveId
-            recollateralizating: _targetVault,
+            recollateralizing: _targetVault,
             shifting: _targetRefundRatio,
             startTime: _startTime,
             endTime: _startTime + _duration
@@ -157,12 +148,14 @@ abstract contract Updater is IUpdater, Ownable {
         uint256 hubStatus = hub.getStatus(_hubId);
         require(hubStatus == 3, "!QUEUED");
 
-        UpdateDetails storage update = updates[_hubId];
+        Details storage details = updates[_hubId];
         require(
-            block.timestamp > update.startTime &&
-            block.timestamp < update.endTime
+            block.timestamp > details.startTime &&
+            block.timestamp < details.endTime
         );
-        // require(update.)
+
+        // TODO
+        
     } 
 
 
@@ -170,24 +163,24 @@ abstract contract Updater is IUpdater, Ownable {
     function startUpdate(uint256 _hubId) external override {
         // TODO: access control
 
-        UpdateDetails storage updateDetails = updates[_hubId];
+        Details storage details = updates[_hubId];
     }
 
     function finishUpdate(uint256 _hubId) external override {
 
-        UpdateDetails storage updateDetails = updates[_hubId];
-        require(block.timestamp > updateDetails.endTime, "!finished");
+        Details storage details = updates[_hubId];
+        require(block.timestamp > details.endTime, "!finished");
 
         // TODO
-        // if (updateDetails.reconfiguring) {
-        //     ICurveValueSet(updateDetails.curve).finishUpdate(_hubId);
+        // if (details.reconfiguring) {
+        //     ICurveValueSet(details.curve).finishUpdate(_hubId);
         // }
 
         hub.finishUpdate(
             _hubId,
-            updateDetails.migrating,
-            updateDetails.recollateralizing,
-            updateDetails.shifting  
+            details.migrating,
+            details.recollateralizing,
+            details.shifting  
         );        
 
         delete updates[_hubId];
@@ -244,37 +237,42 @@ abstract contract Updater is IUpdater, Ownable {
         uint256 startTime,
         uint256 endTime
     ) {
-        UpdateDetails memory updateDetails = updates[_hubId];
-        reconfiguring = updateDetails.reconfiguring;
-        migrating = updateDetails.migrating;
-        recollateralizing = updateDetails.recollateralizing;
-        shifting = updateDetails.shifting;
-        startTime = updateDetails.startTime;
-        endTime = updateDetails.endTime;
+        Details memory details = updates[_hubId];
+        reconfiguring = details.reconfiguring;
+        migrating = details.migrating;
+        recollateralizing = details.recollateralizing;
+        shifting = details.shifting;
+        startTime = details.startTime;
+        endTime = details.endTime;
     }
 
     function getUpdateTimes(uint256 _hubId) external view override returns (
         uint256 startTime,
         uint256 endTime
     ) {
-        UpdateDetails memory updateDetails = updates[_hubId];
-        startTime = updateDetails.startTime;
-        endTime = updateDetails.endTime;
+        Details memory details = updates[_hubId];
+        startTime = details.startTime;
+        endTime = details.endTime;
+    }
+
+    function isReconfiguring(uint256 _hubId) external view override returns (bool) {
+        Details memory details = updates[_hubId];
+        return details.reconfiguring;
     }
 
     function getTargetCurve(uint256 _hubId) external view override returns (address) {
-        UpdateDetails memory updateDetails = updates[_hubId];
-        return updateDetails.migrating;
+        Details memory details = updates[_hubId];
+        return details.migrating;
     }
 
     function getTargetRefundRatio(uint256 _hubId) external view override returns (uint256) {
-        UpdateDetails memory updateDetails = updates[_hubId];
-        return updateDetails.shifting;
+        Details memory details = updates[_hubId];
+        return details.shifting;
     }
 
     function getTargetVault(uint256 _hubId) external view override returns (address) {
-        UpdateDetails memory updateDetails = updates[_hubId];
-        return updateDetails.recollateralizing;
+        Details memory details = updates[_hubId];
+        return details.recollateralizing;
     }
 
 
