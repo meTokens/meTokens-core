@@ -3,14 +3,10 @@ pragma solidity ^0.8.0;
 
 interface IHub {
 
-    function startUpdate(uint256 _hubId) external;
-    function finishUpdate(
-        uint256 _hubId,
-        address _migrating,
-        address _recollateralizing,
-        uint256 _shifting
-    ) external;
-    
+    event Register(string name, address indexed vault);  // TODO: decide on arguments
+    event SetStatus(uint256 hubId, uint256 status);
+    event DeactivateHub(uint256 hubId);
+
     /// @notice TODO
     /// @param _name TODO
     /// @param _owner TODO
@@ -36,37 +32,54 @@ interface IHub {
     ) external;
 
     /// @notice TODO
-    /// @param _meToken TODO
-    /// @param _collateralDeposited TODO
-    function mint(address _meToken, uint256 _collateralDeposited) external;
-
-    /// @notice TODO
-    /// @param _meToken TODO
-    /// @param _meTokensBurned TODO
-    function burn(address _meToken, uint256 _meTokensBurned) external;
-
-    /// @notice TODO
     /// @param _hubId TODO
     function deactivateHub(uint256 _hubId) external;
 
     /// @notice TODO
     /// @param _hubId TODO
-    /// @return Status TODO
-    // TODO: import Status struct 
-    function getStatus(uint256 _hubId) external view returns (uint256);
+    function startUpdate(uint256 _hubId) external;
 
-    // TODO
+    function finishUpdate(
+        uint256 _hubId,
+        address _migrating,
+        address _recollateralizing,
+        uint256 _shifting
+    ) external;
+
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @param status TODO
+    function setStatus(uint256 _hubId, uint256 status) external returns (bool);
+
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @return TODO
     function getOwner(uint256 _hubId) external view returns (address);
 
-    // TODO
-    function getRefundRatio(uint256 _hubid) external view returns (uint256);
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @return uint256 TODO
+    function getStatus(uint256 _hubId) external view returns (uint256);
 
-    // TODO
+
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @return uint256 TODO
+    function getRefundRatio(uint256 _hubId) external view returns (uint256);
+
+    /// @notice TODO
+    /// @param _hubId TODO
+    /// @return name TODO
+    /// @return owner TODO
+    /// @return vault TODO
+    /// @return curve TODO
+    /// @return refundRatio TODO
+    /// @return status TODO
     function getDetails(uint256 _hubId) external view returns (
         string calldata name,
         address owner,
         address vault,
-        address curve_,
+        address curve,
         uint256 refundRatio,
         uint256 status
     );
@@ -74,11 +87,11 @@ interface IHub {
     /// @notice TODO
     /// @param _hubId TODO
     /// @return TODO
-    function getVault(uint256 _hubId) external view returns (address);
+    function getCurve(uint256 _hubId) external view returns (address);
 
     /// @notice TODO
     /// @param _hubId TODO
     /// @return TODO
-    function getCurve(uint256 _hubId) external view returns (address);
-    
+    function getVault(uint256 _hubId) external view returns (address);
+   
 }

@@ -13,11 +13,7 @@ import "./interfaces/IUpdater.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens 
-abstract contract Hub is IHub {
-
-    event Register(string name, address indexed vault);  // TODO: decide on arguments
-    event SetStatus(uint256 hubId, uint256 status);
-    event DeactivateHub(uint256 hubId);
+contract Hub is IHub {
 
     modifier hubExists(uint256 _hubId) {
         require(_hubId <= hubCount, "_hubId exceeds hubCount");
@@ -77,7 +73,7 @@ abstract contract Hub is IHub {
         bytes memory _encodedVaultAdditionalArgs
     ) external override {
         // TODO: access control
-        require(vaultRegistry.isApprovedVaultFactory(_vaultFactory), "_vaultFactory not approved");
+        require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory not approved");
         require(curveRegistry.isApprovedValueSet(_curve), "_curve not approved");
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
@@ -107,24 +103,54 @@ abstract contract Hub is IHub {
     /// @inheritdoc IHub
     function deactivateHub(uint256 _hubId) external override hubExists(_hubId) {
         // TODO: access control
-        Details storage Details = hubs[_hubId];
+        Details storage details = hubs[_hubId];
 
-        require(Details.status == Status.ACTIVE, "Hub not active");
-        Details.status = Status.INACTIVE;
+        require(details.status == Status.ACTIVE, "Hub not active");
+        details.status = Status.INACTIVE;
         emit DeactivateHub(_hubId);
     }
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
-    
+    /// @inheritdoc IHub
     function startUpdate(uint256 _hubId) external override {
         require(msg.sender == address(updater), "!updater");
-        Details storage Details = hubs[_hubId];
-        Details.status = Status.QUEUED;
+        Details storage details = hubs[_hubId];
+        details.status = Status.QUEUED;
     }
 
-    function setStatus(uint256 _hubId, uint256 status) public {
+
+    /// @inheritdoc IHub
+    function finishUpdate(
+        uint256 _hubId,
+        address _migrating,
+        address _recollateralizing,
+        uint256 _shifting
+    ) external override {
+        require(msg.sender == address(updater), "!updater");
+        Details storage details = hubs[_hubId];
+        
+        if (_migrating != address(0)) {
+            details.curve = _migrating;
+        }
+
+        if (_recollateralizing != address(0)) {
+            details.vault = _recollateralizing;
+        }
+
+        if (_shifting != 0) {
+            details.refundRatio = _shifting;
+        }
+        details.status = Status.ACTIVE;
+    }
+
+
+    /// @inheritdoc IHub
+    function setStatus(
+        uint256 _hubId,
+        uint256 status
+    ) public override returns (bool) {
         // TODO: access control
         // Can only be from Foundry when setting to QUEUED > UPDATING,
         // Or from Updater when setting a curve to QUEUED
@@ -133,54 +159,32 @@ abstract contract Hub is IHub {
             "!updater && !foundry"
         );
 
-        Details storage Details = hubs[_hubId];
-        require(uint256(Details.status) != status, "Cannot set to same status");
-        Details.status = Status(status);
+        Details storage details = hubs[_hubId];
+        require(uint256(details.status) != status, "Cannot set to same status");
+        details.status = Status(status);
         emit SetStatus(_hubId, status);
-    }
-
-    function finishUpdate(
-        uint256 _hubId,
-        address _migrating,
-        address _recollateralizing,
-        uint256 _shifting
-    ) external override {
-        require(msg.sender == address(updater), "!updater");
-        Details storage Details = hubs[_hubId];
-        
-        if (_migrating != address(0)) {
-            Details.curve = _migrating;
-        }
-
-        if (_recollateralizing != address(0)) {
-            Details.vault = _recollateralizing;
-        }
-
-        if (_shifting != 0) {
-            Details.refundRatio = _shifting;
-        }
-        Details.status = Status.ACTIVE;
+        return true;
     }
 
 
-    // TODO: natspec
+    /// @inheritdoc IHub
     function getOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
-        Details memory Details = hubs[_hubId];
-        return Details.owner;
+        Details memory details = hubs[_hubId];
+        return details.owner;
     }
 
 
     /// @inheritdoc IHub
     function getStatus(uint256 _hubId) public view override returns (uint256) {
-        Details memory Details = hubs[_hubId];
-        return uint256(Details.status);
+        Details memory details = hubs[_hubId];
+        return uint256(details.status);
     }
 
 
     /// @inheritdoc IHub
     function getRefundRatio(uint256 _hubId) public view override returns (uint256) {
-        Details memory Details = hubs[_hubId];
-        return Details.refundRatio;
+        Details memory details = hubs[_hubId];
+        return details.refundRatio;
     }
 
 
@@ -195,27 +199,27 @@ abstract contract Hub is IHub {
         uint256 refundRatio,
         uint256 status
     ) {
-        Details memory Details = hubs[_hubId];
-        name = Details.name;
-        owner = Details.owner;
-        vault = Details.vault;
-        curve_ = Details.curve;
-        refundRatio = Details.refundRatio;
-        status = uint256(Details.status);
+        Details memory details = hubs[_hubId];
+        name = details.name;
+        owner = details.owner;
+        vault = details.vault;
+        curve_ = details.curve;
+        refundRatio = details.refundRatio;
+        status = uint256(details.status);
     }
 
     /// @inheritdoc IHub
     function getCurve(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
-        Details memory Details = hubs[_hubId];
-        return Details.curve;
+        Details memory details = hubs[_hubId];
+        return details.curve;
     }
 
     /// @inheritdoc IHub
     function getVault(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
-        Details memory Details = hubs[_hubId];
-        return Details.vault;
+        Details memory details = hubs[_hubId];
+        return details.vault;
     }
 
 }
