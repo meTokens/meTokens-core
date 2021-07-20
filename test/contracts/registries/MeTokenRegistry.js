@@ -9,15 +9,48 @@ describe("MeTokenRegistry.sol", function () {
 
     });
 
-    describe("Register a new meToken", function () {
+    describe("register()", function () {
 
         it("User can create a meToken with no collateral", async function () {
-            // TODO
+
         });
 
         it("User can create a meToken with 100 USDT as collateral", async function () {
-            // TODO
+
         });
+
+        it("Register() emitted", async function () {
+
+        });
+
+    });
+
+    describe("transferOwnership()", function () {
+        it("Fails if not owner", async function () {
+
+        });
+        it("TransferOwnership() emitted", async function () {
+
+        });
+    });
+
+    describe("is owner()", function () {
+        it("Returns false for address(0)", async function () {
+
+        });
+        it("Returns true for a meToken issuer", async function () {
+
+        });
+    });
+
+
+    describe("incrementBalancePooled()", async function () {
+
+    });
+
+
+    describe("incrementBalanceLocked()", async function () {
+
     });
 
 });

@@ -11,24 +11,13 @@ import "../interfaces/ICurveValueSet.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-abstract contract MeTokenRegistry is IMeTokenRegistry {
-
-    event Register(
-        address indexed meToken,
-        address indexed owner,
-        string name,
-        string symbol,
-        uint256 hubId
-    );
-    event TransferMeTokenOwnership(address from, address to, address meToken);
-    event IncrementBalancePooled(bool add, address meToken, uint256 amount);
-    event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
+contract MeTokenRegistry is IMeTokenRegistry {
 
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
 
     mapping (address => Details) private meTokens; // key pair: ERC20 address
-    mapping (address => address) private meTokenOwners;  // key: address of owner, value: address of meToken
+    mapping (address => address) private owners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
     struct Details {
@@ -52,7 +41,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         uint256 _collateralDeposited
     ) external override {
         // TODO: access control
-        require(!isMeTokenOwner(msg.sender), "msg.sender already owns a meToken");        
+        require(!isOwner(msg.sender), "msg.sender already owns a meToken");        
         require(hub.getStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
         
         // Initial collateral deposit from owner by finding the vault,
@@ -79,7 +68,7 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
         });
 
         // Register the address which created a meToken
-        meTokenOwners[msg.sender] = meTokenAddr;
+        owners[msg.sender] = meTokenAddr;
 
         // Get curve information from hub
         ICurveValueSet curve = ICurveValueSet(hub.getCurve(_hubId));
@@ -103,16 +92,16 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
 
 
     /// @inheritdoc IMeTokenRegistry
-    function transferMeTokenOwnership(address _meToken, address _newOwner) external override {
-        require(!isMeTokenOwner(_newOwner), "_newOwner already owns a meToken");
+    function transferOwnership(address _meToken, address _newOwner) external override {
+        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
         Details storage details = meTokens[_meToken];
         require(msg.sender == details.owner, "!owner");
 
         details.owner = _newOwner;
-        meTokenOwners[msg.sender] = address(0);
-        meTokenOwners[_newOwner] = _meToken;
+        owners[msg.sender] = address(0);
+        owners[_newOwner] = _meToken;
 
-        emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
+        emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
 
@@ -143,14 +132,14 @@ abstract contract MeTokenRegistry is IMeTokenRegistry {
 
 
     /// @inheritdoc IMeTokenRegistry
-    function isMeTokenOwner(address _owner) public view override returns (bool) {
-        return meTokenOwners[_owner] != address(0);
+    function isOwner(address _owner) public view override returns (bool) {
+        return owners[_owner] != address(0);
     }
 
 
     /// @inheritdoc IMeTokenRegistry
-    function getMeTokenByOwner(address _owner) external view override returns (address) {
-        return meTokenOwners[_owner];
+    function getOwnerMeToken(address _owner) external view override returns (address) {
+        return owners[_owner];
     }
 
 

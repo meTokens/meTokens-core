@@ -18,7 +18,7 @@ contract MeTokenRegistryMock {
         owners[_owner] = true;
     }
 
-    function isMeTokenOwner(
+    function isOwner(
         address _owner
     ) external view returns (bool) {
         return owners[_owner];

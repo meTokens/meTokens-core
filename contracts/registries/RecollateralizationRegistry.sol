@@ -12,7 +12,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     event Approve(address factory);
     event Unapprove(address factory);
 
-    uint256 private _recollateralizationCount;
+    uint256 private count;
 	mapping (address => Details) recollateralizations;
     mapping (address => bool) private approved;
 
@@ -21,7 +21,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
         address targetVault;
         address collateralTokenStart;
         address collateralTokenIntra;
-        bool active; // TODO: is this needed?
+        bool active;
     }
 
     function register(
@@ -65,13 +65,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
 
     function deactivate() external returns(uint256) {}
 
-    // TODO: function isActiveRecollateralization ?
-
-
-    /// @inheritdoc IRecollateralizationRegistry
-    function recollateralizationCount() external view override returns (uint256) {
-        return _recollateralizationCount;
-    }
+    // TODO: function isActive() ?
 
     // function getDetails(address recollater) external view override returns (
     //     address recollateralization,

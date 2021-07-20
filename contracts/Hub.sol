@@ -33,7 +33,7 @@ abstract contract Hub is IHub {
     ICurveRegistry public curveRegistry;
     IUpdater public updater;
 
-    struct HubDetails {
+    struct Details {
         string name;
         address owner;
         address vault;
@@ -41,7 +41,8 @@ abstract contract Hub is IHub {
         uint256 refundRatio;
         Status status;
     }
-    mapping(uint256 => HubDetails) private hubs;
+
+    mapping(uint256 => Details) private hubs;
 
     // TODO: ensure this is properly checked
     enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
@@ -92,7 +93,7 @@ abstract contract Hub is IHub {
         address vault = IVaultFactory(_vaultFactory).create(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
         
         // Save the hub to the registry
-        hubs[hubCount++] = HubDetails(
+        hubs[hubCount++] = Details(
             _name,
             _owner,
             vault,
@@ -106,10 +107,10 @@ abstract contract Hub is IHub {
     /// @inheritdoc IHub
     function deactivateHub(uint256 _hubId) external override hubExists(_hubId) {
         // TODO: access control
-        HubDetails storage hubDetails = hubs[_hubId];
+        Details storage Details = hubs[_hubId];
 
-        require(hubDetails.status == Status.ACTIVE, "Hub not active");
-        hubDetails.status = Status.INACTIVE;
+        require(Details.status == Status.ACTIVE, "Hub not active");
+        Details.status = Status.INACTIVE;
         emit DeactivateHub(_hubId);
     }
 
@@ -119,8 +120,8 @@ abstract contract Hub is IHub {
     
     function startUpdate(uint256 _hubId) external override {
         require(msg.sender == address(updater), "!updater");
-        HubDetails storage hubDetails = hubs[_hubId];
-        hubDetails.status = Status.QUEUED;
+        Details storage Details = hubs[_hubId];
+        Details.status = Status.QUEUED;
     }
 
     function setStatus(uint256 _hubId, uint256 status) public {
@@ -132,9 +133,9 @@ abstract contract Hub is IHub {
             "!updater && !foundry"
         );
 
-        HubDetails storage hubDetails = hubs[_hubId];
-        require(uint256(hubDetails.status) != status, "Cannot set to same status");
-        hubDetails.status = Status(status);
+        Details storage Details = hubs[_hubId];
+        require(uint256(Details.status) != status, "Cannot set to same status");
+        Details.status = Status(status);
         emit SetStatus(_hubId, status);
     }
 
@@ -145,41 +146,41 @@ abstract contract Hub is IHub {
         uint256 _shifting
     ) external override {
         require(msg.sender == address(updater), "!updater");
-        HubDetails storage hubDetails = hubs[_hubId];
+        Details storage Details = hubs[_hubId];
         
         if (_migrating != address(0)) {
-            hubDetails.curve = _migrating;
+            Details.curve = _migrating;
         }
 
         if (_recollateralizing != address(0)) {
-            hubDetails.vault = _recollateralizing;
+            Details.vault = _recollateralizing;
         }
 
         if (_shifting != 0) {
-            hubDetails.refundRatio = _shifting;
+            Details.refundRatio = _shifting;
         }
-        hubDetails.status = Status.ACTIVE;
+        Details.status = Status.ACTIVE;
     }
 
 
     // TODO: natspec
     function getOwner(uint256 _hubId) public view override hubExists(_hubId) returns (address) {
-        HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.owner;
+        Details memory Details = hubs[_hubId];
+        return Details.owner;
     }
 
 
     /// @inheritdoc IHub
     function getStatus(uint256 _hubId) public view override returns (uint256) {
-        HubDetails memory hubDetails = hubs[_hubId];
-        return uint256(hubDetails.status);
+        Details memory Details = hubs[_hubId];
+        return uint256(Details.status);
     }
 
 
     /// @inheritdoc IHub
     function getRefundRatio(uint256 _hubId) public view override returns (uint256) {
-        HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.refundRatio;
+        Details memory Details = hubs[_hubId];
+        return Details.refundRatio;
     }
 
 
@@ -194,27 +195,27 @@ abstract contract Hub is IHub {
         uint256 refundRatio,
         uint256 status
     ) {
-        HubDetails memory hubDetails = hubs[_hubId];
-        name = hubDetails.name;
-        owner = hubDetails.owner;
-        vault = hubDetails.vault;
-        curve_ = hubDetails.curve;
-        refundRatio = hubDetails.refundRatio;
-        status = uint256(hubDetails.status);
+        Details memory Details = hubs[_hubId];
+        name = Details.name;
+        owner = Details.owner;
+        vault = Details.vault;
+        curve_ = Details.curve;
+        refundRatio = Details.refundRatio;
+        status = uint256(Details.status);
     }
 
     /// @inheritdoc IHub
     function getCurve(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
-        HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.curve;
+        Details memory Details = hubs[_hubId];
+        return Details.curve;
     }
 
     /// @inheritdoc IHub
     function getVault(uint256 _hubId) external view override returns (address) {
         require(_hubId < hubCount, "_hubId > hubCount");
-        HubDetails memory hubDetails = hubs[_hubId];
-        return hubDetails.vault;
+        Details memory Details = hubs[_hubId];
+        return Details.vault;
     }
 
 }

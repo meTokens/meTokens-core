@@ -3,6 +3,17 @@ pragma solidity ^0.8.0;
 
 interface IMeTokenRegistry {
 
+    event Register(
+        address indexed meToken,
+        address indexed owner,
+        string name,
+        string symbol,
+        uint256 hubId
+    );
+    event TransferOwnership(address from, address to, address meToken);
+    event IncrementBalancePooled(bool add, address meToken, uint256 amount);
+    event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
+
     /// @notice TODO
     /// @param _name TODO
     /// @param _symbol TODO
@@ -15,19 +26,19 @@ interface IMeTokenRegistry {
         uint256 _collateralDeposited
     ) external;
 
-    /// @notice TODO
-    /// @return TODO
-    function toggleUpdating() external returns (bool);
+    // /// @notice TODO
+    // /// @return TODO
+    // function toggleUpdating() external returns (bool);
 
     /// @notice TODO
     /// @param _owner TODO
     /// @return TODO
-    function isMeTokenOwner(address _owner) external view returns (bool);
+    function isOwner(address _owner) external view returns (bool);
 
     /// @notice TODO
     /// @param _owner TODO
     /// @return TODO
-    function getMeTokenByOwner(address _owner) external view returns (address);
+    function getOwnerMeToken(address _owner) external view returns (address);
 
     /// @notice TODO
     /// @param meToken Address of meToken queried
@@ -46,7 +57,7 @@ interface IMeTokenRegistry {
         bool resubscribing 
     );
 
-    function transferMeTokenOwnership(address _meToken, address _newOwner) external;
+    function transferOwnership(address _meToken, address _newOwner) external;
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external;
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external;
 }

@@ -158,4 +158,6 @@
 * [ ] Access control for `registerValueSet()` within BancorZeroValueSet.sol
 
 #### 7.15
-* [ ] Move curve valuesets / formulas into nested "valuesets"/"formulas" directories
+* [x] Move curve valuesets / formulas into nested "valuesets"/"formulas" directories
+
+#### 7.20
