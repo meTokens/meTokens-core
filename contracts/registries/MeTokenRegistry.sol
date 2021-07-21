@@ -77,10 +77,7 @@ contract MeTokenRegistry is IMeTokenRegistry {
             _collateralDeposited,  // _deposit_amount
             _hubId,                // _hubId
             0,                      // _supply
-            0,                      // _balancePooled
-            false,
-            0,
-            0
+            0                       // _balancePooled
         );
 
         // Transfer collateral to vault and return the minted meToken

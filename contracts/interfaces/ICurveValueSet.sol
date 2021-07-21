@@ -7,18 +7,6 @@ pragma solidity ^0.8.0;
 /// @dev Required for all Curve ValueSets
 interface ICurveValueSet {
 
-    /// @notice Update a ValueSet to new parameters
-    /// @param _hubId                   unique hub identifier
-    /// @param _encodedTargetValueSet   encoded parameters for the new ValueSet
-    /// @param _blockStart              block to start updating the ValueSet
-    /// @param _blockTarget             block to end updating the ValueSet
-    function updateValueSet(
-        uint256 _hubId,
-        bytes32 _encodedTargetValueSet,
-        uint256 _blockStart,
-        uint256 _blockTarget
-    ) external;
-
     /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
     /// BancorZero ValueSet registry
     /// @dev ValueSet need to be encoded as the Hub may register ValueSets for different curves
