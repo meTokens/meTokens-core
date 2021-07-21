@@ -11,5 +11,5 @@ interface IRecollateralizationRegistry {
     function unapprove(address _factory) external;
     function approve(address _factory) external;
     function isApproved(address factory) external view returns (bool);
-    function recollateralizationCount() external view returns (uint256);
+    function getCount() external view returns (uint256);
 }

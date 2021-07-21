@@ -21,7 +21,7 @@ contract SingleAssetFactory is IVaultFactory {
 
     event Create(address vault);
 
-    uint256 private deployCount;
+    uint256 private count;
     address public hub;
     address public implementation;  // TODO: this will be the SingleAsset contract
     IVaultRegistry public vaultRegistry;
@@ -41,7 +41,7 @@ contract SingleAssetFactory is IVaultFactory {
     ) external override returns (address) {
         address vaultAddress = Clones.cloneDeterministic(
             implementation,
-            bytes32(deployCount)
+            bytes32(count)
         );
 
         // create our vault
@@ -53,7 +53,7 @@ contract SingleAssetFactory is IVaultFactory {
         // Add vault to vaultRegistry
         vaultRegistry.register(_name, vaultAddress, address(this));
 
-        deployCount++;
+        count++;
         emit Create(vaultAddress);
         return vaultAddress;
     }

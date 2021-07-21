@@ -42,7 +42,7 @@ contract CurveRegistry is ICurveRegistry {
     /// @inheritdoc ICurveRegistry
     function deactivate(uint256 id) external override {
         // TODO: access control
-        require(id <= count, "_curveId cannot exceed curveCount");
+        require(id <= count, "_curveId cannot exceed count");
         // TODO: is this memory or storage?
         Details storage details = curves[id];
         require(details.active, "curve not active");
@@ -73,7 +73,7 @@ contract CurveRegistry is ICurveRegistry {
         address valueSet,
         bool active
     ) {
-        require(id <= count, "id cannot exceed curveCount");
+        require(id <= count, "id cannot exceed count");
         Details memory details = curves[id];
         
         name = details.name; // BancorZero

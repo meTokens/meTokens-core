@@ -167,6 +167,7 @@ contract Hub is IHub {
         return true;
     }
 
+    function getCount() external view override returns (uint256) {return count;}
 
     /// @inheritdoc IHub
     function getOwner(uint256 _id) public view override hubExists(_id) returns (address) {

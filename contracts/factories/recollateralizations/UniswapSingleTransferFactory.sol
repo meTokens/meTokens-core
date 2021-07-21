@@ -12,7 +12,7 @@ contract UniswapSingleTransferFactory {
 
     event Create(address recollateralization);
 
-    uint256 public deployCount;
+    uint256 public count;
     address public hub;
     address public implementation;
     IRecollateralizationRegistry public recollateralizationRegistry;
@@ -31,7 +31,7 @@ contract UniswapSingleTransferFactory {
         bytes memory _encodedRecollateralizationAdditionalArgs // NOTE: potentially needed for other recollateralizations
     ) external returns (address) {
         // TODO: access control
-        address recollateralizationAddress = Clones.cloneDeterministic(implementation, bytes32(deployCount));
+        address recollateralizationAddress = Clones.cloneDeterministic(implementation, bytes32(count));
 
         // create our recollateralization
         UniswapSingleTransfer(recollateralizationAddress).initialize(
@@ -47,7 +47,7 @@ contract UniswapSingleTransferFactory {
             IVault(recollateralizationAddress).getCollateralAsset()
         );
 
-        deployCount++;
+        count++;
         emit Create(recollateralizationAddress);
         return recollateralizationAddress;
     }

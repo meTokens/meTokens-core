@@ -21,7 +21,7 @@ interface ICurveRegistry {
 
     /// @notice TODO
     /// @return TODO
-    function getCurveCount() external view returns (uint256);
+    function getCount() external view returns (uint256);
 
     // / @notice TODO
     // / @param _curveId TODO
