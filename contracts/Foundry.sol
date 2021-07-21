@@ -43,15 +43,15 @@ contract Foundry is IFoundry {
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
-        uint256 hubId;
+        uint256 id;
         uint256 balancePooled;
         uint256 balanceLocked;
         bool resubscribing;
-        (, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
+        (, id, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getStatus(hubId);
+        uint256 hubStatus = hub.getStatus(id);
         require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;  // NOTE: this is done on the valueSet level
@@ -61,7 +61,7 @@ contract Foundry is IFoundry {
         uint256 endTime;
 
         if (hubStatus > 1) { // QUEUED, UPDATING
-            (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getDetails(hubId);
+            (reconfiguring, migrating, recollateralizing, , startTime, endTime) = updater.getDetails(id);
             if (hubStatus == 2 && block.timestamp > startTime) { // QUEUED
                 // TODO: set hub status to UDPATING and trigger new vault if needed
                 // updater.
@@ -69,7 +69,7 @@ contract Foundry is IFoundry {
 
             if (block.number > endTime) {
                 // End update
-                updater.finishUpdate(hubId);
+                updater.finishUpdate(id);
                 reconfiguring = false;
                 migrating = address(0);
                 recollateralizing = address(0);
@@ -77,8 +77,8 @@ contract Foundry is IFoundry {
         }
 
         IERC20 meToken = IERC20(_meToken);
-        ICurveValueSet curve = ICurveValueSet(hub.getCurve(hubId));
-        IVault vault = IVault(hub.getVault(hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getCurve(id));
+        IVault vault = IVault(hub.getVault(id));
         IERC20 collateralToken = IERC20(vault.getCollateralAsset());
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
@@ -87,7 +87,7 @@ contract Foundry is IFoundry {
         // Calculate how much meToken is minted
         uint256 meTokensMinted = curve.calculateMintReturn(
             collateralDepositedAfterFees,
-            hubId,
+            id,
             meToken.totalSupply(),
             balancePooled,
             reconfiguring,
@@ -97,15 +97,12 @@ contract Foundry is IFoundry {
 
         if (migrating != address(0)) {
             // Do something
-            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(hubId));
+            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(id));
             uint256 targetMeTokensMinted = targetCurve.calculateMintReturn(
                 collateralDepositedAfterFees,
-                hubId,
+                id,
                 meToken.totalSupply(),
-                balancePooled,
-                reconfiguring,
-                startTime,
-                endTime
+                balancePooled
             );
             meTokensMinted = WeightedAverage.calculate(
                 meTokensMinted,
@@ -139,15 +136,15 @@ contract Foundry is IFoundry {
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
         address owner;
-        uint256 hubId;
+        uint256 id;
         uint256 balancePooled;
         uint256 balanceLocked;
         bool resubscribing;
-        (owner, hubId, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
+        (owner, id, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
         require(!resubscribing, "meToken is resubscribing");
 
-        uint256 hubStatus = hub.getStatus(hubId);
+        uint256 hubStatus = hub.getStatus(id);
         require(hubStatus != 0, "Hub inactive");
 
         bool reconfiguring;
@@ -159,39 +156,33 @@ contract Foundry is IFoundry {
 
         if (hubStatus == 2) {  // UPDATING
             if (block.timestamp > endTime) {
-                updater.finishUpdate(hubId);
+                updater.finishUpdate(id);
             } else {
-                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getDetails(hubId);
+                (reconfiguring, migrating, recollateralizing, shifting, startTime, endTime) = updater.getDetails(id);
             }
         }
 
         IERC20 meToken = IERC20(_meToken);
-        ICurveValueSet curve = ICurveValueSet(hub.getCurve(hubId));
-        IVault vault = IVault(hub.getVault(hubId));
+        ICurveValueSet curve = ICurveValueSet(hub.getCurve(id));
+        IVault vault = IVault(hub.getVault(id));
         IERC20 collateralToken = IERC20(vault.getCollateralAsset());
         
         // Calculate how many collateral tokens are returned
         uint256 collateralReturned = curve.calculateBurnReturn(
             _meTokensBurned,
-            hubId,
+            id,
             meToken.totalSupply(),
-            balancePooled,
-            reconfiguring,
-            startTime,
-            endTime
+            balancePooled
         );
 
         if (migrating != address(0)) {
-            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(hubId));
+            ICurveValueSet targetCurve = ICurveValueSet(updater.getTargetCurve(id));
             uint256 targetCollateralReturned = targetCurve.calculateBurnReturn(
                 _meTokensBurned,
                 // collateralDepositedAfterFees, // TODO: do we need to calculate after fees?
-                hubId,
+                id,
                 meToken.totalSupply(),
-                balancePooled,
-                reconfiguring,
-                startTime,
-                endTime
+                balancePooled
             );
             collateralReturned = WeightedAverage.calculate(
                 collateralReturned,

@@ -12,7 +12,7 @@ contract CurveRegistry is ICurveRegistry {
     event Deactivate(uint256 curveId);
 
     address public dao = address(0x0); // TODO
-    uint256 private curveCount;
+    uint256 private count;
     
     struct Details {
         string name; // BancorZero
@@ -32,19 +32,19 @@ contract CurveRegistry is ICurveRegistry {
 
         // Add curve details to storage
         Details memory details = Details(_name, _formula, _valueSet, true);
-        curves[++curveCount] = details;
+        curves[++count] = details;
     
-        emit Register(curveCount, _name, _formula, _valueSet);
-        return curveCount;
+        emit Register(count, _name, _formula, _valueSet);
+        return count;
     }
 
 
     /// @inheritdoc ICurveRegistry
-    function deactivate(uint256 _curveId) external override {
+    function deactivate(uint256 id) external override {
         // TODO: access control
-        require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
+        require(id <= count, "_curveId cannot exceed curveCount");
         // TODO: is this memory or storage?
-        Details storage details = curves[_curveId];
+        Details storage details = curves[id];
         require(details.active, "curve not active");
         details.active = false;
         emit Deactivate(_curveId);
@@ -55,26 +55,26 @@ contract CurveRegistry is ICurveRegistry {
         
     }
 
-    function isActive(uint256 _curveId) external view override returns (bool) {
-        Details memory details = curves[_curveId];
+    function isActive(uint256 id) external view override returns (bool) {
+        Details memory details = curves[id];
         return details.active;
     }
 
     /// @inheritdoc ICurveRegistry
-    function getCurveCount() external view override returns (uint256) {
-        return curveCount;
+    function getCount() external view override returns (uint256) {
+        return count;
     }
 
 
     /// @inheritdoc ICurveRegistry
-    function getDetails(uint256 _curveId) external view override returns (
+    function getDetails(uint256 id) external view override returns (
         string memory name,
         address formula,
         address valueSet,
         bool active
     ) {
-        require(_curveId <= curveCount, "_curveId cannot exceed curveCount");
-        Details memory details = curves[_curveId];
+        require(id <= count, "id cannot exceed curveCount");
+        Details memory details = curves[id];
         
         name = details.name; // BancorZero
         formula = details.formula; // see BancorZeroFormula.sol as an example of an address that could be registered
