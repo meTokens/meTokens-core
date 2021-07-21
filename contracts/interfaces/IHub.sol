@@ -7,6 +7,7 @@ interface IHub {
     event SetStatus(uint256 hubId, uint256 status);
     event DeactivateHub(uint256 hubId);
 
+    /*
     /// @notice TODO
     /// @param _name TODO
     /// @param _owner TODO
@@ -30,6 +31,7 @@ interface IHub {
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs
     ) external;
+    */
 
     /// @notice TODO
     /// @param _hubId TODO

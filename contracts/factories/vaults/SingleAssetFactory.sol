@@ -12,7 +12,7 @@ import "../../interfaces/IVaultFactory.sol";
 /// @title Factory contract to erc20-collateral vaults
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Deploys a single collateral vault (non-LP token)
-abstract contract SingleAssetFactory is IVaultFactory {
+contract SingleAssetFactory is IVaultFactory {
 
     modifier onlyHub() {
         require(msg.sender == hub, "!hub");

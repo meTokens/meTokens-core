@@ -96,7 +96,7 @@
 * [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
 * [x] Remove `_finishUpdate` from `bancorZeroValueSet`
     * Still needed to set TargetValueSet to ValueSet
-* [ ] Simplify arguments in `bancorZeroValueSet` mint() and burn()
+* [x] Simplify arguments in `bancorZeroValueSet` mint() and burn()
 * [ ] Vault recollateralizing
     * [x] MeToken balances
         * Multiplier to return balance after swaps

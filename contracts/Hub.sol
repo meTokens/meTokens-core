@@ -59,6 +59,7 @@ contract Hub is IHub {
         curveRegistry = ICurveRegistry(_curveRegistry);
     }
 
+    /*
     /// @inheritdoc IHub
     function register(
         string calldata _name,
@@ -92,13 +93,13 @@ contract Hub is IHub {
         hubs[hubCount++] = Details(
             _name,
             _owner,
-            vault,
+            address(0), // vault,
             _curve,
             _refundRatio,
             Status.ACTIVE
         );
     }
-    
+    */
 
     /// @inheritdoc IHub
     function deactivateHub(uint256 _hubId) external override hubExists(_hubId) {

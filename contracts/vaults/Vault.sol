@@ -9,7 +9,7 @@ import "../interfaces/IERC20.sol";
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base vault contract inherited by all vaults
-abstract contract Vault is IVault {
+contract Vault is IVault {
 
     event WithdrawFees(uint256 amount, address to);
 

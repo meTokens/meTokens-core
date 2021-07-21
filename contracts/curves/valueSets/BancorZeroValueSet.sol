@@ -13,7 +13,7 @@ import "../../interfaces/IUpdater.sol";
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
+contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     uint256 private BASE_X = PRECISION;
 
@@ -94,10 +94,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
         uint256 _depositAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled,
-        bool _reconfiguring,
-        uint256 _startTime,
-        uint256 _endTime
+        uint256 _balancePooled
     ) external view override returns (uint256 meTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -123,7 +120,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
-            if (block.timestamp > _startTime) {
+            if (block.timestamp > startTime) {
 
                 // Calculate return using weights
                 TargetValueSet memory t = targetValueSets[_hubId];
@@ -147,9 +144,9 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
                 meTokenAmount = WeightedAverage.calculate(
                     meTokenAmount,
                     targetMeTokenAmount,
-                    _startTime,
+                    startTime,
                     block.timestamp,
-                    _endTime
+                    endTime
                 );
 
             }
@@ -162,10 +159,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
         uint256 _burnAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled,
-        bool _reconfiguring,
-        uint256 _startTime,
-        uint256 _endTime
+        uint256 _balancePooled
     ) external view override returns (uint256 collateralTokenAmount) {
 
         ValueSet memory v = valueSets[_hubId];
@@ -181,7 +175,7 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
             (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
 
             // Only calculate weighted amount if update is live
-            if (block.timestamp > _startTime) {
+            if (block.timestamp > startTime) {
 
                 // Calculate return using weights
                 TargetValueSet memory t = targetValueSets[_hubId];
@@ -195,9 +189,9 @@ abstract contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownab
                 collateralTokenAmount = WeightedAverage.calculate(
                     collateralTokenAmount,
                     targetCollateralTokenAmount,
-                    _startTime,
+                    startTime,
                     block.timestamp,
-                    _endTime
+                    endTime
                 );
             }
         }

@@ -43,20 +43,14 @@ interface ICurveValueSet {
         uint256 _depositAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled,
-        bool _reconfiguring,
-        uint256 _startTime,
-        uint256 _endTime
+        uint256 _balancePooled
     ) external view returns (uint256 meTokenAmount);
 
     function calculateBurnReturn(
         uint256 _burnAmount,
         uint256 _hubId,
         uint256 _supply,
-        uint256 _balancePooled,
-        bool _reconfiguring,
-        uint256 _startTime,
-        uint256 _endTime
+        uint256 _balancePooled
     ) external view returns (uint256 collateralTokenAmount);
 
 
