@@ -47,7 +47,7 @@ contract CurveRegistry is ICurveRegistry {
         Details storage details = curves[id];
         require(details.active, "curve not active");
         details.active = false;
-        emit Deactivate(_curveId);
+        emit Deactivate(id);
     }
 
 

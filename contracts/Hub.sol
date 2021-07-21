@@ -15,8 +15,8 @@ import "./interfaces/IUpdater.sol";
 ///     and their respective subscribed meTokens 
 contract Hub is IHub {
 
-    modifier hubExists(uint256 _id) {
-        require(_id <= count, "_id exceeds count");
+    modifier hubExists(uint256 id) {
+        require(id <= count, "id exceeds count");
         _;
     }
 
@@ -102,35 +102,35 @@ contract Hub is IHub {
     */
 
     /// @inheritdoc IHub
-    function deactivateHub(uint256 _id) external override hubExists(_id) {
+    function deactivateHub(uint256 id) external override hubExists(id) {
         // TODO: access control
-        Details storage details = hubs[_id];
+        Details storage details = hubs[id];
 
         require(details.status == Status.ACTIVE, "Hub not active");
         details.status = Status.INACTIVE;
-        emit DeactivateHub(_id);
+        emit DeactivateHub(id);
     }
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint256) {}
 
     /// @inheritdoc IHub
-    function startUpdate(uint256 _id) external override {
+    function startUpdate(uint256 id) external override {
         require(msg.sender == address(updater), "!updater");
-        Details storage details = hubs[_id];
+        Details storage details = hubs[id];
         details.status = Status.QUEUED;
     }
 
 
     /// @inheritdoc IHub
     function finishUpdate(
-        uint256 _id,
+        uint256 id,
         address _migrating,
         address _recollateralizing,
         uint256 _shifting
     ) external override {
         require(msg.sender == address(updater), "!updater");
-        Details storage details = hubs[_id];
+        Details storage details = hubs[id];
         
         if (_migrating != address(0)) {
             details.curve = _migrating;
@@ -149,7 +149,7 @@ contract Hub is IHub {
 
     /// @inheritdoc IHub
     function setStatus(
-        uint256 _id,
+        uint256 id,
         uint256 status
     ) public override returns (bool) {
         // TODO: access control
@@ -160,40 +160,40 @@ contract Hub is IHub {
             "!updater && !foundry"
         );
 
-        Details storage details = hubs[_id];
+        Details storage details = hubs[id];
         require(uint256(details.status) != status, "Cannot set to same status");
         details.status = Status(status);
-        emit SetStatus(_id, status);
+        emit SetStatus(id, status);
         return true;
     }
 
-    function getCount() external view override returns (uint256) {return count;}
+    function getCount() external view returns (uint256) {return count;}
 
     /// @inheritdoc IHub
-    function getOwner(uint256 _id) public view override hubExists(_id) returns (address) {
-        Details memory details = hubs[_id];
+    function getOwner(uint256 id) public view override hubExists(id) returns (address) {
+        Details memory details = hubs[id];
         return details.owner;
     }
 
 
     /// @inheritdoc IHub
-    function getStatus(uint256 _id) public view override returns (uint256) {
-        Details memory details = hubs[_id];
+    function getStatus(uint256 id) public view override returns (uint256) {
+        Details memory details = hubs[id];
         return uint256(details.status);
     }
 
 
     /// @inheritdoc IHub
-    function getRefundRatio(uint256 _id) public view override returns (uint256) {
-        Details memory details = hubs[_id];
+    function getRefundRatio(uint256 id) public view override returns (uint256) {
+        Details memory details = hubs[id];
         return details.refundRatio;
     }
 
 
     /// @inheritdoc IHub
     function getDetails(
-        uint256 _id
-    ) external view override hubExists(_id) returns (
+        uint256 id
+    ) external view override hubExists(id) returns (
         string memory name,
         address owner,
         address vault,
@@ -201,7 +201,7 @@ contract Hub is IHub {
         uint256 refundRatio,
         uint256 status
     ) {
-        Details memory details = hubs[_id];
+        Details memory details = hubs[id];
         name = details.name;
         owner = details.owner;
         vault = details.vault;
@@ -211,16 +211,16 @@ contract Hub is IHub {
     }
 
     /// @inheritdoc IHub
-    function getCurve(uint256 _id) external view override returns (address) {
-        require(_id < count, "_id > count");
-        Details memory details = hubs[_id];
+    function getCurve(uint256 id) external view override returns (address) {
+        require(id < count, "id > count");
+        Details memory details = hubs[id];
         return details.curve;
     }
 
     /// @inheritdoc IHub
-    function getVault(uint256 _id) external view override returns (address) {
-        require(_id < count, "_id > count");
-        Details memory details = hubs[_id];
+    function getVault(uint256 id) external view override returns (address) {
+        require(id < count, "id > count");
+        Details memory details = hubs[id];
         return details.vault;
     }
 
