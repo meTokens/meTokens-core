@@ -24,7 +24,7 @@ describe("VaultRegistry.sol", function () {
         it("Vault is not yet approved", async function () {
             await expect(
                 vaultRegistry.isApprovedVaultFactory("0x0")
-            ).to.
+            ).to.be.reverted;
         });
 
     });
