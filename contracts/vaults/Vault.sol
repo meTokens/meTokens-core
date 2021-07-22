@@ -9,9 +9,10 @@ import "../interfaces/IERC20.sol";
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base vault contract inherited by all vaults
-contract Vault is IVault {
+contract Vault is IVault, Ownable {
 
     event WithdrawFees(uint256 amount, address to);
+    event AddFee(uint256 amount);
 
     uint256 private PRECISION = 10**18;
     
@@ -25,14 +26,16 @@ contract Vault is IVault {
 
     
     /// @inheritdoc IVault
-    function addFee(uint256 amount) external override {
+    function addFee(uint256 amount) external onlyOwner override {
+        // TODO:  correct access control
         accruedFees = accruedFees + amount;
+        emit AddFee(amount);
     }
 
 
     /// @inheritdoc IVault
-    function withdrawFees(bool _max, uint256 _amount, address _to) external override {
-        require(msg.sender == gov, "!gov");
+    function withdrawFees(bool _max, uint256 _amount, address _to) external onlyOwner override {
+        // TODO: correct access control
         if (_max) {
             _amount = accruedFees;
         } else {

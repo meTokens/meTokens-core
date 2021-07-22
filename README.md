@@ -163,3 +163,6 @@
 #### 7.20
 * [ ] `curveRegistry.isApprovedValueSet()` within Hub.sol - should that function be changed to `isApproved()`?
 * [ ] `executeProposal()` within Updater.sol
+
+#### 7.22
+* [ ] Move Status to standalone lib
