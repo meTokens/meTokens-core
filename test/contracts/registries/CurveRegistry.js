@@ -22,7 +22,7 @@ describe("CurveRegistry.sol", function () {
             ).to.be.reverted;
         });
         
-        it("Emits a 'RegisterCurve' event", async function () {
+        it("Emits RegisterCurve()", async function () {
             await expect(
                 curveRegistry.registerCurve("Test Curve", formula, valueSet)
             ).to.emit(curveRegistry, "")
