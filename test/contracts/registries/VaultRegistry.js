@@ -1,41 +1,78 @@
 const VaultRegistry = artifacts.require("VaultRegistry");
+const SingleAsset = artifacts.require("SingleAssetFactory");
+
 
 describe("VaultRegistry.sol", function () {
+
+    let vaultName = "Test Vault"
 
     before(async function () {
 
         // TODO: constructor arguments
         let vaultRegistry = await VaultRegistry.new();
+        let factory = await SingleAsset.new();
+        let vault = 0;
     });
 
-    describe("Register()", function () {
-
-        it("Emits a Register(string, address, address)", async function () {
-            await expect(
-                vaultRegistry.registerVault("Test Vault", vault.address, factory.address)
-            ).to.emit(vaultRegistry, "RegisterVault")
-            .withArgs("Test Vault", vault.address, factory.address);
+    describe("register()", () => {
+        it("Reverts when called by unapproved factory", async () => {
+            expect(
+                await vaultRegistry.
+            )
         });
 
+        it("Emits Register(string, address, address)", async () => {
+            expect(
+                await vaultRegistry.register(vaultName, vault, factory)
+            ).to.emit(vaultRegistry, "Register")
+            .withArgs(vaultName, vault, factory);
+        });
     });
     
-    it("approveFactory()", async function () {
-        // Do something
-        it("Vault is not yet approved", async function () {
+    describe("approve()", () => {
+        it("Vault is not yet approved", async () => {
+            expect(
+                await vaultRegistry.isApproved("0x0")
+            ).to.equal(false);
+        });
+
+        it("Emits Approve(address)", async () => {
+            expect(
+                await vaultRegistry.approve(factory)
+            ).to.emit(vaultRegistry, "Approve")
+             .withArgs(factory);
+        });
+    });
+
+    describe("unapprove()", () => {
+        it("Revert if not yet approved", async () => {
             await expect(
-                vaultRegistry.isApprovedVaultFactory("0x0")
+                vaultRegistry.unapprove(factory)
             ).to.be.reverted;
         });
 
+        it("Emits Unapprove(address)", async () => {
+            await vaultRegistry.approve(factory);
+            expect(
+                await vaultRegistry.unapprove(factory)
+            ).to.emit(vaultRegistry, "Unapprove")
+             .withArgs(factory);
+        });
     });
 
-    it("unapproveFactory()", async function () {
-        // Do something
-        it("Uninitialized vault is already unapproved", async function () {
-            await expect(
-                vaultRegistry.isApprovedVaultFactory("0x0")
-            ).to.revert;
+    describe("isActive()", () => {
+        it("Return false for inactive/nonexistent vault", async () => {
+            expect(
+                await vaultRegistry.isActive(factory)
+            ).to.equal(false);
         });
+
+        it("Return true for active vault", async () => {
+            await vaultRegistry.register(vaultName, vault, factory);
+            expect(
+                await vaultRegistry.isActive(factory)
+            ).to.equal(true);
+        })
     });
 
     

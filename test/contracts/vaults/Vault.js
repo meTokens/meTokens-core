@@ -13,11 +13,11 @@ describe("Vault.sol", function () {
     });
 
     describe("addFee()", function () {
-        it("Reverts when not called by owner", async function () {
-            await expect(vault.addFee(amount)).to.be.reverted;
+        it("Reverts when not called by owner", async () => {
+            expect(await vault.addFee(amount)).to.be.reverted;
         });
 
-        it("Increments accruedFees by amount", async function () {
+        it("Increments accruedFees by amount", async () => {
             let accruedFeesBefore = vault.accruedFees();
             // TODO: add fees from owner
             await vault.addFee(amount);
@@ -25,22 +25,26 @@ describe("Vault.sol", function () {
             expect(accruedFeesBefore).to.equal(accruedFeesAfter)
         });
 
-        it("Emits AddFee(amount)", async function () {
-           await expect(vault.addFee(amount))
+        it("Emits AddFee(amount)", async () => {
+           expect(await vault.addFee(amount))
             .to.emit(vault, "AddFee")
             .withArgs(amount);
         });
     });
 
-    describe("withdrawFees()", function () {
-        it("Reverts when not called by owner", async function () {
-            await expect(
-                vault.withdrawFees(true, 0, address(0))
+    describe("withdrawFees()", () => {
+        it("Reverts when not called by owner", async () => {
+            expect(
+                await vault.withdrawFees(true, 0, address(0)).to.be.reverted
             );
         });
 
-        it("Transfer some accrued fees", async function () {
-            let balanceBefore = await 
+        it("Transfer some accrued fees", async () => {
+            // TODO
+        });
+
+        it("Transfer all remaining accrued fees", async () => {
+            // TODO
         });
     });
 
