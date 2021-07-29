@@ -1,6 +1,79 @@
 # meTokens-core
 🎛  Core smart contracts of meTokens
 
+### Current test status
+```
+➜  meTokens-core git:(main) ✗ npx hardhat test
+
+
+  MeTokenFactory.sol
+    ✓ create()
+
+  UniswapSingleTransferFactory.sol
+    1) "before all" hook for ""
+
+  SingleAssetFactory.sol
+    2) "before all" hook in "SingleAssetFactory.sol"
+
+  Foundry.sol
+    3) "before all" hook in "Foundry.sol"
+
+  Hub.sol
+    ✓ Create new hub
+    ✓ Register new hub
+
+  CurveRegistry.sol
+    register()
+(node:114516) UnhandledPromiseRejectionWarning: Error: BancorZeroValueSet contains unresolved libraries. You must deploy and link the following libraries before you can deploy a new version of BancorZeroValueSet
+      4) Reverts when the curve name is already chosen
+      5) Emits RegisterCurve()
+      6) Returns uint256
+    deactivate()
+      7) Reverts from an invalid ID
+      ✓ Emits Deactivate(id) when successful
+      ✓ Sets active to false
+    getCount()
+      8) Should start at 0
+      9) Should increment to 1 after register()
+    isActive()
+      10) Should return false for invalid ID
+      11) Should return true for an active ID
+
+  MeTokenRegistry.sol
+    12) "before all" hook in "MeTokenRegistry.sol"
+
+  VaultRegistry.sol
+    13) "before all" hook in "VaultRegistry.sol"
+
+  Updater.sol
+    initUpdate()
+      14) Expect _startTime revert when out of range
+      15) Expect _duration revert when out of range
+
+  SingleAsset.sol
+    
+      ✓ Should do something
+
+  Vault.sol
+    addFee()
+      16) Reverts when not called by owner
+      17) Increments accruedFees by amount
+      18) Emits AddFee(amount)
+    withdrawFees()
+      19) Reverts when not called by owner
+      ✓ Transfer some accrued fees
+      ✓ Transfer all remaining accrued fees
+
+
+  8 passing (8s)
+  19 failing
+```
+
+
+
+
+
+
 ## Relationship between Hub & Vault
 ### Hub
 * Stores no collateral assets

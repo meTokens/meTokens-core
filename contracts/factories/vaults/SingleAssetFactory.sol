@@ -36,7 +36,7 @@ contract SingleAssetFactory is IVaultFactory {
     function create(
         string calldata _name,
         address _collateralAsset,
-        bytes calldata _encodedAdditionalArgs
+        bytes memory _encodedAdditionalArgs
     ) external override returns (address) {
 
         address vaultAddress = Clones.cloneDeterministic(

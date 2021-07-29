@@ -2,7 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/ICurveRegistry.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
+    
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values

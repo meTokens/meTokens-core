@@ -15,7 +15,7 @@ contract SingleAsset is Vault, Initializable {
 
     function initialize(
         address _collateralAsset,
-        bytes32 calldata _encodedAdditionalArgs
+        bytes memory _encodedAdditionalArgs
     ) initializer public {
         require(vaultRegistry.isApproved(msg.sender), "msg.sender not approved vault factory");
 
