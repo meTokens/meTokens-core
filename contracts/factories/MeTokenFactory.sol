@@ -14,13 +14,9 @@ contract MeTokenFactory {
         _;
     }
 
-    event Create(address meToken);
-
-    address public meTokenRegistry;
+    address public meTokenRegistry = address(0); // TODO
     
-    constructor (address _meTokenRegistry) {
-        meTokenRegistry = _meTokenRegistry;
-    }
+    constructor () {}
 
     /// @notice create a meToken
     /// @param _owner owner of meToken
@@ -38,8 +34,6 @@ contract MeTokenFactory {
 
         // TODO: register meToken
 
-        emit Create(address(meToken));
         return address(meToken);
     }
-
 }

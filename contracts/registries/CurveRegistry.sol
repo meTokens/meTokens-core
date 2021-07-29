@@ -6,12 +6,11 @@ import "../interfaces/ICurveRegistry.sol";
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
-contract CurveRegistry is ICurveRegistry {
+contract CurveRegistry is ICurveRegistry, Ownable {
 
     event Register(uint256 id, string name, address formula, address values);
     event Deactivate(uint256 curveId);
 
-    address public dao = address(0x0); // TODO
     uint256 private count;
     
     struct Details {
@@ -27,8 +26,7 @@ contract CurveRegistry is ICurveRegistry {
         string calldata _name,
         address _formula,
         address _valueSet
-    ) external override returns (uint256) {
-        // require(msg.sender == dao, "!dao");
+    ) external onlyOwner override returns (uint256) {
 
         // Add curve details to storage
         Details memory details = Details(_name, _formula, _valueSet, true);
@@ -40,10 +38,9 @@ contract CurveRegistry is ICurveRegistry {
 
 
     /// @inheritdoc ICurveRegistry
-    function deactivate(uint256 id) external override {
-        // TODO: access control
+    function deactivate(uint256 id) external onlyOwner override {
         require(id <= count, "_curveId cannot exceed count");
-        // TODO: is this memory or storage?
+
         Details storage details = curves[id];
         require(details.active, "curve not active");
         details.active = false;
@@ -52,7 +49,7 @@ contract CurveRegistry is ICurveRegistry {
 
 
     function isRegistered(address curve) external view returns (bool) {
-        
+        // TODO
     }
 
     function isActive(uint256 id) external view override returns (bool) {

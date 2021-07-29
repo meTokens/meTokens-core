@@ -16,9 +16,6 @@ describe("VaultRegistry.sol", function () {
 
     describe("register()", () => {
         it("Reverts when called by unapproved factory", async () => {
-            expect(
-                await vaultRegistry.
-            )
         });
 
         it("Emits Register(string, address, address)", async () => {

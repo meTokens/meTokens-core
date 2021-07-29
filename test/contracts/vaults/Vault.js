@@ -3,7 +3,7 @@ const Vault = artifacts.require("Vault");
 describe("Vault.sol", function () {
 
     let amount = 3 * 10 ** 18;
-    let ZEROADDRESS = address(0);
+    let ZEROADDRESS = "0x000";
     let COLLATERAL_ASSET = "DAI";  // TODO- address
 
     before(async function () {

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IERC20.sol";
@@ -20,10 +22,9 @@ contract Vault is IVault, Ownable {
     address gov = address(0x0);  // TODO
     IVaultRegistry public vaultRegistry = IVaultRegistry(address(0)); // TODO
 
-    address public owner;
 	address public collateralAsset;
-    uint256 accruedFees;
-
+    uint256 public accruedFees;
+    bytes public encodedAdditionalArgs;
     
     /// @inheritdoc IVault
     function addFee(uint256 amount) external onlyOwner override {

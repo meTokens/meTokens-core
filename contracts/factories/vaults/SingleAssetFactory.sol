@@ -35,25 +35,24 @@ contract SingleAssetFactory is IVaultFactory {
     /// @inheritdoc IVaultFactory
     function create(
         string calldata _name,
-        address _owner,
         address _collateralAsset,
-        bytes calldata _encodedVaultAdditionalArgs // NOTE: potentially needed for other vaults 
+        bytes calldata _encodedAdditionalArgs
     ) external override returns (address) {
+
         address vaultAddress = Clones.cloneDeterministic(
             implementation,
-            bytes32(count)
+            bytes32(++count)
         );
 
         // create our vault
         SingleAsset(vaultAddress).initialize(
-            _owner,
-            _collateralAsset
+            _collateralAsset,
+            _encodedAdditionalArgs
         );
 
         // Add vault to vaultRegistry
         vaultRegistry.register(_name, vaultAddress, address(this));
 
-        count++;
         emit Create(vaultAddress);
         return vaultAddress;
     }
