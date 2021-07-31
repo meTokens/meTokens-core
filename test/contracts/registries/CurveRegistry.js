@@ -6,13 +6,16 @@ const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 describe("CurveRegistry.sol", () => {
 
     let curveName = "Test Curve";
+    let curveRegistry;
+    let formula;
+    let valueSet;
 
     before(async () => {
 
         // TODO: arguments in constructors
-        let curveRegistry = await CurveRegistry.new();
-        let formula = BancorZeroFormula.new();
-        let valueSet = BancorZeroValueSet.new();
+        curveRegistry = await CurveRegistry.new();
+        formula = await BancorZeroFormula.new();
+        valueSet = await BancorZeroValueSet.new();
     });
 
     describe("register()", () => {

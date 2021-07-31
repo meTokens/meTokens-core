@@ -1,17 +1,23 @@
 const VaultRegistry = artifacts.require("VaultRegistry");
-const SingleAsset = artifacts.require("SingleAssetFactory");
+const SingleAssetFactory = artifacts.require("SingleAssetFactory");
 
 
 describe("VaultRegistry.sol", () => {
 
-    let vaultName = "Test Vault"
+    let vaultName = "Test Vault";
+    let ZEROADDRESS = "0x0000000000000000000000000000000000000000";
+    let hub = ZEROADDRESS;
+    let vaultRegistry = ZEROADDRESS;
+    let implementation = ZEROADDRESS;
+    let factory;
+    let vault;
 
     before(async () => {
 
         // TODO: constructor arguments
-        let vaultRegistry = await VaultRegistry.new();
-        let factory = await SingleAsset.new();
-        let vault = 0;
+        vaultRegistry = await VaultRegistry.new();
+        factory = await SingleAssetFactory.new(hub, vaultRegistry, implementation);
+        vault = 0;
     });
 
     describe("register()", () => {
@@ -29,7 +35,7 @@ describe("VaultRegistry.sol", () => {
     describe("approve()", () => {
         it("Vault is not yet approved", async () => {
             expect(
-                await vaultRegistry.isApproved("0x0")
+                await vaultRegistry.isApproved(ZEROADDRESS)
             ).to.equal(false);
         });
 

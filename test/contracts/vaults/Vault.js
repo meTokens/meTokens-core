@@ -19,11 +19,11 @@ describe("Vault.sol", () => {
         });
 
         it("Increments accruedFees by amount", async () => {
-            let accruedFeesBefore = vault.accruedFees();
+            let accruedFeesBefore = await vault.accruedFees();
             // TODO: add fees from owner
             await vault.addFee(amount);
-            let accruedFeesAfter = vault.accruedFees();
-            expect(accruedFeesBefore).to.equal(accruedFeesAfter)
+            let accruedFeesAfter = await vault.accruedFees();
+            expect(accruedFeesBefore).to.equal(accruedFeesAfter - amount);
         });
 
         it("Emits AddFee(amount)", async () => {
@@ -36,8 +36,8 @@ describe("Vault.sol", () => {
     describe("withdrawFees()", () => {
         it("Reverts when not called by owner", async () => {
             expect(
-                await vault.withdrawFees(true, 0, ZEROADDRESS).to.be.reverted
-            );
+                await vault.withdrawFees(true, 0, ZEROADDRESS)
+            ).to.be.reverted;
         });
 
         it("Transfer some accrued fees", async () => {
@@ -48,7 +48,4 @@ describe("Vault.sol", () => {
             // TODO
         });
     });
-
-
-
 });
