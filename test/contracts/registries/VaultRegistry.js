@@ -2,11 +2,11 @@ const VaultRegistry = artifacts.require("VaultRegistry");
 const SingleAsset = artifacts.require("SingleAssetFactory");
 
 
-describe("VaultRegistry.sol", function () {
+describe("VaultRegistry.sol", () => {
 
     let vaultName = "Test Vault"
 
-    before(async function () {
+    before(async () => {
 
         // TODO: constructor arguments
         let vaultRegistry = await VaultRegistry.new();

@@ -1,6 +1,6 @@
 const SingleAssetFactory = artifacts.require("SingleAssetFactory");
 
-describe("SingleAssetFactory.sol", function () {
+describe("SingleAssetFactory.sol", () => {
 
     before(async () => {
         let singleAssetFactory = await SingleAssetFactory.new();

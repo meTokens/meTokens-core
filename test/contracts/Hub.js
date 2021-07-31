@@ -1,17 +1,17 @@
 const Hub = artifacts.require("Hub");
 
-describe("Hub.sol", function () {
+describe("Hub.sol", () => {
 
-    before(async function () {
+    before(async () => {
         let hub = await Hub.new();
 
     });
 
-    it("Create new hub", async function () {
+    it("Create new hub", async () => {
         // Do something
     });
 
-    it("Register new hub", async function () {
+    it("Register new hub", async () => {
         // Do something
     });
 

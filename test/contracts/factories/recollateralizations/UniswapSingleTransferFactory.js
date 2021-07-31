@@ -1,13 +1,13 @@
 const UniswapSingleTransferFactory = artifacts.require("UniswapSingleTransferFactory");
 
-describe("UniswapSingleTransferFactory.sol", function () {
+describe("UniswapSingleTransferFactory.sol", () => {
 
-    before(async function () {
-        let uniswapSingleTransferFactory = await UniswapSingleTransferFactory.new();
+    before(async () => {
+        // let uniswapSingleTransferFactory = await UniswapSingleTransferFactory.new();
 
     });
 
-    it("", async function () {
+    it("", async () => {
         // Do something
     });
 

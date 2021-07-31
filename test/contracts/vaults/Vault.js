@@ -1,18 +1,19 @@
 const Vault = artifacts.require("Vault");
 
-describe("Vault.sol", function () {
+describe("Vault.sol", () => {
 
-    let amount = 3 * 10 ** 18;
-    let ZEROADDRESS = "0x000";
+    let amount = 3;
+    let ZEROADDRESS = "0x0000000000000000000000000000000000000000";
     let COLLATERAL_ASSET = "DAI";  // TODO- address
+    let vault;
 
-    before(async function () {
-        let vault = await Vault.new();
+    before(async () => {
+        vault = await Vault.new();
         // TODO: pre-load DAI contract
         // let erc20 = 
     });
 
-    describe("addFee()", function () {
+    describe("addFee()", () => {
         it("Reverts when not called by owner", async () => {
             expect(await vault.addFee(amount)).to.be.reverted;
         });
@@ -35,7 +36,7 @@ describe("Vault.sol", function () {
     describe("withdrawFees()", () => {
         it("Reverts when not called by owner", async () => {
             expect(
-                await vault.withdrawFees(true, 0, address(0)).to.be.reverted
+                await vault.withdrawFees(true, 0, ZEROADDRESS).to.be.reverted
             );
         });
 

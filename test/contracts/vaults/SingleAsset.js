@@ -1,15 +1,15 @@
 const SingleAsset = artifacts.require("SingleAsset");
 
-describe("SingleAsset.sol", function () {
+describe("SingleAsset.sol", () => {
 
-    before(async function () {
+    before(async () => {
         let singleAsset = await SingleAsset.new();
 
     });
 
-    describe("", function () {
+    describe("", () => {
 
-        it("Should do something", async function () {
+        it("Should do something", async () => {
             // Do something
         });
     });
