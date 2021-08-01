@@ -5,7 +5,7 @@ interface IHub {
 
     event Register(string name, address indexed vault);  // TODO: decide on arguments
     event SetStatus(uint256 hubId, uint256 status);
-    event DeactivateHub(uint256 hubId);
+    event Deactivate(uint256 hubId);
 
     /*
     /// @notice TODO
@@ -35,7 +35,7 @@ interface IHub {
 
     /// @notice TODO
     /// @param _hubId TODO
-    function deactivateHub(uint256 _hubId) external;
+    function deactivate(uint256 _hubId) external;
 
     /// @notice TODO
     /// @param _hubId TODO

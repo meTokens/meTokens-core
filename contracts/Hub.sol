@@ -16,7 +16,7 @@ import "./libs/Status.sol";
 ///     and their respective subscribed meTokens 
 contract Hub is IHub {
 
-    modifier hubExists(uint256 id) {
+    modifier exists(uint256 id) {
         require(id <= count, "id exceeds count");
         _;
     }
@@ -103,13 +103,13 @@ contract Hub is IHub {
     */
 
     /// @inheritdoc IHub
-    function deactivateHub(uint256 id) external override hubExists(id) {
+    function deactivate(uint256 id) external override exists(id) {
         // TODO: access control
         Details storage details = hubs[id];
 
         require(details.status == Status.ACTIVE, "Hub not active");
         details.status = Status.INACTIVE;
-        emit DeactivateHub(id);
+        emit Deactivate(id);
     }
 
     // TODO: is this needed?
@@ -171,7 +171,7 @@ contract Hub is IHub {
     function getCount() external view returns (uint256) {return count;}
 
     /// @inheritdoc IHub
-    function getOwner(uint256 id) public view override hubExists(id) returns (address) {
+    function getOwner(uint256 id) public view override exists(id) returns (address) {
         Details memory details = hubs[id];
         return details.owner;
     }
@@ -194,7 +194,7 @@ contract Hub is IHub {
     /// @inheritdoc IHub
     function getDetails(
         uint256 id
-    ) external view override hubExists(id) returns (
+    ) external view override exists(id) returns (
         string memory name,
         address owner,
         address vault,
