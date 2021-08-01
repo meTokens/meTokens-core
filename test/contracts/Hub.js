@@ -7,11 +7,11 @@ describe("Hub.sol", () => {
 
     });
 
-    it("Create new hub", async () => {
+    it("register()", async () => {
         // Do something
     });
 
-    it("Register new hub", async () => {
+    it("deactivate()", async () => {
         // Do something
     });
 

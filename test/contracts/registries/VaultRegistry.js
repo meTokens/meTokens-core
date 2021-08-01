@@ -7,8 +7,8 @@ describe("VaultRegistry.sol", () => {
     let vaultName = "Test Vault";
     let ZEROADDRESS = "0x0000000000000000000000000000000000000000";
     let hub = ZEROADDRESS;
-    let vaultRegistry = ZEROADDRESS;
     let implementation = ZEROADDRESS;
+    let vaultRegistry;
     let factory;
     let vault;
 
