@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
@@ -52,7 +54,7 @@ contract Hub is IHub {
         address _updater,
         address _vaultRegistry,
         address _curveRegistry
-    ) public {
+    ) public onlyOwner {
         gov = _gov;
         foundry = _foundry;
         updater = IUpdater(_updater);
