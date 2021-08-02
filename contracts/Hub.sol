@@ -16,7 +16,7 @@ import "./libs/Status.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens 
-contract Hub is IHub {
+contract Hub is IHub, Ownable {
 
     modifier exists(uint256 id) {
         require(id <= count, "id exceeds count");
