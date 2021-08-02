@@ -7,14 +7,10 @@ import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IERC20.sol";
 
-
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base vault contract inherited by all vaults
 contract Vault is IVault, Ownable {
-
-    event WithdrawFees(uint256 amount, address to);
-    event AddFee(uint256 amount);
 
     uint256 private PRECISION = 10**18;
     
@@ -28,25 +24,23 @@ contract Vault is IVault, Ownable {
     
     /// @inheritdoc IVault
     function addFee(uint256 amount) external onlyOwner override {
-        // TODO:  correct access control
         accruedFees = accruedFees + amount;
         emit AddFee(amount);
     }
 
 
     /// @inheritdoc IVault
-    function withdrawFees(bool _max, uint256 _amount, address _to) external onlyOwner override {
-        // TODO: correct access control
+    function withdraw(bool _max, uint256 _amount, address _to) external onlyOwner override {
         if (_max) {
             _amount = accruedFees;
         } else {
-            require(_amount <= accruedFees, "_amount cannot exceed feeBalance");
+            require(_amount <= accruedFees, "_amount cannot exceed accruedFees");
         }
 
         IERC20(collateralAsset).transfer(_to, _amount);
         accruedFees = accruedFees - _amount;
 
-        emit WithdrawFees(_amount, _to);
+        emit Withdraw(_amount, _to);
     }
 
 
@@ -54,5 +48,4 @@ contract Vault is IVault, Ownable {
     function getCollateralAsset() external view override returns (address) {
         return collateralAsset;
     }
-
 }
