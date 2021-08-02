@@ -1,7 +1,7 @@
 require("@nomiclabs/hardhat-truffle5");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-web3");
-require("@nomiclab/hardhat-ethers")
+require("@nomiclabs/hardhat-ethers")
 
 require("dotenv").config();
 
