@@ -11,26 +11,26 @@ interface ICurveRegistry {
         string calldata _name,
         address _formula,
         address _valueSet
-    ) external returns (uint256);
+    ) external returns (uint);
 
     /// @notice TODO
-    /// @param _curveId TODO
-    function deactivate(uint256 _curveId) external;
+    /// @param id TODO
+    function deactivate(uint id) external;
     
-    function isActive(uint256 _curveId) external view returns (bool);
+    function isActive(uint id) external view returns (bool);
 
     /// @notice TODO
     /// @return TODO
-    function getCount() external view returns (uint256);
+    function getCount() external view returns (uint);
 
     // / @notice TODO
-    // / @param _curveId TODO
+    // / @param id TODO
     // / @return name TODO
     // / @return formula TODO
     // / @return valueSet TODO
     // / @return active TODO
     function getDetails(
-        uint256 _curveId
+        uint id
     ) external view returns (
         string memory name,
         address formula,

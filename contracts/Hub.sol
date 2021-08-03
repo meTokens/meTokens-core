@@ -18,14 +18,14 @@ import "./libs/Status.sol";
 ///     and their respective subscribed meTokens 
 contract Hub is IHub, Ownable {
 
-    modifier exists(uint256 id) {
+    modifier exists(uint id) {
         require(id <= count, "id exceeds count");
         _;
     }
 
-    uint256 private immutable PRECISION = 10**18;
+    uint private immutable PRECISION = 10**18;
 
-    uint256 private count;
+    uint private count;
     address public gov;
     address public foundry;
     IVaultRegistry public vaultRegistry;
@@ -37,11 +37,11 @@ contract Hub is IHub, Ownable {
         address owner;
         address vault;
         address curve;
-        uint256 refundRatio;
+        uint refundRatio;
         Status status;
     }
 
-    mapping(uint256 => Details) private hubs;
+    mapping(uint => Details) private hubs;
 
     // TODO: ensure this is properly checked
     enum Status { INACTIVE, ACTIVE, QUEUED, UPDATING}
@@ -72,7 +72,7 @@ contract Hub is IHub, Ownable {
         address _vaultFactory,
         address _curve,
         address _collateralAsset,
-        uint256 _refundRatio,
+        uint _refundRatio,
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs
     ) external override {
@@ -105,7 +105,7 @@ contract Hub is IHub, Ownable {
     */
 
     /// @inheritdoc IHub
-    function deactivate(uint256 id) external override exists(id) {
+    function deactivate(uint id) external override exists(id) {
         // TODO: access control
         Details storage details = hubs[id];
 
@@ -115,10 +115,10 @@ contract Hub is IHub, Ownable {
     }
 
     // TODO: is this needed?
-    // function reactivateHub() returns (uint256) {}
+    // function reactivateHub() returns (uint) {}
 
     /// @inheritdoc IHub
-    function startUpdate(uint256 id) external override {
+    function startUpdate(uint id) external override {
         require(msg.sender == address(updater), "!updater");
         Details storage details = hubs[id];
         details.status = Status.QUEUED;
@@ -127,24 +127,24 @@ contract Hub is IHub, Ownable {
 
     /// @inheritdoc IHub
     function finishUpdate(
-        uint256 id,
-        address _migrating,
-        address _recollateralizing,
-        uint256 _shifting
+        uint id,
+        address migrating,
+        address recollateralizing,
+        uint shifting
     ) external override {
         require(msg.sender == address(updater), "!updater");
         Details storage details = hubs[id];
         
-        if (_migrating != address(0)) {
-            details.curve = _migrating;
+        if (migrating != address(0)) {
+            details.curve = migrating;
         }
 
-        if (_recollateralizing != address(0)) {
-            details.vault = _recollateralizing;
+        if (recollateralizing != address(0)) {
+            details.vault = recollateralizing;
         }
 
-        if (_shifting != 0) {
-            details.refundRatio = _shifting;
+        if (shifting != 0) {
+            details.refundRatio = shifting;
         }
         details.status = Status.ACTIVE;
     }
@@ -152,8 +152,8 @@ contract Hub is IHub, Ownable {
 
     /// @inheritdoc IHub
     function setStatus(
-        uint256 id,
-        uint256 status
+        uint id,
+        uint status
     ) public override returns (bool) {
         // TODO: access control
         // Can only be from Foundry when setting to QUEUED > UPDATING,
@@ -164,30 +164,30 @@ contract Hub is IHub, Ownable {
         );
 
         Details storage details = hubs[id];
-        require(uint256(details.status) != status, "Cannot set to same status");
+        require(uint(details.status) != status, "Cannot set to same status");
         details.status = Status(status);
         emit SetStatus(id, status);
         return true;
     }
 
-    function getCount() external view returns (uint256) {return count;}
+    function getCount() external view returns (uint) {return count;}
 
     /// @inheritdoc IHub
-    function getOwner(uint256 id) public view override exists(id) returns (address) {
+    function getOwner(uint id) public view override exists(id) returns (address) {
         Details memory details = hubs[id];
         return details.owner;
     }
 
 
     /// @inheritdoc IHub
-    function getStatus(uint256 id) public view override returns (uint256) {
+    function getStatus(uint id) public view override returns (uint) {
         Details memory details = hubs[id];
-        return uint256(details.status);
+        return uint(details.status);
     }
 
 
     /// @inheritdoc IHub
-    function getRefundRatio(uint256 id) public view override returns (uint256) {
+    function getRefundRatio(uint id) public view override returns (uint) {
         Details memory details = hubs[id];
         return details.refundRatio;
     }
@@ -195,14 +195,14 @@ contract Hub is IHub, Ownable {
 
     /// @inheritdoc IHub
     function getDetails(
-        uint256 id
+        uint id
     ) external view override exists(id) returns (
         string memory name,
         address owner,
         address vault,
         address curve_,
-        uint256 refundRatio,
-        uint256 status
+        uint refundRatio,
+        uint status
     ) {
         Details memory details = hubs[id];
         name = details.name;
@@ -210,18 +210,18 @@ contract Hub is IHub, Ownable {
         vault = details.vault;
         curve_ = details.curve;
         refundRatio = details.refundRatio;
-        status = uint256(details.status);
+        status = uint(details.status);
     }
 
     /// @inheritdoc IHub
-    function getCurve(uint256 id) external view override returns (address) {
+    function getCurve(uint id) external view override returns (address) {
         require(id < count, "id > count");
         Details memory details = hubs[id];
         return details.curve;
     }
 
     /// @inheritdoc IHub
-    function getVault(uint256 id) external view override returns (address) {
+    function getVault(uint id) external view override returns (address) {
         require(id < count, "id > count");
         Details memory details = hubs[id];
         return details.vault;

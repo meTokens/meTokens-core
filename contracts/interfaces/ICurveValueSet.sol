@@ -7,40 +7,42 @@ pragma solidity ^0.8.0;
 /// @dev Required for all Curve ValueSets
 interface ICurveValueSet {
 
+    event Updated(uint indexed id);
+
     /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
     /// BancorZero ValueSet registry
     /// @dev ValueSet need to be encoded as the Hub may register ValueSets for different curves
     ///      that may contain different ValueSet arguments
-    /// @param _hubId               unique hub identifier
+    /// @param id                   unique hub identifier
     /// @param _encodedValueSet     encoded ValueSet arguments
     function register(
-        uint256 _hubId,
+        uint id,
         bytes calldata _encodedValueSet
     ) external;
 
     /// @notice TODO
-    /// @param _hubId               unique hub identifier
+    /// @param id                   unique hub identifier
     /// @param _encodedValueSet     encoded target ValueSet arguments
     function registerTarget(
-        uint256 _hubId,
+        uint id,
         bytes calldata _encodedValueSet
     ) external;
 
 
     function calculateMintReturn(
-        uint256 _depositAmount,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view returns (uint256 meTokenAmount);
+        uint _depositAmount,
+        uint id,
+        uint _supply,
+        uint _balancePooled
+    ) external view returns (uint meTokenAmount);
 
     function calculateBurnReturn(
-        uint256 _burnAmount,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view returns (uint256 collateralTokenAmount);
+        uint _burnAmount,
+        uint id,
+        uint _supply,
+        uint _balancePooled
+    ) external view returns (uint collateralTokenAmount);
 
 
-    function finishUpdate(uint256 _hubId) external;
+    function finishUpdate(uint id) external;
 }

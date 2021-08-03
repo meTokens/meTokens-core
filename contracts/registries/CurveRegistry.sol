@@ -54,6 +54,7 @@ contract CurveRegistry is ICurveRegistry, Ownable {
         // TODO
     }
 
+    /// @inheritdoc ICurveRegistry
     function isActive(uint256 id) external view override returns (bool) {
         Details memory details = curves[id];
         return details.active;

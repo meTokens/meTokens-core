@@ -15,25 +15,22 @@ import "../../interfaces/IUpdater.sol";
 /// @notice Uses BancorZeroFormula.sol for private methods
 contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
-    uint256 private BASE_X = PRECISION;
+    uint private BASE_X = PRECISION;
 
     // NOTE: each valueSet is for a curve
     struct ValueSet {
-		uint256 baseY;
+		uint baseY;
 		uint32 reserveWeight;
 	}
     
     struct TargetValueSet {
-		uint256 baseY;
+		uint baseY;
 		uint32 reserveWeight;
     }
 
-
-    event Updated(uint256 indexed hubId);
-
     // NOTE: keys will be the hub
-	mapping (uint256 => ValueSet) private valueSets;
-	mapping (uint256 => TargetValueSet) private targetValueSets;
+	mapping (uint => ValueSet) private valueSets;
+	mapping (uint => TargetValueSet) private targetValueSets;
 
     IUpdater public updater;
 
@@ -47,12 +44,12 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     /// @inheritdoc ICurveValueSet
 	function register(
-        uint256 _hubId,
+        uint id,
         bytes calldata _encodedValueSet
     ) external override {
         // TODO: access control
 
-        (uint256 baseY, uint256 reserveWeight) = abi.decode(_encodedValueSet, (uint256, uint32));
+        (uint baseY, uint reserveWeight) = abi.decode(_encodedValueSet, (uint, uint32));
         require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
@@ -60,44 +57,44 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
             baseY: baseY,
             reserveWeight: uint32(reserveWeight)
         });
-        valueSets[_hubId] = valueSet;
+        valueSets[id] = valueSet;
     }
 
 
     /// @inheritdoc ICurveValueSet
     function registerTarget(
-        uint256 _hubId,
+        uint id,
         bytes calldata _encodedValueSet
     ) external override {
         // TODO: access control
 
-        (uint256 targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
+        (uint targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
 
         // TODO: also require targetReserveWeight != currentReserveWeight
         require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
         // New baseY = (old baseY * oldR) / newR
-        ValueSet memory valueSet = valueSets[_hubId];
-        uint256 targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
+        ValueSet memory valueSet = valueSets[id];
+        uint targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
 
         TargetValueSet memory targetValueSet = TargetValueSet({
             baseY: targetBaseY,
             reserveWeight: uint32(targetReserveWeight)
         });
-        targetValueSets[_hubId] = targetValueSet;
+        targetValueSets[id] = targetValueSet;
     }
 
 
 
     /// @inheritdoc ICurveValueSet
     function calculateMintReturn(
-        uint256 _depositAmount,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view override returns (uint256 meTokenAmount) {
+        uint _depositAmount,
+        uint id,
+        uint _supply,
+        uint _balancePooled
+    ) external view override returns (uint meTokenAmount) {
 
-        ValueSet memory v = valueSets[_hubId];
+        ValueSet memory v = valueSets[id];
         if (_supply > 0) {
             meTokenAmount = _calculateMintReturn(
                 _depositAmount,
@@ -115,16 +112,16 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
         }
 
         // check the updater to see if the curve is reconfiguring
-        if (updater.isReconfiguring(_hubId)) {
+        if (updater.isReconfiguring(id)) {
 
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
 
             // Only calculate weighted amount if update is live
             if (block.timestamp > startTime) {
 
                 // Calculate return using weights
-                TargetValueSet memory t = targetValueSets[_hubId];
-                uint256 targetMeTokenAmount;
+                TargetValueSet memory t = targetValueSets[id];
+                uint targetMeTokenAmount;
                 if (_supply > 0) {
                     targetMeTokenAmount = _calculateMintReturn(
                         _depositAmount,
@@ -156,13 +153,13 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     /// @inheritdoc ICurveValueSet
     function calculateBurnReturn(
-        uint256 _burnAmount,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view override returns (uint256 collateralTokenAmount) {
+        uint _burnAmount,
+        uint id,
+        uint _supply,
+        uint _balancePooled
+    ) external view override returns (uint collateralTokenAmount) {
 
-        ValueSet memory v = valueSets[_hubId];
+        ValueSet memory v = valueSets[id];
         collateralTokenAmount = _calculateBurnReturn(
             _burnAmount,
             v.reserveWeight,
@@ -170,16 +167,16 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
             _balancePooled
         );
 
-        if (updater.isReconfiguring(_hubId)) {
+        if (updater.isReconfiguring(id)) {
 
-            (uint256 startTime, uint256 endTime) = updater.getUpdateTimes(_hubId);
+            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
 
             // Only calculate weighted amount if update is live
             if (block.timestamp > startTime) {
 
                 // Calculate return using weights
-                TargetValueSet memory t = targetValueSets[_hubId];
-                uint256 targetCollateralTokenAmount =  _calculateBurnReturn(
+                TargetValueSet memory t = targetValueSets[id];
+                uint targetCollateralTokenAmount =  _calculateBurnReturn(
                     _burnAmount,
                     t.reserveWeight,
                     _supply,
@@ -198,16 +195,16 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
     }
 
     // TODO: natspec
-    function finishUpdate(uint256 _hubId) external override {
+    function finishUpdate(uint id) external override {
 
-        ValueSet storage v = valueSets[_hubId];
-        TargetValueSet storage t = targetValueSets[_hubId];
+        ValueSet storage v = valueSets[id];
+        TargetValueSet storage t = targetValueSets[id];
 
         v.baseY = t.baseY;
         v.reserveWeight = t.reserveWeight;
 
-        delete(targetValueSets[_hubId]);
-        emit Updated(_hubId);
+        delete(targetValueSets[id]);
+        emit Updated(id);
     }
 
 }
