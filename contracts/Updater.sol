@@ -10,7 +10,9 @@ import "./interfaces/ICurveValueSet.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
+/// @title meToken Updater
+/// @author Carl Farterson (@carlfarterson)
+/// @notice contract to update a hub 
 contract Updater is IUpdater, Ownable {
 
     struct Details {
@@ -24,27 +26,33 @@ contract Updater is IUpdater, Ownable {
 
     uint256 private PRECISION = 10**18;
     
-    uint256 private _minGracePeriod = 0; // TODO
-    uint256 private _maxGracePeriod = 0; // TODO
-    uint256 private _minVotePeriod = 0; // TODO
-    uint256 private _maxVotePeriod = 0; // TODO
-
     uint256 private _minSecondsUntilStart = 0; // TODO
     uint256 private _maxSecondsUntilStart = 0; // TODO
     uint256 private _minDuration = 0; // TODO
     uint256 private _maxDuration = 0; // TODO
-    
-    // TODO
-    IRecollateralization public recollateralizations = IRecollateralization(address(0));
-    IHub public hub = IHub(address(0));
-    IVaultRegistry public vaultRegistry = IVaultRegistry(address(0));
-    ICurveRegistry public curveRegistry = ICurveRegistry(address(0));
-
 
     // NOTE: keys are hubId's, used for valueSet calculations
     mapping (uint256 => Details) private updates;
 
+    IRecollateralization public recollateralization;
+    IHub public hub;
+    IVaultRegistry public vaultRegistry;
+    ICurveRegistry public curveRegistry;
+
     constructor() {}
+
+    function initialize(
+        IRecollateralization _recollateralization,
+        IHub _hub,
+        IVaultRegistry _vaultRegistry,
+        ICurveRegistry _curveRegistry
+    ) public onlyOwner {
+        recollateralization = _recollateralization;
+        hub = _hub;
+        vaultRegistry = _vaultRegistry;
+        curveRegistry = _curveRegistry;
+    }
+
 
     /// @inheritdoc IUpdater
     function initUpdate(
