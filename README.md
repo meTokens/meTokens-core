@@ -70,10 +70,6 @@
 ```
 
 
-
-
-
-
 ## Relationship between Hub & Vault
 ### Hub
 * Stores no collateral assets
@@ -166,7 +162,7 @@
 
 #### 6.07
 * [x] If curve is migrating, look at valueSet of new curve instead of targetValueSet of old curve
-* [ ] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
+* [x] Validate Weighted library imports in `foundry` and `bancorZeroValueSet`
 * [x] Remove `_finishUpdate` from `bancorZeroValueSet`
     * Still needed to set TargetValueSet to ValueSet
 * [x] Simplify arguments in `bancorZeroValueSet` mint() and burn()
@@ -234,8 +230,17 @@
 * [x] Move curve valuesets / formulas into nested "valuesets"/"formulas" directories
 
 #### 7.20
-* [ ] `curveRegistry.isApprovedValueSet()` within Hub.sol - should that function be changed to `isApproved()`?
+* [x] `curveRegistry.isApprovedValueSet()` within Hub.sol - should that function be changed to `isApproved()`?
 * [ ] `executeProposal()` within Updater.sol
 
 #### 7.22
 * [ ] Move Status to standalone lib
+    * [ ] Create lib
+    * [ ] Helper funcs to set 
+    * [ ] Import to relevant files
+
+#### 8.03
+* [ ] Shorten mint / burn to prevent stack too deep
+* [ ] Determine where to put `resubscribing` inside mint/burn
+* [ ] Validate that when bancor is updated, refundRatio stays the same
+* [ ] Discrepency between targetCurve / targetCurveId data types within Updater.sols
