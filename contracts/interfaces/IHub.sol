@@ -56,12 +56,12 @@ interface IHub {
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return name TODO
-    /// @return owner TODO
-    /// @return vault TODO
-    /// @return curve TODO
-    /// @return refundRatio TODO
-    /// @return status TODO
+    /// @return name Name of hub
+    /// @return owner Owner of hub
+    /// @return vault Vault of hub
+    /// @return curve Curve of hub
+    /// @return refundRatio refundRatio of hub
+    /// @return status Status of hub
     function getDetails(uint id) external view returns (
         string calldata name,
         address owner,
@@ -71,34 +71,35 @@ interface IHub {
         uint status
     );
 
-    /// @notice TODO
+    /// @notice Helper to fetch only owner of hubDetails
     /// @param id Unique hub identifier
-    /// @return TODO
+    /// @return Address of owner
     function getOwner(uint id) external view returns (address);
 
-    /// @notice TODO
+    /// @notice Helper to fetch only vault of hubDetails
     /// @param id Unique hub identifier
-    /// @return TODO
+    /// @return Address of vault
     function getVault(uint id) external view returns (address);
 
 
-    /// @notice TODO
+    /// @notice Helper to fetch only curve of hubDetails
     /// @param id Unique hub identifier
-    /// @return TODO
+    /// @return Address of curve
     function getCurve(uint id) external view returns (address);
 
-    /// @notice TODO
+    /// @notice Helper to fetch only refundRatio of hubDetails
     /// @param id Unique hub identifier
-    /// @return uint TODO
+    /// @return uint Return refundRatio
     function getRefundRatio(uint id) external view returns (uint);
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return uint TODO
+    /// @return uint Indexed position of hub status
     function getStatus(uint id) external view returns (uint);
 
     /// @notice Function to modify a hubs' Status 
     /// @param id Unique hub identifier
-    /// @param status TODO
+    /// @param status Target Status index position.
+    /// @return true/false that function was successful
     function setStatus(uint id, uint status) external returns (bool);
 }

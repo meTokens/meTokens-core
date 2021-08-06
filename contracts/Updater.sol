@@ -70,7 +70,7 @@ contract Updater is IUpdater, Ownable {
         require(
             _startTime - block.timestamp >= _minSecondsUntilStart &&
             _startTime - block.timestamp <= _maxSecondsUntilStart,
-            "Unacceptable _startTime"
+            "Unacceptable _startTime"       
         );
         require(
             _minDuration <= _duration &&
@@ -78,43 +78,43 @@ contract Updater is IUpdater, Ownable {
             "Unacceptable update duration"
         );
 
-        address vault;
-        address curveId;
-        uint256 refundRatio;
-        (,,vault, curveId, refundRatio,) = hub.getDetails(_hubId);
+        // address vault;
+        // address curveId;
+        // uint256 refundRatio;
+        // (,,vault, curveId, refundRatio,) = hub.getDetails(_hubId);
 
-        // is valid curve
-        if (_targetCurveId > 0) {
-            (, , address valueSet, bool active) = curveRegistry.getDetails(_targetCurveId);
+        // // is valid curve
+        // if (_targetCurveId > 0) {
+        //     (, , address valueSet, bool active) = curveRegistry.getDetails(_targetCurveId);
 
-            // TODO
-            // require(curveRegistry.isRegistered(_targetCurve), "!registered");
-            // require(
-            //     _targetCurveId != hub.getCurve(_hubId),
-            //     "Cannot set target curve to the same curve ID"
-            // );
-        }
+        //     // TODO
+        //     // require(curveRegistry.isRegistered(_targetCurve), "!registered");
+        //     // require(
+        //     //     _targetCurveId != hub.getCurve(_hubId),
+        //     //     "Cannot set target curve to the same curve ID"
+        //     // );
+        // }
 
-        // is valid vault
-        if (_targetVault != address(0)) {
-            require(vaultRegistry.isActive(_targetVault), "!active");
-            require(_targetVault != vault, "_targetVault == vault");
-            // TODO: validate
-            require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
-        }
+        // // is valid vault
+        // if (_targetVault != address(0)) {
+        //     require(vaultRegistry.isActive(_targetVault), "!active");
+        //     require(_targetVault != vault, "_targetVault == vault");
+        //     // TODO: validate
+        //     require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
+        // }
 
-        // is valid refundRatio
-        if (_targetRefundRatio != 0) {
-            require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-            require(_targetRefundRatio != refundRatio, "_targetRefundRatio == refundRatio");
-        }
+        // // is valid refundRatio
+        // if (_targetRefundRatio != 0) {
+        //     require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
+        //     require(_targetRefundRatio != refundRatio, "_targetRefundRatio == refundRatio");
+        // }
 
-        bool reconfiguring;
-        // if (_targetEncodedValueSet.length > 0) {
+        // bool reconfiguring;
+        // if (bytes32(_targetEncodedValueSet.length) > 0) {
 
         //     // curve migrating, point to new valueSet
-        //     if (_targetCurve =! address(0)) {
-        //         ICurveValueSet(_targetCurve).register(
+        //     if (_targetCurveId =! address(0)) {
+        //         ICurveValueSet(_targetCurveId).register(
         //             _hubId,
         //             _targetEncodedValueSet
         //         );
@@ -138,17 +138,17 @@ contract Updater is IUpdater, Ownable {
         // );
 
 
-        updates[_hubId] = Details({
-            // TODO: handle
-            reconfiguring: false,
-            migrating: address(0), // targetCurveId
-            recollateralizing: _targetVault,
-            shifting: _targetRefundRatio,
-            startTime: _startTime,
-            endTime: _startTime + _duration
-        });
+        // updates[_hubId] = Details({
+        //     // TODO: handle
+        //     reconfiguring: false,
+        //     migrating: address(0), // targetCurveId
+        //     recollateralizing: _targetVault,
+        //     shifting: _targetRefundRatio,
+        //     startTime: _startTime,
+        //     endTime: _startTime + _duration
+        // });
         
-        hub.startUpdate(_hubId);
+        // hub.startUpdate(_hubId);
     }
 
 

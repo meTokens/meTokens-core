@@ -38,18 +38,20 @@ contract Foundry is IFoundry {
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {}
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {}
 
-/*
+    // function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {}
 
+    /*
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
         uint256 id;
         uint256 balancePooled;
         uint256 balanceLocked;
-        bool resubscribing;
-        (, id, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
+        // bool resubscribing;
+        (, id, balancePooled, , ) = meTokenRegistry.getDetails(_meToken);
+
         // TODO: convert this handling logic to targetValueSet conditions
-        require(!resubscribing, "meToken is resubscribing");
+        // require(!resubscribing, "meToken is resubscribing");
 
         uint256 hubStatus = hub.getStatus(id);
         require(hubStatus != 0, "Hub inactive");
@@ -85,6 +87,12 @@ contract Foundry is IFoundry {
         uint256 collateralDepositedAfterFees = _collateralDeposited - fee;
 
         // Calculate how much meToken is minted
+        // NOTE: this is what i want
+        // uint256 meTokensMinted = curve.calculateMintReturn(
+        //     meToken (address)
+        //     collateralDepositedAfterFees
+        // )
+
         uint256 meTokensMinted = curve.calculateMintReturn(
             collateralDepositedAfterFees,
             id,
@@ -139,10 +147,10 @@ contract Foundry is IFoundry {
         uint256 id;
         uint256 balancePooled;
         uint256 balanceLocked;
-        bool resubscribing;
-        (owner, id, balancePooled, balanceLocked, resubscribing) = meTokenRegistry.getDetails(_meToken);
+        // bool resubscribing;
+        (owner, id, balancePooled, balanceLocked, ) = meTokenRegistry.getDetails(_meToken);
         // TODO: convert this handling logic to targetValueSet conditions
-        require(!resubscribing, "meToken is resubscribing");
+        // require(!resubscribing, "meToken is resubscribing");
 
         uint256 hubStatus = hub.getStatus(id);
         require(hubStatus != 0, "Hub inactive");
@@ -251,7 +259,6 @@ contract Foundry is IFoundry {
 
         // Send collateral from vault
         // collateralAsset.transferFrom(address(vault), _recipient, collateralReturnedAfterFees);
-
     }
     */
 }

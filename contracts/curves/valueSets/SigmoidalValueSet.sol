@@ -21,8 +21,6 @@ abstract contract SigmoidalValueSet is ICurveValueSet, SigmoidalFormula {
 
     uint256 private PRECISION = 10**18;
 
-    event Updated(uint256 indexed hubId);
-
     // NOTE: keys will be the hub
 	// mapping (uint256 => HubValueSet) hubValueSets;
 
