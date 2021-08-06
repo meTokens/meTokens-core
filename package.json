@@ -6,6 +6,7 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.1.0",
     "dotenv": "^10.0.0",
+    "fs": "^0.0.1-security",
     "hardhat": "^2.3.3"
   }
 }
