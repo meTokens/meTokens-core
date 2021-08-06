@@ -235,7 +235,7 @@
 
 #### 7.22
 * [ ] Move Status to standalone lib
-    * [ ] Create lib
+    * [x] Create lib
     * [ ] Helper funcs to set 
     * [ ] Import to relevant files
 
