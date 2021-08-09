@@ -26,6 +26,7 @@ describe("VaultRegistry.sol", () => {
 
     describe("register()", () => {
         it("Reverts when called by unapproved factory", async () => {
+            // TODO: make sure new implementation is deployed
         });
 
         it("Emits Register(string, address, address)", async () => {

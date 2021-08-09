@@ -34,12 +34,11 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     IUpdater public updater;
 
-    constructor(
-        address _updater
-    ) {
+    constructor() {}
+
+    function init(address _updater) external onlyOwner {
         updater = IUpdater(_updater);
     }
-
 
 
     /// @inheritdoc ICurveValueSet

@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./interfaces/IFees.sol";
 import "./interfaces/IMeTokenRegistry.sol";
 import "./interfaces/IMeToken.sol";
@@ -14,7 +16,7 @@ import "./libs/WeightedAverage.sol";
 
 import "./interfaces/IUpdater.sol";
 
-contract Foundry is IFoundry {
+contract Foundry is IFoundry, Ownable {
     
     uint256 private PRECISION = 10**18;
 
@@ -23,12 +25,14 @@ contract Foundry is IFoundry {
     IMeTokenRegistry public meTokenRegistry;
     IUpdater public updater;
 
-    constructor(
+    constructor() {}
+
+    function init(
         address _hub,
         address _fees,
         address _meTokenRegistry,
         address _updater
-    ) {
+    ) external onlyOwner {
         hub = IHub(_hub);
         fees = IFees(_fees);
         meTokenRegistry = IMeTokenRegistry(_meTokenRegistry);

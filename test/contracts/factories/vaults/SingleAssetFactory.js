@@ -7,7 +7,7 @@ describe("SingleAssetFactory.sol", () => {
     let implementation = "0x0000000000000000000000000000000000000000";
 
     before(async () => {
-        let singleAssetFactory = await SingleAssetFactory.new(hub, vaultRegistry, implementation);
+        // let singleAssetFactory = await SingleAssetFactory.new(hub, vaultRegistry, implementation);
 
     });
 

@@ -6,7 +6,7 @@ const Vault = artifacts.require("Vault");
 
 let ZEROADDRESS = "0x0000000000000000000000000000000000000000";
 let DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-let json = JSON.parse(fs.readFileSync('../../abi/dai.json'));
+let json = JSON.parse(fs.readFileSync('./test/abi/dai.json'));
 
 
 describe("Vault.sol", () => {

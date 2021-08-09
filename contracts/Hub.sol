@@ -26,7 +26,6 @@ contract Hub is IHub, Ownable {
     uint private immutable PRECISION = 10**18;
 
     uint private count;
-    address public gov;
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
@@ -48,14 +47,12 @@ contract Hub is IHub, Ownable {
 
     constructor() {}
 
-    function setLaterVariables(
-        address _gov,
+    function init(
         address _foundry,
         address _updater,
         address _vaultRegistry,
         address _curveRegistry
     ) public onlyOwner {
-        gov = _gov;
         foundry = _foundry;
         updater = IUpdater(_updater);
         vaultRegistry = IVaultRegistry(_vaultRegistry);

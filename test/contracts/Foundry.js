@@ -9,12 +9,7 @@ describe("Foundry.sol", () => {
     let foundry;
 
     before(async () => {
-        foundry = await Foundry.new(
-            hub,
-            fees,
-            meTokenRegistry,
-            updater
-        );
+        foundry = await Foundry.new();
     });
 
     describe("mint()", () => {

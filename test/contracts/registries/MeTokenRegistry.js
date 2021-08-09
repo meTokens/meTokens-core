@@ -7,9 +7,8 @@ describe("MeTokenRegistry.sol", () => {
     let meTokenRegistry;
 
     before(async () => {
-
-        meTokenRegistry = await MeTokenRegistry.new(hub, meTokenFactory);
-
+        meTokenFactory = await meTokenFactory.new();
+        meTokenRegistry = await MeTokenRegistry.new(hub, meTokenFactory.address);
     });
 
     describe("register()", () => {
