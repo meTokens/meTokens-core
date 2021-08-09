@@ -12,7 +12,8 @@ describe("Fees.sol", () => {
     let FEE_MAX = 10**18;
 
     before(async () => {
-        fees = await Fees.new(
+        fees = await Fees.new();
+        await fees.init(
             mintFee,
             burnBuyerFee,
             burnOwnerFee,

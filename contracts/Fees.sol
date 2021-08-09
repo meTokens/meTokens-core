@@ -15,7 +15,6 @@ contract Fees is Ownable {
     event SetTransferFee(uint256 rate);
     event SetInterestFee(uint256 rate);
     event SetYieldFee(uint256 rate);
-    event SetOwner(address owner);
 
     uint256 private FEE_MAX = 10**18;
 	/// @dev for when a meToken is minted
@@ -31,14 +30,16 @@ contract Fees is Ownable {
     /// @dev Generated from liquidity mining
 	uint256 private _yieldFee;
 
-	constructor(
+	constructor() {}
+
+    function init(
         uint256 mintFee_,
         uint256 burnBuyerFee_,
         uint256 burnOwnerFee_,
         uint256 transferFee_,
         uint256 interestFee_,
         uint256 yieldFee_
-    ) {
+    ) external onlyOwner {
         _mintFee = mintFee_;
         _burnBuyerFee = burnBuyerFee_;
         _burnOwnerFee = burnOwnerFee_;
