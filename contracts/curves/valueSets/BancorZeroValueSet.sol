@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../../interfaces/ICurveValueSet.sol";
 import "../formulas/BancorZeroFormula.sol";
@@ -13,7 +14,7 @@ import "../../interfaces/IUpdater.sol";
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Uses BancorZeroFormula.sol for private methods
-contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
+contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable, Initializable {
 
     uint private BASE_X = PRECISION;
 
@@ -36,7 +37,7 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable {
 
     constructor() {}
 
-    function init(address _updater) external onlyOwner {
+    function initialize(address _updater) external onlyOwner initializer {
         updater = IUpdater(_updater);
     }
 

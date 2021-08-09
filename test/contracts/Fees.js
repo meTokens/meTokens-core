@@ -13,7 +13,7 @@ describe("Fees.sol", () => {
 
     before(async () => {
         fees = await Fees.new();
-        await fees.init(
+        await fees.initialize(
             mintFee,
             burnBuyerFee,
             burnOwnerFee,

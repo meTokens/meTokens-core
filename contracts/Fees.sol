@@ -2,12 +2,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 
 /// @title meToken Fees
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage all meToken fees
-contract Fees is Ownable {
+contract Fees is Ownable, Initializable {
 
 	event SetMintFee(uint256 rate);
 	event SetBurnBuyerFee(uint256 rate);
@@ -32,14 +33,14 @@ contract Fees is Ownable {
 
 	constructor() {}
 
-    function init(
+    function initialize(
         uint256 mintFee_,
         uint256 burnBuyerFee_,
         uint256 burnOwnerFee_,
         uint256 transferFee_,
         uint256 interestFee_,
         uint256 yieldFee_
-    ) external onlyOwner {
+    ) external onlyOwner initializer {
         _mintFee = mintFee_;
         _burnBuyerFee = burnBuyerFee_;
         _burnOwnerFee = burnOwnerFee_;

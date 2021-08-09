@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
@@ -16,7 +17,7 @@ import "./libs/Status.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens 
-contract Hub is IHub, Ownable {
+contract Hub is IHub, Ownable, Initializable {
 
     modifier exists(uint id) {
         require(id <= count, "id exceeds count");
@@ -47,12 +48,12 @@ contract Hub is IHub, Ownable {
 
     constructor() {}
 
-    function init(
+    function initialize(
         address _foundry,
         address _updater,
         address _vaultRegistry,
         address _curveRegistry
-    ) public onlyOwner {
+    ) public onlyOwner initializer {
         foundry = _foundry;
         updater = IUpdater(_updater);
         vaultRegistry = IVaultRegistry(_vaultRegistry);
