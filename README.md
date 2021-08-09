@@ -246,4 +246,9 @@
 * [ ] Discrepency between targetCurve / targetCurveId data types within Updater.sols
 
 #### 8.08
-* [ ] Add OZ initializer modifiers to contracts that set variables after deployment
+* [x] Add OZ initializer modifiers to contracts that set variables after deployment
+* [ ] Figure out how to test factories w/ deploying a new implementation
+* [ ] Figure out how to impersonate accounts within Vault.js
+* [ ] Add `getDetails()` method to registry tests 
+* [ ] Decide if `hubId` args should be converted to `id`
+* [ ] Figure out how to import an existing lib for CurveRegistry.sol
