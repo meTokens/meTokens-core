@@ -1,4 +1,6 @@
+const Hub = artifacts.require("Hub");
 const VaultRegistry = artifacts.require("VaultRegistry");
+const SingleAsset = artifacts.require("SingleAsset");
 const SingleAssetFactory = artifacts.require("SingleAssetFactory");
 
 
@@ -6,18 +8,20 @@ describe("VaultRegistry.sol", () => {
 
     let vaultName = "Test Vault";
     let ZEROADDRESS = "0x0000000000000000000000000000000000000000";
-    let hub = ZEROADDRESS;
-    let implementation = ZEROADDRESS;
+    let hub;
     let vaultRegistry;
+    let implementation;
     let factory;
-    let vault;
 
     before(async () => {
 
-        // TODO: constructor arguments
+        // Initialize contracts
+        hub = await Hub.new()
         vaultRegistry = await VaultRegistry.new();
-        factory = await SingleAssetFactory.new(hub, vaultRegistry, implementation);
-        vault = 0;
+
+        implementation = await SingleAsset.new();
+        factory = await SingleAssetFactory.new(hub.address, vaultRegistry.address, implementation.address);
+
     });
 
     describe("register()", () => {
@@ -26,9 +30,9 @@ describe("VaultRegistry.sol", () => {
 
         it("Emits Register(string, address, address)", async () => {
             expect(
-                await vaultRegistry.register(vaultName, vault, factory)
+                await vaultRegistry.register(vaultName, implementation.address, factory.address)
             ).to.emit(vaultRegistry, "Register")
-            .withArgs(vaultName, vault, factory);
+            .withArgs(vaultName, implementation.address, factory.address);
         });
     });
     
@@ -41,41 +45,41 @@ describe("VaultRegistry.sol", () => {
 
         it("Emits Approve(address)", async () => {
             expect(
-                await vaultRegistry.approve(factory)
+                await vaultRegistry.approve(factory.address)
             ).to.emit(vaultRegistry, "Approve")
-             .withArgs(factory);
+             .withArgs(factory.address);
         });
     });
 
     describe("unapprove()", () => {
         it("Revert if not yet approved", async () => {
-            await expect(
-                vaultRegistry.unapprove(factory)
+            expect(
+                await vaultRegistry.unapprove(factory.address)
             ).to.be.reverted;
         });
 
         it("Emits Unapprove(address)", async () => {
-            await vaultRegistry.approve(factory);
+            await vaultRegistry.approve(factory.address);
             expect(
-                await vaultRegistry.unapprove(factory)
+                await vaultRegistry.unapprove(factory.address)
             ).to.emit(vaultRegistry, "Unapprove")
-             .withArgs(factory);
+             .withArgs(factory.address);
         });
     });
 
     describe("isActive()", () => {
         it("Return false for inactive/nonexistent vault", async () => {
             expect(
-                await vaultRegistry.isActive(factory)
+                await vaultRegistry.isActive(factory.address)
             ).to.equal(false);
         });
 
         it("Return true for active vault", async () => {
-            await vaultRegistry.register(vaultName, vault, factory);
+            await vaultRegistry.register(vaultName, implementation.address, factory.address);
             expect(
-                await vaultRegistry.isActive(factory)
+                await vaultRegistry.isActive(factory.address)
             ).to.equal(true);
-        })
+        });
     });
 
     
