@@ -2,6 +2,11 @@
 pragma solidity ^0.8.0;
 
 interface IRecollateralizationRegistry {
+
+    event Register(address recollateralization);
+    event Approve(address factory);
+    event Unapprove(address factory);
+
     function register(
         address _recollateralization,
         address _targetVault,

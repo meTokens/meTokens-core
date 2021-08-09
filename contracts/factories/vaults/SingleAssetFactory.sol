@@ -19,7 +19,6 @@ contract SingleAssetFactory is IVaultFactory {
         _;
     }
 
-    event Create(address vault);
 
     uint256 private count;
     address public hub;

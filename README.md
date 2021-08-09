@@ -208,7 +208,7 @@
 #### 6.28
 * [ ] Refactor
     * [x] I_{Contract}.sol => I{Contract}.sol
-    * [ ] Move events to interfaces
+    * [x] Move events to interfaces
     * [ ] Contract state variables to interfaces (?)
 
 #### 7.5
@@ -244,3 +244,6 @@
 * [ ] Determine where to put `resubscribing` inside mint/burn
 * [ ] Validate that when bancor is updated, refundRatio stays the same
 * [ ] Discrepency between targetCurve / targetCurveId data types within Updater.sols
+
+#### 8.08
+* [ ] Add OZ initializer modifiers to contracts that set variables after deployment

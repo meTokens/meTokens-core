@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 interface IVaultFactory {
 
+    event Create(address vault);
+
     /// @notice function to create and register a new vault to the vault registry
     /// @param _name name of vault
     /// @param _collateralAsset address of vault collateral asset

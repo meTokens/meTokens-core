@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 interface IVaultRegistry {
 
+    event Register(string name, address vault, address factory);
+    event Deactivate(address vault);
+    event Approve(address factory);
+    event Unapprove(address factory);
+    
     /// @notice add a vault to the vault registry
     /// @param _name name of new vault
     /// @param _vault address of new vault

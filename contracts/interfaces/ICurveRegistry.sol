@@ -2,7 +2,10 @@
 pragma solidity ^0.8.0;
 
 interface ICurveRegistry {
-    
+
+    event Register(uint256 id, string name, address formula, address values);
+    event Deactivate(uint256 curveId);
+
     /// @notice TODO
     /// @param _name TODO
     /// @param _formula TODO

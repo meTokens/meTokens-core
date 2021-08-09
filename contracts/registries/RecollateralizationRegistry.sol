@@ -8,10 +8,6 @@ import "../interfaces/IRecollateralizationRegistry.sol";
 /// @notice Keeps track of all used Recollateralization strategies 
 abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
 
-    event Register(address recollateralization);
-    event Approve(address factory);
-    event Unapprove(address factory);
-
     uint256 private count;
 	mapping (address => Details) recollateralizations;
     mapping (address => bool) private approved;

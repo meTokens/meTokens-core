@@ -10,9 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @notice This contract keeps track of active curve types and their base values
 contract CurveRegistry is ICurveRegistry, Ownable {
 
-    event Register(uint256 id, string name, address formula, address values);
-    event Deactivate(uint256 curveId);
-
     uint256 private count;
     
     struct Details {

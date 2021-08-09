@@ -9,11 +9,6 @@ import "../interfaces/IVaultRegistry.sol";
 /// @notice Keeps track of all active vaults and available vault factories 
 contract VaultRegistry is IVaultRegistry {
 
-    event Register(string name, address vault, address factory);
-    event Deactivate(address vault);
-    event Approve(address factory);
-    event Unapprove(address factory);
-
     mapping (address => Details) private vaults;
     // NOTE: approved vault factories could be for
     // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
