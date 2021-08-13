@@ -49,6 +49,7 @@ contract VaultRegistry is IVaultRegistry {
         Details storage details = vaults[_vault];
         require(details.active != false, "Vault not active");
         details.active = false;
+        emit Deactivate(_vault);
     }
 
     /// @inheritdoc IVaultRegistry
