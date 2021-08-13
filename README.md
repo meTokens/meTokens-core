@@ -252,3 +252,6 @@
 * [ ] Add `getDetails()` method to registry tests 
 * [ ] Decide if `hubId` args should be converted to `id`
 * [ ] Figure out how to import an existing lib for CurveRegistry.sol
+
+#### 8.09
+* [ ] Convert registries to libraries
