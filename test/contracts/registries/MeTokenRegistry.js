@@ -1,14 +1,18 @@
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
+const MeTokenFactory = artifacts.require("MeTokenFactory");
+const Hub = artifacts.require("Hub");
+
 
 describe("MeTokenRegistry.sol", () => {
 
-    let hub = "0x0000000000000000000000000000000000000000";
-    let meTokenFactory = "0x0000000000000000000000000000000000000000";
+    let hub;
+    let meTokenFactory;
     let meTokenRegistry;
 
     before(async () => {
-        meTokenFactory = await meTokenFactory.new();
-        meTokenRegistry = await MeTokenRegistry.new(hub, meTokenFactory.address);
+        hub = await Hub.new();
+        meTokenFactory = await MeTokenFactory.new();
+        meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
     });
 
     describe("register()", () => {

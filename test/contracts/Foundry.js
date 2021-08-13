@@ -19,4 +19,12 @@ describe("Foundry.sol", () => {
         });
     });
 
+    describe("burn()", () => {
+
+        it("Should do something", async () => {
+            // Do something
+        });
+    });
+
+
 });
