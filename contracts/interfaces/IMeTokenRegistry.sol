@@ -3,6 +3,14 @@ pragma solidity ^0.8.0;
 
 interface IMeTokenRegistry {
 
+    struct Details {
+        address owner;
+        uint256 id;
+        uint256 balancePooled;
+        uint256 balanceLocked;
+        bool resubscribing; // TODO: validate
+    }
+
     event Register(
         address indexed meToken,
         address indexed owner,
@@ -42,19 +50,11 @@ interface IMeTokenRegistry {
 
     /// @notice TODO
     /// @param meToken Address of meToken queried
-    /// @return owner Owner of MeToken
-    /// @return hubId Hub to which the meToken is subscribed
-    /// @return balancePooled Units of collateral pooled
-    /// @return balanceLocked Units of collateral locked
-    /// @return resubscribing Is meToken changing hubs? 
+    /// @return details of the meToken
     function getDetails(
         address meToken
     ) external view returns (
-        address owner,
-        uint256 hubId,
-        uint256 balancePooled,
-        uint256 balanceLocked,
-        bool resubscribing 
+        Details memory details
     );
 
     function transferOwnership(address _meToken, address _newOwner) external;

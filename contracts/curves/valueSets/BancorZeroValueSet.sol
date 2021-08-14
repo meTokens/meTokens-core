@@ -23,7 +23,7 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable, Initi
 		uint baseY;
 		uint32 reserveWeight;
 	}
-    
+
     struct TargetValueSet {
 		uint baseY;
 		uint32 reserveWeight;
@@ -111,43 +111,43 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable, Initi
             );
         }
 
-        // check the updater to see if the curve is reconfiguring
-        if (updater.isReconfiguring(id)) {
-
-            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
-
-            // Only calculate weighted amount if update is live
-            if (block.timestamp > startTime) {
-
-                // Calculate return using weights
-                TargetValueSet memory t = targetValueSets[id];
-                uint targetMeTokenAmount;
-                if (_supply > 0) {
-                    targetMeTokenAmount = _calculateMintReturn(
-                        _depositAmount,
-                        t.reserveWeight,
-                        _supply,
-                        _balancePooled
-                    );
-                } else {
-                    targetMeTokenAmount = _calculateMintReturnFromZero(
-                        _depositAmount,
-                        t.reserveWeight,
-                        BASE_X,
-                        t.baseY
-                    );
-                }
-                
-                meTokenAmount = WeightedAverage.calculate(
-                    meTokenAmount,
-                    targetMeTokenAmount,
-                    startTime,
-                    block.timestamp,
-                    endTime
-                );
-
-            }
-        }
+//        // check the updater to see if the curve is reconfiguring
+//        if (updater.isReconfiguring(id)) {
+//
+//            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
+//
+//            // Only calculate weighted amount if update is live
+//            if (block.timestamp > startTime) {
+//
+//                // Calculate return using weights
+//                TargetValueSet memory t = targetValueSets[id];
+//                uint targetMeTokenAmount;
+//                if (_supply > 0) {
+//                    targetMeTokenAmount = _calculateMintReturn(
+//                        _depositAmount,
+//                        t.reserveWeight,
+//                        _supply,
+//                        _balancePooled
+//                    );
+//                } else {
+//                    targetMeTokenAmount = _calculateMintReturnFromZero(
+//                        _depositAmount,
+//                        t.reserveWeight,
+//                        BASE_X,
+//                        t.baseY
+//                    );
+//                }
+//
+//                meTokenAmount = WeightedAverage.calculate(
+//                    meTokenAmount,
+//                    targetMeTokenAmount,
+//                    startTime,
+//                    block.timestamp,
+//                    endTime
+//                );
+//
+//            }
+//        }
     }
 
 
@@ -159,39 +159,39 @@ contract BancorZeroValueSet is ICurveValueSet, BancorZeroFormula, Ownable, Initi
         uint _balancePooled
     ) external view override returns (uint collateralTokenAmount) {
 
-        ValueSet memory v = valueSets[id];
+//        ValueSet memory v = valueSets[id];
         collateralTokenAmount = _calculateBurnReturn(
             _burnAmount,
-            v.reserveWeight,
+            valueSets[id].reserveWeight,
             _supply,
             _balancePooled
         );
 
-        if (updater.isReconfiguring(id)) {
-
-            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
-
-            // Only calculate weighted amount if update is live
-            if (block.timestamp > startTime) {
-
-                // Calculate return using weights
-                TargetValueSet memory t = targetValueSets[id];
-                uint targetCollateralTokenAmount =  _calculateBurnReturn(
-                    _burnAmount,
-                    t.reserveWeight,
-                    _supply,
-                    _balancePooled
-                );
-
-                collateralTokenAmount = WeightedAverage.calculate(
-                    collateralTokenAmount,
-                    targetCollateralTokenAmount,
-                    startTime,
-                    block.timestamp,
-                    endTime
-                );
-            }
-        }
+//        if (updater.isReconfiguring(id)) {
+//
+//            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
+//
+//            // Only calculate weighted amount if update is live
+//            if (block.timestamp > startTime) {
+//
+//                // Calculate return using weights
+//                TargetValueSet memory t = targetValueSets[id];
+//                uint targetCollateralTokenAmount =  _calculateBurnReturn(
+//                    _burnAmount,
+//                    t.reserveWeight,
+//                    _supply,
+//                    _balancePooled
+//                );
+//
+//                collateralTokenAmount = WeightedAverage.calculate(
+//                    collateralTokenAmount,
+//                    targetCollateralTokenAmount,
+//                    startTime,
+//                    block.timestamp,
+//                    endTime
+//                );
+//            }
+//        }
     }
 
     // TODO: natspec

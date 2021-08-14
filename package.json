@@ -7,6 +7,10 @@
     "@openzeppelin/contracts": "^4.1.0",
     "dotenv": "^10.0.0",
     "fs": "^0.0.1-security",
-    "hardhat": "^2.6.0"
+    "hardhat": "^2.6.0",
+    "node": "^16.6.1"
+  },
+  "devDependencies": {
+    "solidity-coverage": "^0.7.16"
   }
 }
