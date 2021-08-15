@@ -65,7 +65,6 @@ contract Hub is IHub, Ownable, Initializable {
         string calldata _name,
         address _owner,
         string calldata _vaultName,
-        address _vaultOwner,
         address _vaultFactory,
         address _curve,
         address _collateralAsset,
@@ -93,7 +92,7 @@ contract Hub is IHub, Ownable, Initializable {
         hubs[count++] = Details(
             _name,
             _owner,
-            address(0), // vault,
+            address(vault),
             _curve,
             _refundRatio,
             Status.ACTIVE
