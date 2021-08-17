@@ -15,8 +15,6 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 
-import "./interfaces/IUpdater.sol";
-
 contract Foundry is IFoundry, Ownable, Initializable {
 
     uint256 private PRECISION = 10**18;
@@ -24,7 +22,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
     IHub public hub;
     IFees public fees;
     IMeTokenRegistry public meTokenRegistry;
-    IUpdater public updater;
 
     constructor() {}
 
@@ -32,12 +29,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _hub,
         address _fees,
         address _meTokenRegistry,
-        address _updater
     ) external onlyOwner initializer {
         hub = IHub(_hub);
         fees = IFees(_fees);
         meTokenRegistry = IMeTokenRegistry(_meTokenRegistry);
-        updater = IUpdater(_updater);
     }
 
 //    function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {}
