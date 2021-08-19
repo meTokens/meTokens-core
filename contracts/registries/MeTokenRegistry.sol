@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/IMeTokenRegistry.sol";
 import "../MeToken.sol";
+import "../Roles.sol";
+import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
@@ -11,7 +12,7 @@ import "../interfaces/ICurveValueSet.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry {
+contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
@@ -20,18 +21,11 @@ contract MeTokenRegistry is IMeTokenRegistry {
     mapping (address => address) private owners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
-//    struct Details {
-//        address owner;
-//        uint256 hubId;
-//        uint256 balancePooled;
-//        uint256 balanceLocked;
-//        bool resubscribing; // TODO: validate
-//	  }
-
     constructor(address _meTokenFactory, address _hub) {
         meTokenFactory = IMeTokenFactory(_meTokenFactory);
         hub = IHub(_hub);
     }
+
 
     /// @inheritdoc IMeTokenRegistry
     function register(
@@ -104,6 +98,7 @@ contract MeTokenRegistry is IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
+        require(hasRole(FOUNDRY, msg.sender), "!foundry");
 //        Details storage details = meTokens[_meToken];
         if (add) {
             meTokens[_meToken].balancePooled += _amount;
@@ -117,6 +112,7 @@ contract MeTokenRegistry is IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
+        require(hasRole(FOUNDRY, msg.sender), "!foundry");
 //        Details storage details = meTokens[_meToken];
         if (add) {
             meTokens[_meToken].balanceLocked += _amount;
