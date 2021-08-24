@@ -16,7 +16,7 @@ import "./libs/Status.sol";
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
-///     and their respective subscribed meTokens 
+///     and their respective subscribed meTokens
 contract Hub is IHub, Ownable, Initializable {
 
     modifier exists(uint id) {
@@ -60,20 +60,18 @@ contract Hub is IHub, Ownable, Initializable {
         curveRegistry = ICurveRegistry(_curveRegistry);
     }
 
-    /*
-    /// @inheritdoc IHub
+
     function register(
         string calldata _name,
         address _owner,
         string calldata _vaultName,
-        address _vaultOwner,
         address _vaultFactory,
         address _curve,
         address _collateralAsset,
         uint _refundRatio,
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs
-    ) external override {
+    ) external {
         // TODO: access control
         require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory not approved");
         // require(curveRegistry.isActive(_curve), "_curve not approved");  TODO
@@ -84,23 +82,23 @@ contract Hub is IHub, Ownable, Initializable {
         // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
         // abi.encodePacked();
         ICurveValueSet(_curve).register(count, _encodedValueSetArgs);
-        
+
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _vaultOwner, _collateralAsset, _encodedVaultAdditionalArgs);
-        
+        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _collateralAsset, _encodedVaultAdditionalArgs);
+
         // Save the hub to the registry
         hubs[count++] = Details(
             _name,
             _owner,
-            address(0), // vault,
+            address(vault),
             _curve,
             _refundRatio,
             Status.ACTIVE
         );
     }
-    */
+
 
     /// @inheritdoc IHub
     function deactivate(uint id) external override exists(id) {
@@ -132,7 +130,7 @@ contract Hub is IHub, Ownable, Initializable {
     ) external override {
         require(msg.sender == address(updater), "!updater");
         Details storage details = hubs[id];
-        
+
         if (migrating != address(0)) {
             details.curve = migrating;
         }

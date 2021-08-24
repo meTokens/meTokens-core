@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/IMeTokenRegistry.sol";
 import "../MeToken.sol";
+import "../Roles.sol";
+import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
@@ -11,7 +12,7 @@ import "../interfaces/ICurveValueSet.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry {
+contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
@@ -20,18 +21,11 @@ contract MeTokenRegistry is IMeTokenRegistry {
     mapping (address => address) private owners;  // key: address of owner, value: address of meToken
     mapping (address => bool) private approvedCollateralAssets;
 
-    struct Details {
-        address owner;
-        uint256 hubId;
-		uint256 balancePooled;
-		uint256 balanceLocked;
-        bool resubscribing; // TODO: validate
-	}
-
     constructor(address _meTokenFactory, address _hub) {
         meTokenFactory = IMeTokenFactory(_meTokenFactory);
         hub = IHub(_hub);
     }
+
 
     /// @inheritdoc IMeTokenRegistry
     function register(
@@ -41,9 +35,9 @@ contract MeTokenRegistry is IMeTokenRegistry {
         uint256 _collateralDeposited
     ) external override {
         // TODO: access control
-        require(!isOwner(msg.sender), "msg.sender already owns a meToken");        
+        require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         require(hub.getStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
-        
+
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
         address vault = hub.getVault(_hubId);
@@ -61,10 +55,10 @@ contract MeTokenRegistry is IMeTokenRegistry {
         // Add meToken to registry
         meTokens[meTokenAddr] = Details({
             owner: msg.sender,
-            hubId: _hubId,
+            id: _hubId,
             balancePooled: _collateralDeposited,
             balanceLocked: 0,
-            resubscribing: false            
+            resubscribing: false
         });
 
         // Register the address which created a meToken
@@ -104,26 +98,28 @@ contract MeTokenRegistry is IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
-        Details storage details = meTokens[_meToken];
+        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+//        Details storage details = meTokens[_meToken];
         if (add) {
-            details.balancePooled += _amount;
+            meTokens[_meToken].balancePooled += _amount;
         } else {
-            details.balancePooled -= _amount;
+            meTokens[_meToken].balancePooled -= _amount;
         }
-        
+
         emit IncrementBalancePooled(add, _meToken, _amount);
     }
 
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
-        Details storage details = meTokens[_meToken];
+        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+//        Details storage details = meTokens[_meToken];
         if (add) {
-            details.balanceLocked += _amount;
+            meTokens[_meToken].balanceLocked += _amount;
         } else {
-            details.balanceLocked -= _amount;
+            meTokens[_meToken].balanceLocked -= _amount;
         }
-        
+
         emit IncrementBalanceLocked(add, _meToken, _amount);
     }
 
@@ -144,18 +140,9 @@ contract MeTokenRegistry is IMeTokenRegistry {
     function getDetails(
         address _meToken
     ) external view override returns (
-        address owner,
-        uint256 hubId,
-        uint256 balancePooled,
-        uint256 balanceLocked,
-        bool resubscribing
+        Details memory details
     ) {
-        Details memory details = meTokens[_meToken];
-        owner = details.owner;
-        hubId = details.hubId;
-        balancePooled = details.balancePooled;
-        balanceLocked = details.balanceLocked;
-        resubscribing = details.resubscribing;
+        details = meTokens[_meToken];
     }
 
     // TODO

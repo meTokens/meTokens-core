@@ -15,7 +15,7 @@ contract MeTokenFactory {
     }
 
     address public meTokenRegistry = address(0); // TODO
-    
+
     constructor () {}
 
     /// @notice create a meToken
@@ -32,7 +32,7 @@ contract MeTokenFactory {
         // TODO: Validate
         MeToken meToken = new MeToken(_name, _symbol);
 
-        // TODO: register meToken
+        // TODO: subscribe meToken
 
         return address(meToken);
     }
