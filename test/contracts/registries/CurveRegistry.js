@@ -6,53 +6,39 @@ const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 describe("CurveRegistry.sol", () => {
 
     let curveName = "Test Curve";
-    let curveRegistry;
-    let formula;
-    let valueSet;
 
     before(async () => {
-        curveRegistry = await CurveRegistry.new();
         formula = await BancorZeroFormula.new();
         valueSet = await BancorZeroValueSet.new();
     });
 
     describe("register()", () => {
-        it("Reverts when the curve name is already chosen", async () => {
-            await curveRegistry.register(curveName, formula.address, valueSet.address);
-            expect(
-                await curveRegistry.register(curveName, formula.address, valueSet.address)
-            ).to.be.reverted;
-        });
-
         it("Emits register()", async () => {
+            let curveRegistry = await CurveRegistry.new();
             expect(
                 await curveRegistry.register(curveName, formula.address, valueSet.address)
             ).to.emit(curveRegistry, "register")
-             .with.Args(curveName, formula.address, valueSet.address);
-        });
-
-        it("Returns uint256", async () => {
-            expect(
-                await curveRegistry.register(curveName, formula.address, valueSet.address)
-            ).to.equal(1);
+             .withArgs(curveName, formula.address, valueSet.address);
         });
     });
 
 
     describe("deactivate()", () => {
         it("Reverts from an invalid ID", async () => {
-            expect(await curveRegistry.deactivate(69)).to.be.reverted;
+            let curveRegistry = await CurveRegistry.new();
+            await expect(curveRegistry.deactivate(69)).to.be.reverted;
         });
 
         it("Emits Deactivate(id) when successful", async () => {
+            let curveRegistry = await CurveRegistry.new();
             await curveRegistry.register(curveName, formula.address, valueSet.address);
             expect(
                 await curveRegistry.deactivate(0)
-            ).to.emit(curveRegistry, "Deactivate")
-             .with.Args(0);
+            ).to.emit(curveRegistry, "Deactivate").withArgs(0);
         });
 
         it("Sets active to from true to false", async () => {
+            let curveRegistry = await CurveRegistry.new();
             await curveRegistry.register(curveName, formula.address, valueSet.address);
             expect(await curveRegistry.isActive(0)).to.equal(true);
             await curveRegistry.deactivate(0);
@@ -62,21 +48,24 @@ describe("CurveRegistry.sol", () => {
 
     describe("getCount()", () => {
         it("Should start at 0", async () => {
-            expect(await curveRegistry.getCount()).to.equal(0);
+            let curveRegistry = await CurveRegistry.new();
+            expect(await curveRegistry.getCount()).to.equal(BigNumber.from(0));
         });
-
         it("Should increment to 1 after register()", async () => {
+            let curveRegistry = await CurveRegistry.new();
             await curveRegistry.register(curveName, formula.address, valueSet.address);
-            expect(await curveRegistry.getCount()).to.equal(1);
+            expect(await curveRegistry.getCount()).to.equal(BigNumber.from(1));
         });
     });
 
     describe("isActive()", () => {
         it("Should return false for invalid ID", async () => {
+            let curveRegistry = await CurveRegistry.new();
             expect(await curveRegistry.isActive(0)).to.equal(false);
         });
 
         it("Should return true for an active ID", async () => {
+            let curveRegistry = await CurveRegistry.new();
             await curveRegistry.register(curveName, formula.address, valueSet.address);
             expect(await curveRegistry.isActive(0)).to.equal(true);
         });

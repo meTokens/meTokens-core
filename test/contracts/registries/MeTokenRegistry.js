@@ -1,18 +1,16 @@
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
+const CurveRegistry = artifacts.require("CurveRegistry");
 const Hub = artifacts.require("Hub");
 
 
 describe("MeTokenRegistry.sol", () => {
 
-    let hub;
-    let meTokenFactory;
-    let meTokenRegistry;
-
     before(async () => {
         hub = await Hub.new();
         meTokenFactory = await MeTokenFactory.new();
         meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
+        curveRegistry = await CurveRegistry.new();
     });
 
     describe("register()", () => {
@@ -21,14 +19,13 @@ describe("MeTokenRegistry.sol", () => {
 
         });
 
-        it("User can create a meToken with 100 USDT as collateral", async () => {
+        // it("User can create a meToken with 100 USDT as collateral", async () => {
 
-        });
+        // });
 
-        it("Emits Register()", async () => {
+        // it("Emits Register()", async () => {
 
-        });
-
+        // });
     });
 
     describe("transferOwnership()", () => {

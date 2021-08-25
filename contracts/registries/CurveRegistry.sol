@@ -29,7 +29,7 @@ contract CurveRegistry is ICurveRegistry, Ownable {
 
         // Add curve details to storage
         Details memory details = Details(_name, _formula, _valueSet, true);
-        curves[++count] = details;
+        curves[count++] = details;
     
         emit Register(count, _name, _formula, _valueSet);
         return count;
