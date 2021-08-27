@@ -5,7 +5,7 @@ const BancorZeroFormula = artifacts.require("BancorZeroFormula");
 const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 const Hub = artifacts.require("Hub");
 const ERC20Mock = artifacts.require("ERC20Mock");
-
+const MockContract = artifacts.require("MockContract");
 
 describe("MeTokenRegistry.sol", () => {
 
@@ -28,8 +28,16 @@ describe("MeTokenRegistry.sol", () => {
     describe("register()", () => {
 
         it("User can create a meToken with no collateral", async () => {
+            const mock = await MockContract.new();
+            const mockedHub = await Hub.at(mock.address);
+            mockedHub.initialize(0, 0, 0);
             // when(hub.getStatus(any)).thenReturn(expectedHubStatus)
+            const getStatus = /*TODO: get using ABI*/ null;
+            await mock.givenMethodReturnBool(getStatus, true)
             // when(hub.getVault(any)).thenReturn(expectedHubVault)
+            const getVault = /*TODO: get using ABI*/ null;
+            const expectedVault = IVaultFactory(0).create(0, 0, 0); // FIXME: values here
+            await mock.givenMethodReturnAddress(getVault, expectedVault)
             erc20Mock = await ERC20Mock.new("mock", "MOCK", 0, 0);
             // when(erc20Mock.balanceOf(any)).thenReturn(0)
             // when(hub.getCurve(any)).thenReturn(expectedHubCurve)
