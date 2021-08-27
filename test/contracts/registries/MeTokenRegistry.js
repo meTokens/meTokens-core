@@ -1,22 +1,33 @@
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
 const CurveRegistry = artifacts.require("CurveRegistry");
+const BancorZeroFormula = artifacts.require("BancorZeroFormula");
+const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
 const Hub = artifacts.require("Hub");
 
 
 describe("MeTokenRegistry.sol", () => {
 
     before(async () => {
-        hub = await Hub.new();
-        meTokenFactory = await MeTokenFactory.new();
+        
         meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
+        meTokenFactory = await MeTokenFactory.new();
+        
+        // instantiate contracts to pass to initialize hub
+        hub = await Hub.new();
         curveRegistry = await CurveRegistry.new();
+        formula = await BancorZeroFormula.new();
+        valueSet = await BancorZeroValueSet.new();
+        await curveRegistry.register("Test Curve", formula.address, valueSet.address);
+
+
+
     });
 
     describe("register()", () => {
 
         it("User can create a meToken with no collateral", async () => {
-
+            await meTokenRegistry.register
         });
 
         // it("User can create a meToken with 100 USDT as collateral", async () => {

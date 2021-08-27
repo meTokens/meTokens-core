@@ -19,7 +19,7 @@ describe("CurveRegistry.sol", () => {
             let curveRegistry = await CurveRegistry.new();
             expect(
                 await curveRegistry.register(curveName, formula.address, valueSet.address)
-            ).to.emit(curveRegistry, "Register")
+            ).to.emit(curveRegistry, "R egister")
              .withArgs(curveName, formula.address, valueSet.address);
         });
     });
