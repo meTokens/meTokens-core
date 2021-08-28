@@ -10,6 +10,7 @@
     "hardhat": "^2.6.0"
   },
   "devDependencies": {
+    "hardhat-abi-exporter": "^2.2.1",
     "solidity-coverage": "^0.7.16"
   }
 }
