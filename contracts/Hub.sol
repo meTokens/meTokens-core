@@ -9,7 +9,7 @@ import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
-import "./interfaces/IUpdater.sol";
+// import "./interfaces/IUpdater.sol";
 
 import "./libs/Status.sol";
 
@@ -17,7 +17,7 @@ import "./libs/Status.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens
-contract Hub is IHub, Ownable, Initializable {
+contract Hub is Ownable, Initializable {
 
     modifier exists(uint id) {
         require(id <= count, "id exceeds count");
@@ -30,7 +30,7 @@ contract Hub is IHub, Ownable, Initializable {
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
-    IUpdater public updater;
+    // IUpdater public updater;
 
     struct Details {
         string name;
@@ -50,12 +50,12 @@ contract Hub is IHub, Ownable, Initializable {
 
     function initialize(
         address _foundry,
-        address _updater,
+        // address _updater,
         address _vaultRegistry,
         address _curveRegistry
     ) public onlyOwner initializer {
         foundry = _foundry;
-        updater = IUpdater(_updater);
+        // updater = IUpdater(_updater);
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
     }
@@ -100,35 +100,32 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
 
-    /// @inheritdoc IHub
-    function deactivate(uint id) external override exists(id) {
+    function deactivate(uint id) external exists(id) {
         // TODO: access control
         Details storage details = hubs[id];
 
         require(details.status == Status.ACTIVE, "Hub not active");
         details.status = Status.INACTIVE;
-        emit Deactivate(id);
+        // emit Deactivate(id);
     }
 
     // TODO: is this needed?
     // function reactivateHub() returns (uint) {}
 
-    /// @inheritdoc IHub
-    function startUpdate(uint id) external override {
-        require(msg.sender == address(updater), "!updater");
-        Details storage details = hubs[id];
-        details.status = Status.QUEUED;
-    }
+    // function startUpdate(uint id) external override {
+    //     require(msg.sender == address(updater), "!updater");
+    //     Details storage details = hubs[id];
+    //     details.status = Status.QUEUED;
+    // }
 
 
-    /// @inheritdoc IHub
     function finishUpdate(
         uint id,
         address migrating,
         address recollateralizing,
         uint shifting
-    ) external override {
-        require(msg.sender == address(updater), "!updater");
+    ) external {
+        // require(msg.sender == address(updater), "!updater");
         Details storage details = hubs[id];
 
         if (migrating != address(0)) {
@@ -146,53 +143,48 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
 
-    /// @inheritdoc IHub
     function setStatus(
         uint id,
         uint status
-    ) public override returns (bool) {
+    ) public returns (bool) {
         // TODO: access control
         // Can only be from Foundry when setting to QUEUED > UPDATING,
         // Or from Updater when setting a curve to QUEUED
-        require(
-            msg.sender == address(updater) || msg.sender == foundry,
-            "!updater && !foundry"
-        );
+        // require(
+        //     msg.sender == address(updater) || msg.sender == foundry,
+        //     "!updater && !foundry"
+        // );
 
         Details storage details = hubs[id];
         require(uint(details.status) != status, "Cannot set to same status");
         details.status = Status(status);
-        emit SetStatus(id, status);
+        // emit SetStatus(id, status);
         return true;
     }
 
     function getCount() external view returns (uint) {return count;}
 
-    /// @inheritdoc IHub
-    function getOwner(uint id) public view override exists(id) returns (address) {
+    function getOwner(uint id) public view exists(id) returns (address) {
         Details memory details = hubs[id];
         return details.owner;
     }
 
 
-    /// @inheritdoc IHub
-    function getStatus(uint id) public view override returns (uint) {
+    function getStatus(uint id) public view returns (uint) {
         Details memory details = hubs[id];
         return uint(details.status);
     }
 
 
-    /// @inheritdoc IHub
-    function getRefundRatio(uint id) public view override returns (uint) {
+    function getRefundRatio(uint id) public view returns (uint) {
         Details memory details = hubs[id];
         return details.refundRatio;
     }
 
 
-    /// @inheritdoc IHub
     function getDetails(
         uint id
-    ) external view override exists(id) returns (
+    ) external view exists(id) returns (
         string memory name,
         address owner,
         address vault,
@@ -209,15 +201,13 @@ contract Hub is IHub, Ownable, Initializable {
         status = uint(details.status);
     }
 
-    /// @inheritdoc IHub
-    function getCurve(uint id) external view override returns (address) {
+    function getCurve(uint id) external view returns (address) {
         require(id < count, "id > count");
         Details memory details = hubs[id];
         return details.curve;
     }
 
-    /// @inheritdoc IHub
-    function getVault(uint id) external view override returns (address) {
+    function getVault(uint id) external view returns (address) {
         require(id < count, "id > count");
         Details memory details = hubs[id];
         return details.vault;

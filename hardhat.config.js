@@ -1,14 +1,16 @@
 require("@nomiclabs/hardhat-truffle5");
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-web3");
-require("@nomiclabs/hardhat-ethers")
-require('solidity-coverage')
+require("@nomiclabs/hardhat-ethers");
+require('solidity-coverage');
+require('hardhat-abi-exporter');
 
 require("dotenv").config();
 
 module.exports = {
   solidity: {
     compilers: [
+      {version: "0.7.0"},
       {version: "0.8.0"}
     ]
   },
@@ -32,5 +34,10 @@ module.exports = {
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"
+  },
+  abiExporter: {
+    path: './test/abi',
+    clear: true,
+    flat: true
   }
 }

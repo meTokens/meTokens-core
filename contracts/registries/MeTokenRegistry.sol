@@ -75,8 +75,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         );
 
         // Transfer collateral to vault and return the minted meToken
-        IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
-        MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+        if (_collateralDeposited > 0) {
+            IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited);
+            MeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+        }
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
