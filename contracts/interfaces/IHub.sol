@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 interface IHub {
 
     event Register(string name, address indexed vault);  // TODO: decide on arguments
-    event SetStatus(uint id, uint status);
     event Deactivate(uint id);
 
     /*
@@ -68,7 +67,6 @@ interface IHub {
         address vault,
         address curve,
         uint refundRatio,
-        uint status
     );
 
     /// @notice Helper to fetch only owner of hubDetails
@@ -94,12 +92,6 @@ interface IHub {
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return uint Indexed position of hub status
-    function getStatus(uint id) external view returns (uint);
-
-    /// @notice Function to modify a hubs' Status 
-    /// @param id Unique hub identifier
-    /// @param status Target Status index position.
-    /// @return true/false that function was successful
-    function setStatus(uint id, uint status) external returns (bool);
+    /// @return bool is the hub active?
+    function isActive(uint id) external view returns (bool);
 }

@@ -40,7 +40,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         IMeTokenRegistry.Details memory details = meTokenRegistry.getDetails(_meToken);
 
-        require(hub.getStatus(details.id) != 0, "Hub inactive");
+        require(hub.isActive(details.id), "Hub inactive");
 
         IERC20 meToken = IERC20(_meToken);
         ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
@@ -86,7 +86,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         IMeTokenRegistry.Details memory details = meTokenRegistry.getDetails(_meToken);
 
-        require(hub.getStatus(details.id) != 0, "Hub inactive");
+        require(hub.isActive(details.id), "Hub inactive");
 
         ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
         IVault vault = IVault(hub.getVault(details.id));

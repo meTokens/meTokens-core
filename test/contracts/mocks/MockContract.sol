@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+// From https://github.com/gnosis/mock-contract
 
 pragma solidity >=0.7.0 <0.8.0;
 

@@ -36,7 +36,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        require(hub.getStatus(_hubId) != 0, "Hub inactive"); // TODO: validate
+        // HubDetails memory hubDetails = hub.getDetails[_hubId];
+        // require(hubDetails[(_hubId) != 0, "Hub inactive"); // TODO: validate
 
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
