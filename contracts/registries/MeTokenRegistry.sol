@@ -9,6 +9,9 @@ import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/ICurveValueSet.sol";
 
+import "../libs/Details.sol";
+
+
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
@@ -36,8 +39,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        // HubDetails memory hubDetails = hub.getDetails[_hubId];
-        // require(hubDetails[(_hubId) != 0, "Hub inactive"); // TODO: validate
+        HubDetails memory hubDetails = hub.getDetails[_hubId];
+        
+        require(hubDetails[(_hubId) != 0, "Hub inactive"); // TODO: validate
 
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault

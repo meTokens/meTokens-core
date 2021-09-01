@@ -11,6 +11,8 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
 // import "./interfaces/IUpdater.sol";
 
+import "./libs/Details.sol";
+
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
@@ -40,7 +42,7 @@ contract Hub is Ownable, Initializable {
         bool active;
     }
 
-    mapping(uint => Details) private hubs;
+    mapping(uint => HubDetails) private hubs;
 
     constructor() {}
 
@@ -85,13 +87,15 @@ contract Hub is Ownable, Initializable {
         address vault = IVaultFactory(_vaultFactory).create(_vaultName, _collateralAsset, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
-        hubs[count++] = Details(
-            _name,
-            _owner,
-            address(vault),
-            _curve,
-            _refundRatio
-        );
+        HubDetails storage hubDetails = HubDetails({
+            name:_name,
+            owner:_owner,
+            active: true,
+            vault:address(vault),
+            curve:_curve,
+            refundRatio:_refundRatio
+        });
+        hubs[count++] = hubDetails;
     }
 
 
@@ -155,18 +159,9 @@ contract Hub is Ownable, Initializable {
     function getDetails(
         uint id
     ) external view exists(id) returns (
-        string memory name,
-        address owner,
-        address vault,
-        address curve_,
-        uint refundRatio,
+        HubDetails memory hubDetails
     ) {
-        Details memory details = hubs[id];
-        name = details.name;
-        owner = details.owner;
-        vault = details.vault;
-        curve_ = details.curve;
-        refundRatio = details.refundRatio;
+        hubDetails = hubs[id];
     }
 
     function getCurve(uint id) external view returns (address) {

@@ -13,7 +13,10 @@ import "./interfaces/ICurveValueSet.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
+
 import "./libs/WeightedAverage.sol";
+import "./libs/Details.sol";
+
 
 contract Foundry is IFoundry, Ownable, Initializable {
 
@@ -38,34 +41,23 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
-        IMeTokenRegistry.Details memory details = meTokenRegistry.getDetails(_meToken);
-
-        require(hub.isActive(details.id), "Hub inactive");
-
-        IERC20 meToken = IERC20(_meToken);
-        ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
-        IVault vault = IVault(hub.getVault(details.id));
+        IMeTokenRegistry.Details memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.id);
+        require(hubDetails.active, "Hub inactive");
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
         uint256 collateralDepositedAfterFees = _collateralDeposited - fee;
 
-        // Calculate how much meToken is minted
-        // NOTE: this is what i want
-        // uint256 meTokensMinted = curve.calculateMintReturn(
-        //     meToken (address)
-        //     collateralDepositedAfterFees
-        // )
-
-        uint256 meTokensMinted = curve.calculateMintReturn(
+        uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
             collateralDepositedAfterFees,
-            details.id,
-            meToken.totalSupply(),
-            details.balancePooled
+            meTokenDetails.id,
+            IERC20(meToken).totalSupply(),
+            meTokenDetails.balancePooled
         );
 
         // Send collateral to vault and update balance pooled
-        IERC20 collateralToken = IERC20(vault.getCollateralAsset());
-        collateralToken.transferFrom(msg.sender, address(this), _collateralDeposited);
+        address collateralToken = IVault(hubDetails.vault).getCollateralAsset());
+        IERC20(collateralToken).transferFrom(msg.sender, address(this), _collateralDeposited);
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -74,7 +66,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
 
         // Transfer fees
-        if (fee > 0) {vault.addFee(fee);}
+        if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
 
         // Mint meToken to user
         meToken.mint(_recipient, meTokensMinted);
