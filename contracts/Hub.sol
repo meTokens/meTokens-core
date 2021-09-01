@@ -33,15 +33,6 @@ contract Hub is Ownable, Initializable {
     ICurveRegistry public curveRegistry;
     // IUpdater public updater;
 
-    struct Details {
-        string name;
-        address owner;
-        address vault;
-        address curve;
-        uint refundRatio;
-        bool active;
-    }
-
     mapping(uint => HubDetails) private hubs;
 
     constructor() {}
@@ -104,16 +95,6 @@ contract Hub is Ownable, Initializable {
         // emit Deactivate(id);
     }
 
-    // TODO: is this needed?
-    // function reactivateHub() returns (uint) {}
-
-    // function startUpdate(uint id) external override {
-    //     require(msg.sender == address(updater), "!updater");
-    //     Details storage details = hubs[id];
-    //     details.status = Status.QUEUED;
-    // }
-
-
     function finishUpdate(
         uint id,
         address migrating,
@@ -121,37 +102,37 @@ contract Hub is Ownable, Initializable {
         uint shifting
     ) external {
         // require(msg.sender == address(updater), "!updater");
-        Details storage details = hubs[id];
+        HubDetails storage hubDetails = hubs[id];
 
         if (migrating != address(0)) {
-            details.curve = migrating;
+            hubDetails.curve = migrating;
         }
 
         if (recollateralizing != address(0)) {
-            details.vault = recollateralizing;
+            hubDetails.vault = recollateralizing;
         }
 
         if (shifting != 0) {
-            details.refundRatio = shifting;
+            hubDetails.refundRatio = shifting;
         }
     }
 
     function getCount() external view returns (uint) {return count;}
 
     function getOwner(uint id) public view exists(id) returns (address) {
-        Details memory details = hubs[id];
+        HubDetails memory hubDetails = hubs[id];
         return details.owner;
     }
 
 
     function isActive(uint id) public view returns (bool) {
-        Details memory details = hubs[id];
+        HubDetails memory hubDetails = hubs[id];
         return details.active;
     }
 
 
     function getRefundRatio(uint id) public view returns (uint) {
-        Details memory details = hubs[id];
+        HubDetails memory hubDetails = hubs[id];
         return details.refundRatio;
     }
 
@@ -166,13 +147,13 @@ contract Hub is Ownable, Initializable {
 
     function getCurve(uint id) external view returns (address) {
         require(id < count, "id > count");
-        Details memory details = hubs[id];
+        HubDetails memory hubDetails = hubs[id];
         return details.curve;
     }
 
     function getVault(uint id) external view returns (address) {
         require(id < count, "id > count");
-        Details memory details = hubs[id];
+        HubDetails memory hubDetails = hubs[id];
         return details.vault;
     }
 

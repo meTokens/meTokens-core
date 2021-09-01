@@ -56,7 +56,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
 
         // Send collateral to vault and update balance pooled
-        address collateralToken = IVault(hubDetails.vault).getCollateralAsset());
+        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
         IERC20(collateralToken).transferFrom(msg.sender, address(this), _collateralDeposited);
 
         meTokenRegistry.incrementBalancePooled(
@@ -76,28 +76,28 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
-        IMeTokenRegistry.Details memory details = meTokenRegistry.getDetails(_meToken);
-
-        require(hub.isActive(details.id), "Hub inactive");
+        IMeTokenRegistry.Details memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.id);
+        require(hubDetails.active, "Hub inactive");
 
         ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
         IVault vault = IVault(hub.getVault(details.id));
 
         // Calculate how many collateral tokens are returned
-        uint256 collateralReturned = curve.calculateBurnReturn(
+        uint256 collateralReturned = ICurveValueSet(hubDetails.curve).calculateBurnReturn(
             _meTokensBurned,
-            details.id,
+            meTokenDetails.id,
             IERC20(_meToken).totalSupply(),
-            details.balancePooled
+            meTokenDetails.balancePooled
         );
 
         uint256 feeRate;
         uint256 collateralMultiplier;
         // If msg.sender == owner, give owner the sell rate.
         // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == details.owner) {
+        if (msg.sender == meTokenDetails.owner) {
             feeRate = fees.burnOwnerFee();
-            collateralMultiplier = PRECISION + PRECISION * details.balanceLocked / IERC20(_meToken).totalSupply();
+            collateralMultiplier = PRECISION + PRECISION * meTokenDetails.balanceLocked / IERC20(_meToken).totalSupply();
         } else {
             feeRate = fees.burnBuyerFee();
         }
@@ -134,11 +134,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Transfer fees - TODO
         if ((collateralReturnedWeighted * feeRate / PRECISION) > 0) {
             uint256 fee = collateralReturnedWeighted * feeRate / PRECISION;
-            vault.addFee(fee);
+            IVault(huDetails.vault).addFee(fee);
         }
 
         // Send collateral from vault
-        // IERC20 collateralToken = IERC20(vault.getCollateralAsset());
-        // collateralAsset.transferFrom(address(vault), _recipient, collateralReturnedAfterFees);
+        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
+        // IERC20(collateralAsset).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
     }
 }
