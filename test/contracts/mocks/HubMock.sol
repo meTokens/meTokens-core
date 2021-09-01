@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract HubMock {
-    function getStatus(uint256 _hub) external pure returns (bool) {
+    function isActive(uint256 _hub) external pure returns (bool) {
         return true;
     }
     function getVault(uint256 _hub) external pure returns (address) {
