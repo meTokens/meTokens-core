@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-interface IMeTokenRegistry {
+import {MeTokenDetails} from "../libs/Details.sol";
 
-    struct Details {
-        address owner;
-        uint256 id;
-        uint256 balancePooled;
-        uint256 balanceLocked;
-        bool resubscribing; // TODO: validate
-    }
+interface IMeTokenRegistry {
 
     event Register(
         address indexed meToken,
@@ -54,7 +48,7 @@ interface IMeTokenRegistry {
     function getDetails(
         address meToken
     ) external view returns (
-        Details memory details
+        MeTokenDetails memory meTokenDetails
     );
 
     function transferOwnership(address _meToken, address _newOwner) external;

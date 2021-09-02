@@ -19,3 +19,11 @@ struct HubDetails {
     address targetCurve;
     uint targetRefundRatio;
 }
+
+struct MeTokenDetails {
+    address owner;
+    uint256 hubId;
+    uint256 balancePooled;
+    uint256 balanceLocked;
+    bool resubscribing; // TODO: validate
+}

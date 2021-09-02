@@ -41,7 +41,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
-        IMeTokenRegistry.Details memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
         HubDetails memory hubDetails = hub.getDetails(meTokenDetails.id);
         require(hubDetails.active, "Hub inactive");
 
@@ -76,12 +76,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
-        IMeTokenRegistry.Details memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
         HubDetails memory hubDetails = hub.getDetails(meTokenDetails.id);
         require(hubDetails.active, "Hub inactive");
-
-        ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
-        IVault vault = IVault(hub.getVault(details.id));
 
         // Calculate how many collateral tokens are returned
         uint256 collateralReturned = ICurveValueSet(hubDetails.curve).calculateBurnReturn(
@@ -100,10 +97,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             collateralMultiplier = PRECISION + PRECISION * meTokenDetails.balanceLocked / IERC20(_meToken).totalSupply();
         } else {
             feeRate = fees.burnBuyerFee();
+            collateralMultiplier = PRECISION;
         }
 
         uint256 collateralReturnedWeighted = collateralReturned * collateralMultiplier / PRECISION;
-//        uint256 collateralReturnedAfterFees = collateralReturnedWeighted - (collateralReturnedWeighted * feeRate / PRECISION);
+        uint256 collateralReturnedAfterFees = collateralReturnedWeighted - (collateralReturnedWeighted * feeRate / PRECISION);
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -139,6 +137,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         // Send collateral from vault
         address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
-        // IERC20(collateralAsset).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
+        IERC20(collateralAsset).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
     }
 }
