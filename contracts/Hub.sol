@@ -11,8 +11,7 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
 // import "./interfaces/IUpdater.sol";
 
-// import {HubDetails} from  "./libs/Details.sol";
-import  "./libs/Details.sol";
+import {HubDetails, MeTokenDetails} from  "./libs/Details.sol";
 
 
 /// @title meToken hub
@@ -128,7 +127,7 @@ contract Hub is Ownable, Initializable {
         return hubDetails.active;
     }
 
-    function getRefundRatio(uint id) public view returns (uint) {
+    function getRefundRatio(uint id) external view exists(id) returns (uint) {
         HubDetails memory hubDetails = hubs[id];
         return hubDetails.refundRatio;
     }

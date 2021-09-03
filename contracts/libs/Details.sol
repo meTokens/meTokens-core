@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+struct MeTokenDetails {
+    address owner;
+    uint256 hubId;
+    uint256 balancePooled;
+    uint256 balanceLocked;
+    
+    bool resubscribing; // TODO: validate
+    uint startTime;
+    uint endTime;
+
+    uint targetHub;
+}
+
 struct HubDetails {
     string name;
     address owner;
@@ -18,14 +31,6 @@ struct HubDetails {
     address targetVault;
     address targetCurve;
     uint targetRefundRatio;
-}
-
-struct MeTokenDetails {
-    address owner;
-    uint256 hubId;
-    uint256 balancePooled;
-    uint256 balanceLocked;
-    bool resubscribing; // TODO: validate
 }
 
 struct VaultDetails {
