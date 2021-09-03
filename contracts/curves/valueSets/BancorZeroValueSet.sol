@@ -80,23 +80,23 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 
     /// @inheritdoc ICurveValueSet
     function calculateMintReturn(
-        uint _depositAmount,
+        uint _tokensDeposited,
         uint _hubId,
         uint _supply,
         uint _balancePooled
-    ) external view override returns (uint meTokenAmount) {
+    ) external view override returns (uint meTokensReturned) {
 
         ValueSet memory valueSet = valueSets[_hubId];
         if (_supply > 0) {
-            meTokenAmount = _calculateMintReturn(
-                _depositAmount,
+            meTokensReturned = _calculateMintReturn(
+                _tokensDeposited,
                 valueSet.reserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
-            meTokenAmount = _calculateMintReturnFromZero(
-                _depositAmount,
+            meTokensReturned = _calculateMintReturnFromZero(
+                _tokensDeposited,
                 valueSet.reserveWeight,
                 BASE_X,
                 valueSet.baseY
@@ -113,26 +113,26 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 //
 //                // Calculate return using weights
 //                TargetValueSet memory t = targetValueSets[id];
-//                uint targetMeTokenAmount;
+//                uint targetMeTokensReturned;
 //                if (_supply > 0) {
-//                    targetMeTokenAmount = _calculateMintReturn(
-//                        _depositAmount,
+//                    targetMeTokensReturned = _calculateMintReturn(
+//                        _tokensDeposited,
 //                        t.reserveWeight,
 //                        _supply,
 //                        _balancePooled
 //                    );
 //                } else {
-//                    targetMeTokenAmount = _calculateMintReturnFromZero(
-//                        _depositAmount,
+//                    targetMeTokensReturned = _calculateMintReturnFromZero(
+//                        _tokensDeposited,
 //                        t.reserveWeight,
 //                        BASE_X,
 //                        t.baseY
 //                    );
 //                }
 //
-//                meTokenAmount = WeightedAverage.calculate(
-//                    meTokenAmount,
-//                    targetMeTokenAmount,
+//                meTokensReturned = WeightedAverage.calculate(
+//                    meTokensReturned,
+//                    targetMeTokensReturned,
 //                    startTime,
 //                    block.timestamp,
 //                    endTime
@@ -145,15 +145,15 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 
     /// @inheritdoc ICurveValueSet
     function calculateBurnReturn(
-        uint _burnAmount,
+        uint _meTokensBurned,
         uint _hubId,
         uint _supply,
         uint _balancePooled
-    ) external view override returns (uint collateralTokenAmount) {
+    ) external view override returns (uint tokensReturned) {
 
-       ValueSet memory valueSet = valueSets[_hubId];
-        collateralTokenAmount = _calculateBurnReturn(
-            _burnAmount,
+        ValueSet memory valueSet = valueSets[_hubId];
+        tokensReturned = _calculateBurnReturn(
+            _meTokensBurned,
             valueSet.reserveWeight,
             _supply,
             _balancePooled
@@ -168,16 +168,16 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 //
 //                // Calculate return using weights
 //                TargetValueSet memory t = targetValueSets[id];
-//                uint targetCollateralTokenAmount =  _calculateBurnReturn(
-//                    _burnAmount,
+//                uint targetTokensReturned =  _calculateBurnReturn(
+//                    _meTokensBurned,
 //                    t.reserveWeight,
 //                    _supply,
 //                    _balancePooled
 //                );
 //
-//                collateralTokenAmount = WeightedAverage.calculate(
-//                    collateralTokenAmount,
-//                    targetCollateralTokenAmount,
+//                tokensReturned = WeightedAverage.calculate(
+//                    tokensReturned,
+//                    targetTokensReturned,
 //                    startTime,
 //                    block.timestamp,
 //                    endTime
@@ -199,14 +199,14 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 
     /// @notice Given a deposit amount (in the connector token), connector weight, meToken supply and 
     ///     calculates the return for a given conversion (in the meToken)
-    /// @dev _supply * ((1 + _depositAmount / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
-    /// @param _depositAmount   amount of collateral tokens to deposit
+    /// @dev _supply * ((1 + _tokensDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
+    /// @param _tokensDeposited   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply          current meToken supply
     /// @param _balancePooled   total connector balance
     /// @return amount of meTokens minted
     function _calculateMintReturn(
-        uint256 _depositAmount,
+        uint256 _tokensDeposited,
         uint32 _reserveWeight,
         uint256 _supply,
         uint256 _balancePooled
@@ -214,17 +214,17 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
         // validate input
         require(_balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT);
         // special case for 0 deposit amount
-        if (_depositAmount == 0) {
+        if (_tokensDeposited == 0) {
             return 0;
         }
         // special case if the weight = 100%
         if (_reserveWeight == MAX_WEIGHT) {
-            return _supply * _depositAmount / _balancePooled;
+            return _supply * _tokensDeposited / _balancePooled;
         }
 
         uint8 precision;
         uint256 result;
-        uint256 baseN = _depositAmount + _balancePooled;
+        uint256 baseN = _tokensDeposited + _balancePooled;
         (result, precision) = power(
             baseN, _balancePooled, _reserveWeight, MAX_WEIGHT
         );
@@ -236,13 +236,13 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
     /// @notice Given a deposit amount (in the collateral token,) meToken supply of 0, connector weight,
     ///     constant x and constant y, calculates the return for a given conversion (in the meToken)
     /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply = 0
-    /// @param _depositAmount   amount of collateral tokens to deposit
+    /// @param _tokensDeposited   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _baseX          constant X 
     /// @param _baseY          constant y
     /// @return amount of meTokens minted
     function _calculateMintReturnFromZero(
-        uint256 _depositAmount,
+        uint256 _tokensDeposited,
         uint256 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
@@ -250,42 +250,42 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
         uint256 numerator = _baseY;
         uint256 exponent = (PRECISION/_reserveWeight - PRECISION);
         uint256 denominator = _baseX ** exponent;
-        return numerator * _depositAmount** exponent / denominator;
+        return numerator * _tokensDeposited** exponent / denominator;
     }
 
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @dev _balancePooled * (1 - (1 - _burnAmount / _supply) ^ (1 / (_reserveWeight / 1000000)))
-    /// @param _burnAmount          amount of meTokens to burn
+    /// @dev _balancePooled * (1 - (1 - _meTokensBurned / _supply) ^ (1 / (_reserveWeight / 1000000)))
+    /// @param _meTokensBurned          amount of meTokens to burn
     /// @param _reserveWeight       connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply              current meToken supply
     /// @param _balancePooled       total connector balance
     /// @return amount of collateral tokens received
     function _calculateBurnReturn(
-        uint256 _burnAmount,
+        uint256 _meTokensBurned,
         uint32 _reserveWeight,
         uint256 _supply,
         uint256 _balancePooled
     ) private view returns (uint256) {
         // validate input
-        require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT && _burnAmount <= _supply);
+        require(_supply > 0 && _balancePooled > 0 && _reserveWeight > 0 && _reserveWeight <= MAX_WEIGHT && _meTokensBurned <= _supply);
         // special case for 0 sell amount
-        if (_burnAmount == 0) {
+        if (_meTokensBurned == 0) {
             return 0;
         }
         // special case for selling the entire supply
-        if (_burnAmount == _supply) {
+        if (_meTokensBurned == _supply) {
             return _balancePooled;
         }
         // special case if the weight = 100%
         if (_reserveWeight == MAX_WEIGHT) {
-            return _balancePooled * _burnAmount / _supply;
+            return _balancePooled * _meTokensBurned / _supply;
         }
 
         uint256 result;
         uint8 precision;
-        uint256 baseD = _supply - _burnAmount;
+        uint256 baseD = _supply - _meTokensBurned;
         (result, precision) = power(
             _supply, baseD, MAX_WEIGHT, _reserveWeight
         );

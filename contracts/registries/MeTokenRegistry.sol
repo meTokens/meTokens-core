@@ -36,7 +36,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
-        uint256 _collateralDeposited
+        uint256 _tokensDeposited
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
@@ -46,8 +46,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
         address token = IVault(hubDetails.vault).getToken();
-        if (_collateralDeposited > 0) {
-            require(IERC20(token).transferFrom(msg.sender, hubDetails.vault, _collateralDeposited), "transfer failed");
+        if (_tokensDeposited > 0) {
+            require(IERC20(token).transferFrom(msg.sender, hubDetails.vault, _tokensDeposited), "transfer failed");
         }
 
         // Create meToken erc20 contract
@@ -61,14 +61,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
         newMeTokenDetails.owner = msg.sender;
         newMeTokenDetails.hubId = _hubId;
-        newMeTokenDetails.balancePooled = _collateralDeposited;
+        newMeTokenDetails.balancePooled = _tokensDeposited;
         newMeTokenDetails.balanceLocked = 0;
         newMeTokenDetails.resubscribing = false;
 
         // Transfer collateral to vault and return the minted meToken
-        if (_collateralDeposited > 0) {
+        if (_tokensDeposited > 0) {
             uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
-                _collateralDeposited,  // _deposit_amount
+                _tokensDeposited,  // _deposit_amount
                 _hubId,                // _hubId
                 0,                      // _supply
                 0                       // _balancePooled

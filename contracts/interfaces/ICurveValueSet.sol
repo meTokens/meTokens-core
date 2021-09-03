@@ -30,18 +30,18 @@ interface ICurveValueSet {
 
 
     function calculateMintReturn(
-        uint _depositAmount,
+        uint _tokensDeposited,
         uint _hubId,
         uint _supply,
         uint _balancePooled
-    ) external view returns (uint meTokenAmount);
+    ) external view returns (uint meTokensReturned);
 
     function calculateBurnReturn(
-        uint _burnAmount,
+        uint _meTokensBurned,
         uint _hubId,
         uint _supply,
         uint _balancePooled
-    ) external view returns (uint collateralTokenAmount);
+    ) external view returns (uint tokensReturned);
 
 
     function finishUpdate(uint id) external;

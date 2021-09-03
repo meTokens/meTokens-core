@@ -23,9 +23,9 @@ contract Vault is IVault, Ownable {
     bytes public encodedAdditionalArgs;
     
     /// @inheritdoc IVault
-    function addFee(uint256 amount) external onlyOwner override {
-        accruedFees = accruedFees + amount;
-        emit AddFee(amount);
+    function addFee(uint256 _amount) external onlyOwner override {
+        accruedFees = accruedFees + _amount;
+        emit AddFee(_amount);
     }
 
 
