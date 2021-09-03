@@ -16,7 +16,7 @@ interface IHub {
     /// @param _vaultOwner TODO
     /// @param _vaultFactory TODO
     /// @param _curve TODO
-    /// @param _collateralAsset TODO
+    /// @param _token TODO
     /// @param _refundRatio TODO
     /// @param _encodedValueSetArgs TODO
     /// @param _encodedVaultAdditionalArgs TODO
@@ -27,7 +27,7 @@ interface IHub {
         address _vaultOwner,
         address _vaultFactory,
         address _curve,
-        address _collateralAsset,
+        address _token,
         uint _refundRatio,
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs

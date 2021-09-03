@@ -20,12 +20,12 @@ interface IMeTokenRegistry {
     /// @param _name TODO
     /// @param _symbol TODO
     /// @param _hubId TODO
-    /// @param _collateralDeposited TODO
+    /// @param _tokensDeposited TODO
     function register(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
-        uint256 _collateralDeposited
+        uint256 _tokensDeposited
     ) external;
 
     // /// @notice TODO

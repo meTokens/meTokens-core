@@ -56,7 +56,7 @@ contract Hub is Ownable, Initializable {
         string calldata _vaultName,
         address _vaultFactory,
         address _curve,
-        address _collateralAsset,
+        address _token,
         uint _refundRatio,
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs
@@ -75,7 +75,7 @@ contract Hub is Ownable, Initializable {
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _collateralAsset, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
         HubDetails storage newHubDetails = hubs[count++];

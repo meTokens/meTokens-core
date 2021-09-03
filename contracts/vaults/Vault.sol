@@ -18,14 +18,14 @@ contract Vault is IVault, Ownable {
     address gov = address(0x0);  // TODO
     IVaultRegistry public vaultRegistry = IVaultRegistry(address(0)); // TODO
 
-	address public collateralAsset;
+	address internal token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
     
     /// @inheritdoc IVault
-    function addFee(uint256 amount) external onlyOwner override {
-        accruedFees = accruedFees + amount;
-        emit AddFee(amount);
+    function addFee(uint256 _amount) external onlyOwner override {
+        accruedFees = accruedFees + _amount;
+        emit AddFee(_amount);
     }
 
 
@@ -37,7 +37,7 @@ contract Vault is IVault, Ownable {
             require(_amount <= accruedFees, "_amount cannot exceed accruedFees");
         }
 
-        IERC20(collateralAsset).transfer(_to, _amount);
+        IERC20(token).transfer(_to, _amount);
         accruedFees = accruedFees - _amount;
 
         emit Withdraw(_amount, _to);
@@ -45,7 +45,7 @@ contract Vault is IVault, Ownable {
 
 
     /// @inheritdoc IVault
-    function getCollateralAsset() external view override returns (address) {
-        return collateralAsset;
+    function getToken() external view override returns (address) {
+        return token;
     }
 }
