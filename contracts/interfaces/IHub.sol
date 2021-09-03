@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import {HubDetails} from "../libs/Details.sol"; 
+
 interface IHub {
 
     event Register(string name, address indexed vault);  // TODO: decide on arguments
@@ -55,18 +57,9 @@ interface IHub {
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return name Name of hub
-    /// @return owner Owner of hub
-    /// @return vault Vault of hub
-    /// @return curve Curve of hub
-    /// @return refundRatio refundRatio of hub
-    /// @return status Status of hub
+    /// @return hubDetails Details of hub
     function getDetails(uint id) external view returns (
-        string calldata name,
-        address owner,
-        address vault,
-        address curve,
-        uint refundRatio,
+        HubDetails memory hubDetails
     );
 
     /// @notice Helper to fetch only owner of hubDetails

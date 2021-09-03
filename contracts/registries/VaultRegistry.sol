@@ -23,8 +23,12 @@ contract VaultRegistry is IVaultRegistry, Roles {
         address _factory
     ) external override {
         require(approved[msg.sender], "Only vault factories can register vaults");
+
         // Add vault details to storage
-        vaults[_vault] = VaultDetails(_name, _factory, true);
+        VaultDetails storage newVaultDetails = vaults[_vault];
+        newVaultDetails.name = _name;
+        newVaultDetails.factory = _factory;
+        newVaultDetails.active = true;
 
         emit Register(_name, _vault, _factory);
     }

@@ -44,7 +44,7 @@ interface IMeTokenRegistry {
 
     /// @notice TODO
     /// @param meToken Address of meToken queried
-    /// @return details of the meToken
+    /// @return meTokenDetails details of the meToken
     function getDetails(
         address meToken
     ) external view returns (

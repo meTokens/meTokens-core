@@ -3,13 +3,15 @@ pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
 import "../Roles.sol";
+
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/ICurveValueSet.sol";
+import "../interfaces/IMeToken.sol";
 
-import "../libs/Details.sol";
+import {MeTokenDetails} from  "../libs/Details.sol";
 
 
 /// @title meToken registry
@@ -39,43 +41,41 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        HubDetails memory hubDetails = hub.getDetails[_hubId];
+        HubDetails memory hubDetails = hub.getDetails(_hubId);
         require(hubDetails.active, "Hub inactive");
 
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
-        address collateralAsset = IVault(hub.vault).getCollateralAsset();
+        address collateralAsset = IVault(hubDetails.vault).getCollateralAsset();
         if (_collateralDeposited > 0) {
-            require(IERC20(collateralAsset).transferFrom(msg.sender, vault, _collateralDeposited), "transfer failed");
+            require(IERC20(collateralAsset).transferFrom(msg.sender, hubDetails.vault, _collateralDeposited), "transfer failed");
         }
 
         // Create meToken erc20 contract
         address meTokenAddr = meTokenFactory.create(
             msg.sender, _name, _symbol
         );
-
-        // Add meToken to registry
-        meTokens[meTokenAddr] = MeTokenDetails({
-            owner: msg.sender,
-            id: _hubId,
-            balancePooled: _collateralDeposited,
-            balanceLocked: 0,
-            resubscribing: false
-        });
-
         // Register the address which created a meToken
         owners[msg.sender] = meTokenAddr;
 
+        // Add meToken to registry
+        MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
+        newMeTokenDetails.owner = msg.sender;
+        newMeTokenDetails.hubId = _hubId;
+        newMeTokenDetails.balancePooled = _collateralDeposited;
+        newMeTokenDetails.balanceLocked = 0;
+        newMeTokenDetails.resubscribing = false;
+
         // Transfer collateral to vault and return the minted meToken
         if (_collateralDeposited > 0) {
-            uint256 meTokensMinted = ICurveValueSet(hub.curve).calculateMintReturn(
+            uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
                 _collateralDeposited,  // _deposit_amount
                 _hubId,                // _hubId
                 0,                      // _supply
                 0                       // _balancePooled
             );
             // TODO: check if mint can be reverted from hooks
-            IERC20(meTokenAddr).mint(msg.sender, meTokensMinted);
+            IMeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
         }
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
@@ -99,7 +99,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        MeTokenDetails storage details = meTokens[_meToken];
+        MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
             meTokenDetails.balancePooled += _amount;
         } else {

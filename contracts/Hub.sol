@@ -11,7 +11,8 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
 // import "./interfaces/IUpdater.sol";
 
-import {HubDetails} from  "./libs/Details.sol";
+// import {HubDetails} from  "./libs/Details.sol";
+import  "./libs/Details.sol";
 
 
 /// @title meToken hub
@@ -78,15 +79,13 @@ contract Hub is Ownable, Initializable {
         address vault = IVaultFactory(_vaultFactory).create(_vaultName, _collateralAsset, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
-        HubDetails storage hubDetails = HubDetails({
-            name:_name,
-            owner:_owner,
-            active: true,
-            vault:address(vault),
-            curve:_curve,
-            refundRatio:_refundRatio
-        });
-        hubs[count++] = hubDetails;
+        HubDetails storage newHubDetails = hubs[count++];
+        newHubDetails.name = _name;
+        newHubDetails.owner = _owner;
+        newHubDetails.active =  true;
+        newHubDetails.vault = address(vault);
+        newHubDetails.curve = _curve;
+        newHubDetails.refundRatio = _refundRatio;
     }
 
 
