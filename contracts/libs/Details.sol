@@ -27,3 +27,9 @@ struct MeTokenDetails {
     uint256 balanceLocked;
     bool resubscribing; // TODO: validate
 }
+
+struct VaultDetails {
+    string name;
+    address factory; // NOTE: references factories/VaultFactories/{}.sol
+    bool active;  // NOTE: can be inactive after vault migration
+}

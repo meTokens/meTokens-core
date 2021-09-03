@@ -1,24 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "../Roles.sol";
 import "../interfaces/IVaultRegistry.sol";
 
+import {VaultDetails} from  "../libs/Details.sol";
 
 /// @title vault registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all active vaults and available vault factories 
-contract VaultRegistry is IVaultRegistry {
+contract VaultRegistry is IVaultRegistry, Roles {
 
-    mapping (address => Details) private vaults;
+    mapping (address => VaultDetails) private vaults;
     // NOTE: approved vault factories could be for
     // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
 	mapping (address => bool) private approved;
-
-    struct Details {
-        string name;
-        address factory; // NOTE: references factories/VaultFactories/{}.sol
-        bool active;  // NOTE: can be inactive after vault migration
-    }
 
     /// @inheritdoc IVaultRegistry
     function register(
@@ -28,8 +24,7 @@ contract VaultRegistry is IVaultRegistry {
     ) external override {
         require(approved[msg.sender], "Only vault factories can register vaults");
         // Add vault details to storage
-        Details memory details = Details(_name, _factory, true);
-        vaults[_vault] = details;
+        vaults[_vault] = VaultDetails(_name, _factory, true);
 
         emit Register(_name, _vault, _factory);
     }
@@ -46,9 +41,9 @@ contract VaultRegistry is IVaultRegistry {
     /// @inheritdoc IVaultRegistry
     function deactivate(address _vault) external override {
         // TODO: access control
-        Details storage details = vaults[_vault];
-        require(details.active != false, "Vault not active");
-        details.active = false;
+        VaultDetails storage vaultDetails = vaults[_vault];
+        require(vaultDetails.active != false, "Vault not active");
+        vaultDetails.active = false;
         emit Deactivate(_vault);
     }
 
@@ -66,8 +61,8 @@ contract VaultRegistry is IVaultRegistry {
 
     /// @inheritdoc IVaultRegistry
     function isActive(address _vault) external view override returns (bool) {
-        Details memory details = vaults[_vault];
-        return details.active;
+        VaultDetails memory vaultDetails = vaults[_vault];
+        return vaultDetails.active;
     }
 
 
@@ -79,13 +74,8 @@ contract VaultRegistry is IVaultRegistry {
     
     /// @inheritdoc IVaultRegistry
     function getDetails(address vault) external view override returns (
-        string memory name,
-        address factory,
-        bool active
+        VaultDetails memory vaultDetails
     ) {
-        Details memory details = vaults[vault];
-        name = details.name;
-        factory = details.factory;
-        active = details.active;
+        vaultDetails = vaults[vault];
     }
 }

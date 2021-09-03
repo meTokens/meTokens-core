@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import {VaultDetails} from "../libs/Details.sol";
+
 interface IVaultRegistry {
 
     event Register(string name, address vault, address factory);
@@ -44,12 +46,8 @@ interface IVaultRegistry {
 
     /// @notice TODO
     /// @param vault TODO
-    /// @return _name TODO
-    /// @return _factory TODO
-    /// @return _active TODO
+    /// @return vaultDetails TODO
     function getDetails(address vault) external view returns (
-        string memory _name,
-        address _factory,
-        bool _active
+        VaultDetails memory vaultDetails
     );
 }
