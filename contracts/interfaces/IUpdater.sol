@@ -9,6 +9,7 @@ interface IUpdater {
     event SetMinDuration(uint256 amount);
     event SetMaxDuration(uint256 amount);
 
+    /*
     /// @notice TODO
     /// @param _hubId TODO
     /// @param _targetCurveId TODO
@@ -106,4 +107,5 @@ interface IUpdater {
     /// @return uint256 TODO
     function maxDuration() external view returns (uint256);
 
+    */
 }

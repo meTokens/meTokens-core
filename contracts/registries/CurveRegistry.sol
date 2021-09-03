@@ -22,20 +22,16 @@ contract CurveRegistry is ICurveRegistry, Ownable {
 
     /// @inheritdoc ICurveRegistry
     function register(
-        string calldata _name,
-        address _formula,
-        address _valueSet
+        address _curve
     ) external onlyOwner override returns (uint256) {
 
         // Add curve details to storage
         // TODO: does count++ need to be in return statement instead?
         CurveDetails storage newCurveDetails = curves[count++];
-        newCurveDetails.name = _name;
-        newCurveDetails.formula = _formula;
-        newCurveDetails.valueSet = _valueSet;
+        newCurveDetails.curve = _curve;
         newCurveDetails.active = true;
 
-        emit Register(count, _name, _formula, _valueSet);
+        emit Register(count, _curve);
         return count;
     }
 

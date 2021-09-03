@@ -1,26 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../formulas/BancorZeroFormula.sol";
+import "../interfaces/ICurve.sol";
+import "../interfaces/IUpdater.sol";
 
-import "../../interfaces/ICurveValueSet.sol";
-import "../../interfaces/IUpdater.sol";
+import "../libs/WeightedAverage.sol";
 
-import "../../libs/WeightedAverage.sol";
-
-import "../../utils/Power.sol";
+import "../utils/Power.sol";
 
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
-/// @notice Uses BancorZeroFormula.sol for private methods
-contract BancorZeroValueSet is ICurveValueSet, Power {
+contract BancorZeroCurve is ICurve, Power {
 
     uint private PRECISION = 10**18;
     uint private BASE_X = PRECISION;
     uint32 private MAX_WEIGHT = 1000000;
 
-    // NOTE: each valueSet is for a curve
     struct ValueSet {
 		uint baseY;
 		uint32 reserveWeight;
@@ -38,7 +34,7 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
         // updater = IUpdater(_updater);
     }
 
-    /// @inheritdoc ICurveValueSet
+    /// @inheritdoc ICurve
 	function register(
         uint _hubId,
         bytes calldata _encodedValueSet
@@ -55,7 +51,7 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
     }
 
 
-    /// @inheritdoc ICurveValueSet
+    /// @inheritdoc ICurve
     function registerTarget(
         uint _hubId,
         bytes calldata _encodedValueSet
@@ -78,7 +74,7 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
 
 
 
-    /// @inheritdoc ICurveValueSet
+    /// @inheritdoc ICurve
     function calculateMintReturn(
         uint _tokensDeposited,
         uint _hubId,
@@ -143,7 +139,7 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
     }
 
 
-    /// @inheritdoc ICurveValueSet
+    /// @inheritdoc ICurve
     function calculateBurnReturn(
         uint _meTokensBurned,
         uint _hubId,

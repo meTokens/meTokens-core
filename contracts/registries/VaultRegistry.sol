@@ -18,7 +18,6 @@ contract VaultRegistry is IVaultRegistry, Roles {
 
     /// @inheritdoc IVaultRegistry
     function register(
-        string calldata _name,
         address _vault,
         address _factory
     ) external override {
@@ -26,11 +25,10 @@ contract VaultRegistry is IVaultRegistry, Roles {
 
         // Add vault details to storage
         VaultDetails storage newVaultDetails = vaults[_vault];
-        newVaultDetails.name = _name;
         newVaultDetails.factory = _factory;
         newVaultDetails.active = true;
 
-        emit Register(_name, _vault, _factory);
+        emit Register(_vault, _factory);
     }
 
     /// @inheritdoc IVaultRegistry
