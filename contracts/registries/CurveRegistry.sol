@@ -4,21 +4,21 @@ pragma solidity ^0.8.0;
 import "../interfaces/ICurveRegistry.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import {CurveDetails} from  "../libs/Details.sol";
     
 /// @title Curve registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract keeps track of active curve types and their base values
 contract CurveRegistry is ICurveRegistry, Ownable {
 
-    uint256 private count;
-    
-    struct Details {
-        string name; // BancorZero
-        address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
-        address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
-        bool active;
+    modifier exists(uint id) {
+        require(id <= count, "id exceeds count");
+        _;
     }
-    mapping (uint256 => Details) private curves;
+
+    uint256 private count;
+
+    mapping (uint256 => CurveDetails) private curves;
 
     /// @inheritdoc ICurveRegistry
     function register(
@@ -28,9 +28,13 @@ contract CurveRegistry is ICurveRegistry, Ownable {
     ) external onlyOwner override returns (uint256) {
 
         // Add curve details to storage
-        Details memory details = Details(_name, _formula, _valueSet, true);
-        curves[count++] = details;
-    
+        // TODO: does count++ need to be in return statement instead?
+        CurveDetails storage newCurveDetails = curves[count++];
+        newCurveDetails.name = _name;
+        newCurveDetails.formula = _formula;
+        newCurveDetails.valueSet = _valueSet;
+        newCurveDetails.active = true;
+
         emit Register(count, _name, _formula, _valueSet);
         return count;
     }
@@ -38,11 +42,9 @@ contract CurveRegistry is ICurveRegistry, Ownable {
 
     /// @inheritdoc ICurveRegistry
     function deactivate(uint256 id) external onlyOwner override {
-        require(id <= count, "_curveId cannot exceed count");
-
-        Details storage details = curves[id];
-        require(details.active, "curve not active");
-        details.active = false;
+        CurveDetails storage curveDetails = curves[id];
+        require(curveDetails.active, "curve not active");
+        curveDetails.active = false;
         emit Deactivate(id);
     }
 
@@ -53,8 +55,8 @@ contract CurveRegistry is ICurveRegistry, Ownable {
 
     /// @inheritdoc ICurveRegistry
     function isActive(uint256 id) external view override returns (bool) {
-        Details memory details = curves[id];
-        return details.active;
+        CurveDetails memory curveDetails = curves[id];
+        return curveDetails.active;
     }
 
     /// @inheritdoc ICurveRegistry
@@ -64,18 +66,9 @@ contract CurveRegistry is ICurveRegistry, Ownable {
 
 
     /// @inheritdoc ICurveRegistry
-    function getDetails(uint256 id) external view override returns (
-        string memory name,
-        address formula,
-        address valueSet,
-        bool active
+    function getDetails(uint256 id) external view exists(id) override returns (
+        CurveDetails memory curveDetails
     ) {
-        require(id <= count, "id cannot exceed count");
-        Details memory details = curves[id];
-        
-        name = details.name; // BancorZero
-        formula = details.formula; // see BancorZeroFormula.sol as an example of an address that could be registered
-        valueSet = details.valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
-        active = details.active;
+        curveDetails = curves[id];
     }
 }

@@ -11,7 +11,7 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
 // import "./interfaces/IUpdater.sol";
 
-import "./libs/Details.sol";
+import {HubDetails, MeTokenDetails} from  "./libs/Details.sol";
 
 
 /// @title meToken hub
@@ -32,15 +32,6 @@ contract Hub is Ownable, Initializable {
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
     // IUpdater public updater;
-
-    struct Details {
-        string name;
-        address owner;
-        address vault;
-        address curve;
-        uint refundRatio;
-        bool active;
-    }
 
     mapping(uint => HubDetails) private hubs;
 
@@ -87,15 +78,13 @@ contract Hub is Ownable, Initializable {
         address vault = IVaultFactory(_vaultFactory).create(_vaultName, _collateralAsset, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
-        HubDetails storage hubDetails = HubDetails({
-            name:_name,
-            owner:_owner,
-            active: true,
-            vault:address(vault),
-            curve:_curve,
-            refundRatio:_refundRatio
-        });
-        hubs[count++] = hubDetails;
+        HubDetails storage newHubDetails = hubs[count++];
+        newHubDetails.name = _name;
+        newHubDetails.owner = _owner;
+        newHubDetails.active =  true;
+        newHubDetails.vault = address(vault);
+        newHubDetails.curve = _curve;
+        newHubDetails.refundRatio = _refundRatio;
     }
 
 
@@ -104,16 +93,6 @@ contract Hub is Ownable, Initializable {
         // emit Deactivate(id);
     }
 
-    // TODO: is this needed?
-    // function reactivateHub() returns (uint) {}
-
-    // function startUpdate(uint id) external override {
-    //     require(msg.sender == address(updater), "!updater");
-    //     Details storage details = hubs[id];
-    //     details.status = Status.QUEUED;
-    // }
-
-
     function finishUpdate(
         uint id,
         address migrating,
@@ -121,40 +100,37 @@ contract Hub is Ownable, Initializable {
         uint shifting
     ) external {
         // require(msg.sender == address(updater), "!updater");
-        Details storage details = hubs[id];
+        HubDetails storage hubDetails = hubs[id];
 
         if (migrating != address(0)) {
-            details.curve = migrating;
+            hubDetails.curve = migrating;
         }
 
         if (recollateralizing != address(0)) {
-            details.vault = recollateralizing;
+            hubDetails.vault = recollateralizing;
         }
 
         if (shifting != 0) {
-            details.refundRatio = shifting;
+            hubDetails.refundRatio = shifting;
         }
     }
 
     function getCount() external view returns (uint) {return count;}
 
     function getOwner(uint id) public view exists(id) returns (address) {
-        Details memory details = hubs[id];
-        return details.owner;
+        HubDetails memory hubDetails = hubs[id];
+        return hubDetails.owner;
     }
-
 
     function isActive(uint id) public view returns (bool) {
-        Details memory details = hubs[id];
-        return details.active;
+        HubDetails memory hubDetails = hubs[id];
+        return hubDetails.active;
     }
 
-
-    function getRefundRatio(uint id) public view returns (uint) {
-        Details memory details = hubs[id];
-        return details.refundRatio;
+    function getRefundRatio(uint id) external view exists(id) returns (uint) {
+        HubDetails memory hubDetails = hubs[id];
+        return hubDetails.refundRatio;
     }
-
 
     function getDetails(
         uint id
@@ -164,16 +140,14 @@ contract Hub is Ownable, Initializable {
         hubDetails = hubs[id];
     }
 
-    function getCurve(uint id) external view returns (address) {
-        require(id < count, "id > count");
-        Details memory details = hubs[id];
-        return details.curve;
+    function getCurve(uint id) external view exists(id) returns (address) {
+        HubDetails memory hubDetails = hubs[id];
+        return hubDetails.curve;
     }
 
-    function getVault(uint id) external view returns (address) {
-        require(id < count, "id > count");
-        Details memory details = hubs[id];
-        return details.vault;
+    function getVault(uint id) external view exists(id) returns (address) {
+        HubDetails memory hubDetails = hubs[id];
+        return hubDetails.vault;
     }
 
 }

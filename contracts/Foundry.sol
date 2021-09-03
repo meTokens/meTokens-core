@@ -41,8 +41,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function mint(address _meToken, uint256 _collateralDeposited, address _recipient) external override {
 
-        IMeTokenRegistry.Details memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
-        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.id);
+        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
         require(hubDetails.active, "Hub inactive");
 
         uint256 fee = _collateralDeposited * fees.mintFee() / PRECISION;
@@ -50,13 +50,13 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
             collateralDepositedAfterFees,
-            meTokenDetails.id,
-            IERC20(meToken).totalSupply(),
+            meTokenDetails.hubId,
+            IERC20(_meToken).totalSupply(),
             meTokenDetails.balancePooled
         );
 
         // Send collateral to vault and update balance pooled
-        address collateralToken = IVault(hubDetails.vault).getCollateralAsset());
+        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
         IERC20(collateralToken).transferFrom(msg.sender, address(this), _collateralDeposited);
 
         meTokenRegistry.incrementBalancePooled(
@@ -69,41 +69,39 @@ contract Foundry is IFoundry, Ownable, Initializable {
         if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
 
         // Mint meToken to user
-        meToken.mint(_recipient, meTokensMinted);
+        IERC20(_meToken).mint(_recipient, meTokensMinted);
     }
 
 
     /// @inheritdoc IFoundry
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
-        IMeTokenRegistry.Details memory details = meTokenRegistry.getDetails(_meToken);
-
-        require(hub.isActive(details.id), "Hub inactive");
-
-        ICurveValueSet curve = ICurveValueSet(hub.getCurve(details.id));
-        IVault vault = IVault(hub.getVault(details.id));
+        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
+        require(hubDetails.active, "Hub inactive");
 
         // Calculate how many collateral tokens are returned
-        uint256 collateralReturned = curve.calculateBurnReturn(
+        uint256 collateralReturned = ICurveValueSet(hubDetails.curve).calculateBurnReturn(
             _meTokensBurned,
-            details.id,
+            meTokenDetails.hubId,
             IERC20(_meToken).totalSupply(),
-            details.balancePooled
+            meTokenDetails.balancePooled
         );
 
         uint256 feeRate;
         uint256 collateralMultiplier;
         // If msg.sender == owner, give owner the sell rate.
         // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == details.owner) {
+        if (msg.sender == meTokenDetails.owner) {
             feeRate = fees.burnOwnerFee();
-            collateralMultiplier = PRECISION + PRECISION * details.balanceLocked / IERC20(_meToken).totalSupply();
+            collateralMultiplier = PRECISION + PRECISION * meTokenDetails.balanceLocked / IERC20(_meToken).totalSupply();
         } else {
             feeRate = fees.burnBuyerFee();
+            collateralMultiplier = PRECISION;
         }
 
         uint256 collateralReturnedWeighted = collateralReturned * collateralMultiplier / PRECISION;
-//        uint256 collateralReturnedAfterFees = collateralReturnedWeighted - (collateralReturnedWeighted * feeRate / PRECISION);
+        uint256 collateralReturnedAfterFees = collateralReturnedWeighted - (collateralReturnedWeighted * feeRate / PRECISION);
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -134,11 +132,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Transfer fees - TODO
         if ((collateralReturnedWeighted * feeRate / PRECISION) > 0) {
             uint256 fee = collateralReturnedWeighted * feeRate / PRECISION;
-            vault.addFee(fee);
+            IVault(hubDetails.vault).addFee(fee);
         }
 
         // Send collateral from vault
-        // IERC20 collateralToken = IERC20(vault.getCollateralAsset());
-        // collateralAsset.transferFrom(address(vault), _recipient, collateralReturnedAfterFees);
+        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
+        IERC20(collateralToken).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
     }
 }
