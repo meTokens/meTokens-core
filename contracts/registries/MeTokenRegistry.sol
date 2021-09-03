@@ -8,7 +8,7 @@ import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
-import "../interfaces/ICurveValueSet.sol";
+import "../interfaces/ICurve.sol";
 import "../interfaces/IMeToken.sol";
 
 import {MeTokenDetails} from  "../libs/Details.sol";
@@ -67,7 +67,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
-            uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
+            uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
                 _tokensDeposited,  // _deposit_amount
                 _hubId,                // _hubId
                 0,                      // _supply

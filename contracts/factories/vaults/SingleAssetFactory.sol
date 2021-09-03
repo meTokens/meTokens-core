@@ -33,7 +33,6 @@ contract SingleAssetFactory is IVaultFactory {
     
     /// @inheritdoc IVaultFactory
     function create(
-        string calldata _name,
         address _token,
         bytes memory _encodedAdditionalArgs
     ) external override returns (address) {
@@ -50,7 +49,7 @@ contract SingleAssetFactory is IVaultFactory {
         );
 
         // Add vault to vaultRegistry
-        vaultRegistry.register(_name, vaultAddress, address(this));
+        vaultRegistry.register(vaultAddress, address(this));
 
         emit Create(vaultAddress);
         return vaultAddress;

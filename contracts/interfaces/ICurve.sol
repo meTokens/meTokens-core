@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 
-/// @title Curve ValueSet Interface
+/// @title Curve Interface
 /// @author Carl Farterson (@carlfarterson)
-/// @dev Required for all Curve ValueSets
-interface ICurveValueSet {
+/// @dev Required for all Curves
+interface ICurve {
 
     event Updated(uint indexed hubId);
 

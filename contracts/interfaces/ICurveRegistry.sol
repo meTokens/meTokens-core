@@ -5,34 +5,30 @@ import {CurveDetails} from "../libs/Details.sol";
 
 interface ICurveRegistry {
 
-    event Register(uint256 id, string name, address formula, address values);
+    event Register(uint256 count, address curve);
     event Deactivate(uint256 curveId);
 
     /// @notice TODO
-    /// @param _name TODO
-    /// @param _formula TODO
-    /// @param _valueSet TODO
+    /// @param curve TODO
     function register(
-        string calldata _name,
-        address _formula,
-        address _valueSet
+        address curve
     ) external returns (uint);
 
     /// @notice TODO
-    /// @param id TODO
-    function deactivate(uint id) external;
+    /// @param hubId TODO
+    function deactivate(uint hubId) external;
     
-    function isActive(uint id) external view returns (bool);
+    function isActive(uint hubId) external view returns (bool);
 
     /// @notice TODO
     /// @return TODO
     function getCount() external view returns (uint);
 
     // / @notice TODO
-    // / @param id TODO
+    // / @param hubId TODO
     // / @return curveDetails TODO
     function getDetails(
-        uint id
+        uint hubId
     ) external view returns (
         CurveDetails memory curveDetails
     );

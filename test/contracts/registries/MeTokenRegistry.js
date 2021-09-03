@@ -2,8 +2,7 @@ const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
 const CurveRegistry = artifacts.require("CurveRegistry");
 const VaultRegistry = artifacts.require("VaultRegistry");
-const BancorZeroFormula = artifacts.require("BancorZeroFormula");
-const BancorZeroValueSet = artifacts.require("BancorZeroValueSet");
+const BancorZeroCurve = artifacts.require("BancorZeroCurve");
 const Foundry = artifacts.require("Foundry");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const MockContract = artifacts.require("MockContract");
@@ -19,9 +18,8 @@ describe("MeTokenRegistry.sol", () => {
         meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
         curveRegistry = await CurveRegistry.new();
         vaultRegistry = await VaultRegistry.new();
-        formula = await BancorZeroFormula.new();
-        valueSet = await BancorZeroValueSet.new();
-        await curveRegistry.register("Test Curve", formula.address, valueSet.address);
+        curve = await BancorZeroCurve.new();
+        await curveRegistry.register("Test Curve", formula.address, curve.address);
     });
 
     describe("register()", () => {

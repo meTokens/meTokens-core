@@ -9,7 +9,7 @@ import "./interfaces/IFees.sol";
 import "./interfaces/IMeTokenRegistry.sol";
 import "./interfaces/IMeToken.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/ICurveValueSet.sol";
+import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
@@ -48,7 +48,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        uint256 meTokensMinted = ICurveValueSet(hubDetails.curve).calculateMintReturn(
+        uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
             tokensDepositedAfterFees,
             meTokenDetails.hubId,
             IERC20(_meToken).totalSupply(),
@@ -81,7 +81,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         require(hubDetails.active, "Hub inactive");
 
         // Calculate how many tokens tokens are returned
-        uint256 tokensReturned = ICurveValueSet(hubDetails.curve).calculateBurnReturn(
+        uint256 tokensReturned = ICurve(hubDetails.curve).calculateBurnReturn(
             _meTokensBurned,
             meTokenDetails.hubId,
             IERC20(_meToken).totalSupply(),

@@ -8,7 +8,7 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
-import "./interfaces/ICurveValueSet.sol";
+import "./interfaces/ICurve.sol";
 // import "./interfaces/IUpdater.sol";
 
 import {HubDetails, MeTokenDetails} from  "./libs/Details.sol";
@@ -53,7 +53,6 @@ contract Hub is Ownable, Initializable {
     function register(
         string calldata _name,
         address _owner,
-        string calldata _vaultName,
         address _vaultFactory,
         address _curve,
         address _token,
@@ -66,16 +65,16 @@ contract Hub is Ownable, Initializable {
         // require(curveRegistry.isActive(_curve), "_curve not approved");  TODO
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
-        // Store value set base paramaters to `{CurveName}ValueSet.sol`
+        // Store value set base paramaters to `{CurveName}.sol`
         // TODO: validate encoding with an additional parameter in function call (ie. count)
         // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
         // abi.encodePacked();
-        ICurveValueSet(_curve).register(count, _encodedValueSetArgs);
+        ICurve(_curve).register(count, _encodedValueSetArgs);
 
         // Create new vault
         // ALl new hubs will create a vault
         // TODO: way to group encoding of function arguments?
-        address vault = IVaultFactory(_vaultFactory).create(_vaultName, _token, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
         HubDetails storage newHubDetails = hubs[count++];
