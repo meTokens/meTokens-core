@@ -34,7 +34,7 @@ contract SingleAssetFactory is IVaultFactory {
     /// @inheritdoc IVaultFactory
     function create(
         string calldata _name,
-        address _collateralAsset,
+        address _token,
         bytes memory _encodedAdditionalArgs
     ) external override returns (address) {
 
@@ -45,7 +45,7 @@ contract SingleAssetFactory is IVaultFactory {
 
         // create our vault
         SingleAsset(vaultAddress).initialize(
-            _collateralAsset,
+            _token,
             _encodedAdditionalArgs
         );
 

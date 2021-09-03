@@ -24,7 +24,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
     mapping (address => address) private owners;  // key: address of owner, value: address of meToken
-    mapping (address => bool) private approvedCollateralAssets;
 
     constructor(address _meTokenFactory, address _hub) {
         meTokenFactory = IMeTokenFactory(_meTokenFactory);
@@ -46,9 +45,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
-        address collateralAsset = IVault(hubDetails.vault).getCollateralAsset();
+        address token = IVault(hubDetails.vault).getToken();
         if (_collateralDeposited > 0) {
-            require(IERC20(collateralAsset).transferFrom(msg.sender, hubDetails.vault, _collateralDeposited), "transfer failed");
+            require(IERC20(token).transferFrom(msg.sender, hubDetails.vault, _collateralDeposited), "transfer failed");
         }
 
         // Create meToken erc20 contract

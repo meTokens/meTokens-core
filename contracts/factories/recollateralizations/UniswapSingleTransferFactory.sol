@@ -36,15 +36,15 @@ contract UniswapSingleTransferFactory {
         // create our recollateralization
         UniswapSingleTransfer(recollateralizationAddress).initialize(
             _owner,
-            IVault(_targetVault).getCollateralAsset()
+            IVault(_targetVault).getToken()
         );
 
         // Add recollateralization to recollateralizationRegistry
         recollateralizationRegistry.register(
             recollateralizationAddress,
             _targetVault,
-            IVault(_targetVault).getCollateralAsset(),
-            IVault(recollateralizationAddress).getCollateralAsset()
+            IVault(_targetVault).getToken(),
+            IVault(recollateralizationAddress).getToken()
         );
 
         count++;

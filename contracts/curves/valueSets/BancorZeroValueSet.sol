@@ -32,10 +32,10 @@ contract BancorZeroValueSet is ICurveValueSet, Power {
     // NOTE: keys will be the hub
 	mapping (uint => ValueSet) private valueSets;
 
-    IUpdater public updater;
+    // IUpdater public updater;
 
-    constructor(address _updater) {
-        updater = IUpdater(_updater);
+    constructor() {
+        // updater = IUpdater(_updater);
     }
 
     /// @inheritdoc ICurveValueSet

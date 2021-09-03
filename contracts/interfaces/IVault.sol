@@ -7,6 +7,6 @@ interface IVault {
     event AddFee(uint256 amount);
     
     function addFee(uint256 amount) external;
-    function withdraw(bool _max, uint256 _amount, address _to) external;
-    function getCollateralAsset() external view returns (address);
+    function withdraw(bool max, uint256 amount, address to) external;
+    function getToken() external view returns (address);
 }

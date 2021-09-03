@@ -15,7 +15,7 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 
 import "./libs/WeightedAverage.sol";
-import "./libs/Details.sol";
+import {MeTokenDetails, HubDetails} from "./libs/Details.sol";
 
 
 contract Foundry is IFoundry, Ownable, Initializable {
@@ -56,8 +56,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
 
         // Send collateral to vault and update balance pooled
-        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
-        IERC20(collateralToken).transferFrom(msg.sender, address(this), _collateralDeposited);
+        address vaultToken = IVault(hubDetails.vault).getToken();
+        IERC20(vaultToken).transferFrom(msg.sender, address(this), _collateralDeposited);
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -136,7 +136,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         // Send collateral from vault
-        address collateralToken = IVault(hubDetails.vault).getCollateralAsset();
-        IERC20(collateralToken).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
+        address vaultToken = IVault(hubDetails.vault).getToken();
+        IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, collateralReturnedAfterFees);
     }
 }

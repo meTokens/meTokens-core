@@ -14,16 +14,16 @@ contract SingleAsset is Vault, Initializable {
     constructor() {}
 
     function initialize(
-        address _collateralAsset,
+        address _token,
         bytes memory _encodedAdditionalArgs
     ) initializer public {
         require(vaultRegistry.isApproved(msg.sender), "msg.sender not approved vault factory");
 
         // NOTE: these variables are initialized in Vault.sol
-        collateralAsset = _collateralAsset;
+        token = _token;
         encodedAdditionalArgs = _encodedAdditionalArgs;
 
         // Approve Foundry to spend all collateral in vault
-        IERC20(collateralAsset).approve(foundry, 2**256 - 1);
+        IERC20(token).approve(foundry, 2**256 - 1);
     }
 }
