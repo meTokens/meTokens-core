@@ -11,7 +11,7 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurveValueSet.sol";
 // import "./interfaces/IUpdater.sol";
 
-import "./libs/Details.sol";
+import {HubDetails} from  "./libs/Details.sol";
 
 
 /// @title meToken hub
@@ -121,21 +121,18 @@ contract Hub is Ownable, Initializable {
 
     function getOwner(uint id) public view exists(id) returns (address) {
         HubDetails memory hubDetails = hubs[id];
-        return details.owner;
+        return hubDetails.owner;
     }
-
 
     function isActive(uint id) public view returns (bool) {
         HubDetails memory hubDetails = hubs[id];
-        return details.active;
+        return hubDetails.active;
     }
-
 
     function getRefundRatio(uint id) public view returns (uint) {
         HubDetails memory hubDetails = hubs[id];
-        return details.refundRatio;
+        return hubDetails.refundRatio;
     }
-
 
     function getDetails(
         uint id
@@ -145,16 +142,14 @@ contract Hub is Ownable, Initializable {
         hubDetails = hubs[id];
     }
 
-    function getCurve(uint id) external view returns (address) {
-        require(id < count, "id > count");
+    function getCurve(uint id) external view exists(id) returns (address) {
         HubDetails memory hubDetails = hubs[id];
-        return details.curve;
+        return hubDetails.curve;
     }
 
-    function getVault(uint id) external view returns (address) {
-        require(id < count, "id > count");
+    function getVault(uint id) external view exists(id) returns (address) {
         HubDetails memory hubDetails = hubs[id];
-        return details.vault;
+        return hubDetails.vault;
     }
 
 }

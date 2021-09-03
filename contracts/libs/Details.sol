@@ -33,3 +33,10 @@ struct VaultDetails {
     address factory; // NOTE: references factories/VaultFactories/{}.sol
     bool active;  // NOTE: can be inactive after vault migration
 }
+
+struct CurveDetails {
+    string name; // BancorZero
+    address formula; // see BancorZeroFormula.sol as an example of an address that could be registered
+    address valueSet; // see BancorZeroValueSet.sol as an example of an address that could be registered (needs to be paired with the above library)
+    bool active;
+}
