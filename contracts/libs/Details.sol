@@ -33,11 +33,6 @@ struct HubDetails {
     uint targetRefundRatio;
 }
 
-struct VaultDetails {
-    address factory; // NOTE: references factories/VaultFactories/{}.sol
-    bool active;  // NOTE: can be inactive after vault migration
-}
-
 struct CurveDetails {
     address curve; // see BancorZeroCurve.sol as an example of an address that could be registered (needs to be paired with the above library)
     bool active;

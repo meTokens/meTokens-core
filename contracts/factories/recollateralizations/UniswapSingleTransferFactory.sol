@@ -25,13 +25,12 @@ contract UniswapSingleTransferFactory {
     
 
     function create(
-        string calldata _name,
         address _owner,
         address _targetVault,
         bytes memory _encodedRecollateralizationAdditionalArgs // NOTE: potentially needed for other recollateralizations
     ) external returns (address) {
         // TODO: access control
-        address recollateralizationAddress = Clones.cloneDeterministic(implementation, bytes32(count));
+        address recollateralizationAddress = Clones.cloneDeterministic(implementation, bytes32(count++));
 
         // create our recollateralization
         UniswapSingleTransfer(recollateralizationAddress).initialize(
@@ -47,7 +46,6 @@ contract UniswapSingleTransferFactory {
             IVault(recollateralizationAddress).getToken()
         );
 
-        count++;
         emit Create(recollateralizationAddress);
         return recollateralizationAddress;
     }

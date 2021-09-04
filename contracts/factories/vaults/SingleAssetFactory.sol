@@ -35,11 +35,11 @@ contract SingleAssetFactory is IVaultFactory {
     function create(
         address _token,
         bytes memory _encodedAdditionalArgs
-    ) external override returns (address) {
+    ) external override returns (address vaultAddress) {
 
-        address vaultAddress = Clones.cloneDeterministic(
+        vaultAddress = Clones.cloneDeterministic(
             implementation,
-            bytes32(++count)
+            bytes32(count++)
         );
 
         // create our vault
@@ -49,9 +49,8 @@ contract SingleAssetFactory is IVaultFactory {
         );
 
         // Add vault to vaultRegistry
-        vaultRegistry.register(vaultAddress, address(this));
+        vaultRegistry.register(vaultAddress);
 
         emit Create(vaultAddress);
-        return vaultAddress;
     }
 }
