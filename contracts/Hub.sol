@@ -81,7 +81,7 @@ contract Hub is Ownable, Initializable {
         newHubDetails.name = _name;
         newHubDetails.owner = _owner;
         newHubDetails.active =  true;
-        newHubDetails.vault = address(vault);
+        newHubDetails.vault = vault;
         newHubDetails.curve = _curve;
         newHubDetails.refundRatio = _refundRatio;
     }
