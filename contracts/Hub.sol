@@ -51,8 +51,6 @@ contract Hub is Ownable, Initializable {
 
 
     function register(
-        string calldata _name,
-        address _owner,
         address _vaultFactory,
         address _curve,
         address _token,
@@ -61,14 +59,12 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
-        require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory not approved");
-        // require(curveRegistry.isActive(_curve), "_curve not approved");  TODO
+
+        require(curveRegistry.isActive(_curve), "_curve !approved");
+        require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory !approved");
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}.sol`
-        // TODO: validate encoding with an additional parameter in function call (ie. count)
-        // https://docs.soliditylang.org/en/v0.8.0/units-and-global-variables.html#abi-encoding-and-decoding-functions
-        // abi.encodePacked();
         ICurve(_curve).register(count, _encodedValueSetArgs);
 
         // Create new vault
@@ -78,8 +74,6 @@ contract Hub is Ownable, Initializable {
 
         // Save the hub to the registry
         HubDetails storage newHubDetails = hubs[count++];
-        newHubDetails.name = _name;
-        newHubDetails.owner = _owner;
         newHubDetails.active =  true;
         newHubDetails.vault = vault;
         newHubDetails.curve = _curve;
