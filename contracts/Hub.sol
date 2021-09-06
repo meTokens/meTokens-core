@@ -69,7 +69,6 @@ contract Hub is Ownable, Initializable {
 
         // Create new vault
         // ALl new hubs will create a vault
-        // TODO: way to group encoding of function arguments?
         address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
@@ -80,6 +79,8 @@ contract Hub is Ownable, Initializable {
         newHubDetails.refundRatio = _refundRatio;
     }
 
+    // TODO: reference BancorZeroCurve.sol
+    function registerTarget() public {}
 
     function deactivate(uint id) external exists(id) {
         // TODO: access control
@@ -110,9 +111,8 @@ contract Hub is Ownable, Initializable {
 
     function getCount() external view returns (uint) {return count;}
 
+    // TODO: should hubs have owners?
     function getOwner(uint id) public view exists(id) returns (address) {
-        HubDetails memory hubDetails = hubs[id];
-        return hubDetails.owner;
     }
 
     function isActive(uint id) public view returns (bool) {

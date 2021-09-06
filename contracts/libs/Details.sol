@@ -31,7 +31,10 @@ struct HubDetails {
     uint targetRefundRatio;
 }
 
-struct CurveDetails {
-    address curve; // see BancorZeroCurve.sol as an example of an address that could be registered (needs to be paired with the above library)
-    bool active;
+struct BancorDetails {
+    uint baseY;
+    uint32 reserveWeight;
+
+    uint targetBaseY;
+    uint32 targetReserveWeight;
 }

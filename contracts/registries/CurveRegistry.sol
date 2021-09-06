@@ -1,70 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/ICurveRegistry.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import {CurveDetails} from  "../libs/Details.sol";
+contract NewCurveRegistry is Ownable {
     
-/// @title Curve registry
-/// @author Carl Farterson (@carlfarterson)
-/// @notice This contract keeps track of active curve types and their base values
-contract CurveRegistry is ICurveRegistry, Ownable {
+    event Register(address curve);
+    event Deactivate(address curve);
 
-    modifier exists(uint id) {
-        require(id <= count, "id exceeds count");
-        _;
+    // NOTE: keys are addresses to the curve library, values are if it's active
+    mapping(address => bool) private curves;
+
+    function register(address _curve) external onlyOwner {
+        require(!isActive(_curve), "Already active");
+        curves[_curve] = true;
+        emit Register(_curve);
     }
 
-    uint256 private count;
-
-    mapping (uint256 => CurveDetails) private curves;
-
-    /// @inheritdoc ICurveRegistry
-    function register(
-        address _curve
-    ) external onlyOwner override returns (uint256) {
-
-        // Add curve details to storage
-        // TODO: does count++ need to be in return statement instead?
-        CurveDetails storage newCurveDetails = curves[count++];
-        newCurveDetails.curve = _curve;
-        newCurveDetails.active = true;
-
-        emit Register(count, _curve);
-        return count;
+    function deactivate(address _curve) external onlyOwner {
+        require(isActive(_curve), "Already inactive");
+        emit Deactivate(_curve);
     }
 
-
-    /// @inheritdoc ICurveRegistry
-    function deactivate(uint256 id) external onlyOwner override {
-        CurveDetails storage curveDetails = curves[id];
-        require(curveDetails.active, "curve not active");
-        curveDetails.active = false;
-        emit Deactivate(id);
-    }
-
-
-    function isRegistered(address curve) external view returns (bool) {
-        // TODO
-    }
-
-    /// @inheritdoc ICurveRegistry
-    function isActive(uint256 id) external view override returns (bool) {
-        CurveDetails memory curveDetails = curves[id];
-        return curveDetails.active;
-    }
-
-    /// @inheritdoc ICurveRegistry
-    function getCount() external view override returns (uint256) {
-        return count;
-    }
-
-
-    /// @inheritdoc ICurveRegistry
-    function getDetails(uint256 id) external view exists(id) override returns (
-        CurveDetails memory curveDetails
-    ) {
-        curveDetails = curves[id];
+    function isActive(address _curve) public view returns (bool) {
+        return curves[_curve];
     }
 }
