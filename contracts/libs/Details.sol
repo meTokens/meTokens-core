@@ -15,8 +15,6 @@ struct MeTokenDetails {
 }
 
 struct HubDetails {
-    string name;
-    address owner;
     bool active;
 
     address vault;
