@@ -5,6 +5,7 @@ import "../interfaces/ICurve.sol";
 import "../interfaces/IUpdater.sol";
 
 import "../libs/WeightedAverage.sol";
+import {MeTokenDetails, BancorDetails} from "../libs/Details.sol";
 
 import "../utils/Power.sol";
 
@@ -13,20 +14,8 @@ import "../utils/Power.sol";
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve, Power {
 
-    uint private PRECISION = 10**18;
-    uint private BASE_X = PRECISION;
-    uint32 private MAX_WEIGHT = 1000000;
-
-    struct ValueSet {
-		uint baseY;
-		uint32 reserveWeight;
-
-        uint targetBaseY;
-        uint32 targetReserveWeight;
-	}
-
-    // NOTE: keys will be the hub
-	mapping (uint => ValueSet) private valueSets;
+    // NOTE: keys are their respective hubId
+    mapping (uint => BancorDetails) private bancors;
 
     // IUpdater public updater;
 
@@ -45,9 +34,9 @@ contract BancorZeroCurve is ICurve, Power {
         require(baseY > 0 && baseY <= PRECISION*PRECISION, "baseY not in range");
         require(reserveWeight > 0 && reserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
 
-        ValueSet storage newValueSet = valueSets[_hubId];
-        newValueSet.baseY = baseY;
-        newValueSet.reserveWeight = uint32(reserveWeight);
+        BancorDetails storage newBancorDetails = bancors[_hubId];
+        newBancorDetails.baseY = baseY;
+        newBancorDetails.reserveWeight = uint32(reserveWeight);
     }
 
 
@@ -58,18 +47,17 @@ contract BancorZeroCurve is ICurve, Power {
     ) external override {
         // TODO: access control
 
-        (uint targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
+        (uint32 targetReserveWeight) = abi.decode(_encodedValueSet, (uint32));
 
-        // TODO: also require targetReserveWeight != currentReserveWeight
+        BancorDetails storage bancorDetails = bancors[_hubId];
         require(targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT, "reserveWeight not in range");
+        require(targetReserveWeight != bancorDetails.reserveWeight, "targeReserveWeight == reserveWeight");
 
-        // New baseY = (old baseY * oldR) / newR
-        ValueSet storage valueSet = valueSets[_hubId];
-        // NOTE: this variable can be set below if stack 2 deep
-        uint targetBaseY = (valueSet.baseY * valueSet.reserveWeight) / targetReserveWeight;
+        // targetBaseY = (old baseY * oldR) / newR
+        uint targetBaseY = (bancorDetails.baseY * bancorDetails.reserveWeight) / targetReserveWeight;
 
-        valueSet.targetBaseY = targetBaseY;
-        valueSet.targetReserveWeight = uint32(targetReserveWeight);
+        bancorDetails.targetBaseY = targetBaseY;
+        bancorDetails.targetReserveWeight = targetReserveWeight;
     }
 
 
@@ -82,20 +70,20 @@ contract BancorZeroCurve is ICurve, Power {
         uint _balancePooled
     ) external view override returns (uint meTokensReturned) {
 
-        ValueSet memory valueSet = valueSets[_hubId];
+        BancorDetails memory bancorDetails = bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
-                valueSet.reserveWeight,
+                bancorDetails.reserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
-                valueSet.reserveWeight,
+                bancorDetails.reserveWeight,
                 BASE_X,
-                valueSet.baseY
+                bancorDetails.baseY
             );
         }
 
@@ -108,7 +96,7 @@ contract BancorZeroCurve is ICurve, Power {
 //            if (block.timestamp > startTime) {
 //
 //                // Calculate return using weights
-//                TargetValueSet memory t = targetValueSets[id];
+//                TargetValueSet memory t = targetbancors[id];
 //                uint targetMeTokensReturned;
 //                if (_supply > 0) {
 //                    targetMeTokensReturned = _calculateMintReturn(
@@ -147,10 +135,10 @@ contract BancorZeroCurve is ICurve, Power {
         uint _balancePooled
     ) external view override returns (uint tokensReturned) {
 
-        ValueSet memory valueSet = valueSets[_hubId];
+        BancorDetails memory bancorDetails = bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
-            valueSet.reserveWeight,
+            bancorDetails.reserveWeight,
             _supply,
             _balancePooled
         );
@@ -182,13 +170,14 @@ contract BancorZeroCurve is ICurve, Power {
 //        }
     }
 
-    // TODO: natspec
+
     function finishUpdate(uint _hubId) external override {
+        // TODO: access control - from updater
 
-        ValueSet storage valueSet = valueSets[_hubId];
+        BancorDetails storage bancorDetails = bancors[_hubId];
 
-        valueSet.baseY = valueSet.targetBaseY;
-        valueSet.reserveWeight = valueSet.targetReserveWeight;
+        bancorDetails.baseY = bancorDetails.targetBaseY;
+        bancorDetails.reserveWeight = bancorDetails.targetReserveWeight;
 
         emit Updated(_hubId);
     }

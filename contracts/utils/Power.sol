@@ -5,7 +5,10 @@ pragma solidity ^0.8.0;
 /// @dev https://github.com/bancorprotocol/contracts
 /// @notice Modified from the original by Slava Balasanov & Tarrence van As
 abstract contract Power {
-  string public version = "0.3";
+  uint public PRECISION = 10**18;
+  uint public BASE_X = PRECISION;
+  uint32 public MAX_WEIGHT = 1000000;
+
 
   uint256 private constant ONE = 1;
   uint8 private constant MIN_PRECISION = 32;

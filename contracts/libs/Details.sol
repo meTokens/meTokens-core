@@ -15,8 +15,6 @@ struct MeTokenDetails {
 }
 
 struct HubDetails {
-    string name;
-    address owner;
     bool active;
 
     address vault;
@@ -33,12 +31,10 @@ struct HubDetails {
     uint targetRefundRatio;
 }
 
-struct VaultDetails {
-    address factory; // NOTE: references factories/VaultFactories/{}.sol
-    bool active;  // NOTE: can be inactive after vault migration
-}
+struct BancorDetails {
+    uint baseY;
+    uint32 reserveWeight;
 
-struct CurveDetails {
-    address curve; // see BancorZeroCurve.sol as an example of an address that could be registered (needs to be paired with the above library)
-    bool active;
+    uint targetBaseY;
+    uint32 targetReserveWeight;
 }

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {CurveDetails} from "../libs/Details.sol";
-
 interface ICurveRegistry {
 
     event Register(uint256 count, address curve);
@@ -12,24 +10,15 @@ interface ICurveRegistry {
     /// @param curve TODO
     function register(
         address curve
-    ) external returns (uint);
+    ) external;
 
     /// @notice TODO
-    /// @param hubId TODO
-    function deactivate(uint hubId) external;
+    /// @param curve TODO
+    function deactivate(address curve) external;
     
-    function isActive(uint hubId) external view returns (bool);
-
     /// @notice TODO
-    /// @return TODO
-    function getCount() external view returns (uint);
+    /// @param curve TODO
+    /// @return bool
+    function isActive(address curve) external view returns (bool);
 
-    // / @notice TODO
-    // / @param hubId TODO
-    // / @return curveDetails TODO
-    function getDetails(
-        uint hubId
-    ) external view returns (
-        CurveDetails memory curveDetails
-    );
 }
