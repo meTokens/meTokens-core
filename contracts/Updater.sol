@@ -18,7 +18,6 @@ import {HubDetails} from "./libs/Details.sol";
 /// @notice contract to update a hub
 contract Updater is IUpdater, Ownable {
 
-    /*
     uint256 private PRECISION = 10**18;
 
     uint256 private _minSecondsUntilStart = 0; // TODO
@@ -45,14 +44,18 @@ contract Updater is IUpdater, Ownable {
         curveRegistry = _curveRegistry;
     }
 
+    function globalUpdate() {
+        updateHubDetails();
+        updateCurveDetails();
+    }
 
     function initUpdate(
         uint256 _hubId,
-        address _targetCurve,
-        address _targetVault,
-        address _recollateralizationFactory,
+        // address _targetCurve,
+        // address _targetVault,
+        // address _recollateralizationFactory,
         uint256 _targetRefundRatio,
-        bytes32 _targetEncodedValueSet,
+        // bytes32 _targetEncodedValueSet,
         uint256 _startTime,
         uint256 _duration
     ) external {
@@ -71,115 +74,26 @@ contract Updater is IUpdater, Ownable {
 
         HubDetails memory hubDetails = hub.getDetails(_hubId);
 
-        // // is valid curve
-        // if (_targetCurveId > 0) {
-        //     (, , address curve, bool active) = curveRegistry.getDetails(_targetCurveId);
+        // is valid refundRatio
+        if (_targetRefundRatio != 0) {
+            require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
+            require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
+        }
 
-        //     // TODO
-        //     // require(curveRegistry.isRegistered(_targetCurve), "!registered");
-        //     // require(
-        //     //     _targetCurveId != hub.getCurve(_hubId),
-        //     //     "Cannot set target curve to the same curve ID"
-        //     // );
-        // }
-
-        // // is valid vault
-        // if (_targetVault != address(0)) {
-        //     require(vaultRegistry.isActive(_targetVault), "!active");
-        //     require(_targetVault != vault, "_targetVault == vault");
-        //     // TODO: validate
-        //     require(_targetEncodedValueSet.length > 0, "_targetEncodedValueSet required");
-        // }
-
-        // // is valid refundRatio
-        // if (_targetRefundRatio != 0) {
-        //     require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-        //     require(_targetRefundRatio != refundRatio, "_targetRefundRatio == refundRatio");
-        // }
-
-        // bool reconfiguring;
-        // if (bytes32(_targetEncodedValueSet.length) > 0) {
-
-        //     // curve migrating, point to new curve
-        //     if (_targetCurveId =! address(0)) {
-        //         ICurve(_targetCurveId).register(
-        //             _hubId,
-        //             _targetEncodedValueSet
-        //         );
-        //     // We're still using the same curve, start reconfiguring the value set
-        //     } else {
-        //         ICurve(hub.getCurve(_hubId)).registerTarget(
-        //             _hubId,
-        //             _targetEncodedValueSet
-        //         );
-        //         reconfiguring = true;
-        //     }
-        // }
-
-        // HubDetails storage hubDetails = Details(
-        //     reconfiguring,
-        //     _targetCurveId,
-        //     _targetVault,
-        //     _targetRefundRatio,
-        //     _startTime,
-        //     _startTime + _duration
-        // );
-
-
-        // updates[_hubId] = Details({
-        //     // TODO: handle
-        //     reconfiguring: false,
-        //     migrating: address(0), // targetCurveId
-        //     recollateralizing: _targetVault,
-        //     shifting: _targetRefundRatio,
-        //     startTime: _startTime,
-        //     endTime: _startTime + _duration
-        // });
-
-        // hub.startUpdate(_hubId);
+        hub.startUpdate(_hubId);
     }
 
 
     function executeProposal(uint256 _hubId) public {
-        uint256 hubStatus = hub.getStatus(_hubId);
-        require(hubStatus == 3, "!QUEUED");
-
-        HubDetails storage hubDetails = updates[_hubId];
-        require(
-            block.timestamp > details.startTime &&
-            block.timestamp < details.endTime
-        );
-
-        // TODO
-
     }
 
 
 
     function startUpdate(uint256 _hubId) external {
-        // TODO: access control
-
-        HubDetails storage hubDetails = updates[_hubId];
+        HubDetails memory hubDetails = updates[_hubId];
     }
 
     function finishUpdate(uint256 _hubId) external {
-
-        HubDetails storage hubDetails = updates[_hubId];
-        require(block.timestamp > details.endTime, "!finished");
-
-        // TODO
-        // if (details.reconfiguring) {
-        //     ICurve(details.curve).finishUpdate(_hubId);
-        // }
-
-        hub.finishUpdate(
-            _hubId,
-            details.migrating,
-            details.recollateralizing,
-            details.shifting
-        );
-
-        delete updates[_hubId];
         emit FinishUpdate(_hubId);
     }
 
@@ -224,53 +138,6 @@ contract Updater is IUpdater, Ownable {
         _maxDuration = amount;
         emit SetMaxDuration(amount);
     }
-
-    function getDetails(uint256 _hubId) external view returns (
-        bool reconfiguring,
-        address migrating,
-        address recollateralizing,
-        uint256 shifting,
-        uint256 startTime,
-        uint256 endTime
-    ) {
-        Details memory details = updates[_hubId];
-        reconfiguring = details.reconfiguring;
-        migrating = details.migrating;
-        recollateralizing = details.recollateralizing;
-        shifting = details.shifting;
-        startTime = details.startTime;
-        endTime = details.endTime;
-    }
-
-    function getUpdateTimes(uint256 _hubId) external view returns (
-        uint256 startTime,
-        uint256 endTime
-    ) {
-        Details memory details = updates[_hubId];
-        startTime = details.startTime;
-        endTime = details.endTime;
-    }
-
-    function isReconfiguring(uint256 _hubId) external view returns (bool) {
-        Details memory details = updates[_hubId];
-        return details.reconfiguring;
-    }
-
-    function getTargetCurve(uint256 _hubId) external view returns (address) {
-        Details memory details = updates[_hubId];
-        return details.migrating;
-    }
-
-    function getTargetRefundRatio(uint256 _hubId) external view returns (uint256) {
-        Details memory details = updates[_hubId];
-        return details.shifting;
-    }
-
-    function getTargetVault(uint256 _hubId) external view returns (address) {
-        Details memory details = updates[_hubId];
-        return details.recollateralizing;
-    }
-
 
     function minSecondsUntilStart() external view returns (uint256) {return _minSecondsUntilStart;}
     function maxSecondsUntilStart() external view returns (uint256) {return _maxSecondsUntilStart;}
