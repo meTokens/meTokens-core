@@ -2,38 +2,26 @@
 pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
-import "../interfaces/IMeTokenRegistry.sol";
+import "../Roles.sol";
 
 /// @title meToken factory
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract creates and deploys a users' meToken
-contract MeTokenFactory {
-
-    modifier onlyRegistry() {
-        require(msg.sender == meTokenRegistry, "!meTokenRegistry");
-        _;
-    }
-
-    address public meTokenRegistry = address(0); // TODO
+contract MeTokenFactory is Roles {
 
     constructor () {}
 
     /// @notice create a meToken
-    /// @param _owner owner of meToken
     /// @param _name name of meToken
     /// @param _symbol symbol of meToken
     function create(
-        address _owner,
         string calldata _name,
         string calldata _symbol
-    ) onlyRegistry external returns (address) {
+    ) external returns (address) {
+        require(hasRole(METOKEN_REGISTRY, msg.sender), "!meTokenRegistry");
 
         // Create our meToken
-        // TODO: Validate
-        MeToken meToken = new MeToken(_name, _symbol);
-
-        // TODO: subscribe meToken
-
-        return address(meToken);
+        MeToken erc20 = new MeToken(_name, _symbol);
+        return address(erc20);
     }
 }

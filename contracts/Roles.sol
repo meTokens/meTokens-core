@@ -11,12 +11,10 @@ contract Roles is AccessControl {
     bytes32 public constant FOUNDRY = keccak256("FOUNDRY");
     bytes32 public constant METOKEN_REGISTRY = keccak256("METOKEN_REGISTRY");
 
-
-    address private constant devMultisig = address(0);
-    address private constant daoMultisig = address(0);
-    // NOTE: deploy foundry, then meTokenRegistry, then meToken
-    address private constant foundry = address(0);
-    address private constant meTokenRegistry = address(0);
+    address private constant devMultisig = address(0); // TODO
+    address private constant daoMultisig = address(0); // TODO
+    address private foundry;
+    address private meTokenRegistry;
 
 
     constructor () {
