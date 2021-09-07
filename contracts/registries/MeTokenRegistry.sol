@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 import "../MeToken.sol";
 import "../Roles.sol";
 
@@ -17,7 +19,7 @@ import {MeTokenDetails} from  "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry, Roles {
+contract MeTokenRegistry is IMeTokenRegistry, Roles, ReentrancyGuard {
 
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
@@ -37,7 +39,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         string calldata _symbol,
         uint256 _hubId,
         uint256 _tokensDeposited
-    ) external override {
+    ) external nonReentrant override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         HubDetails memory hubDetails = hub.getDetails(_hubId);
@@ -51,19 +53,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         }
 
         // Create meToken erc20 contract
-        address meTokenAddr = meTokenFactory.create(
-            msg.sender, _name, _symbol
-        );
+        address meTokenAddr = meTokenFactory.create(_name, _symbol);
+
         // Register the address which created a meToken
         owners[msg.sender] = meTokenAddr;
-
-        // Add meToken to registry
-        MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
-        newMeTokenDetails.owner = msg.sender;
-        newMeTokenDetails.hubId = _hubId;
-        newMeTokenDetails.balancePooled = _tokensDeposited;
-        newMeTokenDetails.balanceLocked = 0;
-        newMeTokenDetails.resubscribing = false;
 
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
@@ -73,9 +66,16 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
                 0,                      // _supply
                 0                       // _balancePooled
             );
-            // TODO: check if mint can be reverted from hooks
             IMeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
         }
+
+        // Add meToken to registry
+        MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
+        newMeTokenDetails.owner = msg.sender;
+        newMeTokenDetails.hubId = _hubId;
+        newMeTokenDetails.balancePooled = _tokensDeposited;
+        newMeTokenDetails.balanceLocked = 0;
+        newMeTokenDetails.resubscribing = false;
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
