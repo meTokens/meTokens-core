@@ -55,9 +55,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, ReentrancyGuard {
         // Create meToken erc20 contract
         address meTokenAddr = meTokenFactory.create(_name, _symbol);
 
-        // Register the address which created a meToken
-        owners[msg.sender] = meTokenAddr;
-
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
             uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
@@ -69,13 +66,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, ReentrancyGuard {
             IMeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
         }
 
+        // Register the address which created a meToken
+        owners[msg.sender] = meTokenAddr;
+
         // Add meToken to registry
         MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
         newMeTokenDetails.owner = msg.sender;
         newMeTokenDetails.hubId = _hubId;
         newMeTokenDetails.balancePooled = _tokensDeposited;
-        newMeTokenDetails.balanceLocked = 0;
-        newMeTokenDetails.resubscribing = false;
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
