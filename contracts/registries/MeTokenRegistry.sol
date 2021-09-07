@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "../MeToken.sol";
 import "../Roles.sol";
 
@@ -19,7 +17,7 @@ import {MeTokenDetails} from  "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry, Roles, ReentrancyGuard {
+contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     IMeTokenFactory public meTokenFactory;
     IHub public hub;
@@ -39,7 +37,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, ReentrancyGuard {
         string calldata _symbol,
         uint256 _hubId,
         uint256 _tokensDeposited
-    ) external nonReentrant override {
+    ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         HubDetails memory hubDetails = hub.getDetails(_hubId);
