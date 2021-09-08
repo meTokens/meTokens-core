@@ -87,26 +87,27 @@ contract Hub is Ownable, Initializable {
         // emit Deactivate(id);
     }
 
+    function initUpdate(
+        uint _id,
+        uint _targetRefundRatio,
+        uint _startTime,
+        uint _duration
+    ) external {
+        HubDetails storage hubDetails = hubs[_hubId];
+        hubDetails.targetRefundRatio = _targetRefundRatio;
+
+        hubDetails.updating = true;
+        hubDetails.startTime = _startTime;
+        hubDetails.endTime = _startTime + _duration;
+    }
+
     function finishUpdate(
         uint id,
-        address migrating,
-        address recollateralizing,
-        uint shifting
     ) external {
-        // require(msg.sender == address(updater), "!updater");
         HubDetails storage hubDetails = hubs[id];
+        hubDetails.refundRatio = hubDetails.targetRefundRatio;
 
-        if (migrating != address(0)) {
-            hubDetails.curve = migrating;
-        }
-
-        if (recollateralizing != address(0)) {
-            hubDetails.vault = recollateralizing;
-        }
-
-        if (shifting != 0) {
-            hubDetails.refundRatio = shifting;
-        }
+        hubDetails.updating = false;
     }
 
     function getCount() external view returns (uint) {return count;}

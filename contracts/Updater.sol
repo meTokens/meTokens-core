@@ -59,8 +59,6 @@ contract Updater is IUpdater, Ownable {
         uint256 _startTime,
         uint256 _duration
     ) external {
-        // TODO: access control
-
         require(
             _startTime - block.timestamp >= _minSecondsUntilStart &&
             _startTime - block.timestamp <= _maxSecondsUntilStart,
@@ -80,7 +78,7 @@ contract Updater is IUpdater, Ownable {
             require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
         }
 
-        hub.startUpdate(_hubId);
+        hub.initUpdate(_hubId, _targetRefundRatio, _startTime, _duration);
     }
 
 
