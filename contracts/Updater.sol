@@ -51,7 +51,11 @@ contract Updater is IUpdater, Ownable {
 
     function initUpdate(
         uint256 _hubId,
+        address _migrationVault,
+        address _targetVault,
+        address _targetCurve,
         uint256 _targetRefundRatio,
+        bytes memory _encodedCurveDetails,
         uint256 _startTime,
         uint256 _duration
     ) external {
@@ -66,15 +70,40 @@ contract Updater is IUpdater, Ownable {
             "Unacceptable update duration"
         );
 
+        bool curveDetails;
         HubDetails memory hubDetails = hub.getDetails(_hubId);
+        require(!hubDetails.updating, "already updating");
 
-        // is valid refundRatio
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
             require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
         }
 
-        hub.initUpdate(_hubId, _targetRefundRatio, _startTime, _duration);
+
+        if (_encodedCurveDetails.length > 0) {
+            if (_targetCurve == address(0)) {
+                ICurve(hubDetails.curve).registerTarget(_hubId, _encodedCurveDetails);
+            } else {  // _targetCurve != address(0))
+                require(curveRegistry.isActive(_targetCurve), "_targetCurve inactive");
+                ICurve(_targetCurve).register(_hubId, _encodedCurveDetails);
+            }
+            curveDetails = true;
+        }
+
+        if (_migrationVault != address(0) && _targetVault != address(0)) {
+
+        }
+
+        hub.initUpdate(
+            _hubId,
+            _migrationVault,
+            _targetVault,
+            _targetCurve,
+            curveDetails,
+            _targetRefundRatio,
+            _startTime,
+            _duration
+        );
     }
 
 

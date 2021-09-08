@@ -88,24 +88,59 @@ contract Hub is Ownable, Initializable {
     }
 
     function initUpdate(
-        uint _id,
-        uint _targetRefundRatio,
-        uint _startTime,
-        uint _duration
+        uint256 _id,
+        address _migrationVault,
+        address _targetVault,
+        address _targetCurve,
+        bool _curveDetails,
+        uint256 _targetRefundRatio,
+        uint256 _startTime,
+        uint256 _duration
     ) external {
-        HubDetails storage hubDetails = hubs[_id];
-        hubDetails.targetRefundRatio = _targetRefundRatio;
 
+        HubDetails storage hubDetails = hubs[_id];
+        if (_targetRefundRatio != 0) {
+            hubDetails.targetRefundRatio = _targetRefundRatio;
+        }
+        if (_targetCurve != address(0)) {
+            hubDetails.targetCurve = _targetCurve;
+        }
+        if (_migrationVault != address(0) && _targetVault != address(0)) {
+            hubDetails.migrationVault = _migrationVault;
+            hubDetails.targetVault = _targetVault;
+        }
+
+        hubDetails.curveDetails = _curveDetails;
         hubDetails.updating = true;
         hubDetails.startTime = _startTime;
         hubDetails.endTime = _startTime + _duration;
     }
 
+
+
     function finishUpdate(
         uint id
     ) external {
+
         HubDetails storage hubDetails = hubs[id];
-        hubDetails.refundRatio = hubDetails.targetRefundRatio;
+        require(hubDetails.updating, "!updating");
+        require(block.timestamp > hubDetails.endTime, "Not finished");
+
+        if (hubDetails.targetRefundRatio != 0) {
+            hubDetails.refundRatio = hubDetails.targetRefundRatio;
+            hubDetails.targetRefundRatio = 0;
+        }
+
+        // Updating curve details and staying with the same curve
+        if (hubDetails.curveDetails) {
+            if (hubDetails.targetCurve == address(0)) {
+                ICurve(hubDetails.curve).finishUpdate(id);
+            } else {
+                hubDetails.curve = hubDetails.targetCurve;
+                hubDetails.targetCurve = address(0);
+            }
+            hubDetails.curveDetails = false;
+        }
 
         hubDetails.updating = false;
     }

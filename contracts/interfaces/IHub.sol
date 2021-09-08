@@ -30,10 +30,14 @@ interface IHub {
     ) external;
 
     function initUpdate(
-        uint _id,
-        uint _targetRefundRatio,
-        uint _startTime,
-        uint _duration
+        uint256 _id,
+        address _migrationVault,
+        address _targetVault,
+        address _targetCurve,
+        bool _curveDetails,
+        uint256 _targetRefundRatio,
+        uint256 _startTime,
+        uint256 _duration
     ) external;
 
     /// @notice TODO
