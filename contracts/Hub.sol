@@ -93,7 +93,7 @@ contract Hub is Ownable, Initializable {
         uint _startTime,
         uint _duration
     ) external {
-        HubDetails storage hubDetails = hubs[_hubId];
+        HubDetails storage hubDetails = hubs[_id];
         hubDetails.targetRefundRatio = _targetRefundRatio;
 
         hubDetails.updating = true;
@@ -102,7 +102,7 @@ contract Hub is Ownable, Initializable {
     }
 
     function finishUpdate(
-        uint id,
+        uint id
     ) external {
         HubDetails storage hubDetails = hubs[id];
         hubDetails.refundRatio = hubDetails.targetRefundRatio;

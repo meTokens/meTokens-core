@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./Recollateralization.sol";
+import "./Migration.sol";
 
 /*
 Goal: create a vault that instantly swaps token A for token B
@@ -18,7 +18,7 @@ Trigger: Hub status changing from status.QUEUED to status.UPDATING
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract moves the pooled/locked balances from
 ///     one erc20 to another
-contract UniswapSingleTransfer is Recollateralization, Initializable {
+contract UniswapSingleTransfer is Migration, Initializable {
 
     constructor () {}
 
@@ -26,7 +26,7 @@ contract UniswapSingleTransfer is Recollateralization, Initializable {
         address _owner,
         address _targetVault
     ) external {
-        require(recollateralizationRegistry.isApproved(msg.sender), "!approved");
+        require(migrationRegistry.isApproved(msg.sender), "!approved");
     }
 
     

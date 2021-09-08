@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interfaces/IUpdater.sol";
-import "./interfaces/IRecollateralization.sol";
+import "./interfaces/IMigration.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
@@ -25,7 +25,7 @@ contract Updater is IUpdater, Ownable {
     uint256 private _minDuration = 0; // TODO
     uint256 private _maxDuration = 0; // TODO
 
-    IRecollateralization public recollateralization;
+    IMigration public migration;
     IHub public hub;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
@@ -33,29 +33,25 @@ contract Updater is IUpdater, Ownable {
     constructor() {}
 
     function initialize(
-        IRecollateralization _recollateralization,
+        IMigration _migration,
         IHub _hub,
         IVaultRegistry _vaultRegistry,
         ICurveRegistry _curveRegistry
     ) public onlyOwner {
-        recollateralization = _recollateralization;
+        migration = _migration;
         hub = _hub;
         vaultRegistry = _vaultRegistry;
         curveRegistry = _curveRegistry;
     }
 
-    function globalUpdate() {
-        updateHubDetails();
-        updateCurveDetails();
+    function globalUpdate() public {
+        // updateHubDetails();
+        // updateCurveDetails();
     }
 
     function initUpdate(
         uint256 _hubId,
-        // address _targetCurve,
-        // address _targetVault,
-        // address _recollateralizationFactory,
         uint256 _targetRefundRatio,
-        // bytes32 _targetEncodedValueSet,
         uint256 _startTime,
         uint256 _duration
     ) external {
@@ -83,13 +79,7 @@ contract Updater is IUpdater, Ownable {
 
 
     function executeProposal(uint256 _hubId) public {
-    }
-
-
-
-    function startUpdate(uint256 _hubId) external {
-        HubDetails memory hubDetails = updates[_hubId];
-    }
+    }   
 
     function finishUpdate(uint256 _hubId) external {
         emit FinishUpdate(_hubId);
@@ -141,5 +131,4 @@ contract Updater is IUpdater, Ownable {
     function maxSecondsUntilStart() external view returns (uint256) {return _maxSecondsUntilStart;}
     function minDuration() external view returns (uint256) {return _minDuration;}
     function maxDuration() external view returns (uint256) {return _maxDuration;}
-    */
 }
