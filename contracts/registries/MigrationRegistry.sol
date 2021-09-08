@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/IRecollateralizationRegistry.sol";
+import "../interfaces/IMigrationRegistry.sol";
 
-/// @title Recollateralization registry
+/// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
-/// @notice Keeps track of all used Recollateralization strategies 
-abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
+/// @notice Keeps track of all used migration strategies 
+abstract contract MigrationRegistry is IMigrationRegistry {
 
     uint256 private count;
-	mapping (address => Details) recollateralizations;
+	mapping (address => Details) migrations;
     mapping (address => bool) private approved;
 
     struct Details {
-        address recollateralization;
+        address migration;
         address targetVault;
         address collateralTokenStart;
         address collateralTokenIntra;
@@ -21,23 +21,23 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     }
 
     function register(
-        address _recollateralization,
+        address _migration,
         address _targetVault,
         address _collateralTokenStart,
         address _collateralTokenIntra
     ) external override {
         require(approved[msg.sender], "!approved");
-        // Add recollateralization details to storage
+        // Add migration details to storage
         Details memory r = Details(
-            _recollateralization,
+            _migration,
             _targetVault,
             _collateralTokenStart,
             _collateralTokenIntra,
             true
         );
-        recollateralizations[_recollateralization] = r;
+        migrations[_migration] = r;
 
-        emit Register(_recollateralization);
+        emit Register(_migration);
     }
 
     function approve(address _factory) external override {
@@ -64,7 +64,7 @@ abstract contract RecollateralizationRegistry is IRecollateralizationRegistry {
     // TODO: function isActive() ?
 
     // function getDetails(address recollater) external view override returns (
-    //     address recollateralization,
+    //     address migration,
     //     address targetVault,
     //     address collateralTokenStart,
     //     address collateralTokenIntra,

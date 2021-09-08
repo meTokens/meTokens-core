@@ -28,6 +28,7 @@ struct HubDetails {
     address migrationVault;
     address targetVault;
     address targetCurve;
+    bool curveDetails;
     uint targetRefundRatio;
 }
 

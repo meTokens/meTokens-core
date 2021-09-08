@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-interface IRecollateralizationRegistry {
+interface IMigrationRegistry {
 
     event Register(address recollateralization);
     event Approve(address factory);

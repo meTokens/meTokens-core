@@ -39,7 +39,6 @@ contract BancorZeroCurve is ICurve, Power {
         newBancorDetails.reserveWeight = uint32(reserveWeight);
     }
 
-
     /// @inheritdoc ICurve
     function registerTarget(
         uint _hubId,
@@ -60,6 +59,16 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.targetReserveWeight = targetReserveWeight;
     }
 
+
+    function finishUpdate(uint _hubId) external override {
+        // TODO; only hub can call
+        BancorDetails storage bancorDetails = bancors[_hubId];
+        bancorDetails.reserveWeight = bancorDetails.targetReserveWeight;
+        bancorDetails.baseY = bancorDetails.targetBaseY;
+        bancorDetails.targetReserveWeight = 0;
+        bancorDetails.targetBaseY = 0;
+        emit Updated(_hubId);
+    }
 
 
     /// @inheritdoc ICurve
@@ -168,18 +177,6 @@ contract BancorZeroCurve is ICurve, Power {
 //                );
 //            }
 //        }
-    }
-
-
-    function finishUpdate(uint _hubId) external override {
-        // TODO: access control - from updater
-
-        BancorDetails storage bancorDetails = bancors[_hubId];
-
-        bancorDetails.baseY = bancorDetails.targetBaseY;
-        bancorDetails.reserveWeight = bancorDetails.targetReserveWeight;
-
-        emit Updated(_hubId);
     }
 
     /// @notice Given a deposit amount (in the connector token), connector weight, meToken supply and 

@@ -87,26 +87,62 @@ contract Hub is Ownable, Initializable {
         // emit Deactivate(id);
     }
 
-    function finishUpdate(
-        uint id,
-        address migrating,
-        address recollateralizing,
-        uint shifting
+    function initUpdate(
+        uint256 _id,
+        address _migrationVault,
+        address _targetVault,
+        address _targetCurve,
+        bool _curveDetails,
+        uint256 _targetRefundRatio,
+        uint256 _startTime,
+        uint256 _duration
     ) external {
-        // require(msg.sender == address(updater), "!updater");
+
+        HubDetails storage hubDetails = hubs[_id];
+        if (_targetRefundRatio != 0) {
+            hubDetails.targetRefundRatio = _targetRefundRatio;
+        }
+        if (_targetCurve != address(0)) {
+            hubDetails.targetCurve = _targetCurve;
+        }
+        if (_migrationVault != address(0) && _targetVault != address(0)) {
+            hubDetails.migrationVault = _migrationVault;
+            hubDetails.targetVault = _targetVault;
+        }
+
+        hubDetails.curveDetails = _curveDetails;
+        hubDetails.updating = true;
+        hubDetails.startTime = _startTime;
+        hubDetails.endTime = _startTime + _duration;
+    }
+
+
+
+    function finishUpdate(
+        uint id
+    ) external {
+
         HubDetails storage hubDetails = hubs[id];
+        require(hubDetails.updating, "!updating");
+        require(block.timestamp > hubDetails.endTime, "Not finished");
 
-        if (migrating != address(0)) {
-            hubDetails.curve = migrating;
+        if (hubDetails.targetRefundRatio != 0) {
+            hubDetails.refundRatio = hubDetails.targetRefundRatio;
+            hubDetails.targetRefundRatio = 0;
         }
 
-        if (recollateralizing != address(0)) {
-            hubDetails.vault = recollateralizing;
+        // Updating curve details and staying with the same curve
+        if (hubDetails.curveDetails) {
+            if (hubDetails.targetCurve == address(0)) {
+                ICurve(hubDetails.curve).finishUpdate(id);
+            } else {
+                hubDetails.curve = hubDetails.targetCurve;
+                hubDetails.targetCurve = address(0);
+            }
+            hubDetails.curveDetails = false;
         }
 
-        if (shifting != 0) {
-            hubDetails.refundRatio = shifting;
-        }
+        hubDetails.updating = false;
     }
 
     function getCount() external view returns (uint) {return count;}

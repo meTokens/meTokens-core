@@ -7,33 +7,7 @@ interface IHub {
 
     event Register(string name, address indexed vault);  // TODO: decide on arguments
     event Deactivate(uint id);
-
-    /*
-    /// @notice TODO
-    /// @param _name TODO
-    /// @param _owner TODO
-    /// @param _vaultName TODO
-    /// @param _vaultOwner TODO
-    /// @param _vaultFactory TODO
-    /// @param _curve TODO
-    /// @param _token TODO
-    /// @param _refundRatio TODO
-    /// @param _encodedValueSetArgs TODO
-    /// @param _encodedVaultAdditionalArgs TODO
-    function register(
-        string calldata _name,
-        address _owner,
-        string calldata _vaultName,
-        address _vaultOwner,
-        address _vaultFactory,
-        address _curve,
-        address _token,
-        uint _refundRatio,
-        bytes memory _encodedValueSetArgs,
-        bytes memory _encodedVaultAdditionalArgs
-    ) external;
-    */
-
+    
     /// @notice Function to modify a hubs' status to INACTIVE
     /// @param id Unique hub identifier
     function deactivate(uint id) external;
@@ -53,6 +27,17 @@ interface IHub {
         address migrating,
         address recollateralizing,
         uint    shifting
+    ) external;
+
+    function initUpdate(
+        uint256 _id,
+        address _migrationVault,
+        address _targetVault,
+        address _targetCurve,
+        bool _curveDetails,
+        uint256 _targetRefundRatio,
+        uint256 _startTime,
+        uint256 _duration
     ) external;
 
     /// @notice TODO
