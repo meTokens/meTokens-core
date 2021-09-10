@@ -26,6 +26,10 @@ contract Hub is Ownable, Initializable {
     }
 
     uint private immutable PRECISION = 10**18;
+    uint256 private _minSecondsUntilStart = 0; // TODO
+    uint256 private _maxSecondsUntilStart = 0; // TODO
+    uint256 private _minDuration = 0; // TODO
+    uint256 private _maxDuration = 0; // TODO
 
     uint private count;
     address public foundry;
@@ -92,13 +96,47 @@ contract Hub is Ownable, Initializable {
         address _migrationVault,
         address _targetVault,
         address _targetCurve,
-        bool _curveDetails,
         uint256 _targetRefundRatio,
+        bytes memory _encodedCurveDetails,
         uint256 _startTime,
         uint256 _duration
     ) external {
 
+        require(
+            _startTime - block.timestamp >= _minSecondsUntilStart &&
+            _startTime - block.timestamp <= _maxSecondsUntilStart,
+            "Unacceptable _startTime"
+        );
+        require(
+            _minDuration <= _duration &&
+            _maxDuration >= _duration,
+            "Unacceptable update duration"
+        );
+
+        bool curveDetails;
         HubDetails storage hubDetails = hubs[_id];
+        require(!hubDetails.updating, "already updating");
+        // First, do all checks
+        if (_targetRefundRatio != 0) {
+            require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
+            require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
+        }
+
+        if (_encodedCurveDetails.length > 0) {
+            if (_targetCurve == address(0)) {
+                ICurve(hubDetails.curve).registerTarget(_id, _encodedCurveDetails);
+            } else {  // _targetCurve != address(0))
+                require(curveRegistry.isActive(_targetCurve), "_targetCurve inactive");
+                ICurve(_targetCurve).register(_id, _encodedCurveDetails);
+            }
+            curveDetails = true;
+        }
+
+
+        if (_migrationVault != address(0) && _targetVault != address(0)) {
+
+        }
+
         if (_targetRefundRatio != 0) {
             hubDetails.targetRefundRatio = _targetRefundRatio;
         }
@@ -110,7 +148,7 @@ contract Hub is Ownable, Initializable {
             hubDetails.targetVault = _targetVault;
         }
 
-        hubDetails.curveDetails = _curveDetails;
+        hubDetails.curveDetails = curveDetails;
         hubDetails.updating = true;
         hubDetails.startTime = _startTime;
         hubDetails.endTime = _startTime + _duration;

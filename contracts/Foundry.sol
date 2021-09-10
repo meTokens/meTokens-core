@@ -121,12 +121,16 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 tokensReturnedWeighted - tokensReturned
             );
         } else {
-            // Is buyer, add to balance locked
+            // Is buyer, add to balance locked using refund ratio
+            hubDetails.refundRatio;
+
             meTokenRegistry.incrementBalanceLocked(
                 true,
                 _meToken,
                 tokensReturned - tokensReturnedWeighted
             );
+
+            
         }
 
         // Transfer fees - TODO
