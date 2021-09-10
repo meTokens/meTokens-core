@@ -9,23 +9,19 @@ library WeightedAverage {
         uint256 amount,
         uint256 targetAmount,
         uint256 startTime,
-        uint256 currentTime,
         uint256 endTime
     ) external pure returns (uint256)
     {
         uint256 targetWeight;
 
-        if (currentTime < startTime) {
+        if (block.timestamp < startTime) { // Update hasn't started, apply no weighting
             targetWeight = 0;
-        } else if (currentTime > endTime) {
+        } else if (block.timestamp > endTime) {  // Update is over
             targetWeight = PRECISION;
-        } else {
-            uint256 targetProgress = currentTime - startTime;
-            uint256 targetLength = endTime - startTime;
-            targetWeight = PRECISION * targetProgress / targetLength;
+        } else {  // Currently in an update
+            targetWeight = PRECISION * (block.timestamp - startTime) / (endTime - startTime);
         }
-        uint256 amountWeighted = amount * (PRECISION - targetWeight);
-        uint256 targetAmountWeighted = targetAmount * targetWeight;
-        return amountWeighted + targetAmountWeighted;
+        // amountWeighted = amount * (PRECISION - targetWeight), targetAmountWeighted = targetAmount * targetWeight;
+        return amount*(PRECISION - targetWeight) + targetAmount*targetWeight;
     } 
 }
