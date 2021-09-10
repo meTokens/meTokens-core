@@ -148,8 +148,6 @@ contract Hub is Ownable, Initializable {
             hubDetails.targetVault = _targetVault;
         }
 
-
-
         hubDetails.curveDetails = curveDetails;
         hubDetails.updating = true;
         hubDetails.startTime = _startTime;

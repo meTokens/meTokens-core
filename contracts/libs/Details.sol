@@ -7,7 +7,7 @@ struct MeTokenDetails {
     uint256 balancePooled;
     uint256 balanceLocked;
     
-    bool resubscribing; // TODO: validate
+    bool updating; // TODO: validate
     uint startTime;
     uint endTime;
 
@@ -28,7 +28,6 @@ struct HubDetails {
     address migrationVault;
     address targetVault;
     address targetCurve;
-    bool curveDetails;
     uint targetRefundRatio;
 }
 
@@ -36,6 +35,7 @@ struct BancorDetails {
     uint baseY;
     uint32 reserveWeight;
 
+    bool updating;
     uint targetBaseY;
     uint32 targetReserveWeight;
 }

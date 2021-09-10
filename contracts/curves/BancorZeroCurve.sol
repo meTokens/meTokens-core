@@ -5,7 +5,7 @@ import "../interfaces/ICurve.sol";
 import "../interfaces/IUpdater.sol";
 
 import "../libs/WeightedAverage.sol";
-import {MeTokenDetails, BancorDetails} from "../libs/Details.sol";
+import {BancorDetails} from "../libs/Details.sol";
 
 import "../utils/Power.sol";
 
@@ -55,6 +55,7 @@ contract BancorZeroCurve is ICurve, Power {
         // targetBaseY = (old baseY * oldR) / newR
         uint targetBaseY = (bancorDetails.baseY * bancorDetails.reserveWeight) / targetReserveWeight;
 
+        bancorDetails.updating = true; 
         bancorDetails.targetBaseY = targetBaseY;
         bancorDetails.targetReserveWeight = targetReserveWeight;
     }
