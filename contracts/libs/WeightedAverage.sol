@@ -5,23 +5,51 @@ library WeightedAverage {
 
     uint256 constant PRECISION = 10**18;
 
+    /*
+    EXAMPLE:
+    PRECISION = 500
+    block.timestamp - startTime = 70
+    endTime - startTime = 100
+
+    // scenario 1 :  targetAmount > amount
+    amount = 87
+    targetAmount = 137
+
+    ### pt 1
+    ( PRECISION*amount + PRECISION * (targetAmount - amount) * 0.7 ) / PRECISION;
+    ( 500*87 + 500 * (137 - 87) * 0.7 ) / 500  =  122
+    ### pt 2
+    ( PRECISION*amount - PRECISION * (amount - targetAmount) * 0.7 ) / PRECISION;
+    ( 500*87 - 500 * (87 - 137) * 0.7 ) / 500  =  122
+
+    // scenario 2 :  targetAmount < amount
+    amount = 201
+    targetAmount = 172
+
+    ### pt 1
+    ( PRECISION*amount + PRECISION * (targetAmount - amount) * 0.7 ) / PRECISION;
+    ( 500*201 + 500 * (172 - 201) * 0.7 ) / 500  =  180.7
+    ### pt 2
+    ( PRECISION*amount - PRECISION * (amount - targetAmount) * 0.7 ) / PRECISION;
+    ( 500*201 - 500 * (201 - 172) * 0.7 ) / 500  =  180.7
+    */
+
     function calculate(
         uint256 amount,
         uint256 targetAmount,
         uint256 startTime,
         uint256 endTime
-    ) external pure returns (uint256)
+    ) external view returns (uint256)
     {
         if (block.timestamp < startTime) { // Update hasn't started, apply no weighting
             return amount;
         } else if (block.timestamp > endTime) {  // Update is over, return target amount
             return targetAmount;
-        } else {  // Currently in an update
-            // NOTE: targetWeight = PRECISION * (block.timestamp - startTime) / (endTime - startTime);
+        } else {  // Currently in an update, return weighted average
             if (targetAmount > amount) {
-                return PRECISION*amount + PRECISION * (targetAmount - amount) * (block.timestamp - startTime) / (endTime - startTime);
+                return ( PRECISION*amount + PRECISION * (targetAmount - amount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
             } else {
-                return PRECISION*amount - PRECISION * (amount - targetAmount) * (block.timestamp - startTime) / (endTime - startTime);
+                return ( PRECISION*amount - PRECISION * (amount - targetAmount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
              }
         }
     } 
