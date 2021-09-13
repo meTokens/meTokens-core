@@ -23,10 +23,7 @@ interface IHub {
     /// @param recollateralizing Target recollateralization contract
     /// @param shifting Target refundRatio
     function finishUpdate(
-        uint    id,
-        address migrating,
-        address recollateralizing,
-        uint    shifting
+        uint    id
     ) external;
 
     function initUpdate(
