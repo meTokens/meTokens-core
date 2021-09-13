@@ -94,43 +94,43 @@ contract BancorZeroCurve is ICurve, Power {
             );
         }
 
-//        // check the updater to see if the curve is reconfiguring
-//        if (updater.isReconfiguring(id)) {
-//
-//            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
-//
-//            // Only calculate weighted amount if update is live
-//            if (block.timestamp > startTime) {
-//
-//                // Calculate return using weights
-//                TargetValueSet memory t = targetbancors[id];
-//                uint targetMeTokensReturned;
-//                if (_supply > 0) {
-//                    targetMeTokensReturned = _calculateMintReturn(
-//                        _tokensDeposited,
-//                        t.reserveWeight,
-//                        _supply,
-//                        _balancePooled
-//                    );
-//                } else {
-//                    targetMeTokensReturned = _calculateMintReturnFromZero(
-//                        _tokensDeposited,
-//                        t.reserveWeight,
-//                        BASE_X,
-//                        t.baseY
-//                    );
-//                }
-//
-//                meTokensReturned = WeightedAverage.calculate(
-//                    meTokensReturned,
-//                    targetMeTokensReturned,
-//                    startTime,
-//                    block.timestamp,
-//                    endTime
-//                );
-//
-//            }
-//        }
+       // check the updater to see if the curve is reconfiguring
+       if (ICurve(_hubDetails.targetCurve)(id)) {
+
+           (uint startTime, uint endTime) = updater.getUpdateTimes(id);
+
+           // Only calculate weighted amount if update is live
+           if (block.timestamp > startTime) {
+
+               // Calculate return using weights
+               TargetValueSet memory t = targetbancors[id];
+               uint targetMeTokensReturned;
+               if (_supply > 0) {
+                   targetMeTokensReturned = _calculateMintReturn(
+                       _tokensDeposited,
+                       t.reserveWeight,
+                       _supply,
+                       _balancePooled
+                   );
+               } else {
+                   targetMeTokensReturned = _calculateMintReturnFromZero(
+                       _tokensDeposited,
+                       t.reserveWeight,
+                       BASE_X,
+                       t.baseY
+                   );
+               }
+
+               meTokensReturned = WeightedAverage.calculate(
+                   meTokensReturned,
+                   targetMeTokensReturned,
+                   startTime,
+                   block.timestamp,
+                   endTime
+               );
+
+           }
+       }
     }
 
 
