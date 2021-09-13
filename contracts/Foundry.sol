@@ -47,8 +47,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        if (hubDetails.updating && block.timestamp > hubDetails.endTime) {
+        if (hubDetails.updating && block.timestamp > hubDetails.endTime) {  
             hub.finishUpdate(meTokenDetails.hubId);
+            if (_hubDetails.targetCurve != address(0)) {
+                
+            }
         }
         uint meTokensMinted = calculateMintReturn(tokensDepositedAfterFees, _meToken, meTokenDetails, hubDetails);
 
@@ -89,25 +92,20 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meTokenDetails.balancePooled
         );
 
-        if (_hubDetails.updating) {
-            if (_hubDetails.startTime > block.timestamp) { // Grace period between start of update and actual update
-                return meTokensMinted;
-            } else {
+        // Logic for if we're switching to a new curve type
+        if (_hubDetails.updating && _hubDetails.targetCurve != address(0)) {
                 uint targetMeTokensMinted = ICurve(_hubDetails.targetCurve).calculateMintReturn(
                     _tokensDeposited,
                     _meTokenDetails.hubId,
                     IERC20(_meToken).totalSupply(),
                     _meTokenDetails.balancePooled
                 );
-                if (_hubDetails.endTime < block.timestamp) { // Update has ended but the hub has not updated target => live values
-                    meTokensMinted = targetMeTokensMinted;
-                } else { // Update is still in progress, return the weighted average
-                    meTokensMinted = WeightedAverage.calculate(
-                        meTokensMinted,
-                        targetMeTokensMinted,
-                        _hubDetails.startTime,
-                        _hubDetails.endTime
-                    );
+                meTokensMinted = WeightedAverage.calculate(
+                    meTokensMinted,
+                    targetMeTokensMinted,
+                    _hubDetails.startTime,
+                    _hubDetails.endTime
+                );
                 }
             }
         }
@@ -204,8 +202,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 _meToken,
                 tokensReturned - tokensReturnedWeighted
             );
-
-            
         }
 
         // Transfer fees - TODO
