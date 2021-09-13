@@ -36,6 +36,13 @@ interface ICurve {
         uint _balancePooled
     ) external view returns (uint meTokensReturned);
 
+    function calculateTargetMintReturn(
+        uint _tokensDeposited,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external view returns (uint meTokensReturned);
+
     function calculateBurnReturn(
         uint _meTokensBurned,
         uint _hubId,

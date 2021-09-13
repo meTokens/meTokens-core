@@ -39,7 +39,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
     }
 
 
-    function mint(address _meToken, uint _tokensDeposited, address _recipient) external {
+    function mint(address _meToken, uint _tokensDeposited, address _recipient) external override {
         MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
         HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
         require(hubDetails.active, "Hub inactive");
@@ -50,11 +50,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
         if (hubDetails.updating && block.timestamp > hubDetails.endTime) {  
             // Finish updating curve
             hub.finishUpdate(meTokenDetails.hubId);
-                if (hubDetails.curveDetails) {
-                    // Finish updating curve
-                }
+            if (hubDetails.curveDetails) {
+                // Finish updating curve
+                ICurve(hubDetails.curve).finishUpdate(meTokenDetails.hubId);
             }
         }
+
         uint meTokensMinted = calculateMintReturn(tokensDepositedAfterFees, _meToken, meTokenDetails, hubDetails);
 
         // Send tokens to vault and update balance pooled
@@ -69,8 +70,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         // Transfer fees
         if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
-
-
 
         // Mint meToken to user
         IERC20(_meToken).mint(_recipient, meTokensMinted);
@@ -93,58 +92,70 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meTokenDetails.balancePooled
         );
 
-        // Logic for if we're switching to a new curve type
-        if (_hubDetails.updating && _hubDetails.targetCurve != address(0)) {
-                uint targetMeTokensMinted = ICurve(_hubDetails.targetCurve).calculateMintReturn(
+        // Logic for if we're switching to a new curve type // updating curveDetails
+        if (
+            _hubDetails.updating &&
+            (_hubDetails.targetCurve != address(0)) || (_hubDetails.curveDetails))
+        {
+
+            uint targetMeTokensMinted;
+            if(_hubDetails.targetCurve != address(0)) {
+                targetMeTokensMinted = ICurve(_hubDetails.targetCurve).calculateMintReturn(
                     _tokensDeposited,
                     _meTokenDetails.hubId,
                     IERC20(_meToken).totalSupply(),
                     _meTokenDetails.balancePooled
                 );
-                meTokensMinted = WeightedAverage.calculate(
-                    meTokensMinted,
-                    targetMeTokensMinted,
-                    _hubDetails.startTime,
-                    _hubDetails.endTime
-                );
-                }
+            } else { // _hubDetails.curveDetails == true
+                targetMeTokensMinted = ICurve(_hubDetails.curve).calculateTargetMintReturn(
+                    _tokensDeposited,
+                    _meTokenDetails.hubId,
+                    IERC20(_meToken).totalSupply(),
+                    _meTokenDetails.balancePooled
+                );                    
             }
+            meTokensMinted = WeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                _hubDetails.startTime,
+                _hubDetails.endTime
+            );
         }
     }
 
 
-    function mint(address _meToken, uint256 _tokensDeposited, address _recipient) external override {
+    // function mint(address _meToken, uint256 _tokensDeposited, address _recipient) external override {
 
-        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
-        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
-        require(hubDetails.active, "Hub inactive");
+    //     MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+    //     HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
+    //     require(hubDetails.active, "Hub inactive");
 
-        uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
-        uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
+    //     uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
+    //     uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
-            tokensDepositedAfterFees,
-            meTokenDetails.hubId,
-            IERC20(_meToken).totalSupply(),
-            meTokenDetails.balancePooled
-        );
+    //     uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
+    //         tokensDepositedAfterFees,
+    //         meTokenDetails.hubId,
+    //         IERC20(_meToken).totalSupply(),
+    //         meTokenDetails.balancePooled
+    //     );
 
-        // Send tokens to vault and update balance pooled
-        address vaultToken = IVault(hubDetails.vault).getToken();
-        IERC20(vaultToken).transferFrom(msg.sender, address(this), _tokensDeposited);
+    //     // Send tokens to vault and update balance pooled
+    //     address vaultToken = IVault(hubDetails.vault).getToken();
+    //     IERC20(vaultToken).transferFrom(msg.sender, address(this), _tokensDeposited);
 
-        meTokenRegistry.incrementBalancePooled(
-            true,
-            _meToken,
-            tokensDepositedAfterFees
-        );
+    //     meTokenRegistry.incrementBalancePooled(
+    //         true,
+    //         _meToken,
+    //         tokensDepositedAfterFees
+    //     );
 
-        // Transfer fees
-        if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
+    //     // Transfer fees
+    //     if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
 
-        // Mint meToken to user
-        IERC20(_meToken).mint(_recipient, meTokensMinted);
-    }
+    //     // Mint meToken to user
+    //     IERC20(_meToken).mint(_recipient, meTokensMinted);
+    // }
 
 
     /// @inheritdoc IFoundry
@@ -215,4 +226,5 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address vaultToken = IVault(hubDetails.vault).getToken();
         IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, tokensReturnedAfterFees);
     }
+
 }

@@ -50,13 +50,8 @@ contract BancorZeroCurve is ICurve, Power {
         // targetBaseY = (old baseY * oldR) / newR
         uint targetBaseY = (bancorDetails.baseY * bancorDetails.reserveWeight) / targetReserveWeight;
 
-        bancorDetails.updating = true; 
         bancorDetails.targetBaseY = targetBaseY;
         bancorDetails.targetReserveWeight = targetReserveWeight;
-    }
-
-    function isUpdating(uint _hubId) external view returns (bool) {
-        BancorDetails memory 
     }
 
     function finishUpdate(uint _hubId) external override {
@@ -68,6 +63,30 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.targetBaseY = 0;
     }
 
+
+    function calculateTargetMintReturn(
+        uint _tokensDeposited,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external override view returns (uint meTokensReturned) {
+        BancorDetails memory bancorDetails = bancors[_hubId];
+        if (_supply > 0) {
+            meTokensReturned = _calculateMintReturn(
+                _tokensDeposited,
+                bancorDetails.targetReserveWeight,
+                _supply,
+                _balancePooled
+            );
+        } else {
+            meTokensReturned = _calculateMintReturnFromZero(
+                _tokensDeposited,
+                bancorDetails.targetReserveWeight,
+                BASE_X,
+                bancorDetails.targetBaseY
+            );
+        }
+    }
 
     /// @inheritdoc ICurve
     function calculateMintReturn(
@@ -93,44 +112,6 @@ contract BancorZeroCurve is ICurve, Power {
                 bancorDetails.baseY
             );
         }
-
-       // check the updater to see if the curve is reconfiguring
-       if (ICurve(_hubDetails.targetCurve)(id)) {
-
-           (uint startTime, uint endTime) = updater.getUpdateTimes(id);
-
-           // Only calculate weighted amount if update is live
-           if (block.timestamp > startTime) {
-
-               // Calculate return using weights
-               TargetValueSet memory t = targetbancors[id];
-               uint targetMeTokensReturned;
-               if (_supply > 0) {
-                   targetMeTokensReturned = _calculateMintReturn(
-                       _tokensDeposited,
-                       t.reserveWeight,
-                       _supply,
-                       _balancePooled
-                   );
-               } else {
-                   targetMeTokensReturned = _calculateMintReturnFromZero(
-                       _tokensDeposited,
-                       t.reserveWeight,
-                       BASE_X,
-                       t.baseY
-                   );
-               }
-
-               meTokensReturned = WeightedAverage.calculate(
-                   meTokensReturned,
-                   targetMeTokensReturned,
-                   startTime,
-                   block.timestamp,
-                   endTime
-               );
-
-           }
-       }
     }
 
 
@@ -149,32 +130,6 @@ contract BancorZeroCurve is ICurve, Power {
             _supply,
             _balancePooled
         );
-
-//        if (updater.isReconfiguring(id)) {
-//
-//            (uint startTime, uint endTime) = updater.getUpdateTimes(id);
-//
-//            // Only calculate weighted amount if update is live
-//            if (block.timestamp > startTime) {
-//
-//                // Calculate return using weights
-//                TargetValueSet memory t = targetValueSets[id];
-//                uint targetTokensReturned =  _calculateBurnReturn(
-//                    _meTokensBurned,
-//                    t.reserveWeight,
-//                    _supply,
-//                    _balancePooled
-//                );
-//
-//                tokensReturned = WeightedAverage.calculate(
-//                    tokensReturned,
-//                    targetTokensReturned,
-//                    startTime,
-//                    block.timestamp,
-//                    endTime
-//                );
-//            }
-//        }
     }
 
     /// @notice Given a deposit amount (in the connector token), connector weight, meToken supply and 

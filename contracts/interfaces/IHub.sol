@@ -19,9 +19,6 @@ interface IHub {
     /// @notice Function to end the update, setting the target values of the hub,
     ///         as well as modifying a hubs' status to ACTIVE
     /// @param id Unique hub identifier
-    /// @param migrating Target migration contract
-    /// @param recollateralizing Target recollateralization contract
-    /// @param shifting Target refundRatio
     function finishUpdate(
         uint    id
     ) external;
