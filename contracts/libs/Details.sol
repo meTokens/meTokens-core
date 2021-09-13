@@ -27,6 +27,7 @@ struct HubDetails {
 
     address migrationVault;
     address targetVault;
+    bool curveDetails;
     address targetCurve;
     uint targetRefundRatio;
 }
@@ -35,7 +36,7 @@ struct BancorDetails {
     uint baseY;
     uint32 reserveWeight;
 
-    bool updating;
+    // bool updating;
     uint targetBaseY;
     uint32 targetReserveWeight;
 }

@@ -48,9 +48,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
         if (hubDetails.updating && block.timestamp > hubDetails.endTime) {  
+            // Finish updating curve
             hub.finishUpdate(meTokenDetails.hubId);
-            if (_hubDetails.targetCurve != address(0)) {
-                
+                if (hubDetails.curveDetails) {
+                    // Finish updating curve
+                }
             }
         }
         uint meTokensMinted = calculateMintReturn(tokensDepositedAfterFees, _meToken, meTokenDetails, hubDetails);
@@ -68,7 +70,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Transfer fees
         if (fee > 0) {IVault(hubDetails.vault).addFee(fee);}
 
-        // Update hub
 
 
         // Mint meToken to user

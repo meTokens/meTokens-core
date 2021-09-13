@@ -55,6 +55,10 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.targetReserveWeight = targetReserveWeight;
     }
 
+    function isUpdating(uint _hubId) external view returns (bool) {
+        BancorDetails memory 
+    }
+
     function finishUpdate(uint _hubId) external override {
         // TODO; only hub can call
         BancorDetails storage bancorDetails = bancors[_hubId];
