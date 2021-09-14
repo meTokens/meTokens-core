@@ -151,7 +151,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     _meTokenDetails.balancePooled
                 );
             } else { // Must mean we're updating curveDetails
-                targetTokensReturned = ICurve(_hubDetails.curve).calculateTargetMintReturn(
+                targetTokensReturned = ICurve(_hubDetails.curve).calculateTargetBurnReturn(
                     _meTokensBurned,
                     _meTokenDetails.hubId,
                     IERC20(_meToken).totalSupply(),

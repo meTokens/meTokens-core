@@ -63,31 +63,6 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.targetBaseY = 0;
     }
 
-
-    function calculateTargetMintReturn(
-        uint _tokensDeposited,
-        uint _hubId,
-        uint _supply,
-        uint _balancePooled
-    ) external override view returns (uint meTokensReturned) {
-        BancorDetails memory bancorDetails = bancors[_hubId];
-        if (_supply > 0) {
-            meTokensReturned = _calculateMintReturn(
-                _tokensDeposited,
-                bancorDetails.targetReserveWeight,
-                _supply,
-                _balancePooled
-            );
-        } else {
-            meTokensReturned = _calculateMintReturnFromZero(
-                _tokensDeposited,
-                bancorDetails.targetReserveWeight,
-                BASE_X,
-                bancorDetails.targetBaseY
-            );
-        }
-    }
-
     /// @inheritdoc ICurve
     function calculateMintReturn(
         uint _tokensDeposited,
@@ -114,6 +89,30 @@ contract BancorZeroCurve is ICurve, Power {
         }
     }
 
+    /// @inheritdoc ICurve
+    function calculateTargetMintReturn(
+        uint _tokensDeposited,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external override view returns (uint meTokensReturned) {
+        BancorDetails memory bancorDetails = bancors[_hubId];
+        if (_supply > 0) {
+            meTokensReturned = _calculateMintReturn(
+                _tokensDeposited,
+                bancorDetails.targetReserveWeight,
+                _supply,
+                _balancePooled
+            );
+        } else {
+            meTokensReturned = _calculateMintReturnFromZero(
+                _tokensDeposited,
+                bancorDetails.targetReserveWeight,
+                BASE_X,
+                bancorDetails.targetBaseY
+            );
+        }
+    }
 
     /// @inheritdoc ICurve
     function calculateBurnReturn(
@@ -127,6 +126,22 @@ contract BancorZeroCurve is ICurve, Power {
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
             bancorDetails.reserveWeight,
+            _supply,
+            _balancePooled
+        );
+    }
+
+    function calculateTargetBurnReturn(
+        uint _meTokensBurned,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external view override returns (uint tokensReturned) {
+
+        BancorDetails memory bancorDetails = bancors[_hubId];
+        tokensReturned = _calculateBurnReturn(
+            _meTokensBurned,
+            bancorDetails.targetReserveWeight,
             _supply,
             _balancePooled
         );
