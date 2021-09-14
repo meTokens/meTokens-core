@@ -144,7 +144,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
             uint targetTokensReturned;
             if(_hubDetails.targetCurve != address(0)) { // Means we are updating to a new curve type
-                targetTokensReturned = ICurve(_hubDetails.targetCurve).calculateMintReturn(
+                targetTokensReturned = ICurve(_hubDetails.targetCurve).calculateBurnReturn(
                     _meTokensBurned,
                     _meTokenDetails.hubId,
                     IERC20(_meToken).totalSupply(),
