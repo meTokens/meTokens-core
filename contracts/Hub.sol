@@ -159,11 +159,9 @@ contract Hub is Ownable, Initializable {
     function finishUpdate(
         uint id
     ) external {
+        // TODO: only callable from foundry
 
         HubDetails storage hubDetails = hubs[id];
-        require(hubDetails.updating, "!updating");
-        require(block.timestamp > hubDetails.endTime, "Not finished");
-
         if (hubDetails.targetRefundRatio != 0) {
             hubDetails.refundRatio = hubDetails.targetRefundRatio;
             hubDetails.targetRefundRatio = 0;

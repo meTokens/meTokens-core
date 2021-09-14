@@ -28,7 +28,6 @@ interface ICurve {
         bytes calldata _encodedValueSet
     ) external;
 
-
     function calculateMintReturn(
         uint _tokensDeposited,
         uint _hubId,
@@ -43,6 +42,19 @@ interface ICurve {
         uint _balancePooled
     ) external view returns (uint tokensReturned);
 
+    function calculateTargetMintReturn(
+        uint _tokensDeposited,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external view returns (uint meTokensReturned);
+
+    function calculateTargetBurnReturn(
+        uint _meTokensBurned,
+        uint _hubId,
+        uint _supply,
+        uint _balancePooled
+    ) external view returns (uint tokensReturned);
 
     function finishUpdate(uint id) external;
 }
