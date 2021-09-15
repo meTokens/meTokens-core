@@ -48,7 +48,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         ISwapRouter _router,
         address _tokenIn,
         address _tokenOut,
-        // address _recipient, // who receives the returned tokens
+        address _recipient, // who receives the returned tokens
         uint256 _deadline
     ) external initializer onlyOwner {
         
