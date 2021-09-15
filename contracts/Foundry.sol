@@ -179,19 +179,31 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned, meTokenDetails, hubDetails);
 
         uint256 feeRate;
-        uint256 tokensMultiplier;
-        // If msg.sender == owner, give owner the sell rate.
+        uint actualTokensReturned;
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a % of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
         if (msg.sender == meTokenDetails.owner) {
-            feeRate = fees.burnOwnerFee();
-            tokensMultiplier = PRECISION + PRECISION * meTokenDetails.balanceLocked / IERC20(_meToken).totalSupply();
+            // feeRate = fees.burnOwnerFee();
+            actualTokensReturned = tokensReturned + PRECISION * _meTokensBurned/IERC20(_meToken).totalSupply() * meTokenDetails.balanceLocked  / PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            tokensMultiplier = PRECISION;
+            // tokensReturnedAfterFees = tokensReturned * (PRECISION - feeRate) / PRECISION;
+            uint refundRatio = hubDetails.refundRatio;
+            if (hubDetails.targetRefundRatio == 0) { // Not updating targetRefundRatio
+                actualTokensReturned = tokensReturned * hubDetails.refundRatio;
+            } else {
+                actualTokensReturned = tokensReturned * WeightedAverage.calculate(
+                    hubDetails.refundRatio,
+                    hubDetails.targetRefundRatio,
+                    hubDetails.startTime,
+                    hubDetails.endTime
+                );
+            }
+            tokensReturned *= refundRatio;
         }
 
-        uint256 tokensReturnedWeighted = tokensReturned * tokensMultiplier / PRECISION;
-        uint256 tokensReturnedAfterFees = tokensReturnedWeighted - (tokensReturnedWeighted * feeRate / PRECISION);
+        // uint256 tokensReturnedWeighted = tokensReturned * tokensMultiplier / PRECISION;
+        // uint256 tokensReturnedAfterFees = tokensReturnedWeighted - (tokensReturnedWeighted * feeRate / PRECISION);
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -212,8 +224,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         } else {
             // Is buyer, add to balance locked using refund ratio
-            hubDetails.refundRatio;
-
             meTokenRegistry.incrementBalanceLocked(
                 true,
                 _meToken,
