@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import  {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+// import {ExactInputSingleParams}
 
 import "./Migration.sol";
 
@@ -23,43 +24,54 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    IERC20 private tokenIn = IERC20(WETH);
-    IERC20 privateTokenOut = IERC20(DAI);
-    ISwapRouter private router;
 
+    ISwapRouter private router;
+    
     // NOTE: this can be found at https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    struct ExactInputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountIn;
-        uint256 amountOutMinimum;
-        uint160 sqrtPriceLimitX96;
-    }
+    ISwapRouter.ExactInputSingleParams private params;
+    // struct ExactInputSingleParams {
+    //     address tokenIn;
+    //     address tokenOut;
+    //     uint24 fee;
+    //     address recipient;
+    //     uint256 deadline;
+    //     uint256 amountIn;
+    //     uint256 amountOutMinimum;
+    //     uint160 sqrtPriceLimitX96;
+    // }
 
 
     constructor () {}
 
     function initialize(
         address _owner,
+        ISwapRouter _router,
         address _tokenIn,
         address _tokenOut,
-        ISwapRouter _router
-    ) external {
+        // address _recipient, // who receives the returned tokens
+        uint256 _deadline
+    ) external initializer onlyOwner {
+        
         require(migrationRegistry.isApproved(msg.sender), "!approved");
-        owner = _owner;
-        tokenIn = _tokenIn;
-        _tokenOut = _tokenOut;
-        router = router;
+        transferOwnership(_owner);
+        router = _router;
+
+        params.tokenIn = _tokenIn;
+        params.tokenOut = _tokenOut;
+        params.recipient = msg.sender;
+        params.recipient = _recipient;
+        params.deadline = _deadline;
     }
 
     // Trades vault.getToken() to targetVault.getToken();
     function swap() external {
         require(!swapped, "swapped");
 
-        uint amountToSwap = IERC20(tokenIn).balanceOf(address(this)).
+        uint amountToSwap = IERC20(params.tokenIn).balanceOf(address(this));
+
+        // params.fee = 3 * 10**16b;
+        params.recipient = address(this);
+        params.amountIn = amountToSwap;
 
         swapped = true;
     }    
