@@ -183,7 +183,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a % of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
         if (msg.sender == meTokenDetails.owner) {
-            // feeRate = fees.burnOwnerFee();
+            feeRate = fees.burnOwnerFee();
             actualTokensReturned = tokensReturned + PRECISION * _meTokensBurned/IERC20(_meToken).totalSupply() * meTokenDetails.balanceLocked  / PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
@@ -199,10 +199,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     hubDetails.endTime
                 );
             }
-            tokensReturned *= refundRatio;
+            actualTokensReturned *= refundRatio;
         }
 
-        // uint256 tokensReturnedWeighted = tokensReturned * tokensMultiplier / PRECISION;
         // uint256 tokensReturnedAfterFees = tokensReturnedWeighted - (tokensReturnedWeighted * feeRate / PRECISION);
 
         // Burn metoken from user
@@ -215,31 +214,32 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensReturned
         );
 
-        if (tokensReturnedWeighted > tokensReturned) {
+        if (actualTokensReturned > tokensReturned) {
             // Is owner, subtract from balance locked
             meTokenRegistry.incrementBalanceLocked(
                 false,
                 _meToken,
-                tokensReturnedWeighted - tokensReturned
+                actualTokensReturned - tokensReturned
             );
         } else {
             // Is buyer, add to balance locked using refund ratio
             meTokenRegistry.incrementBalanceLocked(
                 true,
                 _meToken,
-                tokensReturned - tokensReturnedWeighted
+                tokensReturned - actualTokensReturned
             );
         }
 
         // Transfer fees - TODO
-        if ((tokensReturnedWeighted * feeRate / PRECISION) > 0) {
-            uint256 fee = tokensReturnedWeighted * feeRate / PRECISION;
-            IVault(hubDetails.vault).addFee(fee);
-        }
+        // if ((tokensReturnedWeighted * feeRate / PRECISION) > 0) {
+        //     uint256 fee = tokensReturnedWeighted * feeRate / PRECISION;
+        //     IVault(hubDetails.vault).addFee(fee);
+        // }
 
         // Send tokens from vault
         address vaultToken = IVault(hubDetails.vault).getToken();
-        IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, tokensReturnedAfterFees);
+        // IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, tokensReturnedAfterFees);
+        IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, actualTokensReturned);
     }
 
 }
