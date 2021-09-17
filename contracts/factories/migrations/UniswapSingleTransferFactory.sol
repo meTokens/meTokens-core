@@ -26,6 +26,7 @@ contract UniswapSingleTransferFactory {
 
     function create(
         address _owner,
+        address _migrationVault,
         address _targetVault,
         bytes memory _encodedmigrationAdditionalArgs // NOTE: potentially needed for other migrations
     ) external returns (address) {
@@ -35,6 +36,7 @@ contract UniswapSingleTransferFactory {
         // create our migration
         UniswapSingleTransfer(migrationAddress).initialize(
             _owner,
+            IVault(_migrationVault).getToken(),
             IVault(_targetVault).getToken()
         );
 
