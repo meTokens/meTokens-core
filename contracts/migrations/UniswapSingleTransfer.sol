@@ -24,54 +24,51 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-
-    ISwapRouter private router;
-    
     // NOTE: this can be found at https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    ISwapRouter.ExactInputSingleParams private params;
-    // struct ExactInputSingleParams {
-    //     address tokenIn;
-    //     address tokenOut;
-    //     uint24 fee;
-    //     address recipient;
-    //     uint256 deadline;
-    //     uint256 amountIn;
-    //     uint256 amountOutMinimum;
-    //     uint160 sqrtPriceLimitX96;
-    // }
+    ISwapRouter private router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
+    // args for uniswap router
+    address public tokenIn;
+    address public tokenOut;
+    address public recipient;
+    uint24 private immutable fee = 3000; // NOTE: 0.3%
+    uint public amountOut;
 
     constructor () {}
 
+
     function initialize(
         address _owner,
-        ISwapRouter _router,
         address _tokenIn,
-        address _tokenOut,
-        address _recipient, // who receives the returned tokens
-        uint256 _deadline
+        address _tokenOut
     ) external initializer onlyOwner {
         
         require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
-        router = _router;
 
-        params.tokenIn = _tokenIn;
-        params.tokenOut = _tokenOut;
-        params.recipient = msg.sender;
-        params.recipient = _recipient;
-        params.deadline = _deadline;
+        tokenIn = _tokenIn;
+        tokenOut = _tokenOut;
     }
 
     // Trades vault.getToken() to targetVault.getToken();
     function swap() external {
         require(!swapped, "swapped");
 
-        uint amountToSwap = IERC20(params.tokenIn).balanceOf(address(this));
+        uint amountIn = IERC20(tokenIn).balanceOf(address(this));
+        // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: tokenIn,
+            tokenOut: tokenOut,
+            fee: fee,
+            recipient: msg.sender,
+            deadline: block.timestamp,
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
 
-        // params.fee = 3 * 10**16b;
-        params.recipient = address(this);
-        params.amountIn = amountToSwap;
+        // The call to `exactInputSingle` executes the swap.
+        amountOut = router.exactInputSingle(params);
 
         swapped = true;
     }    
