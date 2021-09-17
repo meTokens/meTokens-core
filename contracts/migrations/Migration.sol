@@ -5,6 +5,8 @@ import "../interfaces/IMigrationRegistry.sol";
 
 contract Migration {
 
+    uint public immutable PRECISION = 10**18;
+
     IMigrationRegistry public migrationRegistry = 
         IMigrationRegistry(address(0));  // TODO
 

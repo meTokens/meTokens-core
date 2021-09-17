@@ -38,6 +38,19 @@ contract Hub is Ownable, Initializable {
     // IUpdater public updater;
 
     mapping(uint => HubDetails) private hubs;
+    mapping(uint => address[]) private subscribedMeTokens;
+
+    function subscribeMeToken(uint _id, address _meToken) public exists (_id) {
+        subscribedMeTokens[_id].push(_meToken);
+    }
+
+    function getSubscribedMeTokenCount(uint _id) public view returns (uint) {
+        return subscribedMeTokens[_id].length;
+    }
+    function getSubscribedMeTokens(uint _id) external view returns (address[] memory) {
+        return subscribedMeTokens[_id];
+    }
+
 
     constructor() {}
 

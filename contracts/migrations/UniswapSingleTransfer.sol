@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import  {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-// import {ExactInputSingleParams}
 
 import "./Migration.sol";
 
@@ -18,9 +17,8 @@ import "./Migration.sol";
 ///      one erc20 to another
 contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
-    bool private swapped;
     bool private finished;
-    uint private immutable PRECISION = 10**18;
+    bool private swapped;
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
@@ -32,7 +30,11 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address public tokenOut;
     address public recipient;
     uint24 private immutable fee = 3000; // NOTE: 0.3%
+    uint public amountIn;
     uint public amountOut;
+
+    address public initialVault;
+    address public targetVault;
 
     constructor () {}
 
@@ -54,7 +56,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     function swap() external {
         require(!swapped, "swapped");
 
-        uint amountIn = IERC20(tokenIn).balanceOf(address(this));
+        amountIn = IERC20(tokenIn).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: tokenIn,
@@ -77,7 +79,16 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     function finishMigration() external {
         require(swapped && !finished);
 
-        // Get sum of balancePooled and balanceLocked
+        // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
+
+        // Determine rate of conversion
+        uint rate = PRECISION * amountIn / amountOut;
+
+        // Update balancePooled and balanceLocked
+
+        // Send token to new vault
+        IERC20(tokenOut).transfer()
+
 
         finished = true;
     }
