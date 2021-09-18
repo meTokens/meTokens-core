@@ -25,30 +25,27 @@ contract UniswapSingleTransferFactory {
     
 
     function create(
+        uint _hubId,
         address _owner,
-        address _migrationVault,
+        address _initialVault,
         address _targetVault,
         bytes memory _encodedmigrationAdditionalArgs // NOTE: potentially needed for other migrations
     ) external returns (address) {
         // TODO: access control
-        address migrationAddress = Clones.cloneDeterministic(implementation, bytes32(count++));
+        address migrationVault = Clones.cloneDeterministic(implementation, bytes32(count++));
 
         // create our migration
-        UniswapSingleTransfer(migrationAddress).initialize(
+        UniswapSingleTransfer(migrationVault).initialize(
+            _hubId,
             _owner,
-            IVault(_migrationVault).getToken(),
+            _targetVault,
+            IVault(_initialVault).getToken(),
             IVault(_targetVault).getToken()
         );
 
         // Add migration to migrationRegistry
-        migrationRegistry.register(
-            migrationAddress,
-            _targetVault,
-            IVault(_targetVault).getToken(),
-            IVault(migrationAddress).getToken()
-        );
+        migrationRegistry.register(migrationVault);
 
-        emit Create(migrationAddress);
-        return migrationAddress;
+        return migrationVault;
     }
 }

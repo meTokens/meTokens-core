@@ -9,6 +9,9 @@ import  {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRout
 
 import "./Migration.sol";
 
+import {MeTokenDetails} from "../libs/Details.sol";
+
+
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson)
 /// @notice create a vault that instantly swaps token A for token B
@@ -17,10 +20,12 @@ import "./Migration.sol";
 ///      one erc20 to another
 contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
-    bool private finished;
-    bool private swapped;
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+
+    address public targetVault;
+    bool private finished;
+    bool private swapped;   
 
     // NOTE: this can be found at https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
     ISwapRouter private router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -32,15 +37,17 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     uint24 private immutable fee = 3000; // NOTE: 0.3%
     uint public amountIn;
     uint public amountOut;
+    uint public sum;
 
-    address public initialVault;
-    address public targetVault;
+    
 
     constructor () {}
 
 
     function initialize(
+        uint _hubId,
         address _owner,
+        address _targetVault,
         address _tokenIn,
         address _tokenOut
     ) external initializer onlyOwner {
@@ -50,6 +57,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
         tokenIn = _tokenIn;
         tokenOut = _tokenOut;
+        targetVault = _targetVault;
     }
 
     // Trades vault.getToken() to targetVault.getToken();
@@ -75,11 +83,28 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         swapped = true;
     }    
 
+    function sumBalances(uint _hubId) external returns (uint) {
+        sum = 0;
+
+        // Loop through all subscribed meTokens
+        uint numSubscribed = hub.getSubscribedMeTokenCount(_hubId);
+
+        address[] memory subscribedMeTokens = hub.getSubscribedMeTokens(_hubId);
+
+        for (uint i=0; i<numSubscribed; i++) {
+            address meToken = subscribedMeTokens[i];
+            MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(meToken);
+            sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
+        }
+        return sum;
+    }
+
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
         require(swapped && !finished);
 
         // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
+
 
         // Determine rate of conversion
         uint rate = PRECISION * amountIn / amountOut;
@@ -87,8 +112,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         // Update balancePooled and balanceLocked
 
         // Send token to new vault
-        IERC20(tokenOut).transfer()
-
+        IERC20(tokenOut).transfer(targetVault, amountOut);
 
         finished = true;
     }

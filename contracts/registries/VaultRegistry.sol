@@ -51,9 +51,6 @@ contract VaultRegistry is IVaultRegistry, Roles {
         emit Unapprove(_factory);
     }
 
-    // TODO: are reactivate funcs needed?
-    // function reactivateVault(uint256 vaultId) public {}
-
     /// @inheritdoc IVaultRegistry
     function isActive(address _vault) external view override returns (bool) {
         return vaults[_vault];
@@ -64,5 +61,4 @@ contract VaultRegistry is IVaultRegistry, Roles {
         return approved[_factory];
     }
 
-    // TODO: array of vaults to loop through?
 }
