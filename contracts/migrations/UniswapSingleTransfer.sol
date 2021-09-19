@@ -23,6 +23,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
+    uint public hubId;
     address public targetVault;
     bool private finished;
     bool private swapped;   
@@ -55,6 +56,8 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
 
+        hubId = _hubId;
+
         tokenIn = _tokenIn;
         tokenOut = _tokenOut;
         targetVault = _targetVault;
@@ -83,16 +86,16 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         swapped = true;
     }    
 
+
+    // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
     function sumBalances(uint _hubId) external returns (uint) {
         sum = 0;
 
         // Loop through all subscribed meTokens
-        uint numSubscribed = hub.getSubscribedMeTokenCount(_hubId);
+        address[] memory subscribed = hub.getSubscribedMeTokens(_hubId);
 
-        address[] memory subscribedMeTokens = hub.getSubscribedMeTokens(_hubId);
-
-        for (uint i=0; i<numSubscribed; i++) {
-            address meToken = subscribedMeTokens[i];
+        for (uint i=0; i<subscribed.length; i++) {
+            address meToken = subscribed[i];
             MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(meToken);
             sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
         }
@@ -102,14 +105,15 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
         require(swapped && !finished);
-
-        // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
-
+        require(sum > 0, "sum not set");
 
         // Determine rate of conversion
         uint rate = PRECISION * amountIn / amountOut;
 
         // Update balancePooled and balanceLocked
+
+        address[] memory subscribed = hub.getSubscribedMeTokens(_hubId);
+
 
         // Send token to new vault
         IERC20(tokenOut).transfer(targetVault, amountOut);
