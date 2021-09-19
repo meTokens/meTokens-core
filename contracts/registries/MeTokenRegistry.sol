@@ -19,15 +19,15 @@ import {MeTokenDetails} from  "../libs/Details.sol";
 /// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
-    IMeTokenFactory public meTokenFactory;
     IHub public hub;
+    IMeTokenFactory public meTokenFactory;
 
     mapping (address => MeTokenDetails) private meTokens; // key pair: ERC20 address
     mapping (address => address) private owners;  // key: address of owner, value: address of meToken
 
-    constructor(address _meTokenFactory, address _hub) {
-        meTokenFactory = IMeTokenFactory(_meTokenFactory);
+    constructor(address _hub, address _meTokenFactory) {
         hub = IHub(_hub);
+        meTokenFactory = IMeTokenFactory(_meTokenFactory);
     }
 
 

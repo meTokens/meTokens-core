@@ -9,7 +9,6 @@ import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
-// import "./interfaces/IUpdater.sol";
 
 import {HubDetails, MeTokenDetails} from  "./libs/Details.sol";
 
@@ -35,7 +34,6 @@ contract Hub is Ownable, Initializable {
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
-    // IUpdater public updater;
 
     mapping(uint => HubDetails) private hubs;
     mapping(uint => address[]) private subscribedMeTokens;
@@ -56,12 +54,10 @@ contract Hub is Ownable, Initializable {
 
     function initialize(
         address _foundry,
-        // address _updater,
         address _vaultRegistry,
         address _curveRegistry
     ) public onlyOwner initializer {
         foundry = _foundry;
-        // updater = IUpdater(_updater);
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
     }
@@ -86,7 +82,7 @@ contract Hub is Ownable, Initializable {
 
         // Create new vault
         // ALl new hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(address(this), _token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
         HubDetails storage newHubDetails = hubs[count++];
@@ -147,7 +143,7 @@ contract Hub is Ownable, Initializable {
 
 
         if (_migrationVault != address(0) && _targetVault != address(0)) {
-
+            // TODO
         }
 
         if (_targetRefundRatio != 0) {

@@ -16,7 +16,7 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     uint256 private PRECISION = 10**18;
 
     address private token;
-    IVaultRegistry private vaultRegistry;
+    bytes private encodedAdditionalArgs
 
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
@@ -24,18 +24,16 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     constructor() {}
 
     function initialize(
-        address _vaultRegistry,
+        address _foundry,
         address _token,
         bytes memory _encodedAdditionalArgs
     ) initializer public {
-        require(vaultRegistry.isApproved(msg.sender), "msg.sender not approved vault factory");
-
-        // NOTE: these variables are initialized in Vault.sol
+        // TODO: access control?
         token = _token;
         encodedAdditionalArgs = _encodedAdditionalArgs;
 
         // Approve Foundry to spend all collateral in vault
-        IERC20(token).approve(foundry, 2**256 - 1);
+        IERC20(token).approve(_foundry, 2**256 - 1);
     }
 
     /// @inheritdoc IVault
