@@ -14,19 +14,11 @@ import "../../interfaces/IVaultFactory.sol";
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory is IVaultFactory {
 
-    modifier onlyHub() {
-        require(msg.sender == hub, "!hub");
-        _;
-    }
-
-
     uint256 private count;
-    address public hub;
     address public implementation;  // TODO: this will be the SingleAsset contract
     IVaultRegistry public vaultRegistry;
 
-    constructor(address _hub, address _vaultRegistry, address _implementation) {
-        hub = _hub;
+    constructor(address _vaultRegistry, address _implementation) {
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         implementation = _implementation;
     }
@@ -36,7 +28,7 @@ contract SingleAssetFactory is IVaultFactory {
         address _token,
         bytes memory _encodedAdditionalArgs
     ) external override returns (address vaultAddress) {
-
+        // TODO: access control
         vaultAddress = Clones.cloneDeterministic(
             implementation,
             bytes32(count++)

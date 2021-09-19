@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../Roles.sol";
+// TODO: ROLES
+// import "../Roles.sol";
 import "../interfaces/IVaultRegistry.sol";
 
 
 /// @title vault registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all active vaults and available vault factories 
-contract VaultRegistry is IVaultRegistry, Roles {
+contract VaultRegistry is IVaultRegistry {
 
     mapping (address => bool) private vaults;
     // NOTE: approved vault factories could be for

@@ -1,25 +1,42 @@
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
-const CurveRegistry = artifacts.require("CurveRegistry");
-const VaultRegistry = artifacts.require("VaultRegistry");
 const BancorZeroCurve = artifacts.require("BancorZeroCurve");
+const CurveRegistry = artifacts.require("CurveRegistry");
+const BancorZeroCurve = artifacts.require("BancorZeroCurve");
+const VaultRegistry = artifacts.require("VaultRegistry");
+const SingleAssetFactory = artifacts.require("SingleAssetFactory");
+const SingleAsset = artifacts.require("SingleAsset");
 const Foundry = artifacts.require("Foundry");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const MockContract = artifacts.require("MockContract");
 const Hub = artifacts.require("Hub");
 const HubABI = require("../../abi/Hub.json")
 
+
 describe("MeTokenRegistry.sol", () => {
 
     before(async () => {
+
+        curveRegistry = await CurveRegistry.new();
+        curve = await BancorZeroCurve.new();
+        await curveRegistry.register(curve.address);
+
+        vaultRegistry = await VaultRegistry.new();
+        vault = await SingleAsset.new();
+        vaultFactory = await SingleAssetFactory.new();
+        await vaultRegistry.approve(vaultFactory.address);
+
+
+        
+
+
         hub = await Hub.new();
-        foundry = await Foundry.new();
         meTokenFactory = await MeTokenFactory.new(); // Should this be mocked?
         meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
-        curveRegistry = await CurveRegistry.new();
-        vaultRegistry = await VaultRegistry.new();
-        curve = await BancorZeroCurve.new();
-        await curveRegistry.register("Test Curve", formula.address, curve.address);
+
+
+        foundry = await Foundry.new();
+
     });
 
     describe("register()", () => {
