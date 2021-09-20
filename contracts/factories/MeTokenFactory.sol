@@ -2,12 +2,12 @@
 pragma solidity ^0.8.0;
 
 import "../MeToken.sol";
-import "../Roles.sol";
+// import "../Roles.sol";
 
 /// @title meToken factory
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract creates and deploys a users' meToken
-contract MeTokenFactory is Roles {
+contract MeTokenFactory {
 
     constructor () {}
 
@@ -18,7 +18,8 @@ contract MeTokenFactory is Roles {
         string calldata _name,
         string calldata _symbol
     ) external returns (address) {
-        require(hasRole(METOKEN_REGISTRY, msg.sender), "!meTokenRegistry");
+        // TODO: access control
+        // require(hasRole(METOKEN_REGISTRY, msg.sender), "!meTokenRegistry");
 
         // Create our meToken
         MeToken erc20 = new MeToken(_name, _symbol);

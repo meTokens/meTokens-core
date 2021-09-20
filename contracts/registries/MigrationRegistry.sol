@@ -8,45 +8,36 @@ import "../interfaces/IMigrationRegistry.sol";
 /// @notice Keeps track of all used migration strategies 
 abstract contract MigrationRegistry is IMigrationRegistry {
 
-    uint256 private count;
-	mapping (address => Details) migrations;
+	mapping (address => bool) private migrations;
     mapping (address => bool) private approved;
 
-    struct Details {
-        address migration;
-        address targetVault;
-        address collateralTokenStart;
-        address collateralTokenIntra;
-        bool active;
-    }
-
+    /// @inheritdoc IMigrationRegistry
     function register(
-        address _migration,
-        address _targetVault,
-        address _collateralTokenStart,
-        address _collateralTokenIntra
-    ) external override {
+        address _migration
+    ) external override{
         require(approved[msg.sender], "!approved");
-        // Add migration details to storage
-        Details memory r = Details(
-            _migration,
-            _targetVault,
-            _collateralTokenStart,
-            _collateralTokenIntra,
-            true
-        );
-        migrations[_migration] = r;
+        migrations[_migration] = true;
 
         emit Register(_migration);
     }
 
+    /// @inheritdoc IMigrationRegistry
+    function deactivate(address _migration) external override {
+        // TODO: access controll
+        require(migrations[_migration], "!active");
+        migrations[_migration] = false;
+        emit Deactivate(_migration);
+    }
+
+    /// @inheritdoc IMigrationRegistry
     function approve(address _factory) external override {
         // TODO: access control
-        require(!approved[_factory], "Already approved");
+        require(!approved[_factory], "approved");
         approved[_factory] = true;
         emit Approve(_factory);
     }
 
+    /// @inheritdoc IMigrationRegistry
     function unapprove(address _factory) external override {
         // TODO: access control
         require(approved[_factory], "!approved");
@@ -54,21 +45,13 @@ abstract contract MigrationRegistry is IMigrationRegistry {
         emit Unapprove(_factory);
     }
 
+    /// @inheritdoc IMigrationRegistry
     function isApproved(address _factory) external view override returns (bool) {
         return approved[_factory];
     }
 
-
-    function deactivate() external returns(uint256) {}
-
-    // TODO: function isActive() ?
-
-    // function getDetails(address recollater) external view override returns (
-    //     address migration,
-    //     address targetVault,
-    //     address collateralTokenStart,
-    //     address collateralTokenIntra,
-    //     address collateralTokenEnd,
-    //     bool active
-    // )
+    /// @inheritdoc IMigrationRegistry
+    function isActive(address _migration) external view override returns (bool) {
+        return migrations[_migration];
+    }
 }

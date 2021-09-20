@@ -1,52 +1,56 @@
+// const Details = artifacts.require("Details");
+const WeightedAverage = artifacts.require("WeightedAverage");
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
+const BancorZeroCurve = artifacts.require("BancorZeroCurve");
 const CurveRegistry = artifacts.require("CurveRegistry");
 const VaultRegistry = artifacts.require("VaultRegistry");
-const BancorZeroCurve = artifacts.require("BancorZeroCurve");
+const SingleAssetFactory = artifacts.require("SingleAssetFactory");
+const SingleAssetVault = artifacts.require("SingleAssetVault");
 const Foundry = artifacts.require("Foundry");
-const ERC20Mock = artifacts.require("ERC20Mock");
-const MockContract = artifacts.require("MockContract");
 const Hub = artifacts.require("Hub");
-const HubABI = require("../../abi/Hub.json")
+
+const DAI_ABI = require("../../abi/ERC20Burnable.json"); // TODO: verify
+const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+
 
 describe("MeTokenRegistry.sol", () => {
 
     before(async () => {
-        hub = await Hub.new();
+
+        DAI = await new web3.eth.Contract(DAI_ABI, DAI_ADDR);
+
+        // details = await Details.new();
+        weightedAverage = await WeightedAverage.new();
         foundry = await Foundry.new();
+        hub = await Hub.new();
+
+        curveRegistry = await CurveRegistry.new();
+        curve = await BancorZeroCurve.new();
+        await curveRegistry.register(curve.address);
+
+        vaultRegistry = await VaultRegistry.new();
+        vault = await SingleAssetVault.new();
+        vaultFactory = await SingleAssetFactory.new(vaultRegistry.address, vault.address);
+        await vaultRegistry.approve(vaultFactory.address);
+
+        await hub.initialize(foundry.address, vaultRegistry.address, curveRegistry.address);
+        await hub.register(vaultFactory.address, curve.address, DAI.address, 50000, "","");
+
         meTokenFactory = await MeTokenFactory.new(); // Should this be mocked?
         meTokenRegistry = await MeTokenRegistry.new(hub.address, meTokenFactory.address);
-        curveRegistry = await CurveRegistry.new();
-        vaultRegistry = await VaultRegistry.new();
-        curve = await BancorZeroCurve.new();
-        await curveRegistry.register("Test Curve", formula.address, curve.address);
     });
 
     describe("register()", () => {
 
         it("User can create a meToken with no collateral", async () => {
-            const mock = await MockContract.new();
-            const mockedHub = await Hub.at(mock.address);
-            await mockedHub.initialize(foundry.address, vaultRegistry.address, curveRegistry.address);
-            // when(hub.isActive(any)).thenReturn(expectedHubStatus)
-            const isActive = mockedHub.contract.methods.isActive(0).encodeABI();
-            await mock.givenMethodReturnBool(isActive, true)
-            // when(hub.getVault(any)).thenReturn(expectedHubVault)
-            const getVault = /*TODO: get using ABI*/ null;
-            const expectedVault = IVaultFactory(0).create(0, 0, 0); // FIXME: values here
-            await mock.givenMethodReturnAddress(getVault, expectedVault)
-            erc20Mock = await ERC20Mock.new("mock", "MOCK", 0, 0);
-            // when(erc20Mock.balanceOf(any)).thenReturn(0)
-            // when(hub.getCurve(any)).thenReturn(expectedHubCurve)
-            // when(curve.calculateMintReturn(any, any, any, any)).thenReturn(0)
+            await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
 
-            // when(erc20Mock.transferFrom(any)).thenReturn(0)  <- this is expected NOT to happen
-            // await meTokenRegistry.register
         });
 
-        // it("User can create a meToken with 100 USDT as collateral", async () => {
-
-        // });
+        it("User can create a meToken with 100 USDT as collateral", async () => {
+            await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
+        });
 
         // it("Emits Register()", async () => {
 
@@ -62,7 +66,7 @@ describe("MeTokenRegistry.sol", () => {
         });
     });
 
-    describe("is owner()", () => {
+    describe("isOwner()", () => {
         it("Returns false for address(0)", async () => {
 
         });

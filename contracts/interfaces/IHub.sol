@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {HubDetails} from "../libs/Details.sol"; 
+import "../libs/Details.sol"; 
 
 interface IHub {
 
     event Register(string name, address indexed vault);  // TODO: decide on arguments
     event Deactivate(uint id);
+
+    function subscribeMeToken(uint _id, address _meToken) external;
+
+    function getSubscribedMeTokenCount(uint _id) external view returns (uint);
+
+    function getSubscribedMeTokens(uint _id) external view returns (address[] memory);
     
     /// @notice Function to modify a hubs' status to INACTIVE
     /// @param id Unique hub identifier
@@ -38,7 +44,7 @@ interface IHub {
     /// @param id Unique hub identifier
     /// @return hubDetails Details of hub
     function getDetails(uint id) external view returns (
-        HubDetails memory hubDetails
+        Details.HubDetails memory hubDetails
     );
 
     /// @notice Helper to fetch only owner of hubDetails

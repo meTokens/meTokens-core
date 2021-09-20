@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/IVault.sol";
@@ -9,21 +10,33 @@ import "../interfaces/IERC20.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
-/// @notice Base vault contract inherited by all vaults
-contract Vault is IVault, Ownable {
+/// @notice Implementation contract for SingleAssetFactory.sol
+contract SingleAssetVault is IVault, Ownable, Initializable {
 
     uint256 private PRECISION = 10**18;
-    
-    address foundry = address(0x0);  // TODO
-    address gov = address(0x0);  // TODO
-    IVaultRegistry public vaultRegistry = IVaultRegistry(address(0)); // TODO
 
-	address internal token;
+    address private token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
     
+    constructor() {}
+
+    function initialize(
+        address _foundry,
+        address _token,
+        bytes memory _encodedAdditionalArgs
+    ) initializer public {
+        // TODO: access control?
+        token = _token;
+        encodedAdditionalArgs = _encodedAdditionalArgs;
+
+        // Approve Foundry to spend all collateral in vault
+        IERC20(token).approve(_foundry, 2**256 - 1);
+    }
+
     /// @inheritdoc IVault
-    function addFee(uint256 _amount) external onlyOwner override {
+    function addFee(uint256 _amount) external override {
+        // TODO: access control
         accruedFees = accruedFees + _amount;
         emit AddFee(_amount);
     }

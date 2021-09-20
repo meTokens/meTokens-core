@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "../../vaults/SingleAsset.sol";
+import "../../vaults/SingleAssetVault.sol";
 
 import "../../interfaces/IVaultRegistry.sol";
 import "../../interfaces/IVaultFactory.sol";
@@ -14,21 +14,15 @@ import "../../interfaces/IVaultFactory.sol";
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory is IVaultFactory {
 
-    modifier onlyHub() {
-        require(msg.sender == hub, "!hub");
-        _;
-    }
-
-
     uint256 private count;
-    address public hub;
     address public implementation;  // TODO: this will be the SingleAsset contract
+    address public foundry;
     IVaultRegistry public vaultRegistry;
 
-    constructor(address _hub, address _vaultRegistry, address _implementation) {
-        hub = _hub;
-        vaultRegistry = IVaultRegistry(_vaultRegistry);
+    constructor(address _implementation, address _foundry, address _vaultRegistry) {
         implementation = _implementation;
+        foundry = _foundry;
+        vaultRegistry = IVaultRegistry(_vaultRegistry);
     }
     
     /// @inheritdoc IVaultFactory
@@ -36,14 +30,15 @@ contract SingleAssetFactory is IVaultFactory {
         address _token,
         bytes memory _encodedAdditionalArgs
     ) external override returns (address vaultAddress) {
-
+        // TODO: access control
         vaultAddress = Clones.cloneDeterministic(
             implementation,
             bytes32(count++)
         );
 
         // create our vault
-        SingleAsset(vaultAddress).initialize(
+        SingleAssetVault(vaultAddress).initialize(
+            foundry,
             _token,
             _encodedAdditionalArgs
         );

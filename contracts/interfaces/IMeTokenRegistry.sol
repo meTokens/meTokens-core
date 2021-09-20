@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {MeTokenDetails} from "../libs/Details.sol";
+import "../libs/Details.sol";
 
 interface IMeTokenRegistry {
 
@@ -48,7 +48,7 @@ interface IMeTokenRegistry {
     function getDetails(
         address meToken
     ) external view returns (
-        MeTokenDetails memory meTokenDetails
+        Details.MeTokenDetails memory meTokenDetails
     );
 
     function transferOwnership(address _meToken, address _newOwner) external;
