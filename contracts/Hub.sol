@@ -82,7 +82,7 @@ contract Hub is Ownable, Initializable {
 
         // Create new vault
         // ALl new hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(address(this), _token, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
         HubDetails storage newHubDetails = hubs[count++];

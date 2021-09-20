@@ -16,8 +16,6 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     uint256 private PRECISION = 10**18;
 
     address private token;
-    bytes private encodedAdditionalArgs
-
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
     

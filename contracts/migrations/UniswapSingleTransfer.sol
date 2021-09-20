@@ -88,11 +88,11 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
 
     // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
-    function sumBalances(uint _hubId) external returns (uint) {
+    function sumBalances() external returns (uint) {
         sum = 0;
 
         // Loop through all subscribed meTokens
-        address[] memory subscribed = hub.getSubscribedMeTokens(_hubId);
+        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
 
         for (uint i=0; i<subscribed.length; i++) {
             address meToken = subscribed[i];
@@ -112,7 +112,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
         // Update balancePooled and balanceLocked
 
-        address[] memory subscribed = hub.getSubscribedMeTokens(_hubId);
+        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
 
 
         // Send token to new vault
