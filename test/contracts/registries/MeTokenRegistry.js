@@ -1,8 +1,9 @@
+// const Details = artifacts.require("Details");
+const WeightedAverage = artifacts.require("WeightedAverage");
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
 const BancorZeroCurve = artifacts.require("BancorZeroCurve");
 const CurveRegistry = artifacts.require("CurveRegistry");
-const BancorZeroCurve = artifacts.require("BancorZeroCurve");
 const VaultRegistry = artifacts.require("VaultRegistry");
 const SingleAssetFactory = artifacts.require("SingleAssetFactory");
 const SingleAssetVault = artifacts.require("SingleAssetVault");
@@ -10,14 +11,19 @@ const Foundry = artifacts.require("Foundry");
 const Hub = artifacts.require("Hub");
 
 const DAI_ABI = require("../../abi/ERC20Burnable.json"); // TODO: verify
-const DAI_ADDR = "0x0"; //  TODO
+const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 
 
 describe("MeTokenRegistry.sol", () => {
 
     before(async () => {
 
-        DAI = await new Contract(DAI_ABI, DAI_ADDR);
+        DAI = await new web3.eth.Contract(DAI_ABI, DAI_ADDR);
+
+        // details = await Details.new();
+        weightedAverage = await WeightedAverage.new();
+        foundry = await Foundry.new();
+        hub = await Hub.new();
 
         curveRegistry = await CurveRegistry.new();
         curve = await BancorZeroCurve.new();
@@ -28,8 +34,6 @@ describe("MeTokenRegistry.sol", () => {
         vaultFactory = await SingleAssetFactory.new(vaultRegistry.address, vault.address);
         await vaultRegistry.approve(vaultFactory.address);
 
-        foundry = await Foundry.new();
-        hub = await Hub.new();
         await hub.initialize(foundry.address, vaultRegistry.address, curveRegistry.address);
         await hub.register(vaultFactory.address, curve.address, DAI.address, 50000, "","");
 

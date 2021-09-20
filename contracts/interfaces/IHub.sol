@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {HubDetails} from "../libs/Details.sol"; 
+import "../libs/Details.sol"; 
 
 interface IHub {
 
@@ -44,7 +44,7 @@ interface IHub {
     /// @param id Unique hub identifier
     /// @return hubDetails Details of hub
     function getDetails(uint id) external view returns (
-        HubDetails memory hubDetails
+        Details.HubDetails memory hubDetails
     );
 
     /// @notice Helper to fetch only owner of hubDetails

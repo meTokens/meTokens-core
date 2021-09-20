@@ -15,7 +15,7 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 
 import "./libs/WeightedAverage.sol";
-import {MeTokenDetails, HubDetails} from "./libs/Details.sol";
+import "./libs/Details.sol";
 
 
 contract Foundry is IFoundry, Ownable, Initializable {
@@ -40,8 +40,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
 
     function mint(address _meToken, uint _tokensDeposited, address _recipient) external override {
-        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
-        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
+        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        Details.HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
         require(hubDetails.active, "Hub inactive");
 
         uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
@@ -80,8 +80,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
     function calculateMintReturn(
         address _meToken,
         uint _tokensDeposited,
-        MeTokenDetails memory _meTokenDetails,
-        HubDetails memory _hubDetails
+        Details.MeTokenDetails memory _meTokenDetails,
+        Details.HubDetails memory _hubDetails
     ) public view returns (uint meTokensMinted) {
 
         // Calculate return assuming update is not happening
@@ -125,8 +125,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
     function calculateBurnReturn(
         address _meToken,
         uint _meTokensBurned,
-        MeTokenDetails memory _meTokenDetails,
-        HubDetails memory _hubDetails
+        Details.MeTokenDetails memory _meTokenDetails,
+        Details.HubDetails memory _hubDetails
     ) public view returns (uint tokensReturned) {
 
         // Calculate return assuming update is not happening
@@ -171,8 +171,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
     /// @inheritdoc IFoundry
     function burn(address _meToken, uint256 _meTokensBurned , address _recipient) external override {
 
-        MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
-        HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
+        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
+        Details.HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
         require(hubDetails.active, "Hub inactive");
 
         // Calculate how many tokens tokens are returned

@@ -9,7 +9,7 @@ import  {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRout
 
 import "./Migration.sol";
 
-import {MeTokenDetails} from "../libs/Details.sol";
+import "../libs/Details.sol";
 
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -96,7 +96,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
         for (uint i=0; i<subscribed.length; i++) {
             address meToken = subscribed[i];
-            MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(meToken);
+            Details.MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(meToken);
             sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
         }
         return sum;

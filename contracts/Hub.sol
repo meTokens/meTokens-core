@@ -10,7 +10,7 @@ import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
 
-import {HubDetails, MeTokenDetails} from  "./libs/Details.sol";
+import "./libs/Details.sol";
 
 
 /// @title meToken hub
@@ -35,7 +35,7 @@ contract Hub is Ownable, Initializable {
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
 
-    mapping(uint => HubDetails) private hubs;
+    mapping(uint => Details.HubDetails) private hubs;
     mapping(uint => address[]) private subscribedMeTokens;
 
     function subscribeMeToken(uint _id, address _meToken) public exists (_id) {
@@ -85,7 +85,7 @@ contract Hub is Ownable, Initializable {
         address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
 
         // Save the hub to the registry
-        HubDetails storage newHubDetails = hubs[count++];
+        Details.HubDetails storage newHubDetails = hubs[count++];
         newHubDetails.active =  true;
         newHubDetails.vault = vault;
         newHubDetails.curve = _curve;
@@ -123,7 +123,7 @@ contract Hub is Ownable, Initializable {
         );
 
         bool curveDetails;
-        HubDetails storage hubDetails = hubs[_id];
+        Details.HubDetails storage hubDetails = hubs[_id];
         require(!hubDetails.updating, "already updating");
         // First, do all checks
         if (_targetRefundRatio != 0) {
@@ -170,7 +170,7 @@ contract Hub is Ownable, Initializable {
     ) external {
         // TODO: only callable from foundry
 
-        HubDetails storage hubDetails = hubs[id];
+        Details.HubDetails storage hubDetails = hubs[id];
         if (hubDetails.targetRefundRatio != 0) {
             hubDetails.refundRatio = hubDetails.targetRefundRatio;
             hubDetails.targetRefundRatio = 0;
@@ -197,30 +197,30 @@ contract Hub is Ownable, Initializable {
     }
 
     function isActive(uint id) public view returns (bool) {
-        HubDetails memory hubDetails = hubs[id];
+        Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.active;
     }
 
     function getRefundRatio(uint id) external view exists(id) returns (uint) {
-        HubDetails memory hubDetails = hubs[id];
+        Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.refundRatio;
     }
 
     function getDetails(
         uint id
     ) external view exists(id) returns (
-        HubDetails memory hubDetails
+        Details.HubDetails memory hubDetails
     ) {
         hubDetails = hubs[id];
     }
 
     function getCurve(uint id) external view exists(id) returns (address) {
-        HubDetails memory hubDetails = hubs[id];
+        Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.curve;
     }
 
     function getVault(uint id) external view exists(id) returns (address) {
-        HubDetails memory hubDetails = hubs[id];
+        Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.vault;
     }
 

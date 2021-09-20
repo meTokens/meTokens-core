@@ -10,7 +10,7 @@ import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
 
-import {HubDetails} from "./libs/Details.sol";
+import "./libs/Details.sol";
 
 
 /// @title meToken Updater
@@ -71,7 +71,7 @@ contract Updater is IUpdater, Ownable {
         );
 
         bool curveDetails;
-        HubDetails memory hubDetails = hub.getDetails(_hubId);
+        Details.HubDetails memory hubDetails = hub.getDetails(_hubId);
         require(!hubDetails.updating, "already updating");
 
         if (_targetRefundRatio != 0) {
