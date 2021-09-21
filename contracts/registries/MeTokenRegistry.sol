@@ -19,6 +19,7 @@ import "../libs/Details.sol";
 /// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
+    uint private immutable PRECISION = 10**18;
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
 
@@ -90,14 +91,15 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
-    function updateBalances(address _meToken, uint[] memory _vaultRatios) external {
+    function updateBalances(address _meToken, uint[] memory _vaultRatios) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         
-        uint numRatios = _vaultRatios.length;
-        for (uint i=meTokenDetails.positionOfLastRatio; i=numRatios; i++) {
-
+        for (uint i=meTokenDetails.positionOfLastRatio; i<_vaultRatios.length; i++) {
+            meTokenDetails.balancePooled *= _vaultRatios[i] / PRECISION;
+            meTokenDetails.balanceLocked *= _vaultRatios[i] / PRECISION;
         }
+        meTokenDetails.positionOfLastRatio = i;
     }
 
     /// @inheritdoc IMeTokenRegistry
