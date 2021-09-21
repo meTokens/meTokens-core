@@ -134,10 +134,9 @@ contract Hub is Ownable, Initializable {
             }
             curveDetails = true;
         }
-
-
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-            // TODO
+        // NOTE: we already checked both of them, so safe to assume they're both non-zero
+        if (_migrationVault != address(0)) {
+            hubDe
         }
 
         if (_targetRefundRatio != 0) {

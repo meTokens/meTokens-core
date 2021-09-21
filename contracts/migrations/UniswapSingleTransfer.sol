@@ -25,8 +25,8 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
+    uint public ratio;
     uint public hubId;
-    uint public sum;
     address public initialVault;
     address public targetVault;
     bool private finished;
@@ -49,7 +49,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         uint _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault,
+        address _targetVault
     ) external initializer onlyOwner {
         
         require(migrationRegistry.isApproved(msg.sender), "!approved");
@@ -83,16 +83,20 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         // The call to `exactInputSingle` executes the swap.
         amountOut = router.exactInputSingle(params);
 
+        _setRatio();
         swapped = true;
     }    
 
+    function _setRatio() internal {
+        uint balanceTotal = IERC20(tokenIn).balanceOf(initialVault);
+        uint balanceAfterFees = balanceTotal - IVault(initialVault).getAccruedFees();
+        ratio = PRECISION * balanceAfterFees / amountOut;
+    }
 
     // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
     function updateBalances() external {
 
-        uint balanceTotal = IERC20(tokenIn).balanceOf(initialVault);
-        uint balanceAfterFees = balanceTotal - IVault(initialVault).getAccruedFees();
-        uint ratio = PRECISION * balanceAfterFees / amountOut;
+
 
         // Loop through all subscribed meTokens
         address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
@@ -126,5 +130,7 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     function hasFinished() external view returns (bool) {
         return swapped && finished;
     }
+
+
 
 }

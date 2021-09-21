@@ -90,6 +90,15 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
+    function updateBalances(address _meToken, uint[] memory _vaultRatios) external {
+        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        
+        uint numRatios = _vaultRatios.length;
+        for (uint i=meTokenDetails.positionOfLastRatio; i=numRatios; i++) {
+
+        }
+    }
 
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {

@@ -42,7 +42,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
     function mint(address _meToken, uint _tokensDeposited, address _recipient) external override {
         Details.MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(_meToken);
         Details.HubDetails memory hubDetails = hub.getDetails(meTokenDetails.hubId);
+
         require(hubDetails.active, "Hub inactive");
+        if (meTokenDetails.positionOfLastRatio < hubDetails.vaultRatios.length) {
+            // Update meToken balancePooled & balanceLocked
+            meTokenRegistry.updateBalances(_meToken, hubDetails.vaultRatios);
+        }
 
         uint256 fee = _tokensDeposited * fees.mintFee() / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
