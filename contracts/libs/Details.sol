@@ -12,6 +12,7 @@ library Details {
         uint endTime;
 
         uint targetHub;
+        uint positionOfLastRatio;
     }
 
     struct HubDetails {
@@ -30,6 +31,8 @@ library Details {
         bool curveDetails;
         address targetCurve;
         uint targetRefundRatio;
+
+        uint[] vaultRatios;
     }
 
     struct BancorDetails {

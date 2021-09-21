@@ -56,6 +56,9 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
         emit Withdraw(_amount, _to);
     }
 
+    function getAccruedFees() external view returns (uint) {
+        return accruedFees;
+    }
 
     /// @inheritdoc IVault
     function getToken() external view override returns (address) {

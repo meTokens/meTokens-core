@@ -38,9 +38,8 @@ contract UniswapSingleTransferFactory {
         UniswapSingleTransfer(migrationVault).initialize(
             _hubId,
             _owner,
+            _initialVault,
             _targetVault,
-            IVault(_initialVault).getToken(),
-            IVault(_targetVault).getToken()
         );
 
         // Add migration to migrationRegistry

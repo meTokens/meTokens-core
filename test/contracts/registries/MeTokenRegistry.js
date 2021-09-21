@@ -1,4 +1,4 @@
-// const Details = artifacts.require("Details");
+const Details = artifacts.require("Details");
 const WeightedAverage = artifacts.require("WeightedAverage");
 const MeTokenRegistry = artifacts.require("MeTokenRegistry");
 const MeTokenFactory = artifacts.require("MeTokenFactory");
@@ -20,7 +20,7 @@ describe("MeTokenRegistry.sol", () => {
 
         DAI = await new web3.eth.Contract(DAI_ABI, DAI_ADDR);
 
-        // details = await Details.new();
+        details = await Details.new();
         weightedAverage = await WeightedAverage.new();
         foundry = await Foundry.new();
         hub = await Hub.new();

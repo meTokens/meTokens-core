@@ -11,6 +11,8 @@ import "./Migration.sol";
 
 import "../libs/Details.sol";
 
+import "../interfaces/IVault.sol";
+
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson)
@@ -24,6 +26,8 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     uint public hubId;
+    uint public sum;
+    address public initialVault;
     address public targetVault;
     bool private finished;
     bool private swapped;   
@@ -38,19 +42,14 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
     uint24 private immutable fee = 3000; // NOTE: 0.3%
     uint public amountIn;
     uint public amountOut;
-    uint public sum;
-
-    
 
     constructor () {}
-
 
     function initialize(
         uint _hubId,
         address _owner,
+        address _initialVault,
         address _targetVault,
-        address _tokenIn,
-        address _tokenOut
     ) external initializer onlyOwner {
         
         require(migrationRegistry.isApproved(msg.sender), "!approved");
@@ -58,9 +57,10 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
         hubId = _hubId;
 
-        tokenIn = _tokenIn;
-        tokenOut = _tokenOut;
+        initialVault = _initialVault;
         targetVault = _targetVault;
+        tokenIn = IVault(_initialVault).getToken();
+        tokenOut = IVault(_targetVault).getToken();
     }
 
     // Trades vault.getToken() to targetVault.getToken();
@@ -88,19 +88,21 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
 
 
     // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
-    function sumBalances() external returns (uint) {
-        sum = 0;
+    function updateBalances() external {
+
+        uint balanceTotal = IERC20(tokenIn).balanceOf(initialVault);
+        uint balanceAfterFees = balanceTotal - IVault(initialVault).getAccruedFees();
+        uint ratio = PRECISION * balanceAfterFees / amountOut;
 
         // Loop through all subscribed meTokens
         address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
 
         for (uint i=0; i<subscribed.length; i++) {
             address meToken = subscribed[i];
-            Details.MeTokenDetails memory meTokenDetails = meTokenRegistry.getDetails(meToken);
-            sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
+            meTokenRegistry.updateBalances(meToken, ratio);
         }
-        return sum;
     }
+
 
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
