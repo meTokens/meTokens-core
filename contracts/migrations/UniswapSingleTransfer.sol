@@ -123,4 +123,8 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         finished = true;
     }
 
+    function hasFinished() external view returns (bool) {
+        return swapped && finished;
+    }
+
 }

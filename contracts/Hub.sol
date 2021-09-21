@@ -9,6 +9,7 @@ import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
+import "./interfaces/IMigrationVault.sol";
 
 import "./libs/Details.sol";
 
@@ -37,18 +38,6 @@ contract Hub is Ownable, Initializable {
 
     mapping(uint => Details.HubDetails) private hubs;
     mapping(uint => address[]) private subscribedMeTokens;
-
-    function subscribeMeToken(uint _id, address _meToken) public exists (_id) {
-        subscribedMeTokens[_id].push(_meToken);
-    }
-
-    function getSubscribedMeTokenCount(uint _id) public view returns (uint) {
-        return subscribedMeTokens[_id].length;
-    }
-    function getSubscribedMeTokens(uint _id) external view returns (address[] memory) {
-        return subscribedMeTokens[_id];
-    }
-
 
     constructor() {}
 
@@ -131,6 +120,11 @@ contract Hub is Ownable, Initializable {
             require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
         }
 
+        // TODO: check that _migrationVault and _targetVault are valid vaults
+        if (_migrationVault != address(0) || _targetVault != address(0)) {
+            require(_migrationVault!= address(0) && _targetVault != address(0), "Need to set both _migrationVault and _targetVault");
+        }
+
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
                 ICurve(hubDetails.curve).registerTarget(_id, _encodedCurveDetails);
@@ -164,13 +158,21 @@ contract Hub is Ownable, Initializable {
     }
 
 
-
     function finishUpdate(
         uint id
     ) external {
         // TODO: only callable from foundry
-
         Details.HubDetails storage hubDetails = hubs[id];
+
+        if (hubDetails.migrationVault != address(0)) {
+            require(IMigrationVault(hubDetails.migrationVault).hasFinished(), "!finished");
+            // TODO: add vaultRatio
+            uint vaultRatio = IMigrationVault(hubDetails.migrationVault).getRatio();
+            hubDetails.vaultRatios.push(0);
+
+            hubDetails.vault = hubDetails.targetVault;
+        }
+
         if (hubDetails.targetRefundRatio != 0) {
             hubDetails.refundRatio = hubDetails.targetRefundRatio;
             hubDetails.targetRefundRatio = 0;
@@ -187,6 +189,7 @@ contract Hub is Ownable, Initializable {
             hubDetails.curveDetails = false;
         }
 
+
         hubDetails.updating = false;
     }
 
@@ -194,6 +197,17 @@ contract Hub is Ownable, Initializable {
 
     // TODO: should hubs have owners?
     function getOwner(uint id) public view exists(id) returns (address) {
+    }
+
+    function subscribeMeToken(uint _id, address _meToken) public exists (_id) {
+        subscribedMeTokens[_id].push(_meToken);
+    }
+
+    function getSubscribedMeTokenCount(uint _id) public view returns (uint) {
+        return subscribedMeTokens[_id].length;
+    }
+    function getSubscribedMeTokens(uint _id) external view returns (address[] memory) {
+        return subscribedMeTokens[_id];
     }
 
     function isActive(uint id) public view returns (bool) {
