@@ -83,35 +83,20 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         // The call to `exactInputSingle` executes the swap.
         amountOut = router.exactInputSingle(params);
 
-        _setRatio();
+        // Set ratio based on balance after fees
+
         swapped = true;
     }    
 
     function _setRatio() internal {
-        uint balanceTotal = IERC20(tokenIn).balanceOf(initialVault);
         uint balanceAfterFees = balanceTotal - IVault(initialVault).getAccruedFees();
         ratio = PRECISION * balanceAfterFees / amountOut;
-    }
-
-    // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
-    function updateBalances() external {
-
-
-
-        // Loop through all subscribed meTokens
-        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
-
-        for (uint i=0; i<subscribed.length; i++) {
-            address meToken = subscribed[i];
-            meTokenRegistry.updateBalances(meToken, ratio);
-        }
     }
 
 
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
         require(swapped && !finished);
-        require(sum > 0, "sum not set");
 
         // Determine rate of conversion
         uint rate = PRECISION * amountIn / amountOut;
