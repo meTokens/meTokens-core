@@ -22,6 +22,7 @@
     "lint:prettier": "prettier --ignore-path .gitignore --write \"{*,**/*}.{ts,js,json,md,sol}\"",
     "lint": "yarn lint:prettier  && yarn run lint:sol",
     "deploy-local": "hardhat run scripts/deploy.ts --network hardhat",
+    "deploy-rinkeby": "hardhat run scripts/deploy.ts --network rinkeby",
     "prepare": "husky install"
   },
   "lint-staged": {

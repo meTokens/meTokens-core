@@ -1,3 +1,5 @@
+const { off } = require("process");
+
 module.exports = {
   extends: "solhint:recommended",
   plugins: ["prettier"],

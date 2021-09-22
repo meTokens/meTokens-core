@@ -13,7 +13,7 @@ import "hardhat-abi-exporter";
 
 dotenv.config();
 const {
-  INFURA,
+  INFURA_KEY,
   ALCHEMY_API_KEY,
   PRIVATE_KEY,
   MNEMONIC,
@@ -51,7 +51,7 @@ const networks = ["mainnet", "rinkeby"];
 const makeNetwork = (_network: string) => {
   if (INFURA_NETWORKS.includes(_network))
     return {
-      url: `https://${_network}.infura.io/v3/${INFURA}`,
+      url: `https://${_network}.infura.io/v3/${INFURA_KEY}`,
       accounts,
     };
 
@@ -82,6 +82,9 @@ const config: HardhatUserConfig = {
   mocha: {
     timeout: 60000, // Here is 2min but can be whatever timeout is suitable for you.
   },
+  namedAccounts: {
+    DAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  },
   networks: {
     hardhat: {
       forking: {
@@ -89,8 +92,6 @@ const config: HardhatUserConfig = {
         accounts,
       },
       gas: "auto",
-      blockGasLimit: 0x1fffffffffffff,
-      allowUnlimitedContractSize: true, // Do we really need that ?
       timeout: 1800000,
     },
     ...networks.reduce((obj: any, entry) => {
