@@ -13,10 +13,12 @@ import "../interfaces/IERC20.sol";
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is IVault, Ownable, Initializable {
 
-    uint256 private PRECISION = 10**18;
+    uint private PRECISION = 10**18;
 
+    address private migration;
+    bool private migrated;
     address private token;
-    uint256 public accruedFees;
+    uint public accruedFees;
     bytes public encodedAdditionalArgs;
     
     constructor() {}
@@ -35,15 +37,31 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     }
 
     /// @inheritdoc IVault
-    function addFee(uint256 _amount) external override {
+    function addFee(uint _amount) external override {
         // TODO: access control
-        accruedFees = accruedFees + _amount;
+        accruedFees += _amount;
         emit AddFee(_amount);
+    }
+
+    function startMigration(address _migration) external {
+        // TODO: access control
+        require(migration == address(0), "migration set");
+        migration = _migration;
+
+        emit StartMigration(_migration);
+    }
+
+    function migrate() external {
+        // TODO: access control
+        require(!migrated, "migated");
+        uint balanceAfterFees = IERC20(token).balanceOf(address(this)) - accruedFees;
+        IERC20(token).transfer(migration, balanceAfterFees);
+        emit Migrate();
     }
 
 
     /// @inheritdoc IVault
-    function withdraw(bool _max, uint256 _amount, address _to) external onlyOwner override {
+    function withdraw(bool _max, uint _amount, address _to) external onlyOwner override {
         if (_max) {
             _amount = accruedFees;
         } else {
@@ -51,12 +69,12 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
         }
 
         IERC20(token).transfer(_to, _amount);
-        accruedFees = accruedFees - _amount;
+        accruedFees -= _amount;
 
         emit Withdraw(_amount, _to);
     }
 
-    function getAccruedFees() external view returns (uint) {
+    function getAccruedFees() external view override returns (uint) {
         return accruedFees;
     }
 

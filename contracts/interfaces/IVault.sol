@@ -5,6 +5,8 @@ interface IVault {
 
     event Withdraw(uint256 amount, address to);
     event AddFee(uint256 amount);
+    event StartMigration(address migration);
+    event Migrate();
     
     function addFee(uint256 amount) external;
     function withdraw(bool max, uint256 amount, address to) external;
