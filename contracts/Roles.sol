@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract Roles is AccessControl {
-
     bytes32 public constant DEVELOPER = keccak256("DEVELOPER");
     bytes32 public constant DAO_MULTISIG = keccak256("DAO_MULTISIG");
     bytes32 public constant DEV_MULTISIG = keccak256("DEV_MULTISIG");
@@ -16,9 +15,7 @@ contract Roles is AccessControl {
     address private foundry;
     address private meTokenRegistry;
 
-
-    constructor () {
-
+    constructor() {
         _setupRole(DEVELOPER, msg.sender);
         _setupRole(DEFAULT_ADMIN_ROLE, daoMultisig);
         _setupRole(DAO_MULTISIG, daoMultisig);

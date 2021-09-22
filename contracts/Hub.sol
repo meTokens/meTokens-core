@@ -12,43 +12,52 @@ import "./interfaces/ICurve.sol";
 
 import "./libs/Details.sol";
 
-
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens
 contract Hub is Ownable, Initializable {
-
-    modifier exists(uint id) {
+    modifier exists(uint256 id) {
         require(id <= count, "id exceeds count");
         _;
     }
 
-    uint private immutable PRECISION = 10**18;
+    uint256 private immutable PRECISION = 10**18;
     uint256 private _minSecondsUntilStart = 0; // TODO
     uint256 private _maxSecondsUntilStart = 0; // TODO
     uint256 private _minDuration = 0; // TODO
     uint256 private _maxDuration = 0; // TODO
 
-    uint private count;
+    uint256 private count;
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
 
-    mapping(uint => Details.HubDetails) private hubs;
-    mapping(uint => address[]) private subscribedMeTokens;
+    mapping(uint256 => Details.HubDetails) private hubs;
+    mapping(uint256 => address[]) private subscribedMeTokens;
 
-    function subscribeMeToken(uint _id, address _meToken) public exists (_id) {
+    function subscribeMeToken(uint256 _id, address _meToken)
+        public
+        exists(_id)
+    {
         subscribedMeTokens[_id].push(_meToken);
     }
 
-    function getSubscribedMeTokenCount(uint _id) public view returns (uint) {
+    function getSubscribedMeTokenCount(uint256 _id)
+        public
+        view
+        returns (uint256)
+    {
         return subscribedMeTokens[_id].length;
     }
-    function getSubscribedMeTokens(uint _id) external view returns (address[] memory) {
+
+    function getSubscribedMeTokens(uint256 _id)
+        external
+        view
+        returns (address[] memory)
+    {
         return subscribedMeTokens[_id];
     }
-
 
     constructor() {}
 
@@ -62,19 +71,21 @@ contract Hub is Ownable, Initializable {
         curveRegistry = ICurveRegistry(_curveRegistry);
     }
 
-
     function register(
         address _vaultFactory,
         address _curve,
         address _token,
-        uint _refundRatio,
+        uint256 _refundRatio,
         bytes memory _encodedValueSetArgs,
         bytes memory _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
 
         require(curveRegistry.isActive(_curve), "_curve !approved");
-        require(vaultRegistry.isApproved(_vaultFactory), "_vaultFactory !approved");
+        require(
+            vaultRegistry.isApproved(_vaultFactory),
+            "_vaultFactory !approved"
+        );
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
 
         // Store value set base paramaters to `{CurveName}.sol`
@@ -82,11 +93,14 @@ contract Hub is Ownable, Initializable {
 
         // Create new vault
         // ALl new hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(_token, _encodedVaultAdditionalArgs);
+        address vault = IVaultFactory(_vaultFactory).create(
+            _token,
+            _encodedVaultAdditionalArgs
+        );
 
         // Save the hub to the registry
         Details.HubDetails storage newHubDetails = hubs[count++];
-        newHubDetails.active =  true;
+        newHubDetails.active = true;
         newHubDetails.vault = vault;
         newHubDetails.curve = _curve;
         newHubDetails.refundRatio = _refundRatio;
@@ -95,7 +109,7 @@ contract Hub is Ownable, Initializable {
     // TODO: reference BancorZeroCurve.sol
     function registerTarget() public {}
 
-    function deactivate(uint id) external exists(id) {
+    function deactivate(uint256 id) external exists(id) {
         // TODO: access control
         // emit Deactivate(id);
     }
@@ -110,15 +124,13 @@ contract Hub is Ownable, Initializable {
         uint256 _startTime,
         uint256 _duration
     ) external {
-
         require(
             _startTime - block.timestamp >= _minSecondsUntilStart &&
-            _startTime - block.timestamp <= _maxSecondsUntilStart,
+                _startTime - block.timestamp <= _maxSecondsUntilStart,
             "Unacceptable _startTime"
         );
         require(
-            _minDuration <= _duration &&
-            _maxDuration >= _duration,
+            _minDuration <= _duration && _maxDuration >= _duration,
             "Unacceptable update duration"
         );
 
@@ -128,19 +140,28 @@ contract Hub is Ownable, Initializable {
         // First, do all checks
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-            require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
+            require(
+                _targetRefundRatio != hubDetails.refundRatio,
+                "_targetRefundRatio == refundRatio"
+            );
         }
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hubDetails.curve).registerTarget(_id, _encodedCurveDetails);
-            } else {  // _targetCurve != address(0))
-                require(curveRegistry.isActive(_targetCurve), "_targetCurve inactive");
+                ICurve(hubDetails.curve).registerTarget(
+                    _id,
+                    _encodedCurveDetails
+                );
+            } else {
+                // _targetCurve != address(0))
+                require(
+                    curveRegistry.isActive(_targetCurve),
+                    "_targetCurve inactive"
+                );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
             }
             curveDetails = true;
         }
-
 
         if (_migrationVault != address(0) && _targetVault != address(0)) {
             // TODO
@@ -163,11 +184,7 @@ contract Hub is Ownable, Initializable {
         hubDetails.endTime = _startTime + _duration;
     }
 
-
-
-    function finishUpdate(
-        uint id
-    ) external {
+    function finishUpdate(uint256 id) external {
         // TODO: only callable from foundry
 
         Details.HubDetails storage hubDetails = hubs[id];
@@ -190,38 +207,44 @@ contract Hub is Ownable, Initializable {
         hubDetails.updating = false;
     }
 
-    function getCount() external view returns (uint) {return count;}
-
-    // TODO: should hubs have owners?
-    function getOwner(uint id) public view exists(id) returns (address) {
+    function getCount() external view returns (uint256) {
+        return count;
     }
 
-    function isActive(uint id) public view returns (bool) {
+    // TODO: should hubs have owners?
+    function getOwner(uint256 id) public view exists(id) returns (address) {}
+
+    function isActive(uint256 id) public view returns (bool) {
         Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.active;
     }
 
-    function getRefundRatio(uint id) external view exists(id) returns (uint) {
+    function getRefundRatio(uint256 id)
+        external
+        view
+        exists(id)
+        returns (uint256)
+    {
         Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.refundRatio;
     }
 
-    function getDetails(
-        uint id
-    ) external view exists(id) returns (
-        Details.HubDetails memory hubDetails
-    ) {
+    function getDetails(uint256 id)
+        external
+        view
+        exists(id)
+        returns (Details.HubDetails memory hubDetails)
+    {
         hubDetails = hubs[id];
     }
 
-    function getCurve(uint id) external view exists(id) returns (address) {
+    function getCurve(uint256 id) external view exists(id) returns (address) {
         Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.curve;
     }
 
-    function getVault(uint id) external view exists(id) returns (address) {
+    function getVault(uint256 id) external view exists(id) returns (address) {
         Details.HubDetails memory hubDetails = hubs[id];
         return hubDetails.vault;
     }
-
 }

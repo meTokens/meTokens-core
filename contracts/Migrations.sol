@@ -3,12 +3,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
 /// @title meToken Migrations
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage migration settings
 contract Migrations is Ownable {
-
     event FinishUpdate(uint256 hubId);
     event SetMinSecondsUntilStart(uint256 amount);
     event SetMaxSecondsUntilStart(uint256 amount);
@@ -37,29 +35,40 @@ contract Migrations is Ownable {
     }
 
     function setMinSecondsUntilStart(uint256 amount) external onlyOwner {
-        require(amount != _minSecondsUntilStart && amount < BLOCK_MAX, "out of range");
+        require(
+            amount != _minSecondsUntilStart && amount < BLOCK_MAX,
+            "out of range"
+        );
         _minSecondsUntilStart = amount;
         emit SetMinSecondsUntilStart(amount);
     }
 
     function setMaxSecondsUntilStart(uint256 amount) external onlyOwner {
-        require(amount != _maxSecondsUntilStart && amount < BLOCK_MAX, "out of range");
+        require(
+            amount != _maxSecondsUntilStart && amount < BLOCK_MAX,
+            "out of range"
+        );
         _maxSecondsUntilStart = amount;
         emit SetMaxSecondsUntilStart(amount);
     }
 
     function setMinUpdateDuration(uint256 amount) external onlyOwner {
-        require(amount != _minUpdateDuration && amount < BLOCK_MAX, "out of range");
+        require(
+            amount != _minUpdateDuration && amount < BLOCK_MAX,
+            "out of range"
+        );
         _minUpdateDuration = amount;
         emit SetMinUpdateDuration(amount);
     }
 
     function setMaxUpdateDuration(uint256 amount) external onlyOwner {
-        require(amount != _maxUpdateDuration && amount < BLOCK_MAX, "out of range");
+        require(
+            amount != _maxUpdateDuration && amount < BLOCK_MAX,
+            "out of range"
+        );
         _maxUpdateDuration = amount;
         emit SetMaxUpdateDuration(amount);
     }
-
 
     function minSecondsUntilStart() public view returns (uint256) {
         return _minSecondsUntilStart;
@@ -76,5 +85,4 @@ contract Migrations is Ownable {
     function maxUpdateDuration() public view returns (uint256) {
         return _maxUpdateDuration;
     }
-
 }

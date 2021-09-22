@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 library WeightedAverage {
-
     uint256 constant PRECISION = 10**18;
 
     /*
@@ -39,18 +38,32 @@ library WeightedAverage {
         uint256 targetAmount,
         uint256 startTime,
         uint256 endTime
-    ) external view returns (uint256)
-    {
-        if (block.timestamp < startTime) { // Update hasn't started, apply no weighting
+    ) external view returns (uint256) {
+        if (block.timestamp < startTime) {
+            // Update hasn't started, apply no weighting
             return amount;
-        } else if (block.timestamp > endTime) {  // Update is over, return target amount
+        } else if (block.timestamp > endTime) {
+            // Update is over, return target amount
             return targetAmount;
-        } else {  // Currently in an update, return weighted average
+        } else {
+            // Currently in an update, return weighted average
             if (targetAmount > amount) {
-                return ( PRECISION*amount + PRECISION * (targetAmount - amount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
+                return
+                    (PRECISION *
+                        amount +
+                        (PRECISION *
+                            (targetAmount - amount) *
+                            (block.timestamp - startTime)) /
+                        (endTime - startTime)) / PRECISION;
             } else {
-                return ( PRECISION*amount - PRECISION * (amount - targetAmount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
-             }
+                return
+                    (PRECISION *
+                        amount -
+                        (PRECISION *
+                            (amount - targetAmount) *
+                            (block.timestamp - startTime)) /
+                        (endTime - startTime)) / PRECISION;
+            }
         }
-    } 
+    }
 }

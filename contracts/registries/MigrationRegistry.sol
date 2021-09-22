@@ -5,16 +5,13 @@ import "../interfaces/IMigrationRegistry.sol";
 
 /// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
-/// @notice Keeps track of all used migration strategies 
+/// @notice Keeps track of all used migration strategies
 abstract contract MigrationRegistry is IMigrationRegistry {
-
-	mapping (address => bool) private migrations;
-    mapping (address => bool) private approved;
+    mapping(address => bool) private migrations;
+    mapping(address => bool) private approved;
 
     /// @inheritdoc IMigrationRegistry
-    function register(
-        address _migration
-    ) external override{
+    function register(address _migration) external override {
         require(approved[msg.sender], "!approved");
         migrations[_migration] = true;
 
@@ -46,12 +43,22 @@ abstract contract MigrationRegistry is IMigrationRegistry {
     }
 
     /// @inheritdoc IMigrationRegistry
-    function isApproved(address _factory) external view override returns (bool) {
+    function isApproved(address _factory)
+        external
+        view
+        override
+        returns (bool)
+    {
         return approved[_factory];
     }
 
     /// @inheritdoc IMigrationRegistry
-    function isActive(address _migration) external view override returns (bool) {
+    function isActive(address _migration)
+        external
+        view
+        override
+        returns (bool)
+    {
         return migrations[_migration];
     }
 }

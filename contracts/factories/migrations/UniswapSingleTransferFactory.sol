@@ -7,9 +7,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "../../interfaces/IMigrationRegistry.sol";
 import "../../interfaces/IVault.sol";
 
-
 contract UniswapSingleTransferFactory {
-
     event Create(address migration);
 
     uint256 public count;
@@ -17,22 +15,28 @@ contract UniswapSingleTransferFactory {
     address public implementation;
     IMigrationRegistry public migrationRegistry;
 
-    constructor(address _hub, address _migrationRegistry, address _implementation) {
+    constructor(
+        address _hub,
+        address _migrationRegistry,
+        address _implementation
+    ) {
         hub = _hub;
         migrationRegistry = IMigrationRegistry(_migrationRegistry);
         implementation = _implementation;
     }
-    
 
     function create(
-        uint _hubId,
+        uint256 _hubId,
         address _owner,
         address _initialVault,
         address _targetVault,
         bytes memory _encodedmigrationAdditionalArgs // NOTE: potentially needed for other migrations
     ) external returns (address) {
         // TODO: access control
-        address migrationVault = Clones.cloneDeterministic(implementation, bytes32(count++));
+        address migrationVault = Clones.cloneDeterministic(
+            implementation,
+            bytes32(count++)
+        );
 
         // create our migration
         UniswapSingleTransfer(migrationVault).initialize(

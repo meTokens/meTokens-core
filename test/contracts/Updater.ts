@@ -1,17 +1,14 @@
 const Updater = artifacts.require("Updater");
 
 describe("Updater.sol", () => {
+  let updater;
 
-    let updater;
+  const args = [];
 
-    let args = [
-
-    ]
-
-    before(async () => {
-        updater = await Updater.new();
-    });
-    /*
+  before(async () => {
+    updater = await Updater.new();
+  });
+  /*
     describe("initUpdate()", () => {
 
         it("Expect _startTime revert when out of range", async () => {
@@ -46,5 +43,4 @@ describe("Updater.sol", () => {
 
     });
     */
-
 });

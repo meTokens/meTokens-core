@@ -13,23 +13,20 @@ import "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
 
-
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistry is IMeTokenRegistry, Roles {
-
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
 
-    mapping (address => Details.MeTokenDetails) private meTokens; // key pair: ERC20 address
-    mapping (address => address) private owners;  // key: address of owner, value: address of meToken
+    mapping(address => Details.MeTokenDetails) private meTokens; // key pair: ERC20 address
+    mapping(address => address) private owners; // key: address of owner, value: address of meToken
 
     constructor(address _hub, address _meTokenFactory) {
         hub = IHub(_hub);
         meTokenFactory = IMeTokenFactory(_meTokenFactory);
     }
-
 
     /// @inheritdoc IMeTokenRegistry
     function register(
@@ -47,7 +44,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         // and then the collateral asset tied to that vault
         address token = IVault(hubDetails.vault).getToken();
         if (_tokensDeposited > 0) {
-            require(IERC20(token).transferFrom(msg.sender, hubDetails.vault, _tokensDeposited), "transfer failed");
+            require(
+                IERC20(token).transferFrom(
+                    msg.sender,
+                    hubDetails.vault,
+                    _tokensDeposited
+                ),
+                "transfer failed"
+            );
         }
 
         // Create meToken erc20 contract
@@ -55,12 +59,13 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
-            uint256 meTokensMinted = ICurve(hubDetails.curve).calculateMintReturn(
-                _tokensDeposited,  // _deposit_amount
-                _hubId,                // _hubId
-                0,                      // _supply
-                0                       // _balancePooled
-            );
+            uint256 meTokensMinted = ICurve(hubDetails.curve)
+                .calculateMintReturn(
+                    _tokensDeposited, // _deposit_amount
+                    _hubId, // _hubId
+                    0, // _supply
+                    0 // _balancePooled
+                );
             IMeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
         }
 
@@ -68,7 +73,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         owners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeTokenDetails storage newMeTokenDetails = meTokens[meTokenAddr];
+        Details.MeTokenDetails storage newMeTokenDetails = meTokens[
+            meTokenAddr
+        ];
         newMeTokenDetails.owner = msg.sender;
         newMeTokenDetails.hubId = _hubId;
         newMeTokenDetails.balancePooled = _tokensDeposited;
@@ -76,9 +83,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
-
     /// @inheritdoc IMeTokenRegistry
-    function transferOwnership(address _meToken, address _newOwner) external override {
+    function transferOwnership(address _meToken, address _newOwner)
+        external
+        override
+    {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
         Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         require(msg.sender == meTokenDetails.owner, "!owner");
@@ -90,9 +99,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
-
     /// @inheritdoc IMeTokenRegistry
-    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external override {
+    function incrementBalancePooled(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
@@ -104,9 +116,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit IncrementBalancePooled(add, _meToken, _amount);
     }
 
-
     /// @inheritdoc IMeTokenRegistry
-    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external override {
+    function incrementBalanceLocked(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
         if (add) {
@@ -118,25 +133,28 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit IncrementBalanceLocked(add, _meToken, _amount);
     }
 
-
     /// @inheritdoc IMeTokenRegistry
     function isOwner(address _owner) public view override returns (bool) {
         return owners[_owner] != address(0);
     }
 
-
     /// @inheritdoc IMeTokenRegistry
-    function getOwnerMeToken(address _owner) external view override returns (address) {
+    function getOwnerMeToken(address _owner)
+        external
+        view
+        override
+        returns (address)
+    {
         return owners[_owner];
     }
 
-
     // @inheritdoc IMeTokenRegistry
-    function getDetails(
-        address _meToken
-    ) external view override returns (
-       Details.MeTokenDetails memory meTokenDetails
-    ) {
+    function getDetails(address _meToken)
+        external
+        view
+        override
+        returns (Details.MeTokenDetails memory meTokenDetails)
+    {
         meTokenDetails = meTokens[_meToken];
     }
 

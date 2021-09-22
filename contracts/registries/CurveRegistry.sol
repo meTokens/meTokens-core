@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CurveRegistry is Ownable {
-    
     event Register(address curve);
     event Deactivate(address curve);
 

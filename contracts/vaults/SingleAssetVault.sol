@@ -12,20 +12,19 @@ import "../interfaces/IERC20.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is IVault, Ownable, Initializable {
-
     uint256 private PRECISION = 10**18;
 
     address private token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
-    
+
     constructor() {}
 
     function initialize(
         address _foundry,
         address _token,
         bytes memory _encodedAdditionalArgs
-    ) initializer public {
+    ) public initializer {
         // TODO: access control?
         token = _token;
         encodedAdditionalArgs = _encodedAdditionalArgs;
@@ -41,13 +40,19 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
         emit AddFee(_amount);
     }
 
-
     /// @inheritdoc IVault
-    function withdraw(bool _max, uint256 _amount, address _to) external onlyOwner override {
+    function withdraw(
+        bool _max,
+        uint256 _amount,
+        address _to
+    ) external override onlyOwner {
         if (_max) {
             _amount = accruedFees;
         } else {
-            require(_amount <= accruedFees, "_amount cannot exceed accruedFees");
+            require(
+                _amount <= accruedFees,
+                "_amount cannot exceed accruedFees"
+            );
         }
 
         IERC20(token).transfer(_to, _amount);
@@ -55,7 +60,6 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
 
         emit Withdraw(_amount, _to);
     }
-
 
     /// @inheritdoc IVault
     function getToken() external view override returns (address) {
