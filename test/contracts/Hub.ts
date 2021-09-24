@@ -1,28 +1,44 @@
-const Hub = artifacts.require("Hub");
-const Updater = artifacts.require("Updater");
-const Foundry = artifacts.require("Foundry");
-const CurveRegistry = artifacts.require("CurveRegistry");
-const VaultRegistry = artifacts.require("VaultRegistry");
+import { ethers } from "hardhat";
+import { Hub } from "../../artifacts/types/Hub";
+import { Updater } from "../../artifacts/types/Updater";
+import { Foundry } from "../../artifacts/types/Foundry";
+import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
+import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 
 describe("Hub.sol", () => {
-  let hub;
+  let hub: Hub;
+  let updater: Updater;
+  let foundry: Foundry;
+  let curveRegistry: CurveRegistry;
+  let vaultRegistry: VaultRegistry;
   before(async () => {
-    // foundry = await Foundry.new();
-    foundry = await Foundry();
-    updater = await Updater.new();
-    vaultRegistry = await VaultRegistry.new();
-    curveRegistry = await CurveRegistry.new();
-    hub = await Hub.new();
+    const hubFactory = await ethers.getContractFactory("Hub");
+    hub = (await hubFactory.deploy()) as Hub;
+    await hub.deployed();
+
+    const updaterFactory = await ethers.getContractFactory("Updater");
+    updater = (await updaterFactory.deploy()) as Updater;
+    await updater.deployed();
+
+    const foundryFactory = await ethers.getContractFactory("Foundry");
+    foundry = (await foundryFactory.deploy()) as Foundry;
+    await foundry.deployed();
+
+    const curveRegistryFactory = await ethers.getContractFactory(
+      "CurveRegistry"
+    );
+    curveRegistry = (await curveRegistryFactory.deploy()) as CurveRegistry;
+    await curveRegistry.deployed();
+
+    const vaultRegistryFactory = await ethers.getContractFactory(
+      "VaultRegistry"
+    );
+    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+    await vaultRegistry.deployed();
   });
 
   it("initialize()", async () => {
-    hub.initialize(
-      foundry.address,
-      updater.address,
-      vaultRegistry.address,
-      curveRegistry.address
-    );
-    // ten people buy one person's meToken
+    // Do something
   });
 
   it("register()", async () => {

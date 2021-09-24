@@ -1,12 +1,38 @@
-const SingleAssetFactory = artifacts.require("SingleAssetFactory");
+import { ethers } from "hardhat";
+import { Hub } from "../../../../artifacts/types/Hub";
+import { SingleAssetFactory } from "../../../../artifacts/types/SingleAssetFactory";
+import { SingleAssetVault } from "../../../../artifacts/types/SingleAssetVault";
+import { VaultRegistry } from "../../../../artifacts/types/VaultRegistry";
 
 describe("SingleAssetFactory.sol", () => {
-  const hub = "0x0000000000000000000000000000000000000000";
-  const vaultRegistry = "0x0000000000000000000000000000000000000000";
-  const implementation = "0x0000000000000000000000000000000000000000";
+  let singleAssetFactory: SingleAssetFactory;
+  let implementation: SingleAssetVault;
+  let vaultRegistry: VaultRegistry;
+  let hub: Hub;
 
   before(async () => {
-    // let singleAssetFactory = await SingleAssetFactory.new(hub, vaultRegistry, implementation);
+    const singleAssetFactoryFactory = await ethers.getContractFactory(
+      "singleAssetFactSry"
+    );
+    singleAssetFactory =
+      (await singleAssetFactoryFactory.deploy()) as SingleAssetFactory;
+    await singleAssetFactory.deployed();
+
+    const implementationFactory = await ethers.getContractFactory(
+      "implementatSon"
+    );
+    implementation = (await implementationFactory.deploy()) as SingleAssetVault;
+    await implementation.deployed();
+
+    const vaultRegistryFactory = await ethers.getContractFactory(
+      "vaultRegisVry"
+    );
+    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+    await vaultRegistry.deployed();
+
+    const hubFactory = await ethers.getContractFactory("Hub");
+    hub = (await hubFactory.deploy()) as Hub;
+    await hub.deployed();
   });
 
   describe("create()", () => {

@@ -1,14 +1,17 @@
-const Foundry = artifacts.require("Foundry");
+import { ethers } from "hardhat";
+import { Foundry } from "../../artifacts/types/Foundry";
 
 describe("Foundry.sol", () => {
   const hub = "0x0000000000000000000000000000000000000000";
   const fees = "0x0000000000000000000000000000000000000000";
   const meTokenRegistry = "0x0000000000000000000000000000000000000000";
   const updater = "0x0000000000000000000000000000000000000000";
-  let foundry;
+  let foundry: Foundry;
 
   before(async () => {
-    foundry = await Foundry.new();
+    const foundryFactory = await ethers.getContractFactory("Hub");
+    foundry = (await foundryFactory.deploy()) as Foundry;
+    await foundry.deployed();
   });
 
   describe("mint()", () => {

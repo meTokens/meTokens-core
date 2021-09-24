@@ -1,12 +1,15 @@
-const Updater = artifacts.require("Updater");
+import { ethers } from "hardhat";
+import { Updater } from "../../artifacts/types/Updater";
 
 describe("Updater.sol", () => {
-  let updater;
+  let updater: Updater;
 
   const args = [];
 
   before(async () => {
-    updater = await Updater.new();
+    const updaterFactory = await ethers.getContractFactory("Updater");
+    updater = (await updaterFactory.deploy()) as Updater;
+    await updater.deployed();
   });
   /*
     describe("initUpdate()", () => {

@@ -1,39 +1,100 @@
-// const Details = artifacts.require("Details");
-const WeightedAverage = artifacts.require("WeightedAverage");
-const MeTokenRegistry = artifacts.require("MeTokenRegistry");
-const MeTokenFactory = artifacts.require("MeTokenFactory");
-const BancorZeroCurve = artifacts.require("BancorZeroCurve");
-const CurveRegistry = artifacts.require("CurveRegistry");
-const VaultRegistry = artifacts.require("VaultRegistry");
-const SingleAssetFactory = artifacts.require("SingleAssetFactory");
-const SingleAssetVault = artifacts.require("SingleAssetVault");
-const Foundry = artifacts.require("Foundry");
-const Hub = artifacts.require("Hub");
-
-const DAI_ABI = require("../../abi/ERC20Burnable.json");
-// TODO: verify
-const DAI_ADDR = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+import { ethers, getNamedAccounts } from "hardhat";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
+import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { Hub } from "../../../artifacts/types/Hub";
+import { ERC20 } from "../../../artifacts/types/ERC20";
 
 describe("MeTokenRegistry.sol", () => {
+  let weightedAverage: WeightedAverage;
+  let meTokenRegistry: MeTokenRegistry;
+  let meTokenFactory: MeTokenFactory;
+  let bancorZeroCurve: BancorZeroCurve;
+  let curveRegistry: CurveRegistry;
+  let vaultRegistry: VaultRegistry;
+  let singleAssetVault: SingleAssetVault;
+  let singleAssetFactory: SingleAssetFactory;
+  let foundry: Foundry;
+  let hub: Hub;
+  let DAI: string;
+
   before(async () => {
-    DAI = await new web3.eth.Contract(DAI_ABI, DAI_ADDR);
+    ({ DAI } = await getNamedAccounts());
+    const dai = (await ethers.getContractAt("ERC20", DAI)) as ERC20;
 
-    // details = await Details.new();
-    weightedAverage = await WeightedAverage.new();
-    foundry = await Foundry.new();
-    hub = await Hub.new();
-
-    curveRegistry = await CurveRegistry.new();
-    curve = await BancorZeroCurve.new();
-    await curveRegistry.register(curve.address);
-
-    vaultRegistry = await VaultRegistry.new();
-    vault = await SingleAssetVault.new();
-    vaultFactory = await SingleAssetFactory.new(
-      vaultRegistry.address,
-      vault.address
+    const weightedAverageFactory = await ethers.getContractFactory(
+      "WeightedAverage"
     );
-    await vaultRegistry.approve(vaultFactory.address);
+    weightedAverage =
+      (await weightedAverageFactory.deploy()) as WeightedAverage;
+    await weightedAverage.deployed();
+
+    const bancorZeroCurveFactory = await ethers.getContractFactory(
+      "BancorZeroCurve"
+    );
+    bancorZeroCurve =
+      (await bancorZeroCurveFactory.deploy()) as BancorZeroCurve;
+    await bancorZeroCurve.deployed();
+
+    const curveRegistryFactory = await ethers.getContractFactory(
+      "CurveRegistry"
+    );
+    curveRegistry = (await curveRegistryFactory.deploy()) as CurveRegistry;
+    await curveRegistry.deployed();
+
+    const vaultRegistryFactory = await ethers.getContractFactory(
+      "VaultRegistry"
+    );
+    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+    await vaultRegistry.deployed();
+
+    const singleAssetVaultFactory = await ethers.getContractFactory(
+      "SingleAssetVault"
+    );
+    singleAssetVault =
+      (await singleAssetVaultFactory.deploy()) as SingleAssetVault;
+    await singleAssetVault.deployed();
+
+    const singleAssetFactoryFactory = await ethers.getContractFactory(
+      "SingleAssetFactory"
+    );
+    singleAssetFactory = (await singleAssetFactoryFactory.deploy(
+      vaultRegistry.address,
+      singleAssetVault.address
+    )) as SingleAssetFactory;
+    await singleAssetFactory.deployed();
+
+    const foundryFactory = await ethers.getContractFactory("Foundry");
+    foundry = (await foundryFactory.deploy()) as Foundry;
+    await foundry.deployed();
+
+    const hubFactory = await ethers.getContractFactory("Hub");
+    hub = (await hubFactory.deploy()) as Hub;
+    await hub.deployed();
+
+    const meTokenFactoryFactory = await ethers.getContractFactory(
+      "MeTokenFactory"
+    );
+    meTokenFactory = (await meTokenFactoryFactory.deploy()) as MeTokenFactory;
+    await meTokenFactory.deployed();
+
+    const meTokenRegistryFactory = await ethers.getContractFactory(
+      "MeTokenRegistry"
+    );
+    meTokenRegistry = (await meTokenRegistryFactory.deploy(
+      hub.address,
+      meTokenFactory.address
+    )) as MeTokenRegistry;
+    await meTokenRegistry.deployed();
+
+    await curveRegistry.register(bancorZeroCurve.address);
+    await vaultRegistry.approve(singleAssetFactory.address);
 
     await hub.initialize(
       foundry.address,
@@ -41,46 +102,40 @@ describe("MeTokenRegistry.sol", () => {
       curveRegistry.address
     );
     await hub.register(
-      vaultFactory.address,
-      curve.address,
-      DAI.address,
+      singleAssetFactory.address,
+      bancorZeroCurve.address,
+      DAI,
       50000,
       "",
       ""
     );
 
-    meTokenFactory = await MeTokenFactory.new(); // Should this be mocked?
-    meTokenRegistry = await MeTokenRegistry.new(
-      hub.address,
-      meTokenFactory.address
-    );
-  });
+    describe("register()", () => {
+      it("User can create a meToken with no collateral", async () => {
+        await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
+      });
 
-  describe("register()", () => {
-    it("User can create a meToken with no collateral", async () => {
-      await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
+      it("User can create a meToken with 100 USDT as collateral", async () => {
+        await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
+      });
+
+      // it("Emits Register()", async () => {
+
+      // });
     });
 
-    it("User can create a meToken with 100 USDT as collateral", async () => {
-      await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
+    describe("transferOwnership()", () => {
+      it("Fails if not owner", async () => {});
+      it("Emits TransferOwnership()", async () => {});
     });
 
-    // it("Emits Register()", async () => {
+    describe("isOwner()", () => {
+      it("Returns false for address(0)", async () => {});
+      it("Returns true for a meToken issuer", async () => {});
+    });
 
-    // });
+    describe("incrementBalancePooled()", async () => {});
+
+    describe("incrementBalanceLocked()", async () => {});
   });
-
-  describe("transferOwnership()", () => {
-    it("Fails if not owner", async () => {});
-    it("Emits TransferOwnership()", async () => {});
-  });
-
-  describe("isOwner()", () => {
-    it("Returns false for address(0)", async () => {});
-    it("Returns true for a meToken issuer", async () => {});
-  });
-
-  describe("incrementBalancePooled()", async () => {});
-
-  describe("incrementBalanceLocked()", async () => {});
 });

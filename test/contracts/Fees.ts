@@ -1,7 +1,9 @@
-const Fees = artifacts.require("Fees");
+import { ethers } from "hardhat";
+import { Fees } from "../../artifacts/types/Fees";
 
 describe("Fees.sol", () => {
-  let fees;
+  let fees: Fees;
+
   const mintFee = 10000000;
   const burnBuyerFee = 10000000;
   const burnOwnerFee = 10000000;
@@ -11,7 +13,10 @@ describe("Fees.sol", () => {
   const FEE_MAX = 10 ** 18;
 
   before(async () => {
-    fees = await Fees.new();
+    const feesFactory = await ethers.getContractFactory("Fees");
+    fees = (await feesFactory.deploy()) as Fees;
+    await fees.deployed();
+
     await fees.initialize(
       mintFee,
       burnBuyerFee,

@@ -1,10 +1,10 @@
-const fs = require("fs");
+/*
+import { ethers} from "hardhat";
 
 // const { ethers } = require("hardhat");
 const Vault = artifacts.require("Vault");
 
 const ZEROADDRESS = "0x0000000000000000000000000000000000000000";
-const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
 const json = JSON.parse(fs.readFileSync("./test/abi/dai.json"));
 
 describe("Vault.sol", () => {
@@ -53,3 +53,4 @@ describe("Vault.sol", () => {
     });
   });
 });
+*/
