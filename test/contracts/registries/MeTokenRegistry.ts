@@ -12,6 +12,7 @@ import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 
 describe("MeTokenRegistry.sol", () => {
+  let DAI: string;
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
@@ -22,11 +23,10 @@ describe("MeTokenRegistry.sol", () => {
   let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
-  let DAI: string;
 
   before(async () => {
     ({ DAI } = await getNamedAccounts());
-    const dai = (await ethers.getContractAt("ERC20", DAI)) as ERC20;
+    // const dai = (await ethers.getContractAt("ERC20", DAI)) as ERC20;
 
     const weightedAverageFactory = await ethers.getContractFactory(
       "WeightedAverage"

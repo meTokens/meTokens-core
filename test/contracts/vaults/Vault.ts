@@ -1,33 +1,29 @@
-/*
-import { ethers} from "hardhat";
-
-// const { ethers } = require("hardhat");
-const Vault = artifacts.require("Vault");
-
-const ZEROADDRESS = "0x0000000000000000000000000000000000000000";
-const json = JSON.parse(fs.readFileSync("./test/abi/dai.json"));
+import { ethers } from "hardhat";
+import { expect } from "chai";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 
 describe("Vault.sol", () => {
   const amount = 3;
-  let dai;
-  let vault;
+  let vault: SingleAssetVault;
 
   before(async () => {
-    [owner, addr1, addr2] = await ethers.getSigners();
-    vault = await Vault.new();
-    dai = new ethers.Contract(DAI, json, owner);
+    const vaultFactory = await ethers.getContractFactory("SingleAssetVault");
+    vault = (await vaultFactory.deploy()) as SingleAssetVault;
+    await vault.deployed();
   });
 
   describe("addFee()", () => {
     it("Reverts when not called by owner", async () => {
-      // expect(await vault.addFee(amount, {from:addr1})).to.be.reverted;
+      // TODO
     });
 
     it("Increments accruedFees by amount", async () => {
       const accruedFeesBefore = await vault.accruedFees();
       await vault.addFee(amount);
       const accruedFeesAfter = await vault.accruedFees();
-      expect(Number(accruedFeesBefore)).to.equal(accruedFeesAfter - amount);
+      expect(Number(accruedFeesBefore)).to.equal(
+        Number(accruedFeesAfter) - amount
+      );
     });
 
     it("Emits AddFee(amount)", async () => {
@@ -39,9 +35,7 @@ describe("Vault.sol", () => {
 
   describe("withdrawFees()", () => {
     it("Reverts when not called by owner", async () => {
-      // expect(
-      //     await vault.withdrawFees(true, 0, ZEROADDRESS)
-      // ).to.be.reverted;
+      // TODO
     });
 
     it("Transfer some accrued fees", async () => {
@@ -53,4 +47,3 @@ describe("Vault.sol", () => {
     });
   });
 });
-*/
