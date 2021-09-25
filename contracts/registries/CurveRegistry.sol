@@ -18,6 +18,7 @@ contract CurveRegistry is Ownable {
 
     function deactivate(address _curve) external onlyOwner {
         require(isActive(_curve), "Already inactive");
+        curves[_curve] = false;
         emit Deactivate(_curve);
     }
 
