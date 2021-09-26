@@ -1,42 +1,29 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, getNamedAccounts } from "hardhat";
 import { Hub } from "../../../artifacts/types/Hub";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 
 describe("VaultRegistry.sol", () => {
-  const vaultName = "Test Vault";
+  let DAI: string;
   let vaultRegistry: VaultRegistry;
   let implementation: SingleAssetVault;
   let factory: SingleAssetFactory;
   let hub: Hub;
   before(async () => {
+    // NOTE: test address we're using for approvals
+    ({ DAI } = await getNamedAccounts());
+
     const hubFactory = await ethers.getContractFactory("Hub");
     hub = (await hubFactory.deploy()) as Hub;
     await hub.deployed();
-
-    const vaultRegistryFactory = await ethers.getContractFactory(
-      "VaultRegistry"
-    );
-    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
-    await vaultRegistry.deployed();
 
     const singleAssetFactory = await ethers.getContractFactory(
       "SingleAssetVault"
     );
     implementation = (await singleAssetFactory.deploy()) as SingleAssetVault;
     await implementation.deployed();
-
-    const factoryFactory = await ethers.getContractFactory(
-      "SingleAssetFactory"
-    );
-    factory = (await factoryFactory.deploy(
-      hub.address,
-      vaultRegistry.address,
-      implementation.address
-    )) as SingleAssetFactory;
-    await factory.deployed();
   });
 
   describe("register()", () => {
@@ -44,54 +31,100 @@ describe("VaultRegistry.sol", () => {
       // TODO: make sure new implementation is deployed
     });
 
-    it("Emits Register(string, address, address)", async () => {
-      // expect(
-      //     await factory.create(vaultName, implementation.address, factory.address)
-      // ).to.emit(vaultRegistry, "Register")
-      // .withArgs(vaultName, implementation.address, factory.address);
+    it("Emits Register(address)", async () => {
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+      const factoryFactory = await ethers.getContractFactory(
+        "SingleAssetFactory"
+      );
+      factory = (await factoryFactory.deploy(
+        hub.address,
+        vaultRegistry.address,
+        implementation.address
+      )) as SingleAssetFactory;
+      await factory.deployed();
+
+      // TODO: "invalid arrayify value"
+      expect(await factory.create(DAI, "")).to.emit(vaultRegistry, "Register");
     });
   });
 
   describe("approve()", () => {
     it("Vault is not yet approved", async () => {
-      expect(
-        await vaultRegistry.isApproved(ethers.constants.AddressZero)
-      ).to.equal(false);
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      expect(await vaultRegistry.isApproved(DAI)).to.equal(false);
     });
 
     it("Emits Approve(address)", async () => {
-      expect(await vaultRegistry.approve(factory.address))
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      expect(await vaultRegistry.approve(DAI))
         .to.emit(vaultRegistry, "Approve")
-        .withArgs(factory.address);
+        .withArgs(DAI);
     });
   });
 
   describe("unapprove()", () => {
     it("Revert if not yet approved", async () => {
-      // expect(
-      //     await vaultRegistry.unapprove(factory.address)
-      // ).to.be.reverted;
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      expect(
+        // TODO: This is supposed to revert, why error?
+        await vaultRegistry.unapprove(DAI)
+      ).to.be.reverted;
     });
 
     it("Emits Unapprove(address)", async () => {
-      await vaultRegistry.approve(factory.address);
-      // expect(
-      //     await vaultRegistry.unapprove(factory.address)
-      // ).to.emit(vaultRegistry, "Unapprove")
-      //  .withArgs(factory.address);
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      await vaultRegistry.approve(DAI);
+      expect(await vaultRegistry.unapprove(DAI))
+        .to.emit(vaultRegistry, "Unapprove")
+        .withArgs(DAI);
     });
   });
 
   describe("isActive()", () => {
     it("Return false for inactive/nonexistent vault", async () => {
-      expect(await vaultRegistry.isActive(factory.address)).to.equal(false);
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      expect(await vaultRegistry.isActive(DAI)).to.equal(false);
     });
 
     it("Return true for active vault", async () => {
-      // await vaultRegistry.register(vaultName, implementation.address, factory.address);
-      // expect(
-      //     await vaultRegistry.isActive(factory.address)
-      // ).to.equal(true);
+      const vaultRegistryFactory = await ethers.getContractFactory(
+        "VaultRegistry"
+      );
+      vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
+      await vaultRegistry.deployed();
+
+      // TODO: vaultRegistry.approve(msg.sender)
+      await vaultRegistry.register(DAI);
+      expect(await vaultRegistry.isActive(DAI)).to.equal(true);
     });
   });
 });

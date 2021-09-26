@@ -4,6 +4,18 @@ import { Updater } from "../../artifacts/types/Updater";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
+import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
+
+/*
+const paginationFactory = await ethers.getContractFactory("Pagination", {});
+const paginationLib = await paginationFactory.deploy();
+
+const policyFactory = await ethers.getContractFactory("PolicyLib", {
+  libraries: {
+    Pagination: paginationLib.address,
+  },
+});
+*/
 
 describe("Hub.sol", () => {
   let hub: Hub;
@@ -11,6 +23,7 @@ describe("Hub.sol", () => {
   let foundry: Foundry;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
+
   before(async () => {
     const hubFactory = await ethers.getContractFactory("Hub");
     hub = (await hubFactory.deploy()) as Hub;
@@ -20,7 +33,13 @@ describe("Hub.sol", () => {
     updater = (await updaterFactory.deploy()) as Updater;
     await updater.deployed();
 
-    const foundryFactory = await ethers.getContractFactory("Foundry");
+    const weightedAverageLibFactory = await ethers.getContractFactory(
+      "WeightedAverage"
+    );
+    const weightedAverageLib = await weightedAverageLibFactory.deploy();
+    const foundryFactory = await ethers.getContractFactory("Foundry", {
+      libraries: { WeightedAverage: weightedAverageLib.address },
+    });
     foundry = (await foundryFactory.deploy()) as Foundry;
     await foundry.deployed();
 

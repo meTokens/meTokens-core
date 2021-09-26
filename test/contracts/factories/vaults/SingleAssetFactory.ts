@@ -11,28 +11,33 @@ describe("SingleAssetFactory.sol", () => {
   let hub: Hub;
 
   before(async () => {
-    const singleAssetFactoryFactory = await ethers.getContractFactory(
-      "singleAssetFactSry"
-    );
-    singleAssetFactory =
-      (await singleAssetFactoryFactory.deploy()) as SingleAssetFactory;
-    await singleAssetFactory.deployed();
-
     const implementationFactory = await ethers.getContractFactory(
-      "implementatSon"
+      "SingleAssetVault"
     );
     implementation = (await implementationFactory.deploy()) as SingleAssetVault;
     await implementation.deployed();
 
     const vaultRegistryFactory = await ethers.getContractFactory(
-      "vaultRegisVry"
+      "VaultRegistry"
     );
     vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
     await vaultRegistry.deployed();
 
+    const singleAssetFactoryFactory = await ethers.getContractFactory(
+      "SingleAssetFactory"
+    );
+    singleAssetFactory = (await singleAssetFactoryFactory.deploy(
+      implementation.address,
+      ethers.constants.AddressZero,
+      vaultRegistry.address
+    )) as SingleAssetFactory;
+    await singleAssetFactory.deployed();
+
     const hubFactory = await ethers.getContractFactory("Hub");
     hub = (await hubFactory.deploy()) as Hub;
     await hub.deployed();
+
+    // TODO: call hub.initialize()
   });
 
   describe("create()", () => {
