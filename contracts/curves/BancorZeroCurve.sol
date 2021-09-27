@@ -22,6 +22,7 @@ contract BancorZeroCurve is ICurve, Power {
         override
     {
         // TODO: access control
+        require(_encodedValueSet.length > 0, "ValueSet empty");
 
         (uint256 baseY, uint256 reserveWeight) = abi.decode(
             _encodedValueSet,

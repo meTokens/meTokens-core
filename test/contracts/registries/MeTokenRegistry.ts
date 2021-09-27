@@ -10,6 +10,7 @@ import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory"
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
+import { deploy, getContractAt } from "../../utils/helpers";
 
 describe("MeTokenRegistry.sol", () => {
   let DAI: string;
@@ -23,119 +24,87 @@ describe("MeTokenRegistry.sol", () => {
   let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
-
+  let dai: ERC20;
   before(async () => {
     ({ DAI } = await getNamedAccounts());
     // const dai = (await ethers.getContractAt("ERC20", DAI)) as ERC20;
-
-    const weightedAverageFactory = await ethers.getContractFactory(
-      "WeightedAverage"
+    dai = await getContractAt<ERC20>("ERC20", DAI);
+    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
+    foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+    singleAssetFactory = await deploy<SingleAssetFactory>(
+      "SingleAssetFactory",
+      undefined, //no libs
+      singleAssetVault.address, // implementation to clone
+      foundry.address, // foundry
+      vaultRegistry.address // vault registry
     );
-    weightedAverage =
-      (await weightedAverageFactory.deploy()) as WeightedAverage;
-    await weightedAverage.deployed();
 
-    const bancorZeroCurveFactory = await ethers.getContractFactory(
-      "BancorZeroCurve"
-    );
-    bancorZeroCurve =
-      (await bancorZeroCurveFactory.deploy()) as BancorZeroCurve;
-    await bancorZeroCurve.deployed();
-
-    const curveRegistryFactory = await ethers.getContractFactory(
-      "CurveRegistry"
-    );
-    curveRegistry = (await curveRegistryFactory.deploy()) as CurveRegistry;
-    await curveRegistry.deployed();
-
-    const vaultRegistryFactory = await ethers.getContractFactory(
-      "VaultRegistry"
-    );
-    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
-    await vaultRegistry.deployed();
-
-    const singleAssetVaultFactory = await ethers.getContractFactory(
-      "SingleAssetVault"
-    );
-    singleAssetVault =
-      (await singleAssetVaultFactory.deploy()) as SingleAssetVault;
-    await singleAssetVault.deployed();
-
-    const singleAssetFactoryFactory = await ethers.getContractFactory(
-      "SingleAssetFactory"
-    );
-    singleAssetFactory = (await singleAssetFactoryFactory.deploy(
-      vaultRegistry.address,
-      singleAssetVault.address
-    )) as SingleAssetFactory;
-    await singleAssetFactory.deployed();
-
-    const foundryFactory = await ethers.getContractFactory("Foundry");
-    foundry = (await foundryFactory.deploy()) as Foundry;
-    await foundry.deployed();
-
-    const hubFactory = await ethers.getContractFactory("Hub");
-    hub = (await hubFactory.deploy()) as Hub;
-    await hub.deployed();
-
-    const meTokenFactoryFactory = await ethers.getContractFactory(
-      "MeTokenFactory"
-    );
-    meTokenFactory = (await meTokenFactoryFactory.deploy()) as MeTokenFactory;
-    await meTokenFactory.deployed();
-
-    const meTokenRegistryFactory = await ethers.getContractFactory(
-      "MeTokenRegistry"
-    );
-    meTokenRegistry = (await meTokenRegistryFactory.deploy(
+    hub = await deploy<Hub>("Hub");
+    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+    meTokenRegistry = await deploy<MeTokenRegistry>(
+      "MeTokenRegistry",
+      undefined,
       hub.address,
       meTokenFactory.address
-    )) as MeTokenRegistry;
-    await meTokenRegistry.deployed();
-
+    );
+    console.log("yeah");
     await curveRegistry.register(bancorZeroCurve.address);
+    console.log("az");
     await vaultRegistry.approve(singleAssetFactory.address);
-
+    console.log("bz");
     await hub.initialize(
       foundry.address,
       vaultRegistry.address,
       curveRegistry.address
     );
+    console.log("cz");
+    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint32"],
+      [200, 5000]
+    );
+    console.log("encodedValueSet", encodedValueSet);
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
       DAI,
       50000,
-      "",
-      ""
+      encodedValueSet,
+      ethers.utils.toUtf8Bytes("")
     );
-
-    describe("register()", () => {
-      it("User can create a meToken with no collateral", async () => {
-        await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
-      });
-
-      it("User can create a meToken with 100 USDT as collateral", async () => {
-        await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
-      });
-
-      // it("Emits Register()", async () => {
-
-      // });
-    });
-
-    describe("transferOwnership()", () => {
-      it("Fails if not owner", async () => {});
-      it("Emits TransferOwnership()", async () => {});
-    });
-
-    describe("isOwner()", () => {
-      it("Returns false for address(0)", async () => {});
-      it("Returns true for a meToken issuer", async () => {});
-    });
-
-    describe("incrementBalancePooled()", async () => {});
-
-    describe("incrementBalanceLocked()", async () => {});
+    console.log("register");
   });
+
+  describe("register()", () => {
+    it("User can create a meToken with no collateral", async () => {
+      await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
+    });
+
+    it("User can create a meToken with 100 USDT as collateral", async () => {
+      await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
+    });
+
+    // it("Emits Register()", async () => {
+
+    // });
+  });
+
+  describe("transferOwnership()", () => {
+    it("Fails if not owner", async () => {});
+    it("Emits TransferOwnership()", async () => {});
+  });
+
+  describe("isOwner()", () => {
+    it("Returns false for address(0)", async () => {});
+    it("Returns true for a meToken issuer", async () => {});
+  });
+
+  describe("incrementBalancePooled()", async () => {});
+
+  describe("incrementBalanceLocked()", async () => {});
 });
