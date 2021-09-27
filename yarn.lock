@@ -936,10 +936,10 @@
   dependencies:
     ethers "^5.0.2"
 
-"@typechain/ethers-v5@^7.1.0":
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-7.1.0.tgz#75593294e8920151c9dbba6cf3e74c6aab2b570f"
-  integrity sha512-zTRwNBtmO0BoOlNi5Q6PKg9OIH5rnJJGAoUC7AnHJpWvWHtlZ9jjbUcCWniKA2dm50zL1ykAh5GqeBp33ju3Qw==
+"@typechain/ethers-v5@^7.1.2":
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-7.1.2.tgz#dbf31663f75cc50f2d9ad232f6e354c6a3e81465"
+  integrity sha512-sD4HVkTL5aIJa3Ft+CmqiOapba0zzZ8xa+QywcWH40Rm/dcxvZWwcCMnnI3En0JebkxOcAVfH3do+kQ9rKSxYw==
   dependencies:
     lodash "^4.17.15"
     ts-essentials "^7.0.1"
@@ -5093,10 +5093,10 @@ hardhat-deploy-ethers@^0.3.0-beta.10:
   resolved "https://registry.yarnpkg.com/hardhat-deploy-ethers/-/hardhat-deploy-ethers-0.3.0-beta.10.tgz#bccfcf635d380bbab3638960f6739fe4d396fc5f"
   integrity sha512-TeyriUshRZ7XVHOjMsDtTozIrdwLf3Bw+oZRYNhXdG/eut5HeDhjUFPfRlG7TI1lSLvkcB5dt7OxOtPYKDOxTg==
 
-hardhat-deploy@^0.9.1:
-  version "0.9.1"
-  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.9.1.tgz#878bb10ef1bfcfee892477c2133295a250721672"
-  integrity sha512-GUrLlsBKZqWJ2isFDnpnlnyLuIDqES7mEFGm4P7GutG2jeBebvTg2wCNh3RTW/rpHUtU66yCZXfy+LeD0QXFbg==
+hardhat-deploy@^0.9.2:
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/hardhat-deploy/-/hardhat-deploy-0.9.2.tgz#5c26707a5ea65e0dac877d99cce81a14f44434ac"
+  integrity sha512-JV7ilajpkVsW2ZQSILvQ6QQpOxsOhl15sJ+Yk0Lg1nvOG8FRlsnsnVVcx0QPpiMviea+r0nKUwo6d6U9ISFTAQ==
   dependencies:
     "@ethersproject/abi" "^5.4.0"
     "@ethersproject/abstract-signer" "^5.4.1"

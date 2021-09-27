@@ -1,7 +1,9 @@
+import { BaseContract, Contract } from "@ethersproject/contracts";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
+import { deploy } from "../../utils/helpers";
 import {
   MeTokenRegistry,
   MeTokenRegistryInterface,
@@ -13,24 +15,14 @@ describe("MeTokenFactory.sol", function () {
   let meTokenRegistry: MeTokenRegistry;
 
   before(async () => {
-    const hubFactory = await ethers.getContractFactory("Hub");
-    hub = (await hubFactory.deploy()) as Hub;
-    await hub.deployed();
-
-    const meTokenFactoryFactory = await ethers.getContractFactory(
-      "MeTokenFactory"
-    );
-    meTokenFactory = (await meTokenFactoryFactory.deploy()) as MeTokenFactory;
-    await meTokenFactory.deployed();
-
-    const meTokenRegistryFactory = await ethers.getContractFactory(
-      "MeTokenRegistry"
-    );
-    meTokenRegistry = (await meTokenRegistryFactory.deploy(
+    hub = await deploy<Hub>("Hub");
+    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+    meTokenRegistry = await deploy<MeTokenRegistry>(
+      "MeTokenRegistry",
+      undefined,
       hub.address,
       meTokenFactory.address
-    )) as MeTokenRegistry;
-    await meTokenRegistry.deployed();
+    );
   });
 
   it("create()", async () => {

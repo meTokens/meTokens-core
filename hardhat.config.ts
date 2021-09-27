@@ -84,12 +84,14 @@ const config: HardhatUserConfig = {
   },
   namedAccounts: {
     DAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    DAIWhale: "0x0000006daea1723962647b7e189d311d757Fb793",
   },
   networks: {
     hardhat: {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
         accounts,
+        blockNumber: 13310410,
       },
       gas: "auto",
       timeout: 1800000,

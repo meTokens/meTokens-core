@@ -11,6 +11,7 @@ import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
 
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
@@ -80,14 +81,18 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
-
+        console.log(
+            "curveRegistry isactive:%s isApproved:%s",
+            curveRegistry.isActive(_curve),
+            vaultRegistry.isApproved(_vaultFactory)
+        );
         require(curveRegistry.isActive(_curve), "_curve !approved");
         require(
             vaultRegistry.isApproved(_vaultFactory),
             "_vaultFactory !approved"
         );
         require(_refundRatio < PRECISION, "_refundRatio > PRECISION");
-
+        console.log("_refundRatio < PRECISION:%s", _refundRatio < PRECISION);
         // Store value set base paramaters to `{CurveName}.sol`
         ICurve(_curve).register(count, _encodedValueSetArgs);
 
@@ -97,7 +102,7 @@ contract Hub is Ownable, Initializable {
             _token,
             _encodedVaultAdditionalArgs
         );
-
+        console.log("curveRegistry vault:%s", vault);
         // Save the hub to the registry
         Details.HubDetails storage newHubDetails = hubs[count++];
         newHubDetails.active = true;
