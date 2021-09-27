@@ -11,6 +11,10 @@ import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "../../utils/helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { impersonate } from "../../utils/hardhatNode";
+import { Signer } from "ethers";
+import { expect } from "chai";
 
 describe("MeTokenRegistry.sol", () => {
   let DAI: string;
@@ -25,10 +29,19 @@ describe("MeTokenRegistry.sol", () => {
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  let daiHolder: Signer;
+  let DAIWhale: string;
   before(async () => {
-    ({ DAI } = await getNamedAccounts());
-    // const dai = (await ethers.getContractAt("ERC20", DAI)) as ERC20;
+    ({ DAI, DAIWhale } = await getNamedAccounts());
+    [account0, account1, account2] = await ethers.getSigners();
     dai = await getContractAt<ERC20>("ERC20", DAI);
+    daiHolder = await impersonate(DAIWhale);
+    dai
+      .connect(daiHolder)
+      .transfer(account1.address, ethers.utils.parseEther("1000"));
     weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
     bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
@@ -53,22 +66,19 @@ describe("MeTokenRegistry.sol", () => {
       hub.address,
       meTokenFactory.address
     );
-    console.log("yeah");
     await curveRegistry.register(bancorZeroCurve.address);
-    console.log("az");
+
     await vaultRegistry.approve(singleAssetFactory.address);
-    console.log("bz");
+
     await hub.initialize(
       foundry.address,
       vaultRegistry.address,
       curveRegistry.address
     );
-    console.log("cz");
     const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [200, 5000]
     );
-    console.log("encodedValueSet", encodedValueSet);
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
@@ -77,16 +87,32 @@ describe("MeTokenRegistry.sol", () => {
       encodedValueSet,
       ethers.utils.toUtf8Bytes("")
     );
-    console.log("register");
   });
 
   describe("register()", () => {
     it("User can create a meToken with no collateral", async () => {
-      await meTokenRegistry.register("Carl meToken", "CARL", 0, 0);
+      await meTokenRegistry
+        .connect(account0)
+        .register("Carl0 meToken", "CARL", 0, 0);
+      // assert token infos
+      // assert event emitting
     });
 
-    it("User can create a meToken with 100 USDT as collateral", async () => {
-      await meTokenRegistry.register("Carl meToken", "CARL", 0, 100);
+    it("User can create a meToken with 100 DAI as collateral", async () => {
+      const amount = 100;
+      const balBefore = await dai.balanceOf(account1.address);
+      console.log(
+        `balBefore:${ethers.utils.formatEther(balBefore)} of:${
+          account1.address
+        }`
+      );
+      // need an approve of metoken registry first
+      await dai.connect(account1).approve(meTokenRegistry.address, amount);
+      await meTokenRegistry
+        .connect(account1)
+        .register("Carl1 meToken", "CARL", 0, amount);
+      const balAfter = await dai.balanceOf(account1.address);
+      expect(balBefore.sub(balAfter)).equal(amount);
     });
 
     // it("Emits Register()", async () => {
