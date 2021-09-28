@@ -79,6 +79,10 @@ describe("MeTokenRegistry.sol", () => {
       ["uint256", "uint32"],
       [200, 5000]
     );
+    /*   require(
+      hasRole(FOUNDRY, msg.sender) ||
+          hasRole(METOKEN_REGISTRY, msg.sender) */
+
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
