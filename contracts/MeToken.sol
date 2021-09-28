@@ -9,24 +9,24 @@ import "./Roles.sol";
 /// @title meToken
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base erc20-like meToken contract used for all meTokens
-contract MeToken is Initializable, ERC20Burnable, Roles {
+contract MeToken is Initializable, ERC20Burnable {
     constructor(string memory _name, string memory _symbol)
         ERC20(_name, _symbol)
     {}
 
     function mint(address to, uint256 amount) external {
-        require(
+        /*  require(
             hasRole(FOUNDRY, msg.sender) ||
                 hasRole(METOKEN_REGISTRY, msg.sender)
-        );
+        ); */
         _mint(to, amount);
     }
 
     function burn(address from, uint256 value) external {
-        require(
+        /*  require(
             hasRole(FOUNDRY, msg.sender) ||
                 hasRole(METOKEN_REGISTRY, msg.sender)
-        );
+        ); */
         _burn(from, value);
     }
 }

@@ -24,7 +24,7 @@ contract BancorZeroCurve is ICurve, Power {
         // TODO: access control
         require(_encodedValueSet.length > 0, "ValueSet empty");
 
-        (uint256 baseY, uint256 reserveWeight) = abi.decode(
+        (uint256 baseY, uint32 reserveWeight) = abi.decode(
             _encodedValueSet,
             (uint256, uint32)
         );
@@ -39,7 +39,7 @@ contract BancorZeroCurve is ICurve, Power {
 
         Details.BancorDetails storage newBancorDetails = bancors[_hubId];
         newBancorDetails.baseY = baseY;
-        newBancorDetails.reserveWeight = uint32(reserveWeight);
+        newBancorDetails.reserveWeight = reserveWeight;
     }
 
     function registerTarget(uint256 _hubId, bytes calldata _encodedValueSet)
@@ -215,7 +215,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _baseY
     ) private view returns (uint256) {
         uint256 numerator = _baseY;
-        uint256 exponent = (PRECISION / _reserveWeight - PRECISION);
+        uint256 exponent = 2; //  (PRECISION / _reserveWeight - PRECISION);
         uint256 denominator = _baseX**exponent;
         return (numerator * _tokensDeposited**exponent) / denominator;
     }
