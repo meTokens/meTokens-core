@@ -9,8 +9,6 @@ import "../MeToken.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract creates and deploys a users' meToken
 contract MeTokenFactory {
-    constructor() {}
-
     /// @notice create a meToken
     /// @param _name name of meToken
     /// @param _symbol symbol of meToken

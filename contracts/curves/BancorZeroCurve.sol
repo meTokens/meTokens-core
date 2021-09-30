@@ -13,9 +13,7 @@ import "../utils/Power.sol";
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve, Power {
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Details.BancorDetails) private bancors;
-
-    constructor() {}
+    mapping(uint256 => Details.BancorDetails) private _bancors;
 
     function register(uint256 _hubId, bytes calldata _encodedValueSet)
         external
@@ -37,7 +35,7 @@ contract BancorZeroCurve is ICurve, Power {
             "reserveWeight not in range"
         );
 
-        Details.BancorDetails storage newBancorDetails = bancors[_hubId];
+        Details.BancorDetails storage newBancorDetails = _bancors[_hubId];
         newBancorDetails.baseY = baseY;
         newBancorDetails.reserveWeight = reserveWeight;
     }
@@ -50,7 +48,7 @@ contract BancorZeroCurve is ICurve, Power {
 
         uint32 targetReserveWeight = abi.decode(_encodedValueSet, (uint32));
 
-        Details.BancorDetails storage bancorDetails = bancors[_hubId];
+        Details.BancorDetails storage bancorDetails = _bancors[_hubId];
         require(
             targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT,
             "reserveWeight not in range"
@@ -70,7 +68,7 @@ contract BancorZeroCurve is ICurve, Power {
 
     function finishUpdate(uint256 _hubId) external override {
         // TODO; only hub can call
-        Details.BancorDetails storage bancorDetails = bancors[_hubId];
+        Details.BancorDetails storage bancorDetails = _bancors[_hubId];
         bancorDetails.reserveWeight = bancorDetails.targetReserveWeight;
         bancorDetails.baseY = bancorDetails.targetBaseY;
         bancorDetails.targetReserveWeight = 0;
@@ -84,7 +82,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.BancorDetails memory bancorDetails = bancors[_hubId];
+        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
@@ -95,7 +93,7 @@ contract BancorZeroCurve is ICurve, Power {
         } else {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
-                bancorDetails.reserveWeight,
+                // bancorDetails.reserveWeight,
                 BASE_X,
                 bancorDetails.baseY
             );
@@ -109,7 +107,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.BancorDetails memory bancorDetails = bancors[_hubId];
+        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
@@ -134,7 +132,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.BancorDetails memory bancorDetails = bancors[_hubId];
+        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
             bancorDetails.reserveWeight,
@@ -149,7 +147,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.BancorDetails memory bancorDetails = bancors[_hubId];
+        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
             bancorDetails.targetReserveWeight,
@@ -158,8 +156,8 @@ contract BancorZeroCurve is ICurve, Power {
         );
     }
 
-    /// @notice Given a deposit amount (in the connector token), connector weight, meToken supply and
-    ///     calculates the return for a given conversion (in the meToken)
+    /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
+    ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @dev _supply * ((1 + _tokensDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
     /// @param _tokensDeposited   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
@@ -200,17 +198,16 @@ contract BancorZeroCurve is ICurve, Power {
         return newTokenSupply - _supply;
     }
 
-    /// @notice Given a deposit amount (in the collateral token,) meToken supply of 0, connector weight,
-    ///     constant x and constant y, calculates the return for a given conversion (in the meToken)
-    /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply = 0
+    /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
+    ///         constant y, calculates the return for a given conversion (in the meToken)
+    /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
     /// @param _tokensDeposited   amount of collateral tokens to deposit
-    /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _baseX          constant X
     /// @param _baseY          constant y
     /// @return amount of meTokens minted
     function _calculateMintReturnFromZero(
         uint256 _tokensDeposited,
-        uint256 _reserveWeight,
+        // uint256 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
     ) private view returns (uint256) {
@@ -222,7 +219,7 @@ contract BancorZeroCurve is ICurve, Power {
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @dev _balancePooled * (1 - (1 - _meTokensBurned / _supply) ^ (1 / (_reserveWeight / 1000000)))
+    /// @dev _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / 1000000)))
     /// @param _meTokensBurned          amount of meTokens to burn
     /// @param _reserveWeight       connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply              current meToken supply

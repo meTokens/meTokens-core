@@ -12,19 +12,17 @@ import "../interfaces/IERC20.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is IVault, Ownable, Initializable {
-    uint256 private PRECISION = 10**18;
+    uint256 public constant PRECISION = 10**18;
 
-    address private token;
+    address public token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
-
-    constructor() {}
 
     function initialize(
         address _foundry,
         address _token,
         bytes memory _encodedAdditionalArgs
-    ) public initializer {
+    ) external initializer {
         // TODO: access control?
         token = _token;
         encodedAdditionalArgs = _encodedAdditionalArgs;
@@ -55,9 +53,9 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
             );
         }
 
-        IERC20(token).transfer(_to, _amount);
         accruedFees = accruedFees - _amount;
 
+        IERC20(token).transfer(_to, _amount);
         emit Withdraw(_amount, _to);
     }
 

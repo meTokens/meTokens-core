@@ -21,8 +21,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
 
-    mapping(address => Details.MeTokenDetails) private meTokens; // key pair: ERC20 address
-    mapping(address => address) private owners; // key: address of owner, value: address of meToken
+    mapping(address => Details.MeTokenDetails) private _meTokens; // key pair: ERC20 address
+    mapping(address => address) private _owners; // key: address of owner, value: address of meToken
 
     constructor(address _hub, address _meTokenFactory) {
         hub = IHub(_hub);
@@ -67,21 +67,21 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
-            uint256 meTokensMinted = ICurve(hubDetails.curve)
+            uint256 _meTokensMinted = ICurve(hubDetails.curve)
                 .calculateMintReturn(
                     _tokensDeposited, // _deposit_amount
-                    _hubId, // _hubId
+                    // _hubId, // _hubId
                     0, // _supply
                     0 // _balancePooled
                 );
-            IMeToken(meTokenAddr).mint(msg.sender, meTokensMinted);
+            IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
         }
 
         // Register the address which created a meToken
-        owners[msg.sender] = meTokenAddr;
+        _owners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeTokenDetails storage newMeTokenDetails = meTokens[
+        Details.MeTokenDetails storage newMeTokenDetails = _meTokens[
             meTokenAddr
         ];
         newMeTokenDetails.owner = msg.sender;
@@ -97,12 +97,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         override
     {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
         require(msg.sender == meTokenDetails.owner, "!owner");
 
         meTokenDetails.owner = _newOwner;
-        owners[msg.sender] = address(0);
-        owners[_newOwner] = _meToken;
+        _owners[msg.sender] = address(0);
+        _owners[_newOwner] = _meToken;
 
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
@@ -114,7 +114,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _amount
     ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
         if (add) {
             meTokenDetails.balancePooled += _amount;
         } else {
@@ -131,7 +131,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _amount
     ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeTokenDetails storage meTokenDetails = meTokens[_meToken];
+        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
         if (add) {
             meTokenDetails.balanceLocked += _amount;
         } else {
@@ -142,18 +142,13 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function isOwner(address _owner) public view override returns (bool) {
-        return owners[_owner] != address(0);
-    }
-
-    /// @inheritdoc IMeTokenRegistry
     function getOwnerMeToken(address _owner)
         external
         view
         override
         returns (address)
     {
-        return owners[_owner];
+        return _owners[_owner];
     }
 
     // @inheritdoc IMeTokenRegistry
@@ -163,9 +158,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         override
         returns (Details.MeTokenDetails memory meTokenDetails)
     {
-        meTokenDetails = meTokens[_meToken];
+        meTokenDetails = _meTokens[_meToken];
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function isOwner(address _owner) public view override returns (bool) {
+        return _owners[_owner] != address(0);
     }
 
     // TODO
-    // function resubscribe(uint256 meTokenAddress) external onlyOwner(meTokenAddress) returns(bool) {}
+    // function resubscribe(address _meToken) {}
 }

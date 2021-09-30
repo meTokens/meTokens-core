@@ -13,7 +13,7 @@ import "../../interfaces/IVaultFactory.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory is IVaultFactory {
-    uint256 private count;
+    uint256 private _count;
     address public implementation; // TODO: this will be the SingleAsset contract
     address public foundry;
     IVaultRegistry public vaultRegistry;
@@ -37,7 +37,7 @@ contract SingleAssetFactory is IVaultFactory {
         // TODO: access control
         vaultAddress = Clones.cloneDeterministic(
             implementation,
-            bytes32(count++)
+            bytes32(_count++)
         );
 
         // create our vault

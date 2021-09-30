@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-
-import "./Migration.sol";
 
 import "../libs/Details.sol";
 
@@ -17,29 +15,28 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Migration, Initializable, Ownable {
-    address private immutable WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address private immutable DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+contract UniswapSingleTransfer is Initializable, Ownable {
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     uint256 public hubId;
     address public targetVault;
-    bool private finished;
-    bool private swapped;
+    bool public finished;
+    bool public swapped;
 
-    // NOTE: this can be found at https://github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    ISwapRouter private router =
+    // NOTE: this can be found at
+    // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
+    ISwapRouter private immutable _router =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
     address public tokenIn;
     address public tokenOut;
     address public recipient;
-    uint24 private immutable fee = 3000; // NOTE: 0.3%
+    uint24 public immutable fee = 3000; // NOTE: 0.3%
     uint256 public amountIn;
     uint256 public amountOut;
     uint256 public sum;
-
-    constructor() {}
 
     function initialize(
         uint256 _hubId,
@@ -77,12 +74,13 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
             });
 
         // The call to `exactInputSingle` executes the swap.
-        amountOut = router.exactInputSingle(params);
+        amountOut = _router.exactInputSingle(params);
 
         swapped = true;
     }
 
-    // Get sum of balancePooled and balanceLocked for all meTokens subscribed to the hub/vault
+    // Get sum of balancePooled and balanceLocked for all meTokens
+    //      subscribed to the hub/vault
     function sumBalances() external returns (uint256) {
         sum = 0;
 
@@ -103,16 +101,9 @@ contract UniswapSingleTransfer is Migration, Initializable, Ownable {
         require(swapped && !finished);
         require(sum > 0, "sum not set");
 
-        // Determine rate of conversion
-        uint256 rate = (PRECISION * amountIn) / amountOut;
-
-        // Update balancePooled and balanceLocked
-
-        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
+        finished = true;
 
         // Send token to new vault
         IERC20(tokenOut).transfer(targetVault, amountOut);
-
-        finished = true;
     }
 }

@@ -8,12 +8,12 @@ import "../../interfaces/IMigrationRegistry.sol";
 import "../../interfaces/IVault.sol";
 
 contract UniswapSingleTransferFactory {
-    event Create(address migration);
-
     uint256 public count;
     address public hub;
     address public implementation;
     IMigrationRegistry public migrationRegistry;
+
+    event Create(address migration);
 
     constructor(
         address _hub,
@@ -29,8 +29,7 @@ contract UniswapSingleTransferFactory {
         uint256 _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault,
-        bytes memory _encodedmigrationAdditionalArgs // NOTE: potentially needed for other migrations
+        address _targetVault
     ) external returns (address) {
         // TODO: access control
         address migrationVault = Clones.cloneDeterministic(

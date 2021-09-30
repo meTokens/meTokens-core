@@ -1,26 +1,36 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "./interfaces/IMigrationRegistry.sol";
+import "./interfaces/IHub.sol";
+import "./interfaces/IMeTokenRegistry.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title meToken Migrations
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage migration settings
 contract Migrations is Ownable {
-    event FinishUpdate(uint256 hubId);
-    event SetMinSecondsUntilStart(uint256 amount);
-    event SetMaxSecondsUntilStart(uint256 amount);
-    event SetMinUpdateDuration(uint256 amount);
-    event SetMaxUpdateDuration(uint256 amount);
-
     // TODO: set a reasonable block max
-    uint256 private BLOCK_MAX = 10**18;
+    uint256 private _blockMax = 10**18;
+
+    // TODO
+    IMigrationRegistry public migrationRegistry =
+        IMigrationRegistry(address(0));
+    IHub public hub = IHub(address(0));
+    IMeTokenRegistry public meTokenRegistry = IMeTokenRegistry(address(0));
 
     // TODO: Figure out what these would be
     uint256 private _minSecondsUntilStart;
     uint256 private _maxSecondsUntilStart;
     uint256 private _minUpdateDuration;
     uint256 private _maxUpdateDuration;
+
+    event FinishUpdate(uint256 hubId);
+    event SetMinSecondsUntilStart(uint256 amount);
+    event SetMaxSecondsUntilStart(uint256 amount);
+    event SetMinUpdateDuration(uint256 amount);
+    event SetMaxUpdateDuration(uint256 amount);
 
     constructor(
         uint256 minSecondsUntilStart_,
@@ -36,7 +46,7 @@ contract Migrations is Ownable {
 
     function setMinSecondsUntilStart(uint256 amount) external onlyOwner {
         require(
-            amount != _minSecondsUntilStart && amount < BLOCK_MAX,
+            amount != _minSecondsUntilStart && amount < _blockMax,
             "out of range"
         );
         _minSecondsUntilStart = amount;
@@ -45,7 +55,7 @@ contract Migrations is Ownable {
 
     function setMaxSecondsUntilStart(uint256 amount) external onlyOwner {
         require(
-            amount != _maxSecondsUntilStart && amount < BLOCK_MAX,
+            amount != _maxSecondsUntilStart && amount < _blockMax,
             "out of range"
         );
         _maxSecondsUntilStart = amount;
@@ -54,7 +64,7 @@ contract Migrations is Ownable {
 
     function setMinUpdateDuration(uint256 amount) external onlyOwner {
         require(
-            amount != _minUpdateDuration && amount < BLOCK_MAX,
+            amount != _minUpdateDuration && amount < _blockMax,
             "out of range"
         );
         _minUpdateDuration = amount;
@@ -63,7 +73,7 @@ contract Migrations is Ownable {
 
     function setMaxUpdateDuration(uint256 amount) external onlyOwner {
         require(
-            amount != _maxUpdateDuration && amount < BLOCK_MAX,
+            amount != _maxUpdateDuration && amount < _blockMax,
             "out of range"
         );
         _maxUpdateDuration = amount;

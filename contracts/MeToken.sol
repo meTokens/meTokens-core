@@ -10,9 +10,13 @@ import "./Roles.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base erc20-like meToken contract used for all meTokens
 contract MeToken is Initializable, ERC20Burnable {
+    string public version;
+
     constructor(string memory _name, string memory _symbol)
         ERC20(_name, _symbol)
-    {}
+    {
+        version = "0.2";
+    }
 
     function mint(address to, uint256 amount) external {
         /*  require(

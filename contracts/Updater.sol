@@ -16,7 +16,7 @@ import "./libs/Details.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to update a hub
 contract Updater is IUpdater, Ownable {
-    uint256 private PRECISION = 10**18;
+    uint256 public constant PRECISION = 10**18;
 
     uint256 private _minSecondsUntilStart = 0; // TODO
     uint256 private _maxSecondsUntilStart = 0; // TODO
@@ -28,23 +28,16 @@ contract Updater is IUpdater, Ownable {
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
 
-    constructor() {}
-
     function initialize(
         IMigration _migration,
         IHub _hub,
         IVaultRegistry _vaultRegistry,
         ICurveRegistry _curveRegistry
-    ) public onlyOwner {
+    ) external onlyOwner {
         migration = _migration;
         hub = _hub;
         vaultRegistry = _vaultRegistry;
         curveRegistry = _curveRegistry;
-    }
-
-    function globalUpdate() public {
-        // updateHubDetails();
-        // updateCurveDetails();
     }
 
     function initUpdate(
@@ -96,7 +89,8 @@ contract Updater is IUpdater, Ownable {
             curveDetails = true;
         }
 
-        if (_migrationVault != address(0) && _targetVault != address(0)) {}
+        // TODO: figure out how to pass these into `initUpdate()`
+        // if (_migrationVault != address(0) && _targetVault != address(0)) {}
 
         hub.initUpdate(
             _hubId,
@@ -110,11 +104,7 @@ contract Updater is IUpdater, Ownable {
         );
     }
 
-    function executeProposal(uint256 _hubId) public {}
-
-    function finishUpdate(uint256 _hubId) external {
-        emit FinishUpdate(_hubId);
-    }
+    // function executeProposal(uint256 _hubId) public {}
 
     function setMinSecondsUntilStart(uint256 amount) external onlyOwner {
         require(
