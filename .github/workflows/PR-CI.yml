@@ -48,9 +48,11 @@ jobs:
       - name: Test Deployment
         run: yarn deploy-local
         env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           CI: true
 
       - name: Test
         run: yarn test
         env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
           CI: true

@@ -215,7 +215,18 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 numerator = _baseY;
         uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
         uint256 denominator = _baseX**exponent;
-        console.log("####### _tokensDeposited :%s", _tokensDeposited);
+        console.log(
+            "####### _baseX:%s exponent:%s tot :%s",
+            _baseX,
+            exponent,
+            (numerator * _tokensDeposited**exponent) / denominator
+        );
+        console.log(
+            "####### numerator:%s denominator:%s _tokensDeposited :%s",
+            numerator,
+            denominator,
+            _tokensDeposited
+        );
         return (numerator * _tokensDeposited**exponent) / denominator;
     }
 

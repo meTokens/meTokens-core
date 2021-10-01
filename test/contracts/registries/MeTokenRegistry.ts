@@ -79,7 +79,7 @@ describe("MeTokenRegistry.sol", () => {
     );
     const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
-      [200, 5000]
+      [ethers.utils.parseEther("1000000000000000000"), 5000]
     );
     /*   require(
       hasRole(FOUNDRY, msg.sender) ||
@@ -115,6 +115,7 @@ describe("MeTokenRegistry.sol", () => {
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       expect(await meToken.name()).to.equal(name);
       expect(await meToken.symbol()).to.equal(symbol);
+      expect(await meToken.decimals()).to.equal(18);
       expect(await meToken.totalSupply()).to.equal(0);
     });
 
@@ -142,7 +143,7 @@ describe("MeTokenRegistry.sol", () => {
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       //should be greater than 0
-      // expect(await meToken.totalSupply()).to.equal(1);
+      expect(await meToken.totalSupply()).to.equal(10000);
     });
 
     // it("Emits Register()", async () => {
