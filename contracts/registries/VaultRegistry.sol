@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 // import "../Roles.sol";
 import "../interfaces/IVaultRegistry.sol";
 
+import "hardhat/console.sol";
+
 /// @title vault registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all active _vaults and available vault factories
@@ -16,6 +18,7 @@ contract VaultRegistry is IVaultRegistry {
 
     /// @inheritdoc IVaultRegistry
     function register(address _vault) external override {
+        console.log("## vaultRegistry msg.sender:%s ", msg.sender);
         require(
             _approved[msg.sender],
             "Only vault factories can register _vaults"

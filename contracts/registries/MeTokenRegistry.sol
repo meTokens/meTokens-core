@@ -70,7 +70,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             uint256 _meTokensMinted = ICurve(hubDetails.curve)
                 .calculateMintReturn(
                     _tokensDeposited, // _deposit_amount
-                    // _hubId, // _hubId
+                    _hubId, // _hubId
                     0, // _supply
                     0 // _balancePooled
                 );

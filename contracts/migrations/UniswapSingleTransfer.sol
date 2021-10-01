@@ -45,7 +45,7 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         address _tokenIn,
         address _tokenOut
     ) external initializer onlyOwner {
-        require(migrationRegistry.isApproved(msg.sender), "!approved");
+        // require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
 
         hubId = _hubId;
@@ -85,14 +85,14 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         sum = 0;
 
         // Loop through all subscribed meTokens
-        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
+        /*  address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
 
         for (uint256 i = 0; i < subscribed.length; i++) {
             address meToken = subscribed[i];
             Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
                 .getDetails(meToken);
             sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
-        }
+        } */
         return sum;
     }
 

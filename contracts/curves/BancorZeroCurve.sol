@@ -93,7 +93,7 @@ contract BancorZeroCurve is ICurve, Power {
         } else {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
-                // bancorDetails.reserveWeight,
+                bancorDetails.reserveWeight,
                 BASE_X,
                 bancorDetails.baseY
             );
@@ -207,7 +207,7 @@ contract BancorZeroCurve is ICurve, Power {
     /// @return amount of meTokens minted
     function _calculateMintReturnFromZero(
         uint256 _tokensDeposited,
-        // uint256 _reserveWeight,
+        uint256 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
     ) private view returns (uint256) {

@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
