@@ -5,6 +5,7 @@ import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { Foundry } from "../../../artifacts/types/Foundry";
@@ -34,6 +35,7 @@ describe("MeTokenRegistry.sol", () => {
   let account2: SignerWithAddress;
   let daiHolder: Signer;
   let DAIWhale: string;
+  let hubId: number;
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
     [account0, account1, account2] = await ethers.getSigners();
@@ -91,15 +93,29 @@ describe("MeTokenRegistry.sol", () => {
       encodedValueSet,
       ethers.utils.toUtf8Bytes("")
     );
+    hubId = 0;
   });
 
   describe("register()", () => {
     it("User can create a meToken with no collateral", async () => {
-      await meTokenRegistry
+      const name = "Carl0 meToken";
+      const symbol = "CARL";
+
+      const tx = await meTokenRegistry
         .connect(account0)
-        .register("Carl0 meToken", "CARL", 0, 0);
+        .register(name, "CARL", hubId, 0);
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+      expect(tx)
+        .to.emit(meTokenRegistry, "Register")
+        .withArgs(meTokenAddr, account0.address, name, symbol, hubId);
+
       // assert token infos
-      // assert event emitting
+      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      expect(await meToken.name()).to.equal(name);
+      expect(await meToken.symbol()).to.equal(symbol);
+      expect(await meToken.totalSupply()).to.equal(0);
     });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
@@ -114,9 +130,19 @@ describe("MeTokenRegistry.sol", () => {
       await dai.connect(account1).approve(meTokenRegistry.address, amount);
       await meTokenRegistry
         .connect(account1)
-        .register("Carl1 meToken", "CARL", 0, amount);
+        .register("Carl1 meToken", "CARL", hubId, amount);
       const balAfter = await dai.balanceOf(account1.address);
       expect(balBefore.sub(balAfter)).equal(amount);
+      const hubDetail = await hub.getDetails(hubId);
+      const balVault = await dai.balanceOf(hubDetail.vault);
+      expect(balVault).equal(amount);
+      // assert token infos
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      //should be greater than 0
+      // expect(await meToken.totalSupply()).to.equal(1);
     });
 
     // it("Emits Register()", async () => {

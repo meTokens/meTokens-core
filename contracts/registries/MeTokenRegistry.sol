@@ -74,6 +74,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
                     0, // _supply
                     0 // _balancePooled
                 );
+            console.log("####### _meTokensMinted :%s", _meTokensMinted);
             IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
         }
 

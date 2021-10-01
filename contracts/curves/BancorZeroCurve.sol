@@ -8,6 +8,7 @@ import "../libs/WeightedAverage.sol";
 import "../libs/Details.sol";
 
 import "../utils/Power.sol";
+import "hardhat/console.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
@@ -212,8 +213,9 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _baseY
     ) private view returns (uint256) {
         uint256 numerator = _baseY;
-        uint256 exponent = 2; //  (PRECISION / _reserveWeight - PRECISION);
+        uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
         uint256 denominator = _baseX**exponent;
+        console.log("####### _tokensDeposited :%s", _tokensDeposited);
         return (numerator * _tokensDeposited**exponent) / denominator;
     }
 
