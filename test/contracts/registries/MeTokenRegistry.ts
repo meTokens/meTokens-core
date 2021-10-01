@@ -152,16 +152,66 @@ describe("MeTokenRegistry.sol", () => {
   });
 
   describe("transferOwnership()", () => {
-    it("Fails if not owner", async () => {});
-    it("Emits TransferOwnership()", async () => {});
+    it("Fails if not owner", async () => {
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      await expect(
+        meTokenRegistry.transferOwnership(meTokenAddr, account2.address)
+      ).to.revertedWith("!owner");
+      const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+      await expect(
+        meTokenRegistry.transferOwnership(meTokenAddr2, account1.address)
+      ).to.revertedWith("_newOwner already owns a meToken");
+    });
+    it("Emits TransferOwnership()", async () => {
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+
+      const tx = meTokenRegistry
+        .connect(account1)
+        .transferOwnership(meTokenAddr, account2.address);
+
+      await expect(tx)
+        .to.emit(meTokenRegistry, "TransferOwnership")
+        .withArgs(account1.address, account2.address, meTokenAddr);
+    });
   });
 
   describe("isOwner()", () => {
-    it("Returns false for address(0)", async () => {});
-    it("Returns true for a meToken issuer", async () => {});
+    it("Returns false for address(0)", async () => {
+      expect(await meTokenRegistry.isOwner(ethers.constants.AddressZero)).to.be
+        .false;
+    });
+    it("Returns true for a meToken issuer", async () => {
+      expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
+    });
   });
+  describe("balancePool", () => {
+    it("Fails if not foundry", async () => {
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      await expect(
+        meTokenRegistry.incrementBalancePooled(
+          true,
+          meTokenAddr,
+          account2.address
+        )
+      ).to.revertedWith("!foundry");
+    });
+    it("incrementBalancePooled()", async () => {
+      /*  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account2.address
+      );
+      const tx = meTokenRegistry
+        .connect(account2)
+        .incrementBalancePooled(true, meTokenAddr, account2.address); */
+    });
 
-  describe("incrementBalancePooled()", async () => {});
-
-  describe("incrementBalanceLocked()", async () => {});
+    it("incrementBalanceLocked()", async () => {});
+  });
 });

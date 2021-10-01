@@ -19,6 +19,8 @@ const {
   MNEMONIC,
   ETHERSCAN_API_KEY,
   COINMARKETCAP_API_KEY,
+  REPORT_GAS,
+  REPORT_GAS_PRICE,
 } = process.env;
 
 const mnemonic = `${
@@ -107,8 +109,9 @@ const config: HardhatUserConfig = {
     target: "ethers-v5",
   },
   gasReporter: {
+    enabled: REPORT_GAS === "true",
     currency: "USD",
-    gasPrice: 35,
+    gasPrice: Number.parseInt(REPORT_GAS_PRICE ?? "50"),
     onlyCalledMethods: true,
     coinmarketcap: `${COINMARKETCAP_API_KEY || ""}`,
   },
