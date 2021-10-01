@@ -1,3 +1,4 @@
 contracts/interfaces
 contracts/libs/Details.sol 
+Power.sol
 node_modules 
