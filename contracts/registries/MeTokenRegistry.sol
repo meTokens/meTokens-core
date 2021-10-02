@@ -12,7 +12,6 @@ import "../interfaces/ICurve.sol";
 import "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
-import "hardhat/console.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
@@ -44,14 +43,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
         address token = IVault(hubDetails.vault).getToken();
-        console.log("### token:%s", token);
         if (_tokensDeposited > 0) {
-            console.log(
-                "### msg.sender:%s hubDetails.vault:%s _tokensDeposited:%s",
-                msg.sender,
-                hubDetails.vault,
-                _tokensDeposited
-            );
             require(
                 IERC20(token).transferFrom(
                     msg.sender,
@@ -74,7 +66,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
                     0, // _supply
                     0 // _balancePooled
                 );
-            console.log("####### _meTokensMinted :%s", _meTokensMinted);
             IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
         }
 

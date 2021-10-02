@@ -122,11 +122,6 @@ describe("MeTokenRegistry.sol", () => {
     it("User can create a meToken with 100 DAI as collateral", async () => {
       const amount = 100;
       const balBefore = await dai.balanceOf(account1.address);
-      console.log(
-        `balBefore:${ethers.utils.formatEther(balBefore)} of:${
-          account1.address
-        }`
-      );
       // need an approve of metoken registry first
       await dai.connect(account1).approve(meTokenRegistry.address, amount);
       await meTokenRegistry
