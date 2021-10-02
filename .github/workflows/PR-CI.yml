@@ -1,0 +1,58 @@
+name: meTokens CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+
+      - uses: actions/cache@v2
+        with:
+          path: "**/node_modules"
+          key: nodeModules-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install packages
+        run: yarn --frozen-lockfile
+        env:
+          CI: true
+
+      - name: lint
+        run: yarn lint
+        env:
+          CI: true
+
+      - name: Compile
+        run: yarn compile
+        env:
+          CI: true
+
+      - name: Test Deployment
+        run: yarn deploy-local
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          CI: true
+
+      - name: Test
+        run: yarn test
+        env:
+          ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+          CI: true

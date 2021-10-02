@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../libs/Details.sol";
 
 interface IMeTokenRegistry {
-
     event Register(
         address indexed meToken,
         address indexed owner,
@@ -45,13 +44,22 @@ interface IMeTokenRegistry {
     /// @notice TODO
     /// @param meToken Address of meToken queried
     /// @return meTokenDetails details of the meToken
-    function getDetails(
-        address meToken
-    ) external view returns (
-        Details.MeTokenDetails memory meTokenDetails
-    );
+    function getDetails(address meToken)
+        external
+        view
+        returns (Details.MeTokenDetails memory meTokenDetails);
 
     function transferOwnership(address _meToken, address _newOwner) external;
-    function incrementBalancePooled(bool add, address _meToken, uint256 _amount) external;
-    function incrementBalanceLocked(bool add, address _meToken, uint256 _amount) external;
+
+    function incrementBalancePooled(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external;
+
+    function incrementBalanceLocked(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external;
 }

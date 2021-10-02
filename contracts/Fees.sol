@@ -4,34 +4,30 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-
 /// @title meToken Fees
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to manage all meToken fees
 contract Fees is Ownable, Initializable {
-
-	event SetMintFee(uint256 rate);
-	event SetBurnBuyerFee(uint256 rate);
-	event SetBurnOwnerFee(uint256 rate);
-    event SetTransferFee(uint256 rate);
-    event SetInterestFee(uint256 rate);
-    event SetYieldFee(uint256 rate);
-
-    uint256 private FEE_MAX = 10**18;
-	/// @dev for when a meToken is minted
-	uint256 private _mintFee;
-	/// @dev for when a meToken is burned by non-owner
-	uint256 private _burnBuyerFee;
-	/// @dev for when a meToken is burned by owner
-	uint256 private _burnOwnerFee;
+    uint256 private _feeMax = 10**18;
+    /// @dev for when a meToken is minted
+    uint256 private _mintFee;
+    /// @dev for when a meToken is burned by non-owner
+    uint256 private _burnBuyerFee;
+    /// @dev for when a meToken is burned by owner
+    uint256 private _burnOwnerFee;
     /// @dev for when a meToken is transferred
-	uint256 private _transferFee;
+    uint256 private _transferFee;
     /// @dev Generated from interest on collateral
     uint256 private _interestFee;
     /// @dev Generated from liquidity mining
-	uint256 private _yieldFee;
+    uint256 private _yieldFee;
 
-	constructor() {}
+    event SetMintFee(uint256 rate);
+    event SetBurnBuyerFee(uint256 rate);
+    event SetBurnOwnerFee(uint256 rate);
+    event SetTransferFee(uint256 rate);
+    event SetInterestFee(uint256 rate);
+    event SetYieldFee(uint256 rate);
 
     function initialize(
         uint256 mintFee_,
@@ -49,41 +45,41 @@ contract Fees is Ownable, Initializable {
         _yieldFee = yieldFee_;
     }
 
-	function setMintFee(uint256 rate) external onlyOwner {
-        require(rate != _mintFee && rate < FEE_MAX, "out of range");
-		_mintFee = rate;
-		emit SetMintFee(rate);
-	}
+    function setMintFee(uint256 rate) external onlyOwner {
+        require(rate != _mintFee && rate < _feeMax, "out of range");
+        _mintFee = rate;
+        emit SetMintFee(rate);
+    }
 
-	function setBurnBuyerFee(uint256 rate) external onlyOwner {
-        require(rate != _burnBuyerFee && rate < FEE_MAX, "out of range");
-		_burnBuyerFee = rate;
-		emit SetBurnBuyerFee(rate);
-	}
+    function setBurnBuyerFee(uint256 rate) external onlyOwner {
+        require(rate != _burnBuyerFee && rate < _feeMax, "out of range");
+        _burnBuyerFee = rate;
+        emit SetBurnBuyerFee(rate);
+    }
 
-	function setBurnOwnerFee(uint256 rate) external onlyOwner {
-        require(rate != _burnOwnerFee && rate < FEE_MAX, "out of range");
-		_burnOwnerFee = rate;
-		emit SetBurnOwnerFee(rate);
-	}
+    function setBurnOwnerFee(uint256 rate) external onlyOwner {
+        require(rate != _burnOwnerFee && rate < _feeMax, "out of range");
+        _burnOwnerFee = rate;
+        emit SetBurnOwnerFee(rate);
+    }
 
     function setTransferFee(uint256 rate) external onlyOwner {
-        require(rate != _burnOwnerFee && rate < FEE_MAX, "out of range");
-		_transferFee = rate;
-		emit SetTransferFee(rate);
-	}
+        require(rate != _burnOwnerFee && rate < _feeMax, "out of range");
+        _transferFee = rate;
+        emit SetTransferFee(rate);
+    }
 
     function setInterestFee(uint256 rate) external onlyOwner {
-        require(rate != _interestFee && rate < FEE_MAX, "out of range");
-		_interestFee = rate;
-		emit SetInterestFee(rate);
-	}
+        require(rate != _interestFee && rate < _feeMax, "out of range");
+        _interestFee = rate;
+        emit SetInterestFee(rate);
+    }
 
     function setYieldFee(uint256 rate) external onlyOwner {
-        require(rate != _yieldFee && rate < FEE_MAX, "out of range");
-		_yieldFee = rate;
-		emit SetYieldFee(rate);
-	}
+        require(rate != _yieldFee && rate < _feeMax, "out of range");
+        _yieldFee = rate;
+        emit SetYieldFee(rate);
+    }
 
     function mintFee() public view returns (uint256) {
         return _mintFee;
@@ -108,5 +104,4 @@ contract Fees is Ownable, Initializable {
     function yieldFee() public view returns (uint256) {
         return _yieldFee;
     }
-
 }

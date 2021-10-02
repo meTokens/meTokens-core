@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IUpdater {
-
     event FinishUpdate(uint256 hubId);
     event SetMinSecondsUntilStart(uint256 amount);
     event SetMaxSecondsUntilStart(uint256 amount);

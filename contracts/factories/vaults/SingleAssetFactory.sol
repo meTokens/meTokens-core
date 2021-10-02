@@ -7,33 +7,39 @@ import "../../vaults/SingleAssetVault.sol";
 import "../../interfaces/IVaultRegistry.sol";
 import "../../interfaces/IVaultFactory.sol";
 
+import "hardhat/console.sol";
+
 // TODO: Should IHub be imported?
 
 /// @title Factory contract to erc20-collateral vaults
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Deploys a single collateral vault (non-LP token)
 contract SingleAssetFactory is IVaultFactory {
-
-    uint256 private count;
-    address public implementation;  // TODO: this will be the SingleAsset contract
+    uint256 private _count;
+    address public implementation; // TODO: this will be the SingleAsset contract
     address public foundry;
     IVaultRegistry public vaultRegistry;
 
-    constructor(address _implementation, address _foundry, address _vaultRegistry) {
+    constructor(
+        address _implementation,
+        address _foundry,
+        address _vaultRegistry
+    ) {
         implementation = _implementation;
         foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
     }
-    
+
     /// @inheritdoc IVaultFactory
-    function create(
-        address _token,
-        bytes memory _encodedAdditionalArgs
-    ) external override returns (address vaultAddress) {
+    function create(address _token, bytes memory _encodedAdditionalArgs)
+        external
+        override
+        returns (address vaultAddress)
+    {
         // TODO: access control
         vaultAddress = Clones.cloneDeterministic(
             implementation,
-            bytes32(count++)
+            bytes32(_count++)
         );
 
         // create our vault

@@ -4,25 +4,25 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CurveRegistry is Ownable {
-    
+    // NOTE: keys are addresses to the curve library, values are if it's active
+    mapping(address => bool) private _curves;
+
     event Register(address curve);
     event Deactivate(address curve);
 
-    // NOTE: keys are addresses to the curve library, values are if it's active
-    mapping(address => bool) private curves;
-
     function register(address _curve) external onlyOwner {
         require(!isActive(_curve), "Already active");
-        curves[_curve] = true;
+        _curves[_curve] = true;
         emit Register(_curve);
     }
 
     function deactivate(address _curve) external onlyOwner {
         require(isActive(_curve), "Already inactive");
+        _curves[_curve] = false;
         emit Deactivate(_curve);
     }
 
     function isActive(address _curve) public view returns (bool) {
-        return curves[_curve];
+        return _curves[_curve];
     }
 }

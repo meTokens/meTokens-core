@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 library WeightedAverage {
-
-    uint256 constant PRECISION = 10**18;
+    uint256 private constant _PRECISION = 10**18;
 
     /*
     EXAMPLE:
-    PRECISION = 500
+    _PRECISION = 500
     block.timestamp - startTime = 70
     endTime - startTime = 100
 
@@ -16,10 +15,10 @@ library WeightedAverage {
     targetAmount = 137
 
     ### pt 1
-    ( PRECISION*amount + PRECISION * (targetAmount - amount) * 0.7 ) / PRECISION;
+    ( _PRECISION*amount + _PRECISION * (targetAmount - amount) * 0.7 ) / _PRECISION;
     ( 500*87 + 500 * (137 - 87) * 0.7 ) / 500  =  122
     ### pt 2
-    ( PRECISION*amount - PRECISION * (amount - targetAmount) * 0.7 ) / PRECISION;
+    ( _PRECISION*amount - _PRECISION * (amount - targetAmount) * 0.7 ) / _PRECISION;
     ( 500*87 - 500 * (87 - 137) * 0.7 ) / 500  =  122
 
     // scenario 2 :  targetAmount < amount
@@ -27,10 +26,10 @@ library WeightedAverage {
     targetAmount = 172
 
     ### pt 1
-    ( PRECISION*amount + PRECISION * (targetAmount - amount) * 0.7 ) / PRECISION;
+    ( _PRECISION*amount + _PRECISION * (targetAmount - amount) * 0.7 ) / _PRECISION;
     ( 500*201 + 500 * (172 - 201) * 0.7 ) / 500  =  180.7
     ### pt 2
-    ( PRECISION*amount - PRECISION * (amount - targetAmount) * 0.7 ) / PRECISION;
+    ( _PRECISION*amount - _PRECISION * (amount - targetAmount) * 0.7 ) / _PRECISION;
     ( 500*201 - 500 * (201 - 172) * 0.7 ) / 500  =  180.7
     */
 
@@ -39,18 +38,32 @@ library WeightedAverage {
         uint256 targetAmount,
         uint256 startTime,
         uint256 endTime
-    ) external view returns (uint256)
-    {
-        if (block.timestamp < startTime) { // Update hasn't started, apply no weighting
+    ) external view returns (uint256) {
+        if (block.timestamp < startTime) {
+            // Update hasn't started, apply no weighting
             return amount;
-        } else if (block.timestamp > endTime) {  // Update is over, return target amount
+        } else if (block.timestamp > endTime) {
+            // Update is over, return target amount
             return targetAmount;
-        } else {  // Currently in an update, return weighted average
+        } else {
+            // Currently in an update, return weighted average
             if (targetAmount > amount) {
-                return ( PRECISION*amount + PRECISION * (targetAmount - amount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
+                return
+                    (_PRECISION *
+                        amount +
+                        (_PRECISION *
+                            (targetAmount - amount) *
+                            (block.timestamp - startTime)) /
+                        (endTime - startTime)) / _PRECISION;
             } else {
-                return ( PRECISION*amount - PRECISION * (amount - targetAmount) * (block.timestamp - startTime) / (endTime - startTime) )/ PRECISION;
-             }
+                return
+                    (_PRECISION *
+                        amount -
+                        (_PRECISION *
+                            (amount - targetAmount) *
+                            (block.timestamp - startTime)) /
+                        (endTime - startTime)) / _PRECISION;
+            }
         }
-    } 
+    }
 }

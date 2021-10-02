@@ -1,17 +1,17 @@
-const Updater = artifacts.require("Updater");
+import { ethers } from "hardhat";
+import { Updater } from "../../artifacts/types/Updater";
 
 describe("Updater.sol", () => {
+  let updater: Updater;
 
-    let updater;
+  const args = [];
 
-    let args = [
-
-    ]
-
-    before(async () => {
-        updater = await Updater.new();
-    });
-    /*
+  before(async () => {
+    const updaterFactory = await ethers.getContractFactory("Updater");
+    updater = (await updaterFactory.deploy()) as Updater;
+    await updater.deployed();
+  });
+  /*
     describe("initUpdate()", () => {
 
         it("Expect _startTime revert when out of range", async () => {
@@ -46,5 +46,4 @@ describe("Updater.sol", () => {
 
     });
     */
-
 });

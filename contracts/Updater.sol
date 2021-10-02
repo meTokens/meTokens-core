@@ -12,13 +12,11 @@ import "./interfaces/ICurve.sol";
 
 import "./libs/Details.sol";
 
-
 /// @title meToken Updater
 /// @author Carl Farterson (@carlfarterson)
 /// @notice contract to update a hub
 contract Updater is IUpdater, Ownable {
-
-    uint256 private PRECISION = 10**18;
+    uint256 public constant PRECISION = 10**18;
 
     uint256 private _minSecondsUntilStart = 0; // TODO
     uint256 private _maxSecondsUntilStart = 0; // TODO
@@ -30,23 +28,16 @@ contract Updater is IUpdater, Ownable {
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
 
-    constructor() {}
-
     function initialize(
         IMigration _migration,
         IHub _hub,
         IVaultRegistry _vaultRegistry,
         ICurveRegistry _curveRegistry
-    ) public onlyOwner {
+    ) external onlyOwner {
         migration = _migration;
         hub = _hub;
         vaultRegistry = _vaultRegistry;
         curveRegistry = _curveRegistry;
-    }
-
-    function globalUpdate() public {
-        // updateHubDetails();
-        // updateCurveDetails();
     }
 
     function initUpdate(
@@ -61,12 +52,11 @@ contract Updater is IUpdater, Ownable {
     ) external {
         require(
             _startTime - block.timestamp >= _minSecondsUntilStart &&
-            _startTime - block.timestamp <= _maxSecondsUntilStart,
+                _startTime - block.timestamp <= _maxSecondsUntilStart,
             "Unacceptable _startTime"
         );
         require(
-            _minDuration <= _duration &&
-            _maxDuration >= _duration,
+            _minDuration <= _duration && _maxDuration >= _duration,
             "Unacceptable update duration"
         );
 
@@ -76,23 +66,31 @@ contract Updater is IUpdater, Ownable {
 
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
-            require(_targetRefundRatio != hubDetails.refundRatio, "_targetRefundRatio == refundRatio");
+            require(
+                _targetRefundRatio != hubDetails.refundRatio,
+                "_targetRefundRatio == refundRatio"
+            );
         }
-
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hubDetails.curve).registerTarget(_hubId, _encodedCurveDetails);
-            } else {  // _targetCurve != address(0))
-                require(curveRegistry.isActive(_targetCurve), "_targetCurve inactive");
+                ICurve(hubDetails.curve).registerTarget(
+                    _hubId,
+                    _encodedCurveDetails
+                );
+            } else {
+                // _targetCurve != address(0))
+                require(
+                    curveRegistry.isActive(_targetCurve),
+                    "_targetCurve inactive"
+                );
                 ICurve(_targetCurve).register(_hubId, _encodedCurveDetails);
             }
             curveDetails = true;
         }
 
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-
-        }
+        // TODO: figure out how to pass these into `initUpdate()`
+        // if (_migrationVault != address(0) && _targetVault != address(0)) {}
 
         hub.initUpdate(
             _hubId,
@@ -106,19 +104,13 @@ contract Updater is IUpdater, Ownable {
         );
     }
 
-
-    function executeProposal(uint256 _hubId) public {
-    }   
-
-    function finishUpdate(uint256 _hubId) external {
-        emit FinishUpdate(_hubId);
-    }
+    // function executeProposal(uint256 _hubId) public {}
 
     function setMinSecondsUntilStart(uint256 amount) external onlyOwner {
         require(
             amount > 0 &&
-            amount != _minSecondsUntilStart &&
-            amount < _maxSecondsUntilStart,
+                amount != _minSecondsUntilStart &&
+                amount < _maxSecondsUntilStart,
             "out of range"
         );
         _minSecondsUntilStart = amount;
@@ -127,8 +119,7 @@ contract Updater is IUpdater, Ownable {
 
     function setMaxSecondsUntilStart(uint256 amount) external onlyOwner {
         require(
-            amount != _maxSecondsUntilStart &&
-            amount > _minSecondsUntilStart,
+            amount != _maxSecondsUntilStart && amount > _minSecondsUntilStart,
             "out of range"
         );
         _maxSecondsUntilStart = amount;
@@ -137,9 +128,7 @@ contract Updater is IUpdater, Ownable {
 
     function setMinDuration(uint256 amount) external onlyOwner {
         require(
-            amount > 0 &&
-            amount != _minDuration &&
-            amount < _maxDuration,
+            amount > 0 && amount != _minDuration && amount < _maxDuration,
             "out of range"
         );
         _minDuration = amount;
@@ -148,16 +137,26 @@ contract Updater is IUpdater, Ownable {
 
     function setMaxDuration(uint256 amount) external onlyOwner {
         require(
-            amount != _maxSecondsUntilStart &&
-            amount  > _minDuration,
+            amount != _maxSecondsUntilStart && amount > _minDuration,
             "out of range"
         );
         _maxDuration = amount;
         emit SetMaxDuration(amount);
     }
 
-    function minSecondsUntilStart() external view returns (uint256) {return _minSecondsUntilStart;}
-    function maxSecondsUntilStart() external view returns (uint256) {return _maxSecondsUntilStart;}
-    function minDuration() external view returns (uint256) {return _minDuration;}
-    function maxDuration() external view returns (uint256) {return _maxDuration;}
+    function minSecondsUntilStart() external view returns (uint256) {
+        return _minSecondsUntilStart;
+    }
+
+    function maxSecondsUntilStart() external view returns (uint256) {
+        return _maxSecondsUntilStart;
+    }
+
+    function minDuration() external view returns (uint256) {
+        return _minDuration;
+    }
+
+    function maxDuration() external view returns (uint256) {
+        return _maxDuration;
+    }
 }
