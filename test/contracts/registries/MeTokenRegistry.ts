@@ -142,7 +142,7 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      //should be greater than 0
+      // should be greater than 0
       expect(await meToken.totalSupply()).to.equal(10000);
     });
 

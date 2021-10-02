@@ -6,7 +6,7 @@ import { SingleAssetFactory } from "../artifacts/types/SingleAssetFactory";
 import fs from "fs";
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
-
+const deployDir = "deployment";
 function currencySymbol(chainId: number) {
   switch (chainId.toString()) {
     case "100":
@@ -128,9 +128,13 @@ async function main() {
     "Block Number": receipt.blockNumber.toString(),
   };
 
+  if (!fs.existsSync(deployDir)) {
+    fs.mkdirSync(deployDir);
+  }
+
   fs.writeFileSync(
-    `deployments/${network.name}.json`,
-    JSON.stringify(deploymentInfo, undefined, 2)
+    `${deployDir}/script-${network.name}.json`,
+    JSON.stringify(deploymentInfo)
   );
   console.log(
     `Latest Contract Address written to: deployments/${network.name}.json`
