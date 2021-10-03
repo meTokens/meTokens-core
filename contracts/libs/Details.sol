@@ -11,6 +11,7 @@ library Details {
         uint256 startTime;
         uint256 endTime;
         uint256 targetHub;
+        uint256 positionOfLastRatio;
     }
 
     struct Hub {
@@ -26,6 +27,7 @@ library Details {
         bool curveDetails;
         address targetCurve;
         uint256 targetRefundRatio;
+        uint256[] vaultRatios;
     }
 
     struct Bancor {

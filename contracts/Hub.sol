@@ -9,6 +9,7 @@ import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
+import "./interfaces/IMigration.sol";
 
 import "./libs/Details.sol";
 
@@ -154,6 +155,11 @@ contract Hub is Ownable, Initializable {
         // TODO: only callable from foundry
 
         Details.Hub storage hub_ = _hubs[id];
+
+        if (hub_.migrationVault != address(0)) {
+            require(IMigration(hub_.migrationVault).hasFinished());
+        }
+
         if (hub_.targetRefundRatio != 0) {
             hub_.refundRatio = hub_.targetRefundRatio;
             hub_.targetRefundRatio = 0;

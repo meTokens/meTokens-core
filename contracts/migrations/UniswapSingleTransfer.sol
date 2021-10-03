@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+import "../interfaces/IVault.sol";
 import "../libs/Details.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -19,8 +20,11 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    uint256 public hubId;
     uint256 public sum;
+
+    uint256 public ratio;
+    uint256 public hubId;
+    address public initialVault;
     address public targetVault;
     bool public finished;
     bool public swapped;
@@ -41,9 +45,8 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     function initialize(
         uint256 _hubId,
         address _owner,
-        address _targetVault,
-        address _tokenIn,
-        address _tokenOut
+        address _initialVault,
+        address _targetVault
     ) external initializer onlyOwner {
         // require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
