@@ -20,6 +20,7 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
     uint256 public hubId;
+    uint256 public sum;
     address public targetVault;
     bool public finished;
     bool public swapped;
@@ -36,7 +37,6 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     uint24 public immutable fee = 3000; // NOTE: 0.3%
     uint256 public amountIn;
     uint256 public amountOut;
-    uint256 public sum;
 
     function initialize(
         uint256 _hubId,
@@ -79,22 +79,21 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         swapped = true;
     }
 
+    /*
     // Get sum of balancePooled and balanceLocked for all meTokens
     //      subscribed to the hub/vault
-    function sumBalances() external returns (uint256) {
-        sum = 0;
+    function sumBalances() external returns (uint256 sum) {
 
         // Loop through all subscribed meTokens
-        /*  address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
+        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
 
         for (uint256 i = 0; i < subscribed.length; i++) {
             address meToken = subscribed[i];
-            Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-                .getDetails(meToken);
-            sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
-        } */
-        return sum;
+            Details.MeToken memory meToken_ = hub.getDetails(meToken);
+            sum += meToken_.balancePooled + meToken_.balanceLocked;
+        }
     }
+    */
 
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {

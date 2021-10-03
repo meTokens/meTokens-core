@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library Details {
-    struct MeTokenDetails {
+    struct MeToken {
         address owner;
         uint256 hubId;
         uint256 balancePooled;
@@ -13,7 +13,7 @@ library Details {
         uint256 targetHub;
     }
 
-    struct HubDetails {
+    struct Hub {
         bool active;
         address vault;
         address curve;
@@ -28,10 +28,9 @@ library Details {
         uint256 targetRefundRatio;
     }
 
-    struct BancorDetails {
+    struct Bancor {
         uint256 baseY;
         uint32 reserveWeight;
-        // bool updating;
         uint256 targetBaseY;
         uint32 targetReserveWeight;
     }

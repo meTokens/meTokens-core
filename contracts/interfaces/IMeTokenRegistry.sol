@@ -43,11 +43,11 @@ interface IMeTokenRegistry {
 
     /// @notice TODO
     /// @param meToken Address of meToken queried
-    /// @return meTokenDetails details of the meToken
+    /// @return meToken_ details of the meToken
     function getDetails(address meToken)
         external
         view
-        returns (Details.MeTokenDetails memory meTokenDetails);
+        returns (Details.MeToken memory meToken_);
 
     function transferOwnership(address _meToken, address _newOwner) external;
 

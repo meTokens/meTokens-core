@@ -61,23 +61,20 @@ contract Updater is IUpdater, Ownable {
         );
 
         bool curveDetails;
-        Details.HubDetails memory hubDetails = hub.getDetails(_hubId);
-        require(!hubDetails.updating, "already updating");
+        Details.Hub memory hub_ = hub.getDetails(_hubId);
+        require(!hub_.updating, "already updating");
 
         if (_targetRefundRatio != 0) {
             require(_targetRefundRatio < PRECISION, "_targetRefundRatio > max");
             require(
-                _targetRefundRatio != hubDetails.refundRatio,
+                _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
             );
         }
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hubDetails.curve).registerTarget(
-                    _hubId,
-                    _encodedCurveDetails
-                );
+                ICurve(hub_.curve).registerTarget(_hubId, _encodedCurveDetails);
             } else {
                 // _targetCurve != address(0))
                 require(

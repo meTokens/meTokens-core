@@ -20,7 +20,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
 
-    mapping(address => Details.MeTokenDetails) private _meTokens; // key pair: ERC20 address
+    mapping(address => Details.MeToken) private _meTokens; // key pair: ERC20 address
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
 
     constructor(address _hub, address _meTokenFactory) {
@@ -37,17 +37,17 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        Details.HubDetails memory hubDetails = hub.getDetails(_hubId);
-        require(hubDetails.active, "Hub inactive");
+        Details.Hub memory hub_ = hub.getDetails(_hubId);
+        require(hub_.active, "Hub inactive");
 
         // Initial collateral deposit from owner by finding the vault,
         // and then the collateral asset tied to that vault
-        address token = IVault(hubDetails.vault).getToken();
+        address token = IVault(hub_.vault).getToken();
         if (_tokensDeposited > 0) {
             require(
                 IERC20(token).transferFrom(
                     msg.sender,
-                    hubDetails.vault,
+                    hub_.vault,
                     _tokensDeposited
                 ),
                 "transfer failed"
@@ -59,13 +59,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         // Transfer collateral to vault and return the minted meToken
         if (_tokensDeposited > 0) {
-            uint256 _meTokensMinted = ICurve(hubDetails.curve)
-                .calculateMintReturn(
-                    _tokensDeposited, // _deposit_amount
-                    _hubId, // _hubId
-                    0, // _supply
-                    0 // _balancePooled
-                );
+            uint256 _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
+                _tokensDeposited, // _deposit_amount
+                _hubId, // _hubId
+                0, // _supply
+                0 // _balancePooled
+            );
             IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
         }
 
@@ -73,12 +72,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         _owners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeTokenDetails storage newMeTokenDetails = _meTokens[
-            meTokenAddr
-        ];
-        newMeTokenDetails.owner = msg.sender;
-        newMeTokenDetails.hubId = _hubId;
-        newMeTokenDetails.balancePooled = _tokensDeposited;
+        Details.MeToken storage meToken_ = _meTokens[meTokenAddr];
+        meToken_.owner = msg.sender;
+        meToken_.hubId = _hubId;
+        meToken_.balancePooled = _tokensDeposited;
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
@@ -89,10 +86,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         override
     {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
-        require(msg.sender == meTokenDetails.owner, "!owner");
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        require(msg.sender == meToken_.owner, "!owner");
 
-        meTokenDetails.owner = _newOwner;
+        meToken_.owner = _newOwner;
         _owners[msg.sender] = address(0);
         _owners[_newOwner] = _meToken;
 
@@ -106,11 +103,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _amount
     ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
-            meTokenDetails.balancePooled += _amount;
+            meToken_.balancePooled += _amount;
         } else {
-            meTokenDetails.balancePooled -= _amount;
+            meToken_.balancePooled -= _amount;
         }
 
         emit IncrementBalancePooled(add, _meToken, _amount);
@@ -123,11 +120,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _amount
     ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeTokenDetails storage meTokenDetails = _meTokens[_meToken];
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
-            meTokenDetails.balanceLocked += _amount;
+            meToken_.balanceLocked += _amount;
         } else {
-            meTokenDetails.balanceLocked -= _amount;
+            meToken_.balanceLocked -= _amount;
         }
 
         emit IncrementBalanceLocked(add, _meToken, _amount);
@@ -148,9 +145,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         external
         view
         override
-        returns (Details.MeTokenDetails memory meTokenDetails)
+        returns (Details.MeToken memory meToken_)
     {
-        meTokenDetails = _meTokens[_meToken];
+        meToken_ = _meTokens[_meToken];
     }
 
     /// @inheritdoc IMeTokenRegistry
