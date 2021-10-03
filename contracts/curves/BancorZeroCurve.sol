@@ -178,7 +178,6 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) private view returns (uint256) {
-        // validate input
         require(
             _balancePooled > 0 &&
                 _reserveWeight > 0 &&
@@ -283,5 +282,24 @@ contract BancorZeroCurve is ICurve {
             _balancePooled.fromUInt().mul(s.ln().mul(exponent).exp())
         );
         return res.toUInt();
+    }
+
+    /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
+    ///         constant y, calculates the return for a given conversion (in the meToken)
+    /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
+    /// @param _tokensDeposited   amount of collateral tokens to deposit
+    /// @param _baseX          constant X
+    /// @param _baseY          constant y
+    /// @return amount of meTokens minted
+    function _calculateMintReturnFromZero(
+        uint256 _tokensDeposited,
+        uint256 _reserveWeight,
+        uint256 _baseX,
+        uint256 _baseY
+    ) private pure returns (uint256) {
+        uint256 numerator = _baseY;
+        uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
+        uint256 denominator = _baseX**exponent;
+        return (numerator * _tokensDeposited**exponent) / denominator;
     }
 }
