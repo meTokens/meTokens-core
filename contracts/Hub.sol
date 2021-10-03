@@ -28,39 +28,13 @@ contract Hub is Ownable, Initializable {
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
 
-    mapping(uint256 => Details.HubDetails) private _hubs;
+    mapping(uint256 => Details.Hub) private _hubs;
     mapping(uint256 => address[]) private _subscribedMeTokens;
 
     modifier exists(uint256 id) {
         require(id <= _count, "id exceeds _count");
         _;
     }
-
-    /*
-    // TODO: actually subscribe/resubscribe/unsubscribe meToken
-    function subscribeMeToken(uint256 _id, address _meToken)
-        public
-        exists(_id)
-    {
-        _subscribedMeTokens[_id].push(_meToken);
-    }
-
-    function getSubscribedMeTokenCount(uint256 _id)
-        public
-        view
-        returns (uint256)
-    {
-        return _subscribedMeTokens[_id].length;
-    }
-
-    function getSubscribedMeTokens(uint256 _id)
-        external
-        view
-        returns (address[] memory)
-    {
-        return _subscribedMeTokens[_id];
-    }
-    */
 
     function initialize(
         address _foundry,
@@ -98,11 +72,11 @@ contract Hub is Ownable, Initializable {
             _encodedVaultAdditionalArgs
         );
         // Save the hub to the registry
-        Details.HubDetails storage newHubDetails = _hubs[_count++];
-        newHubDetails.active = true;
-        newHubDetails.vault = vault;
-        newHubDetails.curve = _curve;
-        newHubDetails.refundRatio = _refundRatio;
+        Details.Hub storage hub_ = _hubs[_count++];
+        hub_.active = true;
+        hub_.vault = vault;
+        hub_.curve = _curve;
+        hub_.refundRatio = _refundRatio;
     }
 
     function initUpdate(
@@ -126,8 +100,8 @@ contract Hub is Ownable, Initializable {
         );
 
         bool curveDetails;
-        Details.HubDetails storage hubDetails = _hubs[_id];
-        require(!hubDetails.updating, "already updating");
+        Details.Hub storage hub_ = _hubs[_id];
+        require(!hub_.updating, "already updating");
         // First, do all checks
         if (_targetRefundRatio != 0) {
             require(
@@ -135,17 +109,14 @@ contract Hub is Ownable, Initializable {
                 "_targetRefundRatio >= _precision"
             );
             require(
-                _targetRefundRatio != hubDetails.refundRatio,
+                _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
             );
         }
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hubDetails.curve).registerTarget(
-                    _id,
-                    _encodedCurveDetails
-                );
+                ICurve(hub_.curve).registerTarget(_id, _encodedCurveDetails);
             } else {
                 // _targetCurve != address(0))
                 require(
@@ -158,48 +129,48 @@ contract Hub is Ownable, Initializable {
         }
 
         if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hubDetails.migrationVault = _migrationVault;
-            hubDetails.targetVault = _targetVault;
+            hub_.migrationVault = _migrationVault;
+            hub_.targetVault = _targetVault;
         }
 
         if (_targetRefundRatio != 0) {
-            hubDetails.targetRefundRatio = _targetRefundRatio;
+            hub_.targetRefundRatio = _targetRefundRatio;
         }
         if (_targetCurve != address(0)) {
-            hubDetails.targetCurve = _targetCurve;
+            hub_.targetCurve = _targetCurve;
         }
         if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hubDetails.migrationVault = _migrationVault;
-            hubDetails.targetVault = _targetVault;
+            hub_.migrationVault = _migrationVault;
+            hub_.targetVault = _targetVault;
         }
 
-        hubDetails.curveDetails = curveDetails;
-        hubDetails.updating = true;
-        hubDetails.startTime = _startTime;
-        hubDetails.endTime = _startTime + _duration;
+        hub_.curveDetails = curveDetails;
+        hub_.updating = true;
+        hub_.startTime = _startTime;
+        hub_.endTime = _startTime + _duration;
     }
 
     function finishUpdate(uint256 id) external {
         // TODO: only callable from foundry
 
-        Details.HubDetails storage hubDetails = _hubs[id];
-        if (hubDetails.targetRefundRatio != 0) {
-            hubDetails.refundRatio = hubDetails.targetRefundRatio;
-            hubDetails.targetRefundRatio = 0;
+        Details.Hub storage hub_ = _hubs[id];
+        if (hub_.targetRefundRatio != 0) {
+            hub_.refundRatio = hub_.targetRefundRatio;
+            hub_.targetRefundRatio = 0;
         }
 
         // Updating curve details and staying with the same curve
-        if (hubDetails.curveDetails) {
-            if (hubDetails.targetCurve == address(0)) {
-                ICurve(hubDetails.curve).finishUpdate(id);
+        if (hub_.curveDetails) {
+            if (hub_.targetCurve == address(0)) {
+                ICurve(hub_.curve).finishUpdate(id);
             } else {
-                hubDetails.curve = hubDetails.targetCurve;
-                hubDetails.targetCurve = address(0);
+                hub_.curve = hub_.targetCurve;
+                hub_.targetCurve = address(0);
             }
-            hubDetails.curveDetails = false;
+            hub_.curveDetails = false;
         }
 
-        hubDetails.updating = false;
+        hub_.updating = false;
     }
 
     function getCount() external view returns (uint256) {
@@ -212,31 +183,31 @@ contract Hub is Ownable, Initializable {
         exists(id)
         returns (uint256)
     {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.refundRatio;
+        Details.Hub memory hub_ = _hubs[id];
+        return hub_.refundRatio;
     }
 
     function getDetails(uint256 id)
         external
         view
         exists(id)
-        returns (Details.HubDetails memory hubDetails)
+        returns (Details.Hub memory hub_)
     {
-        hubDetails = _hubs[id];
+        hub_ = _hubs[id];
     }
 
     function getCurve(uint256 id) external view exists(id) returns (address) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.curve;
+        Details.Hub memory hub_ = _hubs[id];
+        return hub_.curve;
     }
 
     function getVault(uint256 id) external view exists(id) returns (address) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.vault;
+        Details.Hub memory hub_ = _hubs[id];
+        return hub_.vault;
     }
 
     function isActive(uint256 id) public view returns (bool) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.active;
+        Details.Hub memory hub_ = _hubs[id];
+        return hub_.active;
     }
 }

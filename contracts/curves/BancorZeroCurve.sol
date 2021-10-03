@@ -13,7 +13,7 @@ import "../utils/Power.sol";
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve, Power {
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Details.BancorDetails) private _bancors;
+    mapping(uint256 => Details.Bancor) private _bancors;
 
     function register(uint256 _hubId, bytes calldata _encodedValueSet)
         external
@@ -35,9 +35,9 @@ contract BancorZeroCurve is ICurve, Power {
             "reserveWeight not in range"
         );
 
-        Details.BancorDetails storage newBancorDetails = _bancors[_hubId];
-        newBancorDetails.baseY = baseY;
-        newBancorDetails.reserveWeight = reserveWeight;
+        Details.Bancor storage bancor_ = _bancors[_hubId];
+        bancor_.baseY = baseY;
+        bancor_.reserveWeight = reserveWeight;
     }
 
     function registerTarget(uint256 _hubId, bytes calldata _encodedValueSet)
@@ -48,31 +48,31 @@ contract BancorZeroCurve is ICurve, Power {
 
         uint32 targetReserveWeight = abi.decode(_encodedValueSet, (uint32));
 
-        Details.BancorDetails storage bancorDetails = _bancors[_hubId];
+        Details.Bancor storage bancor_ = _bancors[_hubId];
         require(
             targetReserveWeight > 0 && targetReserveWeight <= MAX_WEIGHT,
             "reserveWeight not in range"
         );
         require(
-            targetReserveWeight != bancorDetails.reserveWeight,
+            targetReserveWeight != bancor_.reserveWeight,
             "targeReserveWeight == reserveWeight"
         );
 
         // targetBaseY = (old baseY * oldR) / newR
-        uint256 targetBaseY = (bancorDetails.baseY *
-            bancorDetails.reserveWeight) / targetReserveWeight;
+        uint256 targetBaseY = (bancor_.baseY * bancor_.reserveWeight) /
+            targetReserveWeight;
 
-        bancorDetails.targetBaseY = targetBaseY;
-        bancorDetails.targetReserveWeight = targetReserveWeight;
+        bancor_.targetBaseY = targetBaseY;
+        bancor_.targetReserveWeight = targetReserveWeight;
     }
 
     function finishUpdate(uint256 _hubId) external override {
         // TODO; only hub can call
-        Details.BancorDetails storage bancorDetails = _bancors[_hubId];
-        bancorDetails.reserveWeight = bancorDetails.targetReserveWeight;
-        bancorDetails.baseY = bancorDetails.targetBaseY;
-        bancorDetails.targetReserveWeight = 0;
-        bancorDetails.targetBaseY = 0;
+        Details.Bancor storage bancor_ = _bancors[_hubId];
+        bancor_.reserveWeight = bancor_.targetReserveWeight;
+        bancor_.baseY = bancor_.targetBaseY;
+        bancor_.targetReserveWeight = 0;
+        bancor_.targetBaseY = 0;
     }
 
     /// @inheritdoc ICurve
@@ -82,20 +82,20 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
+        Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
-                bancorDetails.reserveWeight,
+                bancor_.reserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
-                bancorDetails.reserveWeight,
+                bancor_.reserveWeight,
                 BASE_X,
-                bancorDetails.baseY
+                bancor_.baseY
             );
         }
     }
@@ -107,20 +107,20 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
+        Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
-                bancorDetails.targetReserveWeight,
+                bancor_.targetReserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
-                bancorDetails.targetReserveWeight,
+                bancor_.targetReserveWeight,
                 BASE_X,
-                bancorDetails.targetBaseY
+                bancor_.targetBaseY
             );
         }
     }
@@ -132,10 +132,10 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
+        Details.Bancor memory bancor_ = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
-            bancorDetails.reserveWeight,
+            bancor_.reserveWeight,
             _supply,
             _balancePooled
         );
@@ -147,10 +147,10 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.BancorDetails memory bancorDetails = _bancors[_hubId];
+        Details.Bancor memory bancor_ = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
-            bancorDetails.targetReserveWeight,
+            bancor_.targetReserveWeight,
             _supply,
             _balancePooled
         );
@@ -210,7 +210,7 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
-    ) private view returns (uint256) {
+    ) private pure returns (uint256) {
         uint256 numerator = _baseY;
         uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
         uint256 denominator = _baseX**exponent;

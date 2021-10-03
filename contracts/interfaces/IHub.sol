@@ -45,11 +45,11 @@ interface IHub {
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return hubDetails Details of hub
+    /// @return hub_ Details of hub
     function getDetails(uint256 id)
         external
         view
-        returns (Details.HubDetails memory hubDetails);
+        returns (Details.Hub memory hub_);
 
     /// @notice Helper to fetch only owner of hubDetails
     /// @param id Unique hub identifier

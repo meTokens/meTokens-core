@@ -39,11 +39,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _tokensDeposited,
         address _recipient
     ) external override {
-        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-            .getDetails(_meToken);
-        Details.HubDetails memory hubDetails = hub.getDetails(
-            meTokenDetails.hubId
-        );
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hubDetails = hub.getDetails(meToken_.hubId);
         require(hubDetails.active, "Hub inactive");
 
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
@@ -51,17 +48,17 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         if (hubDetails.updating && block.timestamp > hubDetails.endTime) {
             // Finish updating curve
-            hub.finishUpdate(meTokenDetails.hubId);
+            hub.finishUpdate(meToken_.hubId);
             if (hubDetails.curveDetails) {
                 // Finish updating curve
-                ICurve(hubDetails.curve).finishUpdate(meTokenDetails.hubId);
+                ICurve(hubDetails.curve).finishUpdate(meToken_.hubId);
             }
         }
 
         uint256 meTokensMinted = calculateMintReturn(
             _meToken,
             tokensDepositedAfterFees,
-            meTokenDetails,
+            meToken_,
             hubDetails
         );
 
@@ -94,18 +91,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         address _recipient
     ) external override {
-        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-            .getDetails(_meToken);
-        Details.HubDetails memory hubDetails = hub.getDetails(
-            meTokenDetails.hubId
-        );
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hubDetails = hub.getDetails(meToken_.hubId);
         require(hubDetails.active, "Hub inactive");
 
         // Calculate how many tokens tokens are returned
         uint256 tokensReturned = calculateBurnReturn(
             _meToken,
             _meTokensBurned,
-            meTokenDetails,
+            meToken_,
             hubDetails
         );
 
@@ -114,13 +108,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == meTokenDetails.owner) {
+        if (msg.sender == meToken_.owner) {
             feeRate = fees.burnOwnerFee();
             actualTokensReturned =
                 tokensReturned +
                 (((PRECISION * _meTokensBurned) /
-                    IERC20(_meToken).totalSupply()) *
-                    meTokenDetails.balanceLocked) /
+                    IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
@@ -186,47 +179,47 @@ contract Foundry is IFoundry, Ownable, Initializable {
     function calculateMintReturn(
         address _meToken,
         uint256 _tokensDeposited,
-        Details.MeTokenDetails memory _meTokenDetails,
-        Details.HubDetails memory _hubDetails
+        Details.MeToken memory _meToken_,
+        Details.Hub memory hub_
     ) public view returns (uint256 meTokensMinted) {
         // Calculate return assuming update is not happening
-        meTokensMinted = ICurve(_hubDetails.curve).calculateMintReturn(
+        meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
             _tokensDeposited,
-            _meTokenDetails.hubId,
+            _meToken_.hubId,
             IERC20(_meToken).totalSupply(),
-            _meTokenDetails.balancePooled
+            _meToken_.balancePooled
         );
 
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
-            (_hubDetails.updating && (_hubDetails.targetCurve != address(0))) ||
-            (_hubDetails.curveDetails)
+            (hub_.updating && (hub_.targetCurve != address(0))) ||
+            (hub_.curveDetails)
         ) {
             uint256 targetMeTokensMinted;
-            if (_hubDetails.targetCurve != address(0)) {
+            if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
-                targetMeTokensMinted = ICurve(_hubDetails.targetCurve)
+                targetMeTokensMinted = ICurve(hub_.targetCurve)
                     .calculateMintReturn(
                         _tokensDeposited,
-                        _meTokenDetails.hubId,
+                        _meToken_.hubId,
                         IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        _meToken_.balancePooled
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetMeTokensMinted = ICurve(_hubDetails.curve)
+                targetMeTokensMinted = ICurve(hub_.curve)
                     .calculateTargetMintReturn(
                         _tokensDeposited,
-                        _meTokenDetails.hubId,
+                        _meToken_.hubId,
                         IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        _meToken_.balancePooled
                     );
             }
             meTokensMinted = WeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
-                _hubDetails.startTime,
-                _hubDetails.endTime
+                hub_.startTime,
+                hub_.endTime
             );
         }
     }
@@ -234,47 +227,47 @@ contract Foundry is IFoundry, Ownable, Initializable {
     function calculateBurnReturn(
         address _meToken,
         uint256 _meTokensBurned,
-        Details.MeTokenDetails memory _meTokenDetails,
-        Details.HubDetails memory _hubDetails
+        Details.MeToken memory _meToken_,
+        Details.Hub memory hub_
     ) public view returns (uint256 tokensReturned) {
         // Calculate return assuming update is not happening
-        tokensReturned = ICurve(_hubDetails.curve).calculateBurnReturn(
+        tokensReturned = ICurve(hub_.curve).calculateBurnReturn(
             _meTokensBurned,
-            _meTokenDetails.hubId,
+            _meToken_.hubId,
             IERC20(_meToken).totalSupply(),
-            _meTokenDetails.balancePooled
+            _meToken_.balancePooled
         );
 
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
-            (_hubDetails.updating && (_hubDetails.targetCurve != address(0))) ||
-            (_hubDetails.curveDetails)
+            (hub_.updating && (hub_.targetCurve != address(0))) ||
+            (hub_.curveDetails)
         ) {
             uint256 targetTokensReturned;
-            if (_hubDetails.targetCurve != address(0)) {
+            if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
-                targetTokensReturned = ICurve(_hubDetails.targetCurve)
+                targetTokensReturned = ICurve(hub_.targetCurve)
                     .calculateBurnReturn(
                         _meTokensBurned,
-                        _meTokenDetails.hubId,
+                        _meToken_.hubId,
                         IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        _meToken_.balancePooled
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetTokensReturned = ICurve(_hubDetails.curve)
+                targetTokensReturned = ICurve(hub_.curve)
                     .calculateTargetBurnReturn(
                         _meTokensBurned,
-                        _meTokenDetails.hubId,
+                        _meToken_.hubId,
                         IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        _meToken_.balancePooled
                     );
             }
             tokensReturned = WeightedAverage.calculate(
                 tokensReturned,
                 targetTokensReturned,
-                _hubDetails.startTime,
-                _hubDetails.endTime
+                hub_.startTime,
+                hub_.endTime
             );
         }
     }
