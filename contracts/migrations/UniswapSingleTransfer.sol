@@ -53,9 +53,11 @@ contract UniswapSingleTransfer is Initializable, Ownable {
 
         hubId = _hubId;
 
-        tokenIn = _tokenIn;
-        tokenOut = _tokenOut;
+        initialVault = _initialVault;
         targetVault = _targetVault;
+
+        tokenIn = IVault(_initialVault).getToken();
+        tokenOut = IVault(_targetVault).getToken();
     }
 
     // Trades vault.getToken() to targetVault.getToken();
@@ -107,5 +109,9 @@ contract UniswapSingleTransfer is Initializable, Ownable {
 
         // Send token to new vault
         IERC20(tokenOut).transfer(targetVault, amountOut);
+    }
+
+    function hasFinished() external view returns (bool) {
+        return swapped && finished;
     }
 }
