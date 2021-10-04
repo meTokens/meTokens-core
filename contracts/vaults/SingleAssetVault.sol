@@ -15,8 +15,8 @@ import "hardhat/console.sol";
 contract SingleAssetVault is IVault, Ownable, Initializable {
     uint256 public constant PRECISION = 10**18;
 
-    address private migration;
-    bool private migrated;
+    address public migration;
+    bool public migrated;
     address public token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;

@@ -17,7 +17,7 @@ import "../libs/Details.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistry is IMeTokenRegistry, Roles {
-    uint256 private immutable PRECISION = 10**18;
+    uint256 public constant PRECISION = 10**18;
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
 
