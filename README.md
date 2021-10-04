@@ -5,52 +5,87 @@
 ### Current test status
 
 ```
-➜  meTokens-core git:(main) ✗ npx hardhat test
+➜  meTokens-core git:(feat/migration) yarn test
+yarn run v1.22.10
+warning ../../../package.json: No license field
+$ hardhat test
+Compiling 51 files with 0.8.0
+Generating typings for: 51 artifacts in dir: artifacts/types for target: ethers-v5
+Successfully generated 92 typings!
+Compilation finished successfully
 
 
   MeTokenFactory.sol
     ✓ create()
 
   UniswapSingleTransferFactory.sol
-    1) "before all" hook for ""
+    ✓
 
   SingleAssetFactory.sol
-    2) "before all" hook in "SingleAssetFactory.sol"
+    create()
+      ✓ Creates a new vault
+      ✓ Emits Create(address)
+
+  Fees.sol
+    setMintFee()
+      ✓ Returns correct value of fee
+      ✓ Non-owner cannot set fee
+      ✓ Cannot set fee to the same fee
+      ✓ Cannot set fee above the fee max
+      ✓ Sets fee to the new value
+      ✓ Emits SetMintFee(rate)
 
   Foundry.sol
-    3) "before all" hook in "Foundry.sol"
+    mint()
+      ✓ Should do something
+    burn()
+      ✓ Should do something
 
   Hub.sol
-    ✓ Create new hub
-    ✓ Register new hub
+    ✓ initialize()
+    ✓ register()
+    ✓ deactivate()
 
   CurveRegistry.sol
     register()
-(node:114516) UnhandledPromiseRejectionWarning: Error: BancorZeroValueSet contains unresolved libraries. You must deploy and link the following libraries before you can deploy a new version of BancorZeroValueSet
-      4) Reverts when the curve name is already chosen
-      5) Emits RegisterCurve()
-      6) Returns uint256
+      ✓ Emits register() (95ms)
     deactivate()
-      7) Reverts from an invalid ID
-      ✓ Emits Deactivate(id) when successful
-      ✓ Sets active to false
-    getCount()
-      8) Should start at 0
-      9) Should increment to 1 after register()
+      ✓ Reverts when deactivating an inactive curve (87ms)
+      ✓ Emits Deactivate(id) when successful (212ms)
+      ✓ Sets active to from true to false (253ms)
     isActive()
-      10) Should return false for invalid ID
-      11) Should return true for an active ID
+      ✓ Return false for invalid curve address (81ms)
+      ✓ Return true for an active ID (118ms)
 
   MeTokenRegistry.sol
-    12) "before all" hook in "MeTokenRegistry.sol"
+    register()
+      ✓ User can create a meToken with no collateral (225ms)
+      ✓ User can create a meToken with 100 DAI as collateral (732ms)
+    transferOwnership()
+      ✓ Fails if not owner (43ms)
+      ✓ Emits TransferOwnership() (115ms)
+    isOwner()
+      ✓ Returns false for address(0)
+      ✓ Returns true for a meToken issuer
+    balancePool
+      ✓ Fails if not foundry
+      ✓ incrementBalancePooled()
+      ✓ incrementBalanceLocked()
 
   VaultRegistry.sol
-    13) "before all" hook in "VaultRegistry.sol"
-
-  Updater.sol
-    initUpdate()
-      14) Expect _startTime revert when out of range
-      15) Expect _duration revert when out of range
+    approve()
+      ✓ Vault is not yet approved (75ms)
+      ✓ Emits Approve(address) (103ms)
+    register()
+      ✓ Reverts when called by unapproved factory
+      ✓ Emits Register(address) (243ms)
+    unapprove()
+      ✓ Revert if not yet approved (71ms)
+      ✓ Emits Unapprove(address) (149ms)
+    isActive()
+      ✓ Return false for inactive/nonexistent vault (65ms)
+      ✓ register Revert if not yet approved (78ms)
+      ✓ Return true for active vault (122ms)
 
   SingleAsset.sol
 
@@ -58,17 +93,19 @@
 
   Vault.sol
     addFee()
-      16) Reverts when not called by owner
-      17) Increments accruedFees by amount
-      18) Emits AddFee(amount)
+      ✓ Reverts when not called by owner
+      ✓ Increments accruedFees by amount (39ms)
+      ✓ Emits AddFee(amount)
     withdrawFees()
-      19) Reverts when not called by owner
+      ✓ Reverts when not called by owner
       ✓ Transfer some accrued fees
       ✓ Transfer all remaining accrued fees
 
 
-  8 passing (8s)
-  19 failing
+  46 passing (12s)
+
+Done in 31.43s.
+
 ```
 
 ## Relationship between Hub & Vault
@@ -160,9 +197,9 @@
 
 #### 6.04
 
-- [ ] \_calculateWeightedAmount
-  - [ ] Validate calculations
-  - [ ] Remove `block.timestamp > endTime` ?
+- [x] \_calculateWeightedAmount
+  - [x] Validate calculations
+  - [x] Remove `block.timestamp > endTime` ?
 - [x] `hub.getHubStatus` to return uint
   - similar to arrays
 
@@ -185,14 +222,11 @@
 
 #### 6.17
 
-- [ ] Figure out how to do hubDetails.refundRatio within `Foundry.sol`
-- [ ] Foundry to convert `QUEUED` status into `UPDATING`
-  - Generic function that `mint()` and burn()` could call?
+- [x] Figure out how to do hubDetails.refundRatio within `Foundry.sol`
 - [x] set startTime and endTime using a `duration` for update period instead of startTime/esndTime
 - [x] Figure out if we need to return `getCurveDetails()` with CurveRegistry/interface
   - Yes, as well as getDetails functions for other registries
 - [x] Recollateralization interfaces
-- [ ] `recollateralizations.minSecondsUntilStart()` and friends within Updater
 
 #### 6.18
 
@@ -203,7 +237,6 @@
 - [x] `MAX_TARGET_REFUND_RATIO` value within Updater
   - Would be same as PRECISION, where Hub checks `_refundRatio < PRECISION` in hub creation
 - [x] Function to see if an issuer address is passed in, which meToken they own
-- [ ] Updater to create recollateralization
 - [x] Within factories, validate salt of deployCount is correct type for CREATE2
   - Done using OZ Clones and bytes32
 
@@ -213,15 +246,13 @@
 
 #### 6.25
 
-- [ ] `curveRegistry.isRegisteredCurve()` within Updater to work
-- [ ] Standardize Curve & Vault registries to be more similar
+- [x] `curveRegistry.isActive()` within Updater to work
 
 #### 6.28
 
 - [ ] Refactor
   - [x] I\_{Contract}.sol => I{Contract}.sol
   - [x] Move events to interfaces
-  - [ ] Contract state variables to interfaces (?)
 
 #### 7.5
 
