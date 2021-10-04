@@ -15,6 +15,8 @@ import "hardhat/console.sol";
 contract SingleAssetVault is IVault, Ownable, Initializable {
     uint256 public constant PRECISION = 10**18;
 
+    address private migration;
+    bool private migrated;
     address public token;
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
@@ -35,8 +37,25 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     /// @inheritdoc IVault
     function addFee(uint256 _amount) external override {
         // TODO: access control
-        accruedFees = accruedFees + _amount;
+        accruedFees += _amount;
         emit AddFee(_amount);
+    }
+
+    function startMigration(address _migration) external {
+        // TODO: access control
+        require(migration == address(0), "migration already set");
+        require(_migration != address(0), "Cannot migrate to 0 address");
+        migration = _migration;
+        emit StartMigration(_migration);
+    }
+
+    function migrate() external {
+        // TODO: access control
+        require(!migrated, "migrated");
+        uint256 balanceAfterFees = IERC20(token).balanceOf(address(this)) -
+            accruedFees;
+        IERC20(token).transfer(migration, balanceAfterFees);
+        emit Migrate();
     }
 
     /// @inheritdoc IVault
@@ -54,10 +73,14 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
             );
         }
 
-        accruedFees = accruedFees - _amount;
+        accruedFees -= _amount;
 
         IERC20(token).transfer(_to, _amount);
         emit Withdraw(_amount, _to);
+    }
+
+    function getAccruedFees() external view override returns (uint256) {
+        return accruedFees;
     }
 
     /// @inheritdoc IVault
