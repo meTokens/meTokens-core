@@ -2,6 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Fees } from "../../artifacts/types/Fees";
+import { deploy } from "../utils/helpers";
 
 describe("Fees.sol", () => {
   let fees: Fees;
@@ -17,8 +18,8 @@ describe("Fees.sol", () => {
   let account1: SignerWithAddress;
   before(async () => {
     [account0, account1] = await ethers.getSigners();
-    const feesFactory = await ethers.getContractFactory("Fees");
-    fees = (await feesFactory.deploy()) as Fees;
+    fees = await deploy<Fees>("Fees");
+
     await fees.deployed();
 
     await fees.initialize(
