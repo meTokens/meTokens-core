@@ -40,18 +40,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _recipient
     ) external override {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hubDetails = hub.getDetails(meToken_.hubId);
-        require(hubDetails.active, "Hub inactive");
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        require(hub_.active, "Hub inactive");
 
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        if (hubDetails.updating && block.timestamp > hubDetails.endTime) {
+        if (hub_.updating && block.timestamp > hub_.endTime) {
             // Finish updating curve
             hub.finishUpdate(meToken_.hubId);
-            if (hubDetails.curveDetails) {
+            if (hub_.curveDetails) {
                 // Finish updating curve
-                ICurve(hubDetails.curve).finishUpdate(meToken_.hubId);
+                ICurve(hub_.curve).finishUpdate(meToken_.hubId);
             }
         }
 
@@ -59,11 +59,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meToken,
             tokensDepositedAfterFees,
             meToken_,
-            hubDetails
+            hub_
         );
 
         // Send tokens to vault and update balance pooled
-        address vaultToken = IVault(hubDetails.vault).getToken();
+        address vaultToken = IVault(hub_.vault).getToken();
         IERC20(vaultToken).transferFrom(
             msg.sender,
             address(this),
@@ -78,7 +78,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         // Transfer fees
         if (fee > 0) {
-            IVault(hubDetails.vault).addFee(fee);
+            IVault(hub_.vault).addFee(fee);
         }
 
         // Mint meToken to user
@@ -92,15 +92,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _recipient
     ) external override {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hubDetails = hub.getDetails(meToken_.hubId);
-        require(hubDetails.active, "Hub inactive");
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        require(hub_.active, "Hub inactive");
 
         // Calculate how many tokens tokens are returned
         uint256 tokensReturned = calculateBurnReturn(
             _meToken,
             _meTokensBurned,
             meToken_,
-            hubDetails
+            hub_
         );
 
         uint256 feeRate;
@@ -118,18 +118,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
         } else {
             feeRate = fees.burnBuyerFee();
             // tokensReturnedAfterFees = tokensReturned * (PRECISION - feeRate) / PRECISION;
-            uint256 refundRatio = hubDetails.refundRatio;
-            if (hubDetails.targetRefundRatio == 0) {
+            uint256 refundRatio = hub_.refundRatio;
+            if (hub_.targetRefundRatio == 0) {
                 // Not updating targetRefundRatio
-                actualTokensReturned = tokensReturned * hubDetails.refundRatio;
+                actualTokensReturned = tokensReturned * hub_.refundRatio;
             } else {
                 actualTokensReturned =
                     tokensReturned *
                     WeightedAverage.calculate(
-                        hubDetails.refundRatio,
-                        hubDetails.targetRefundRatio,
-                        hubDetails.startTime,
-                        hubDetails.endTime
+                        hub_.refundRatio,
+                        hub_.targetRefundRatio,
+                        hub_.startTime,
+                        hub_.endTime
                     );
             }
             actualTokensReturned *= refundRatio;
@@ -162,14 +162,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Transfer fees - TODO
         // if ((tokensReturnedWeighted * feeRate / PRECISION) > 0) {
         //     uint256 fee = tokensReturnedWeighted * feeRate / PRECISION;
-        //     IVault(hubDetails.vault).addFee(fee);
+        //     IVault(hub_.vault).addFee(fee);
         // }
 
         // Send tokens from vault
-        address vaultToken = IVault(hubDetails.vault).getToken();
-        // IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, tokensReturnedAfterFees);
+        address vaultToken = IVault(hub_.vault).getToken();
+        // IERC20(vaultToken).transferFrom(hub_.vault, _recipient, tokensReturnedAfterFees);
         IERC20(vaultToken).transferFrom(
-            hubDetails.vault,
+            hub_.vault,
             _recipient,
             actualTokensReturned
         );
