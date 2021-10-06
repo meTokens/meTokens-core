@@ -7,7 +7,7 @@ library Details {
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        bool updating; // TODO: validate
+        bool resubscribing;
         uint256 startTime;
         uint256 endTime;
         uint256 targetHub;
