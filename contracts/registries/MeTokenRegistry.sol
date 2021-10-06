@@ -131,16 +131,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
-        uint256 vaultRatiosCnt = hub_.vaultRatios.length;
-
-        // Hub has never needed to hupdate meToken balances
-        if (vaultRatiosCnt == 0) {
-            return;
-        }
-
         for (
             uint256 i = meToken_.positionOfLastRatio;
-            i < vaultRatiosCnt;
+            i < hub_.vaultRatios.length;
             i++
         ) {
             uint256 multiplier = hub_.vaultRatios[i] * PRECISION;
@@ -150,7 +143,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             meToken_.balancePooled *= multiplier / PRECISION;
             meToken_.balanceLocked *= multiplier / PRECISION;
         }
-        meToken_.positionOfLastRatio = vaultRatiosCnt;
+        meToken_.positionOfLastRatio = hub_.vaultRatios.length;
     }
 
     /// @inheritdoc IMeTokenRegistry

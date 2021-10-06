@@ -246,19 +246,19 @@ contract BancorZeroCurve is ICurve, Power {
     ///         constant y, calculates the return for a given conversion (in the meToken)
     /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
     /// @param _tokensDeposited   amount of collateral tokens to deposit
+    /// @param _reserveWeight connector weight, represented in ppm, 1 - 1,000,000
     /// @param _baseX          constant X
     /// @param _baseY          constant y
-    /// @return amount of meTokens minted
+    /// @return tokensReturned amount of meTokens minted
     function _calculateMintReturnFromZero(
         uint256 _tokensDeposited,
         uint256 _reserveWeight,
         uint256 _baseX,
         uint256 _baseY
-    ) private pure returns (uint256) {
-        uint256 numerator = _baseY;
-        uint256 exponent = PRECISION / _reserveWeight - PRECISION;
-        uint256 exponent = 2; //  (PRECISION / _reserveWeight - PRECISION);
-        uint256 denominator = _baseX**exponent;
-        return (numerator * _tokensDeposited**exponent) / denominator;
+    ) private view returns (uint256) {
+        return
+            _baseY /
+            (_baseX**(PRECISION / _reserveWeight - PRECISION) *
+                _tokensDeposited**(PRECISION / _reserveWeight - PRECISION));
     }
 }
