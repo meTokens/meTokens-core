@@ -99,7 +99,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     // TODO
     function updateBalances(address _meToken) external override {
-        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        // require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 

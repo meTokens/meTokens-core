@@ -84,22 +84,6 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         swapped = true;
     }
 
-    /*
-    // Get sum of balancePooled and balanceLocked for all meTokens
-    //      subscribed to the hub/vault
-    function sumBalances() external returns (uint256 sum) {
-
-        // Loop through all subscribed meTokens
-        address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
-
-        for (uint256 i = 0; i < subscribed.length; i++) {
-            address meToken = subscribed[i];
-            Details.MeToken memory meToken_ = hub.getDetails(meToken);
-            sum += meToken_.balancePooled + meToken_.balanceLocked;
-        }
-    }
-    */
-
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
         require(swapped && !finished);

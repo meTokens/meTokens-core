@@ -80,6 +80,11 @@ contract Hub is Ownable, Initializable {
         hub_.refundRatio = _refundRatio;
     }
 
+    function _migrate() private {
+        // TODO: only called through initUpdate(), or through
+        // the meToken registry, for a meToken resubscribing
+    }
+
     function initUpdate(
         uint256 _id,
         address _migrationVault,
