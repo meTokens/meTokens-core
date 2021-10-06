@@ -256,7 +256,8 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _baseY
     ) private pure returns (uint256) {
         uint256 numerator = _baseY;
-        uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
+        uint256 exponent = PRECISION / _reserveWeight - PRECISION;
+        uint256 exponent = 2; //  (PRECISION / _reserveWeight - PRECISION);
         uint256 denominator = _baseX**exponent;
         return (numerator * _tokensDeposited**exponent) / denominator;
     }
