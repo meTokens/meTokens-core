@@ -88,7 +88,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _targetHub
     ) external {
         // TODO: where to store these requirements?
-        require(_startTime > _endTime);
+        require(_startTime > block.timestamp && _startTime < _endTime);
 
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);

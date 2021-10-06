@@ -51,28 +51,7 @@ interface IHub {
         view
         returns (Details.Hub memory hub_);
 
-    /// @notice Helper to fetch only owner of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of owner
-    function getOwner(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only vault of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of vault
-    function getVault(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only curve of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of curve
-    function getCurve(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only refundRatio of hubDetails
-    /// @param id Unique hub identifier
-    /// @return uint Return refundRatio
-    function getRefundRatio(uint256 id) external view returns (uint256);
-
     /// @notice TODO
-    /// @param id Unique hub identifier
-    /// @return bool is the hub active?
-    function isActive(uint256 id) external view returns (bool);
+    /// @return count of hubs created
+    function count() external view returns (uint256);
 }

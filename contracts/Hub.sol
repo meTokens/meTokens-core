@@ -184,18 +184,8 @@ contract Hub is Ownable, Initializable {
         hub_.updating = false;
     }
 
-    function getCount() external view returns (uint256) {
+    function count() external view returns (uint256) {
         return _count;
-    }
-
-    function getRefundRatio(uint256 id)
-        external
-        view
-        exists(id)
-        returns (uint256)
-    {
-        Details.Hub memory hub_ = _hubs[id];
-        return hub_.refundRatio;
     }
 
     function getDetails(uint256 id)
@@ -205,20 +195,5 @@ contract Hub is Ownable, Initializable {
         returns (Details.Hub memory hub_)
     {
         hub_ = _hubs[id];
-    }
-
-    function getCurve(uint256 id) external view exists(id) returns (address) {
-        Details.Hub memory hub_ = _hubs[id];
-        return hub_.curve;
-    }
-
-    function getVault(uint256 id) external view exists(id) returns (address) {
-        Details.Hub memory hub_ = _hubs[id];
-        return hub_.vault;
-    }
-
-    function isActive(uint256 id) public view returns (bool) {
-        Details.Hub memory hub_ = _hubs[id];
-        return hub_.active;
     }
 }
