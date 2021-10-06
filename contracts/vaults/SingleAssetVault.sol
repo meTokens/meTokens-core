@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "../libs/Details.sol";
 import "../interfaces/IVaultRegistry.sol";
 import "../interfaces/IMeTokenRegistry.sol";
+import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IERC20.sol";
 
@@ -21,8 +22,9 @@ contract SingleAssetVault is IVault, Ownable, Initializable {
     uint256 public accruedFees;
     bytes public encodedAdditionalArgs;
 
-    // TODO: figure out where to set this
-    address public meTokenRegistry = IMeTokenRegistry(address(0));
+    // TODO: figure out where to set these
+    IMeTokenRegistry public meTokenRegistry = IMeTokenRegistry(address(0));
+    IHub public hub = IHub(address(0));
 
     function initialize(
         address _foundry,

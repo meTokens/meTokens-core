@@ -81,6 +81,35 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
+    function resubscribe(
+        address _meToken,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _targetHub
+    ) external {
+        // TODO: where to store these requirements?
+        require(_startTime > _endTime);
+
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+
+        require(msg.sender == meToken_.owner, "!owner");
+        require(!meToken_.resubscribing, "Already resubscribing");
+        require(hub_.active, "hub inactive");
+
+        // First make sure meToken has been updated to the most recent hub.vaultRatio
+        if (meToken_.positionOfLastRatio < hub_.vaultRatios.length) {
+            updateBalances(_meToken);
+        }
+
+        meToken_.startTime = _startTime;
+        meToken_.endTime = _endTime;
+        meToken_.targetHub = _targetHub;
+        meToken_.resubscribing = true;
+
+        // TODO: start migrating the vault of the meToken
+    }
+
     /// @inheritdoc IMeTokenRegistry
     function transferOwnership(address _meToken, address _newOwner)
         external
@@ -97,8 +126,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
-    // TODO
-    function updateBalances(address _meToken) external override {
+    function updateBalances(address _meToken) public override {
         // require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
