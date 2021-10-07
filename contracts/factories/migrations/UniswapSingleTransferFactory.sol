@@ -8,7 +8,7 @@ import "../../interfaces/IMigrationRegistry.sol";
 import "../../interfaces/IVault.sol";
 
 contract UniswapSingleTransferFactory {
-    uint256 public count;
+    uint256 private _count;
     address public hub;
     address public implementation;
     IMigrationRegistry public migrationRegistry;
@@ -34,7 +34,7 @@ contract UniswapSingleTransferFactory {
         // TODO: access control
         address migrationVault = Clones.cloneDeterministic(
             implementation,
-            bytes32(count++)
+            bytes32(_count++)
         );
 
         // create our migration

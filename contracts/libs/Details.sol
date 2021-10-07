@@ -11,6 +11,7 @@ library Details {
         uint256 startTime;
         uint256 endTime;
         uint256 targetHub;
+        address migration;
         uint256 positionOfLastRatio;
     }
 

@@ -58,10 +58,12 @@ contract UniswapSingleTransfer is Initializable, Ownable {
 
         tokenIn = IVault(_initialVault).getToken();
         tokenOut = IVault(_targetVault).getToken();
+
+        _swap();
     }
 
     // Trades vault.getToken() to targetVault.getToken();
-    function swap() external {
+    function _swap() private {
         require(!swapped, "swapped");
 
         amountIn = IERC20(tokenIn).balanceOf(address(this));
