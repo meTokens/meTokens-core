@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "../MeToken.sol";
 import "../Roles.sol";
 
+import "../interfaces/IMigrationRegistry.sol";
+import "../interfaces/IMigrationFactory.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
@@ -20,13 +22,19 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     uint256 public constant PRECISION = 10**18;
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
+    IMigrationRegistry public migrationRegistry;
 
     mapping(address => Details.MeToken) private _meTokens; // key pair: ERC20 address
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
 
-    constructor(address _hub, address _meTokenFactory) {
-        hub = IHub(_hub);
-        meTokenFactory = IMeTokenFactory(_meTokenFactory);
+    constructor(
+        IHub _hub,
+        IMeTokenFactory _meTokenFactory,
+        IMigrationRegistry _migrationRegistry
+    ) {
+        hub = _hub;
+        meTokenFactory = _meTokenFactory;
+        migrationRegistry = _migrationRegistry;
     }
 
     /// @inheritdoc IMeTokenRegistry
@@ -83,18 +91,21 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     function resubscribe(
         address _meToken,
+        uint256 _targetHub,
         uint256 _startTime,
         uint256 _endTime,
-        uint256 _targetHub
+        address _migrationOwner,
+        address _migrationFactory
     ) external {
-        // TODO: where to store these requirements?
         require(_startTime > block.timestamp && _startTime < _endTime);
 
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        Details.Hub memory targetHub_ = hub.getDetails(_targetHub);
 
         require(msg.sender == meToken_.owner, "!owner");
         require(!meToken_.resubscribing, "Already resubscribing");
+        require(meToken_.hubId != _targetHub, "same hub");
         require(hub_.active, "hub inactive");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
@@ -102,10 +113,24 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             updateBalances(_meToken);
         }
 
+        // Ensure the migration factory we're using is approved
+        require(
+            migrationRegistry.isApproved(address(_migrationFactory)),
+            "!approved"
+        );
+
+        address migration = IMigrationFactory(_migrationFactory).create(
+            meToken_.hubId, // hub id
+            _migrationOwner, // owner
+            hub_.vault, // initial Vault
+            targetHub_.vault // target vault
+        );
+
+        meToken_.resubscribing = true;
         meToken_.startTime = _startTime;
         meToken_.endTime = _endTime;
         meToken_.targetHub = _targetHub;
-        meToken_.resubscribing = true;
+        meToken_.migration = migration;
 
         // TODO: start migrating the vault of the meToken
     }
