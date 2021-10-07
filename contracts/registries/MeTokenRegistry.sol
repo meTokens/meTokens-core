@@ -131,8 +131,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         meToken_.endTime = _endTime;
         meToken_.targetHub = _targetHub;
         meToken_.migration = migration;
-
-        // TODO: start migrating the vault of the meToken
     }
 
     /// @inheritdoc IMeTokenRegistry
