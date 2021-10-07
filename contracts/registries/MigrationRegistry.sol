@@ -6,7 +6,7 @@ import "../interfaces/IMigrationRegistry.sol";
 /// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all used migration strategies
-abstract contract MigrationRegistry is IMigrationRegistry {
+contract MigrationRegistry is IMigrationRegistry {
     mapping(address => bool) private _migrations;
     mapping(address => bool) private _approved;
 

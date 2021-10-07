@@ -176,12 +176,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
     {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        // gas savings
+        uint256 totalSupply_ = IERC20(_meToken).totalSupply();
 
         // Calculate return assuming update is not happening
         meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
             _tokensDeposited,
             meToken_.hubId,
-            IERC20(_meToken).totalSupply(),
+            totalSupply_,
             meToken_.balancePooled
         );
 
@@ -197,7 +199,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     .calculateMintReturn(
                         _tokensDeposited,
                         meToken_.hubId,
-                        IERC20(_meToken).totalSupply(),
+                        totalSupply_,
                         meToken_.balancePooled
                     );
             } else {
@@ -206,7 +208,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     .calculateTargetMintReturn(
                         _tokensDeposited,
                         meToken_.hubId,
-                        IERC20(_meToken).totalSupply(),
+                        totalSupply_,
                         meToken_.balancePooled
                     );
             }
@@ -226,12 +228,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
     {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        // gas savings
+        uint256 totalSupply_ = IERC20(_meToken).totalSupply();
 
         // Calculate return assuming update is not happening
         tokensReturned = ICurve(hub_.curve).calculateBurnReturn(
             _meTokensBurned,
             meToken_.hubId,
-            IERC20(_meToken).totalSupply(),
+            totalSupply_,
             meToken_.balancePooled
         );
 
@@ -247,7 +251,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     .calculateBurnReturn(
                         _meTokensBurned,
                         meToken_.hubId,
-                        IERC20(_meToken).totalSupply(),
+                        totalSupply_,
                         meToken_.balancePooled
                     );
             } else {
@@ -256,7 +260,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     .calculateTargetBurnReturn(
                         _meTokensBurned,
                         meToken_.hubId,
-                        IERC20(_meToken).totalSupply(),
+                        totalSupply_,
                         meToken_.balancePooled
                     );
             }

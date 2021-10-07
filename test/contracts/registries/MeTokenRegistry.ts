@@ -5,6 +5,7 @@ import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
@@ -25,6 +26,7 @@ describe("MeTokenRegistry.sol", () => {
   let bancorZeroCurve: BancorZeroCurve;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
+  let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
   let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
@@ -48,6 +50,7 @@ describe("MeTokenRegistry.sol", () => {
     bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
     singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
@@ -66,7 +69,8 @@ describe("MeTokenRegistry.sol", () => {
       "MeTokenRegistry",
       undefined,
       hub.address,
-      meTokenFactory.address
+      meTokenFactory.address,
+      migrationRegistry.address
     );
     await curveRegistry.register(bancorZeroCurve.address);
 
@@ -137,13 +141,9 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(10000);
+      // MeToken supply > 0
+      expect(Number(await meToken.totalSupply())).to.be.greaterThan(0);
     });
-
-    // it("Emits Register()", async () => {
-
-    // });
   });
 
   describe("transferOwnership()", () => {
