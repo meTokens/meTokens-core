@@ -95,7 +95,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _startTime,
         uint256 _endTime,
         address _migrationOwner,
-        address _migrationFactory
+        address _migrationFactory,
+        bytes8 _encodedMigrationArgs
     ) external {
         require(_startTime > block.timestamp && _startTime < _endTime);
 
