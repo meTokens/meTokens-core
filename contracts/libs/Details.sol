@@ -28,7 +28,7 @@ library Details {
         bool curveDetails;
         address targetCurve;
         uint256 targetRefundRatio; // TODO
-        uint256[] vaultRatios; // TODO
+        uint256[] vaultMultipliers; // TODO
     }
 
     struct Bancor {

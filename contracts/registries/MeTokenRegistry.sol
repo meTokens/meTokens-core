@@ -109,7 +109,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         require(hub_.active, "hub inactive");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
-        if (meToken_.positionOfLastRatio < hub_.vaultRatios.length) {
+        if (meToken_.positionOfLastRatio < hub_.vaultMultipliers.length) {
             updateBalances(_meToken);
         }
 
@@ -156,17 +156,17 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         for (
             uint256 i = meToken_.positionOfLastRatio;
-            i < hub_.vaultRatios.length;
+            i < hub_.vaultMultipliers.length;
             i++
         ) {
-            uint256 multiplier = hub_.vaultRatios[i] * PRECISION;
+            uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
 
             // Update balancePooled and balanceLocked based on the
             // multiplier from the vaultRatio
             meToken_.balancePooled *= multiplier / PRECISION;
             meToken_.balanceLocked *= multiplier / PRECISION;
         }
-        meToken_.positionOfLastRatio = hub_.vaultRatios.length;
+        meToken_.positionOfLastRatio = hub_.vaultMultipliers.length;
     }
 
     /// @inheritdoc IMeTokenRegistry
