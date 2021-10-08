@@ -64,7 +64,7 @@ contract Fees is Ownable, Initializable {
     }
 
     function setTransferFee(uint256 rate) external onlyOwner {
-        require(rate != _burnOwnerFee && rate < _feeMax, "out of range");
+        require(rate != _transferFee && rate < _feeMax, "out of range");
         _transferFee = rate;
         emit SetTransferFee(rate);
     }

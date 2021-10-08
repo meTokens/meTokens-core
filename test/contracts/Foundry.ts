@@ -1,5 +1,7 @@
 import { ethers } from "hardhat";
 import { Foundry } from "../../artifacts/types/Foundry";
+import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
+import { deploy } from "../utils/helpers";
 
 describe("Foundry.sol", () => {
   const hub = "0x0000000000000000000000000000000000000000";
@@ -9,9 +11,10 @@ describe("Foundry.sol", () => {
   let foundry: Foundry;
 
   before(async () => {
-    const foundryFactory = await ethers.getContractFactory("Hub");
-    foundry = (await foundryFactory.deploy()) as Foundry;
-    await foundry.deployed();
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
   });
 
   describe("mint()", () => {
