@@ -29,9 +29,11 @@ contract UniswapSingleTransferFactory {
         uint256 _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault
+        address _targetVault,
+        bytes memory _encodedArgs
     ) external returns (address) {
         // TODO: access control
+
         address migrationVault = Clones.cloneDeterministic(
             implementation,
             bytes32(_count++)
@@ -42,7 +44,8 @@ contract UniswapSingleTransferFactory {
             _hubId,
             _owner,
             _initialVault,
-            _targetVault
+            _targetVault,
+            _encodedArgs
         );
 
         // Add migration to migrationRegistry

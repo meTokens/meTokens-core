@@ -19,7 +19,7 @@ library Details {
         bool active;
         address vault;
         address curve;
-        uint256 refundRatio; // TODO
+        uint256 refundRatio;
         bool updating;
         uint256 startTime;
         uint256 endTime;
@@ -27,8 +27,8 @@ library Details {
         address targetVault;
         bool curveDetails;
         address targetCurve;
-        uint256 targetRefundRatio; // TODO
-        uint256[] vaultMultipliers; // TODO
+        uint256 targetRefundRatio;
+        uint256[] vaultMultipliers;
     }
 
     struct Bancor {

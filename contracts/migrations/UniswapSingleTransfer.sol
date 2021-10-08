@@ -20,9 +20,9 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    uint256 public sum;
+    uint256 public multiplier;
+    uint256 public earliestSwapTime;
 
-    uint256 public ratio;
     uint256 public hubId;
     address public initialVault;
     address public targetVault;
@@ -46,8 +46,19 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         uint256 _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault
+        address _targetVault,
+        bytes memory _encodedMigrationArgs
     ) external initializer onlyOwner {
+        require(
+            _encodedMigrationArgs.length > 0,
+            "_encodedMigrationArgs empty"
+        );
+        uint256 earliestSwapTime_ = abi.decode(
+            _encodedMigrationArgs,
+            (uint256)
+        );
+        earliestSwapTime = earliestSwapTime_;
+
         // require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
 
@@ -58,13 +69,14 @@ contract UniswapSingleTransfer is Initializable, Ownable {
 
         tokenIn = IVault(_initialVault).getToken();
         tokenOut = IVault(_targetVault).getToken();
-
-        _swap();
     }
 
+    // function validate
+
     // Trades vault.getToken() to targetVault.getToken();
-    function _swap() private {
+    function swap() public {
         require(!swapped, "swapped");
+        require(block.timestamp > earliestSwapTime, "too soon");
 
         amountIn = IERC20(tokenIn).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
@@ -89,7 +101,6 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
         require(swapped && !finished);
-        require(sum > 0, "sum not set");
 
         finished = true;
 
