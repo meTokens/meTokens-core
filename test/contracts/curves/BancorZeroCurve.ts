@@ -119,6 +119,40 @@ describe("BancorZeroCurve", () => {
     );
     console.log(`     Prcesion:${ethers.utils.formatEther(PRECISION)}   `);
     expect(estimate).to.equal(one.mul(2000));
+
+    amount = one.mul(4);
+
+    //  let p = await getRequestParams(amount);
+    estimate = await bancorZeroCurve.calculateMintReturn(amount, hubId, 0, 0);
+    console.log(`     Prcesion:${ethers.utils.formatEther(PRECISION)}   `);
+    expect(estimate).to.equal(one.mul(4000));
+    amount = one.mul(2);
+
+    estimate = await bancorZeroCurve.calculateMintReturn(
+      amount,
+      hubId,
+      one.mul(2000),
+      one.mul(2)
+    );
+    console.log(
+      `     estimate ts= 2000 collateral=2 dai how many tokens for 2 more dai:${ethers.utils.formatEther(
+        estimate
+      )}   `
+    );
+
+    amount = one.mul(2);
+
+    estimate = await bancorZeroCurve.calculateMintReturn(
+      amount,
+      hubId,
+      ethers.utils.parseEther("2828.427124746190097603"),
+      one.mul(4)
+    );
+    console.log(
+      `     estimate ts= 2828 collateral=4 dai how many tokens for 2 more dai:${ethers.utils.formatEther(
+        estimate
+      )}   `
+    );
   });
   /*   it("register()", async () => {
     // const index = 1;

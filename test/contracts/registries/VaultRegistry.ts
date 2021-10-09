@@ -17,6 +17,10 @@ describe("VaultRegistry.sol", () => {
   before(async () => {
     // NOTE: test address we're using for approvals
     ({ DAI } = await getNamedAccounts());
+    [account0] = await ethers.getSigners();
+    hub = await deploy<Hub>("Hub");
+    implementation = await deploy<SingleAssetVault>("SingleAssetVault");
+  });
 
     signers = await ethers.getSigners();
     hub = await deploy<Hub>("Hub");
@@ -78,7 +82,7 @@ describe("VaultRegistry.sol", () => {
       vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
 
       await vaultRegistry.approve(DAI);
-      expect(await vaultRegistry.unapprove(DAI))
+      await expect(vaultRegistry.unapprove(DAI))
         .to.emit(vaultRegistry, "Unapprove")
         .withArgs(DAI);
     });
