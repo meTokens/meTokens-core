@@ -14,7 +14,7 @@ import { ERC20 } from "../../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { impersonate } from "../../utils/hardhatNode";
-import { Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { expect } from "chai";
 
 describe("MeTokenRegistry.sol", () => {
@@ -36,6 +36,9 @@ describe("MeTokenRegistry.sol", () => {
   let daiHolder: Signer;
   let DAIWhale: string;
   let hubId: number;
+
+  const PRECISION = BigNumber.from(10).pow(18);
+  const MAX_WEIGHT = 1000000;
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
     [account0, account1, account2] = await ethers.getSigners();
@@ -77,9 +80,11 @@ describe("MeTokenRegistry.sol", () => {
       vaultRegistry.address,
       curveRegistry.address
     );
+    const baseY = PRECISION.div(1000).toString();
+    const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
-      [ethers.utils.parseEther("1000000000000000000"), 5000]
+      [baseY, reserveWeight]
     );
     /*   require(
       hasRole(FOUNDRY, msg.sender) ||
@@ -138,7 +143,7 @@ describe("MeTokenRegistry.sol", () => {
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(10000);
+      expect(await meToken.totalSupply()).to.equal(100000);
     });
 
     // it("Emits Register()", async () => {
