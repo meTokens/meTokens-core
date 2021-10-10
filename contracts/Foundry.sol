@@ -61,7 +61,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
 
         // Send tokens to vault and update balance pooled
-        address vaultToken = IVault(hub_.vault).getToken();
+        address vaultToken;
+        if (hub_.migrationVault != address(0)) {
+            vaultToken = IVault(hub_.migrationVault).getToken();
+        } else {
+            vaultToken = IVault(hub_.vault).getToken();
+        }
         IERC20(vaultToken).transferFrom(
             msg.sender,
             address(this),
