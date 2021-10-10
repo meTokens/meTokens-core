@@ -42,7 +42,7 @@ contract Updater is IUpdater, Ownable {
 
     function initUpdate(
         uint256 _hubId,
-        address _migrationVault,
+        address _migration,
         address _targetVault,
         address _targetCurve,
         uint256 _targetRefundRatio,
@@ -87,11 +87,11 @@ contract Updater is IUpdater, Ownable {
         }
 
         // TODO: figure out how to pass these into `initUpdate()`
-        // if (_migrationVault != address(0) && _targetVault != address(0)) {}
+        // if (_migration != address(0) && _targetVault != address(0)) {}
 
         hub.initUpdate(
             _hubId,
-            _migrationVault,
+            _migration,
             _targetVault,
             _targetCurve,
             curveDetails,

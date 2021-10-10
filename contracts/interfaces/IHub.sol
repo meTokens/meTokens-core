@@ -34,7 +34,7 @@ interface IHub {
 
     function initUpdate(
         uint256 _id,
-        address _migrationVault,
+        address _migration,
         address _targetVault,
         address _targetCurve,
         bool _curveDetails,
