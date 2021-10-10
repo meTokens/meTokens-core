@@ -23,7 +23,7 @@ library Details {
         bool updating;
         uint256 startTime;
         uint256 endTime;
-        address migrationVault;
+        address migration;
         address targetVault;
         bool curveDetails;
         address targetCurve;

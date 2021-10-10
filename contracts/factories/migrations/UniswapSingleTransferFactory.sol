@@ -34,13 +34,13 @@ contract UniswapSingleTransferFactory {
     ) external returns (address) {
         // TODO: access control
 
-        address migrationVault = Clones.cloneDeterministic(
+        address migration = Clones.cloneDeterministic(
             implementation,
             bytes32(_count++)
         );
 
         // create our migration
-        UniswapSingleTransfer(migrationVault).initialize(
+        UniswapSingleTransfer(migration).initialize(
             _hubId,
             _owner,
             _initialVault,
@@ -49,8 +49,8 @@ contract UniswapSingleTransferFactory {
         );
 
         // Add migration to migrationRegistry
-        migrationRegistry.register(migrationVault);
+        migrationRegistry.register(migration);
 
-        return migrationVault;
+        return migration;
     }
 }

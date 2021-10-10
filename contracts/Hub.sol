@@ -87,7 +87,7 @@ contract Hub is Ownable, Initializable {
 
     function initUpdate(
         uint256 _id,
-        address _migrationVault,
+        address _migration,
         address _targetVault,
         address _targetCurve,
         uint256 _targetRefundRatio,
@@ -134,8 +134,8 @@ contract Hub is Ownable, Initializable {
             curveDetails = true;
         }
 
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hub_.migrationVault = _migrationVault;
+        if (_migration != address(0) && _targetVault != address(0)) {
+            hub_.migration = _migration;
             hub_.targetVault = _targetVault;
         }
 
@@ -145,8 +145,8 @@ contract Hub is Ownable, Initializable {
         if (_targetCurve != address(0)) {
             hub_.targetCurve = _targetCurve;
         }
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hub_.migrationVault = _migrationVault;
+        if (_migration != address(0) && _targetVault != address(0)) {
+            hub_.migration = _migration;
             hub_.targetVault = _targetVault;
         }
 
@@ -161,8 +161,8 @@ contract Hub is Ownable, Initializable {
 
         Details.Hub storage hub_ = _hubs[id];
 
-        if (hub_.migrationVault != address(0)) {
-            require(IMigration(hub_.migrationVault).hasFinished());
+        if (hub_.migration != address(0)) {
+            require(IMigration(hub_.migration).hasFinished());
         }
 
         if (hub_.targetRefundRatio != 0) {

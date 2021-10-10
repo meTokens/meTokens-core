@@ -62,8 +62,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         // Send tokens to vault and update balance pooled
         address vaultToken;
-        if (hub_.migrationVault != address(0)) {
-            vaultToken = IVault(hub_.migrationVault).getToken();
+        if (hub_.migration != address(0)) {
+            vaultToken = IVault(hub_.migration).getToken();
         } else {
             vaultToken = IVault(hub_.vault).getToken();
         }
@@ -165,8 +165,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // TODO: approve foundry to spend from migration vault
         // If hub is migrating, send tokens from migration vault
         address vaultToken;
-        if (hub_.migrationVault != address(0)) {
-            vaultToken = IVault(hub_.migrationVault).getToken();
+        if (hub_.migration != address(0)) {
+            vaultToken = IVault(hub_.migration).getToken();
         } else {
             vaultToken = IVault(hub_.vault).getToken();
         }
