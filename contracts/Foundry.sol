@@ -110,7 +110,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            // tokensReturnedAfterFees = tokensReturned * (PRECISION - feeRate) / PRECISION;
             uint256 refundRatio = hub_.refundRatio;
             if (hub_.targetRefundRatio == 0) {
                 // Not updating targetRefundRatio
@@ -158,9 +157,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
         //     IVault(hub_.vault).addFee(fee);
         // }
 
-        // Send tokens from vault
-        address vaultToken = IVault(hub_.vault).getToken();
-        // IERC20(vaultToken).transferFrom(hub_.vault, _recipient, tokensReturnedAfterFees);
+        // TODO: approve foundry to spend from migration vault
+        // If hub is migrating, send tokens from migration vault
+        address vaultToken;
+        if (hub_.migrationVault != address(0)) {
+            vaultToken = IVault(hub_.migrationVault).getToken();
+        } else {
+            vaultToken = IVault(hub_.vault).getToken();
+        }
+
         IERC20(vaultToken).transferFrom(
             hub_.vault,
             _recipient,
