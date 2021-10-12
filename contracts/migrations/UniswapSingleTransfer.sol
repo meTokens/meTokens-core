@@ -3,11 +3,7 @@ pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-import "../interfaces/IVault.sol";
+import "../vaults/Vault.sol";
 import "../libs/Details.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -16,7 +12,7 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable {
+contract UniswapSingleTransfer is Vault, Initializable, Ownable {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
@@ -35,8 +31,8 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
-    address public tokenIn;
-    address public tokenOut;
+    // address public tokenIn;
+    address public targetToken;
     address public recipient;
     uint24 public immutable fee = 3000; // NOTE: 0.3%
     uint256 public amountIn;
@@ -67,11 +63,9 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         initialVault = _initialVault;
         targetVault = _targetVault;
 
-        tokenIn = IVault(_initialVault).getToken();
-        tokenOut = IVault(_targetVault).getToken();
+        token = IVault(_initialVault).getToken();
+        targetToken = IVault(_targetVault).getToken();
     }
-
-    // function validate
 
     // Trades vault.getToken() to targetVault.getToken();
     function swap() public {
@@ -82,8 +76,8 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
+                tokenIn: token,
+                tokenOut: targetToken,
                 fee: fee,
                 recipient: msg.sender,
                 deadline: block.timestamp,
@@ -95,7 +89,10 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         // The call to `exactInputSingle` executes the swap.
         amountOut = _router.exactInputSingle(params);
 
+        // transfer accrued fees of original vault token
+        withdraw(true, 0, DAO);
         swapped = true;
+        token = targetToken;
     }
 
     // sends targetVault.getToken() to targetVault
@@ -105,7 +102,10 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         finished = true;
 
         // Send token to new vault
-        IERC20(tokenOut).transfer(targetVault, amountOut);
+        IERC20(targetToken).transfer(targetVault, amountOut);
+
+        // Transfer accrued fees of target vault token
+        withdraw(true, 0, DAO);
     }
 
     function hasFinished() external view returns (bool) {

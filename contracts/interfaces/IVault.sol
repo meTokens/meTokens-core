@@ -9,11 +9,7 @@ interface IVault {
 
     function addFee(uint256 amount) external;
 
-    function withdraw(
-        bool max,
-        uint256 amount,
-        address to
-    ) external;
+    function withdraw(bool max, uint256 amount) external;
 
     function getToken() external view returns (address);
 
