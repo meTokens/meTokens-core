@@ -30,7 +30,7 @@ interface IHub {
     /// @notice Function to end the update, setting the target values of the hub,
     ///         as well as modifying a hubs' status to ACTIVE
     /// @param id Unique hub identifier
-    function finishUpdate(uint256 id) external;
+    function finishUpdate(uint256 id) external returns (Details.Hub memory);
 
     function initUpdate(
         uint256 _id,

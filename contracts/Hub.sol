@@ -156,7 +156,7 @@ contract Hub is Ownable, Initializable {
         hub_.endTime = _startTime + _duration;
     }
 
-    function finishUpdate(uint256 id) external {
+    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
         // TODO: only callable from foundry
 
         Details.Hub storage hub_ = _hubs[id];
@@ -182,6 +182,7 @@ contract Hub is Ownable, Initializable {
         }
 
         hub_.updating = false;
+        return hub_;
     }
 
     function count() external view returns (uint256) {

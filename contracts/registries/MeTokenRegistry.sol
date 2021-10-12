@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../MeToken.sol";
 import "../Roles.sol";
 
+import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
 import "../interfaces/IMigrationFactory.sol";
 import "../interfaces/IMeTokenRegistry.sol";
@@ -132,6 +133,27 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         meToken_.endTime = _endTime;
         meToken_.targetHub = _targetHub;
         meToken_.migration = migration;
+    }
+
+    function finishResubscribe(address _meToken)
+        external
+        returns (Details.MeToken memory)
+    {
+        // TODO: acccess control (foundry?)
+
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        // Make sure meToken has migrated vaults
+        require(IMigration(meToken_.migration).hasFinished(), "!finished");
+
+        // Finish updating metoken details
+        meToken_.resubscribing = false;
+        meToken_.startTime = 0;
+        meToken_.endTime = 0;
+        meToken_.hubId = meToken_.targetHub;
+        meToken_.migration = address(0);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.targetHub);
+        meToken_.positionOfLastRatio = hub_.vaultMultipliers.length;
+        return meToken_;
     }
 
     /// @inheritdoc IMeTokenRegistry
