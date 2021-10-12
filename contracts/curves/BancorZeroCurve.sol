@@ -20,14 +20,6 @@ contract BancorZeroCurve is ICurve, Power {
     // NOTE: keys are their respective hubId
     mapping(uint256 => Details.BancorDetails) private _bancors;
 
-    function getDetails(uint256 bancor)
-        external
-        view
-        returns (Details.BancorDetails memory)
-    {
-        return _bancors[bancor];
-    }
-
     function register(uint256 _hubId, bytes calldata _encodedValueSet)
         external
         override
@@ -86,6 +78,14 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.baseY = bancorDetails.targetBaseY;
         bancorDetails.targetReserveWeight = 0;
         bancorDetails.targetBaseY = 0;
+    }
+
+    function getDetails(uint256 bancor)
+        external
+        view
+        returns (Details.BancorDetails memory)
+    {
+        return _bancors[bancor];
     }
 
     /// @inheritdoc ICurve
