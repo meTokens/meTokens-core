@@ -50,7 +50,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         if (hub_.updating && block.timestamp > hub_.endTime) {
             // Finish updating hub
             hub_ = hub.finishUpdate(meToken_.hubId);
-            if (hub_.curveDetails) {
+            if (hub_.reconfiguring) {
                 // Finish updating curve
                 ICurve(hub_.curve).finishUpdate(meToken_.hubId);
             }
@@ -205,7 +205,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
-            (hub_.curveDetails)
+            (hub_.reconfiguring)
         ) {
             uint256 targetMeTokensMinted;
             if (hub_.targetCurve != address(0)) {
@@ -257,7 +257,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
-            (hub_.curveDetails)
+            (hub_.reconfiguring)
         ) {
             uint256 targetTokensReturned;
             if (hub_.targetCurve != address(0)) {
