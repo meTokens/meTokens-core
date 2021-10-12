@@ -15,6 +15,10 @@ interface IMeTokenRegistry {
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
+    function finishResubscribe(address _meToken)
+        external
+        returns (Details.MeToken memory);
+
     /// @notice TODO
     /// @param _name TODO
     /// @param _symbol TODO

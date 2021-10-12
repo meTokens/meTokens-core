@@ -46,13 +46,19 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
+        // Handle updates
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            // Finish updating curve
-            hub.finishUpdate(meToken_.hubId);
+            // Finish updating hub
+            hub_ = hub.finishUpdate(meToken_.hubId);
             if (hub_.curveDetails) {
                 // Finish updating curve
                 ICurve(hub_.curve).finishUpdate(meToken_.hubId);
             }
+            // Handle resubscribes
+        } else if (
+            meToken_.resubscribing && block.timestamp > meToken_.endTime
+        ) {
+            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
 
         uint256 meTokensMinted = calculateMintReturn(
@@ -61,28 +67,27 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
 
         // Send tokens to vault and update balance pooled
-        address vaultToken;
         if (hub_.migration != address(0)) {
-            vaultToken = IVault(hub_.migration).getToken();
+            IERC20(IVault(hub_.migration).getToken()).transferFrom(
+                msg.sender,
+                hub_.migration,
+                _tokensDeposited
+            );
+            IVault(hub_.migration).addFee(fee);
         } else {
-            vaultToken = IVault(hub_.vault).getToken();
+            IERC20(IVault(hub_.vault).getToken()).transferFrom(
+                msg.sender,
+                hub_.vault,
+                _tokensDeposited
+            );
+            IVault(hub_.vault).addFee(fee);
         }
-        IERC20(vaultToken).transferFrom(
-            msg.sender,
-            address(this),
-            _tokensDeposited
-        );
 
         meTokenRegistry.incrementBalancePooled(
             true,
             _meToken,
             tokensDepositedAfterFees
         );
-
-        // Transfer fees
-        if (fee > 0) {
-            IVault(hub_.vault).addFee(fee);
-        }
 
         // Mint meToken to user
         IERC20(_meToken).mint(_recipient, meTokensMinted);

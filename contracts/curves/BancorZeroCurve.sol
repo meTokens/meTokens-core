@@ -67,7 +67,7 @@ contract BancorZeroCurve is ICurve, Power {
     }
 
     function finishUpdate(uint256 _hubId) external override {
-        // TODO; only hub can call
+        // TODO; only foundry can call
         Details.Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
         bancor_.baseY = bancor_.targetBaseY;
