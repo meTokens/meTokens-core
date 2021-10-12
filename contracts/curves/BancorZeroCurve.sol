@@ -8,10 +8,15 @@ import "../libs/WeightedAverage.sol";
 import "../libs/Details.sol";
 
 import "../utils/Power.sol";
+import "../utils/ABDKMathQuad.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve, Power {
+    using ABDKMathQuad for uint256;
+    using ABDKMathQuad for bytes16;
+
+    bytes16 private immutable _one = (uint256(1 ether)).fromUInt();
     // NOTE: keys are their respective hubId
     mapping(uint256 => Details.BancorDetails) private _bancors;
 
@@ -73,6 +78,14 @@ contract BancorZeroCurve is ICurve, Power {
         bancorDetails.baseY = bancorDetails.targetBaseY;
         bancorDetails.targetReserveWeight = 0;
         bancorDetails.targetBaseY = 0;
+    }
+
+    function getDetails(uint256 bancor)
+        external
+        view
+        returns (Details.BancorDetails memory)
+    {
+        return _bancors[bancor];
     }
 
     /// @inheritdoc ICurve
@@ -211,10 +224,33 @@ contract BancorZeroCurve is ICurve, Power {
         uint256 _baseX,
         uint256 _baseY
     ) private view returns (uint256) {
-        uint256 numerator = _baseY;
-        uint256 exponent = _reserveWeight + 2 - _reserveWeight; //  (PRECISION / _reserveWeight - PRECISION);
-        uint256 denominator = _baseX**exponent;
-        return (numerator * _tokensDeposited**exponent) / denominator;
+        bytes16 y = _baseY.fromUInt();
+        bytes16 max = uint256(MAX_WEIGHT).fromUInt(); // shares amount
+        bytes16 s = _tokensDeposited.fromUInt();
+        bytes16 r = _reserveWeight.fromUInt();
+        bytes16 x = _baseX.fromUInt();
+        bytes16 exponent = max.div(r).sub(uint256(1).fromUInt());
+        //uint256 exponent = ((MAX_WEIGHT / _reserveWeight) - 1);
+        // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
+        bytes16 denominator = (y.ln().mul(exponent)).exp();
+        // bytes16 denominator = x.pow(exponent.toUInt());
+        // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".
+        bytes16 res1 = x.mul(s.ln().mul(exponent).exp());
+        // bytes16 res1 = numerator.mul(s.pow(exponent.toUInt()));
+        bytes16 res2 = res1.div(denominator);
+        return res2.toUInt();
+        /*  //uint256 exponent = ((MAX_WEIGHT / _reserveWeight) - 1);
+        console.log("## exponent:%s", exponent.mul(_one).toUInt());
+        // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
+        bytes16 denominator = (x.ln().mul(exponent)).exp();
+        // bytes16 denominator = x.pow(exponent.toUInt());
+        console.log("## denominator:%s", denominator.toUInt());
+        // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".
+        bytes16 res1 = numerator.mul(s.ln().mul(exponent).exp());
+        // bytes16 res1 = numerator.mul(s.pow(exponent.toUInt()));
+        bytes16 res2 = res1.div(denominator);
+        return res2.toUInt(); */
+        // return (numerator * _tokensDeposited**exponent) / denominator;
     }
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
