@@ -289,4 +289,12 @@ contract BancorZeroCurve is ICurve, Power {
 
         return (oldBalance - newBalance) / result;
     }
+
+    function getDetails(uint256 bancor)
+        external
+        view
+        returns (Details.BancorDetails memory)
+    {
+        return _bancors[bancor];
+    }
 }

@@ -205,14 +205,14 @@ describe("BancorZeroCurve", () => {
       [targetReserveWeight.toString()]
     );
     await bancorZeroCurve.registerTarget(hubId, encodedValueSet);
-    const detail = await bancorZeroCurve._bancors(hubId);
+    const detail = await bancorZeroCurve.getDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
 
   it("calculateTargetMintReturn() from zero should work", async () => {
-    const detail = await bancorZeroCurve._bancors(hubId);
+    const detail = await bancorZeroCurve.getDetails(hubId);
     let amount = one.mul(2);
 
     // (2^((1/0.98)−1))/(0.000510204081632653^((1/0.98)−1)) ==1.183947292541541
@@ -227,7 +227,7 @@ describe("BancorZeroCurve", () => {
   });
 
   it("calculateTargetMintReturn() should work", async () => {
-    const detail = await bancorZeroCurve._bancors(hubId);
+    const detail = await bancorZeroCurve.getDetails(hubId);
     const targetReserveWeight = detail.targetReserveWeight;
     console.log(` 
     targetReserveWeight:${targetReserveWeight.toString()}`);
