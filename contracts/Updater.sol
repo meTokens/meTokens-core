@@ -60,7 +60,7 @@ contract Updater is IUpdater, Ownable {
             "Unacceptable update duration"
         );
 
-        bool curveDetails;
+        bool reconfiguring;
         Details.Hub memory hub_ = hub.getDetails(_hubId);
         require(!hub_.updating, "already updating");
 
@@ -83,7 +83,7 @@ contract Updater is IUpdater, Ownable {
                 );
                 ICurve(_targetCurve).register(_hubId, _encodedCurveDetails);
             }
-            curveDetails = true;
+            reconfiguring = true;
         }
 
         // TODO: figure out how to pass these into `initUpdate()`
@@ -94,7 +94,7 @@ contract Updater is IUpdater, Ownable {
             _migration,
             _targetVault,
             _targetCurve,
-            curveDetails,
+            reconfiguring,
             _targetRefundRatio,
             _startTime,
             _duration
