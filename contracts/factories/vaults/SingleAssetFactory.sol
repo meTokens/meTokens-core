@@ -7,8 +7,6 @@ import "../../vaults/SingleAssetVault.sol";
 import "../../interfaces/IVaultRegistry.sol";
 import "../../interfaces/IVaultFactory.sol";
 
-import "hardhat/console.sol";
-
 // TODO: Should IHub be imported?
 
 /// @title Factory contract to erc20-collateral vaults
