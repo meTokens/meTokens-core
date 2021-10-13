@@ -123,6 +123,13 @@ describe("MeTokenRegistry.sol", () => {
       expect(await meToken.decimals()).to.equal(18);
       expect(await meToken.totalSupply()).to.equal(0);
     });
+    it("User can't create two meToken", async () => {
+      const name = "Carl0 meToken";
+      const symbol = "CARL";
+      await expect(
+        meTokenRegistry.connect(account0).register(name, "CARL", hubId, 0)
+      ).to.be.revertedWith("msg.sender already owns a meToke");
+    });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
       const amount = 100;
