@@ -73,22 +73,19 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensDepositedAfterFees
         );
 
-        // Send tokens to vault and update balance pooled
+        IVault vault;
         if (hub_.migration != address(0)) {
-            IERC20(IVault(hub_.migration).getToken()).transferFrom(
-                msg.sender,
-                hub_.migration,
-                _tokensDeposited
-            );
-            IVault(hub_.migration).addFee(fee);
+            vault = IVault(hub_.migration);
         } else {
-            IERC20(IVault(hub_.vault).getToken()).transferFrom(
-                msg.sender,
-                hub_.vault,
-                _tokensDeposited
-            );
-            IVault(hub_.vault).addFee(fee);
+            vault = IVault(hub_.vault);
         }
+
+        IERC20(vault.getToken()).transferFrom(
+            msg.sender,
+            address(vault),
+            _tokensDeposited
+        );
+        vault.addFee(fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,
