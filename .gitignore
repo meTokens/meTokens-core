@@ -13,4 +13,4 @@ coverage.json
 
 .env
 
-deployment
+deployment/script-hardhat.json

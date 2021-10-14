@@ -1,8 +1,0 @@
-{
-  "network": "rinkeby",
-  "Hub Contract Address": "0x1159e16Cb27b3fD3254eb89De947293C77316EF9",
-  "VaultRegistry Contract Address": "0x19E8Fe397FF03A46Db25D1835013eD1b15da6638",
-  "SingleAssetVault Contract Address": "0xd2f726Ab2d2d53c7C51cddbb1D2621D3C34219A4",
-  "SingleAsset Factory Contract Address": "0xe2AF3717F1743D70a8924c2C3b731db33540F1D4",
-  "Block Number": "9430247"
-}

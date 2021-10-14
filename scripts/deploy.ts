@@ -1,4 +1,4 @@
-import { network, run, ethers, getNamedAccounts } from "hardhat";
+import { network, run, ethers } from "hardhat";
 import { Hub } from "../artifacts/types/Hub";
 import { VaultRegistry } from "../artifacts/types/VaultRegistry";
 import { SingleAssetVault } from "../artifacts/types/SingleAssetVault";
@@ -11,17 +11,36 @@ import { BancorZeroCurve } from "../artifacts/types/BancorZeroCurve";
 import { CurveRegistry } from "../artifacts/types/CurveRegistry";
 import { Foundry } from "../artifacts/types/Foundry";
 import { WeightedAverage } from "../artifacts/types/WeightedAverage";
+import { BigNumber } from "ethers";
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
 const contracts: any[] = [];
 const REFUND_RATIO = 50000;
+const PRECISION = BigNumber.from(10).pow(18);
+const MAX_WEIGHT = 1000000;
 const deployDir = "deployment";
+
 function currencySymbol(chainId: number) {
   switch (chainId.toString()) {
     case "100":
       return "XDAI";
     default:
       return "ETH";
+  }
+}
+function currencyAddress(chainId: number) {
+  switch (chainId.toString()) {
+    // Rinkeby
+    case "4":
+      return "0x92d75D18C4A2aDF86365EcFd5219f13AfED5103C";
+
+    // Hardhat
+    case "31337":
+      return "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+
+    default: {
+      throw new Error("Un-supported network");
+    }
   }
 }
 function printLog(msg: string) {
@@ -91,40 +110,39 @@ async function main() {
     hub.address,
     meTokenFactory.address
   );
-  contracts.push(meTokenRegistry.address);
   printLog("Registering Bancor Curve to curve registry...");
-  await curveRegistry.register(bancorZeroCurve.address);
-
+  let tx = await curveRegistry.register(bancorZeroCurve.address);
+  await tx.wait();
   printLog("Initializing SingleAssetVault...");
-  const { DAI } = await getNamedAccounts();
-  await singleAssetVault.initialize(
+  tx = await singleAssetVault.initialize(
     foundry.address,
-    DAI,
+    currencyAddress(chainId),
     ethers.utils.toUtf8Bytes("")
   );
-
+  await tx.wait();
   printLog("Initializing hub Contract...");
-  await vaultRegistry.approve(singleAssetFactory.address);
-
-  await hub.initialize(
+  tx = await vaultRegistry.approve(singleAssetFactory.address);
+  await tx.wait();
+  tx = await hub.initialize(
     foundry.address,
     vaultRegistry.address,
     curveRegistry.address
   );
+  await tx.wait();
+  const baseY = PRECISION.div(1000).toString();
+  const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
   const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
-    [ethers.utils.parseEther("1000000000000000000"), 5000]
+    [baseY, reserveWeight]
   );
-
-  const tx = await hub.register(
+  tx = await hub.register(
     singleAssetFactory.address,
     bancorZeroCurve.address,
-    DAI,
+    currencyAddress(chainId),
     REFUND_RATIO,
     encodedValueSet,
     ethers.utils.toUtf8Bytes("")
   );
-
   await tx.wait();
   const receipt = await deployer.provider.getTransactionReceipt(tx.hash);
   const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
@@ -142,6 +160,10 @@ async function main() {
           vaultRegistry.address,
           singleAssetVault.address,
         ],
+      });
+      await run(TASK_VERIFY, {
+        address: meTokenRegistry.address,
+        constructorArgsParams: [hub.address, meTokenFactory.address],
       });
     } catch (error) {
       console.error(`Error verifying ${singleAssetFactory.address}: `, error);
