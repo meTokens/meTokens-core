@@ -173,7 +173,7 @@ contract Hub is Ownable, Initializable {
         // Updating curve details and staying with the same curve
         if (hub_.reconfigure) {
             if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishUpdate(id);
+                ICurve(hub_.curve).finishReconfigure(id);
             } else {
                 hub_.curve = hub_.targetCurve;
                 hub_.targetCurve = address(0);

@@ -48,6 +48,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
         // Handling changes
+        // TODO: turn this conditional into a func
         if (hub_.updating && block.timestamp > hub_.endTime) {
             // Finish updating hub
             hub_ = hub.finishUpdate(meToken_.hubId);
@@ -144,6 +145,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         // TODO: tokensReturnedAfterFees
+        uint256 fee = actualTokensReturned * feeRate;
+        actualTokensReturned -= fee;
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -167,26 +170,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        // Transfer fees - TODO
-        // if ((tokensReturnedWeighted * feeRate / PRECISION) > 0) {
-        //     uint256 fee = tokensReturnedWeighted * feeRate / PRECISION;
-        //     IVault(hub_.vault).addFee(fee);
-        // }
-
         // TODO: approve foundry to spend from migration vault
         // If hub is migrating, send tokens from migration vault
-        address vaultToken;
+        IVault vault;
         if (hub_.migration != address(0)) {
-            vaultToken = IVault(hub_.migration).getToken();
+            vault = IVault(hub_.migration);
         } else {
-            vaultToken = IVault(hub_.vault).getToken();
+            vault = IVault(hub_.vault);
         }
 
-        IERC20(vaultToken).transferFrom(
-            hub_.vault,
+        IERC20(vault.getToken()).transferFrom(
+            address(vault),
             _recipient,
             actualTokensReturned
         );
+
+        vault.addFee(fee);
     }
 
     // NOTE: for now this does not include fees
@@ -208,7 +207,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.balancePooled
         );
 
-        // Logic for if we're switching to a new curve type // updating curveDetails
+        // Logic for if we're switching to a new curve type // reconfiguring
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
             (hub_.reconfigure)
@@ -224,7 +223,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         meToken_.balancePooled
                     );
             } else {
-                // Must mean we're updating curveDetails
+                // Must mean we're reconfiguring
                 targetMeTokensMinted = ICurve(hub_.curve)
                     .calculateTargetMintReturn(
                         _tokensDeposited,

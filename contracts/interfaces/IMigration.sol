@@ -7,4 +7,6 @@ interface IMigration {
     function hasFinished() external view returns (bool);
 
     function getRatio() external view returns (uint256);
+
+    function finishMigration() external;
 }
