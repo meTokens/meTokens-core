@@ -34,7 +34,7 @@ contract SingleAssetVault is Vault, Initializable {
         // Approve Foundry to spend all collateral in vault
         IERC20(token).approve(_foundry, 2**256 - 1);
     }
-
+    /*
     // NOTE: this is only callable by hub
     function migrateFromHub(address _migration) external {
         // TODO: access control
@@ -50,9 +50,7 @@ contract SingleAssetVault is Vault, Initializable {
     }
 
     // This is only callable by meTokenRegistry
-    function migrateFromRegistry(address _meToken, address _migration)
-        external
-    {
+    function migrateFromRegistry(address _meToken, address _migration) external {
         meTokenRegistry.updateBalances(_meToken);
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
@@ -68,4 +66,5 @@ contract SingleAssetVault is Vault, Initializable {
 
         IERC20(tokenToTransfer).transfer(_migration, amtToTransfer);
     }
+*/
 }

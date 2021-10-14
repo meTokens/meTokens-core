@@ -49,5 +49,5 @@ interface ICurve {
         uint256 _balancePooled
     ) external view returns (uint256 tokensReturned);
 
-    function finishUpdate(uint256 id) external;
+    function finishReconfigure(uint256 id) external;
 }
