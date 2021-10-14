@@ -5,7 +5,7 @@ describe("BancorZeroCurve", () => {
     // TODO
   });
 
-  describe("registerTarget()", () => {
+  describe("initReconfigure()", () => {
     // TODO
   });
 

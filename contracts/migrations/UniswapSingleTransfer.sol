@@ -12,7 +12,7 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Vault, Initializable, Ownable {
+contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
@@ -72,7 +72,11 @@ contract UniswapSingleTransfer is Vault, Initializable, Ownable {
         require(!swapped, "swapped");
         require(block.timestamp > earliestSwapTime, "too soon");
 
-        amountIn = IERC20(tokenIn).balanceOf(address(this));
+        // Send accrued fees to DAO since now accruedFees will be denominated in
+        // the targetToken
+        withdraw(true, 0);
+
+        amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
@@ -88,24 +92,25 @@ contract UniswapSingleTransfer is Vault, Initializable, Ownable {
 
         // The call to `exactInputSingle` executes the swap.
         amountOut = _router.exactInputSingle(params);
+        multiplier = (PRECISION * amountOut) / amountIn;
 
-        // transfer accrued fees of original vault token
-        withdraw(true, 0, DAO);
+        // TODO: what if tokenOut changes balances?
         swapped = true;
         token = targetToken;
     }
 
     // sends targetVault.getToken() to targetVault
     function finishMigration() external {
+        // TODO: foundry access control
         require(swapped && !finished);
 
         finished = true;
 
         // Send token to new vault
-        IERC20(targetToken).transfer(targetVault, amountOut);
+        IERC20(token).transfer(targetVault, amountOut);
 
         // Transfer accrued fees of target vault token
-        withdraw(true, 0, DAO);
+        withdraw(true, 0);
     }
 
     function hasFinished() external view returns (bool) {

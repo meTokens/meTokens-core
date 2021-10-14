@@ -74,9 +74,11 @@ contract Updater is IUpdater, Ownable {
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hub_.curve).registerTarget(_hubId, _encodedCurveDetails);
+                ICurve(hub_.curve).initReconfigure(
+                    _hubId,
+                    _encodedCurveDetails
+                );
             } else {
-                // _targetCurve != address(0))
                 require(
                     curveRegistry.isActive(_targetCurve),
                     "_targetCurve inactive"
