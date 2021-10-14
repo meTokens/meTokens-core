@@ -25,7 +25,7 @@ library Details {
         uint256 endTime;
         address migration;
         address targetVault;
-        bool reconfiguring;
+        bool reconfigure;
         address targetCurve;
         uint256 targetRefundRatio;
         uint256[] vaultMultipliers;
