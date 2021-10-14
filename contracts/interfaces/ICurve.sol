@@ -18,7 +18,7 @@ interface ICurve {
     /// @notice TODO
     /// @param _hubId                   unique hub identifier
     /// @param _encodedValueSet     encoded target ValueSet arguments
-    function registerTarget(uint256 _hubId, bytes calldata _encodedValueSet)
+    function initReconfigure(uint256 _hubId, bytes calldata _encodedValueSet)
         external;
 
     function calculateMintReturn(

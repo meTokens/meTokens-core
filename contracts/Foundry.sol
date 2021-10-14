@@ -13,6 +13,7 @@ import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
+import "./interfaces/IMigration.sol";
 
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
@@ -46,13 +47,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        // Handle updates
+        // Handling changes
         if (hub_.updating && block.timestamp > hub_.endTime) {
             // Finish updating hub
             hub_ = hub.finishUpdate(meToken_.hubId);
             if (hub_.reconfiguring) {
-                // Finish updating curve
-                ICurve(hub_.curve).finishUpdate(meToken_.hubId);
+                // Finish reconfiguring curve
+                // TODO: add this method
+                ICurve(hub_.curve).finishReconfigure(meToken_.hubId);
+            }
+            if (hub_.migration != address(0)) {
+                // Finish migrating vault
+                IMigration(hub_.migration).finishMigration();
             }
             // Handle resubscribes
         } else if (

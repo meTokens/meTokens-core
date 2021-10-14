@@ -16,8 +16,6 @@ import "../interfaces/IERC20.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Vault, Initializable {
-    uint256 public constant PRECISION = 10**18;
-
     bool public migrated;
 
     // TODO: figure out where to set these
@@ -38,7 +36,7 @@ contract SingleAssetVault is Vault, Initializable {
     }
 
     // NOTE: this is only callable by hub
-    function migrate(address _migration) external {
+    function migrateFromHub(address _migration) external {
         // TODO: access control
 
         require(!migrated, "migrated");
@@ -52,7 +50,9 @@ contract SingleAssetVault is Vault, Initializable {
     }
 
     // This is only callable by meTokenRegistry
-    function migrate2(address _meToken, address _migration) external {
+    function migrateFromRegistry(address _meToken, address _migration)
+        external
+    {
         meTokenRegistry.updateBalances(_meToken);
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);

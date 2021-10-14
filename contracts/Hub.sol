@@ -122,7 +122,7 @@ contract Hub is Ownable, Initializable {
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hub_.curve).registerTarget(_id, _encodedCurveDetails);
+                ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
                 // _targetCurve != address(0))
                 require(

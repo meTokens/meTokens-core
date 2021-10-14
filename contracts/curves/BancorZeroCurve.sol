@@ -45,7 +45,7 @@ contract BancorZeroCurve is ICurve {
         bancor_.reserveWeight = reserveWeight;
     }
 
-    function registerTarget(uint256 _hubId, bytes calldata _encodedValueSet)
+    function initReconfigure(uint256 _hubId, bytes calldata _encodedValueSet)
         external
         override
     {
