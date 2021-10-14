@@ -44,29 +44,25 @@ contract Foundry is IFoundry, Ownable, Initializable {
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         require(hub_.active, "Hub inactive");
 
-        uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
-        uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
-
         // Handling changes
         // TODO: turn this conditional into a func
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            // Finish updating hub
-            hub_ = hub.finishUpdate(meToken_.hubId);
             if (hub_.reconfigure) {
-                // Finish reconfigure curve
-                // TODO: add this method
                 ICurve(hub_.curve).finishReconfigure(meToken_.hubId);
             }
             if (hub_.migration != address(0)) {
-                // Finish migrating vault
                 IMigration(hub_.migration).finishMigration();
             }
-            // Handle resubscribes
+            hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (
-            meToken_.resubscribing && block.timestamp > meToken_.endTime
+            // Handle resubscribes
+            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
+
+        uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
+        uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
         uint256 meTokensMinted = calculateMintReturn(
             _meToken,
@@ -107,6 +103,20 @@ contract Foundry is IFoundry, Ownable, Initializable {
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         require(hub_.active, "Hub inactive");
 
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            if (hub_.reconfigure) {
+                ICurve(hub_.curve).finishReconfigure(meToken_.hubId);
+            }
+            if (hub_.migration != address(0)) {
+                IMigration(hub_.migration).finishMigration();
+            }
+            hub_ = hub.finishUpdate(meToken_.hubId);
+        } else if (
+            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
+        ) {
+            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+        }
+
         // Calculate how many tokens tokens are returned
         uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
 
@@ -141,7 +151,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             actualTokensReturned *= refundRatio;
         }
 
-        // TODO: tokensReturnedAfterFees
         uint256 fee = actualTokensReturned * feeRate;
         actualTokensReturned -= fee;
 
@@ -196,7 +205,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // gas savings
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
 
-        // Calculate return assuming update is not happening
+        // Calculate return assuming update/resubscribe is not happening
         meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
             _tokensDeposited,
             meToken_.hubId,

@@ -92,7 +92,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
     function resubscribe(
         address _meToken,
-        uint256 _targetHub,
+        uint256 _targetHubId,
         uint256 _startTime,
         uint256 _endTime,
         address _migrationOwner,
@@ -103,11 +103,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
 
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(_targetHub);
+        Details.Hub memory targetHubId_ = hub.getDetails(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
-        require(!meToken_.resubscribing, "Already resubscribing");
-        require(meToken_.hubId != _targetHub, "same hub");
+        require(meToken_.targetHubId == 0, "Already resubscribing");
+        require(meToken_.hubId != _targetHubId, "same hub");
         require(hub_.active, "hub inactive");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
@@ -125,18 +125,18 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             meToken_.hubId, // hub id
             _migrationOwner, // owner
             hub_.vault, // initial Vault
-            targetHub_.vault // target vault
+            targetHubId_.vault // target vault
         );
 
-        meToken_.resubscribing = true;
         meToken_.startTime = _startTime;
         meToken_.endTime = _endTime;
-        meToken_.targetHub = _targetHub;
+        meToken_.targetHubId = _targetHubId;
         meToken_.migration = migration;
     }
 
     function finishResubscribe(address _meToken)
         external
+        override
         returns (Details.MeToken memory)
     {
         // TODO: acccess control (foundry?)
@@ -146,12 +146,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         require(IMigration(meToken_.migration).hasFinished(), "!finished");
 
         // Finish updating metoken details
-        meToken_.resubscribing = false;
         meToken_.startTime = 0;
         meToken_.endTime = 0;
-        meToken_.hubId = meToken_.targetHub;
+        meToken_.hubId = meToken_.targetHubId;
+        meToken_.targetHubId = 0;
         meToken_.migration = address(0);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.targetHub);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.targetHubId);
         meToken_.positionOfLastRatio = hub_.vaultMultipliers.length;
         return meToken_;
     }
