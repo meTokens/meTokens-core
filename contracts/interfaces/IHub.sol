@@ -37,7 +37,7 @@ interface IHub {
         address _migration,
         address _targetVault,
         address _targetCurve,
-        bool _reconfiguring,
+        bool _reconfigure,
         uint256 _targetRefundRatio,
         uint256 _startTime,
         uint256 _duration

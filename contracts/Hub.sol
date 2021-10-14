@@ -105,7 +105,7 @@ contract Hub is Ownable, Initializable {
             "Unacceptable update duration"
         );
 
-        bool reconfiguring;
+        bool reconfigure;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
         // First, do all checks
@@ -131,7 +131,7 @@ contract Hub is Ownable, Initializable {
                 );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
             }
-            reconfiguring = true;
+            reconfigure = true;
         }
 
         if (_migration != address(0) && _targetVault != address(0)) {
@@ -150,7 +150,7 @@ contract Hub is Ownable, Initializable {
             hub_.targetVault = _targetVault;
         }
 
-        hub_.reconfiguring = reconfiguring;
+        hub_.reconfigure = reconfigure;
         hub_.updating = true;
         hub_.startTime = _startTime;
         hub_.endTime = _startTime + _duration;
@@ -171,14 +171,14 @@ contract Hub is Ownable, Initializable {
         }
 
         // Updating curve details and staying with the same curve
-        if (hub_.reconfiguring) {
+        if (hub_.reconfigure) {
             if (hub_.targetCurve == address(0)) {
                 ICurve(hub_.curve).finishUpdate(id);
             } else {
                 hub_.curve = hub_.targetCurve;
                 hub_.targetCurve = address(0);
             }
-            hub_.reconfiguring = false;
+            hub_.reconfigure = false;
         }
 
         hub_.updating = false;
