@@ -22,10 +22,12 @@ library Details {
         bool updating;
         uint256 startTime;
         uint256 endTime;
+        // TODO: add logic to use this if MeToken is resubscribing
         address migration;
         address targetVault;
         bool reconfigure;
         address targetCurve;
+        // TODO: add logic to use this if MeToken is resubscribing
         uint256 targetRefundRatio;
         uint256[] vaultMultipliers;
     }

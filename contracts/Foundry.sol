@@ -244,6 +244,21 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.startTime,
                 hub_.endTime
             );
+        } else if (meToken_.targetHubId != 0) {
+            Details.Hub memory targetHub = hub.getDetails(meToken_.targetHubId);
+            uint256 targetMeTokensMinted = ICurve(targetHub.curve)
+                .calculateMintReturn(
+                    _tokensDeposited,
+                    meToken_.targetHubId,
+                    totalSupply_,
+                    meToken_.balancePooled
+                );
+            meTokensMinted = WeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                meToken_.startTime,
+                meToken_.endTime
+            );
         }
     }
 
