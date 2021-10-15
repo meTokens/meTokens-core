@@ -14,7 +14,6 @@ import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { impersonate } from "../../utils/hardhatNode";
 import { deploy, getContractAt } from "../../utils/helpers";
-import { exit } from "process";
 import { expect } from "chai";
 
 describe("BancorZeroCurve", () => {
@@ -86,9 +85,7 @@ describe("BancorZeroCurve", () => {
     // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
     // this gives us m = 1/1000
     const baseY = PRECISION.div(1000).toString();
-    console.log({ baseY });
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-    console.log({ reserveWeight });
     const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
@@ -193,7 +190,7 @@ describe("BancorZeroCurve", () => {
       one.mul(999999999999999)
     );
 
-    expect(estimate).to.equal(ethers.utils.parseEther("0.001999999999999999"));
+    expect(estimate).to.equal(ethers.utils.parseEther("0.002"));
   });
   it("registerTarget() should work", async () => {
     const baseY = PRECISION.div(1000);
@@ -229,8 +226,6 @@ describe("BancorZeroCurve", () => {
   it("calculateTargetMintReturn() should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetReserveWeight = detail.targetReserveWeight;
-    console.log(` 
-    targetReserveWeight:${targetReserveWeight.toString()}`);
     let amount = one.mul(2);
 
     //   2/(2000^((1/0.98)−1))* 1944.930817973436691629^((1/0.98)−1)) == 1,998860701224224
@@ -284,70 +279,4 @@ describe("BancorZeroCurve", () => {
   it("finishUpdate should work", async () => {
     // TODO
   });
-  /*   it("register()", async () => {
-    // const index = 1;
-    // const key = "0xbccc714d56bc0da0fd33d96d2a87b680dd6d0df6";
-
-    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
-      ["uint256"],
-      [131]
-    );
-    //const key = encodedValueSet;
-    const key = "0x0000000000000000000000000000000000000083";
-    //  const key = "0x0000000000000000000000000000000000000000";
-    // const key = ethers.utils.hexlify(0);
-    console.log(`     Key:${key}   `);
- 
-
-    for (let index = 0; index < 10; index++) {
-      const aaa = await ethers.provider.getStorageAt(
-        bancorZeroCurve.address,
-        index
-      );
-      console.log(` AAAAAAA:${aaa}  --index:${index}`);
-
-      // The pre-image used to compute the Storage location
-      const newKeyPreimage = ethers.utils.concat([
-        // Mappings' keys in Solidity must all be word-aligned (32 bytes)
-        ethers.utils.hexZeroPad(key, 32),
-
-        // Similarly with the slot-index into the Solidity variable layout
-        ethers.utils.hexZeroPad(BigNumber.from(index).toHexString(), 32),
-      ]);
-
-      console.log("New Key Preimage:", ethers.utils.hexlify(newKeyPreimage));
-
-      const newKey = ethers.utils.keccak256(newKeyPreimage);
-      console.log("New Key:", newKey);
-      // "0xafef6be2b419f4d69d56fe34788202bf06650015554457a2470181981bcce7ef"
-
-      const totalOutstandingDebt = await ethers.provider.getStorageAt(
-        bancorZeroCurve.address,
-        newKey
-      );
-      if (totalOutstandingDebt != ethers.constants.HashZero) {
-        console.log(`
-        
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-          *************************
-        *************************
-        *************************
-        *************************
-        **********************************************************************
-        RES:${totalOutstandingDebt} 
-          `);
-      }
-    }
-    // TODO
-  }); */
 });
