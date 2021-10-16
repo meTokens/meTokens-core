@@ -8,6 +8,8 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/IMigrationRegistry.sol";
+import "./interfaces/IMigrationFactory.sol";
 import "./interfaces/ICurve.sol";
 import "./interfaces/IMigration.sol";
 
@@ -28,6 +30,7 @@ contract Hub is Ownable, Initializable {
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
+    IMigrationRegistry public migrationRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
     mapping(uint256 => address[]) private _subscribedMeTokens;
@@ -40,20 +43,21 @@ contract Hub is Ownable, Initializable {
     function initialize(
         address _foundry,
         address _vaultRegistry,
-        address _curveRegistry
+        address _curveRegistry,
+        address _migrationRegistry
     ) external onlyOwner initializer {
         foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
+        migrationRegistry = IMigrationRegistry(_migrationRegistry);
     }
 
     function register(
         address _vaultFactory,
         address _curve,
-        address _token,
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
-        bytes memory _encodedVaultAdditionalArgs
+        bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
 
@@ -68,9 +72,7 @@ contract Hub is Ownable, Initializable {
 
         // Create new vault
         // ALl new _hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(
-            _encodedVaultAdditionalArgs
-        );
+        address vault = IVaultFactory(_vaultFactory).create(_encodedVaultArgs);
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
@@ -81,10 +83,12 @@ contract Hub is Ownable, Initializable {
 
     function initUpdate(
         uint256 _id,
-        address _migration,
-        address _targetVault,
+        address _vaultFactory, // to create the target vault
+        address _migrationFactory,
         address _targetCurve,
         uint256 _targetRefundRatio,
+        bytes memory _encodedVaultArgs,
+        bytes memory _encodedMigrationArgs,
         bytes memory _encodedCurveDetails,
         uint256 _startTime,
         uint256 _duration
@@ -100,6 +104,8 @@ contract Hub is Ownable, Initializable {
         );
 
         bool reconfigure;
+        address targetVault;
+        address migration;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
 
@@ -111,6 +117,28 @@ contract Hub is Ownable, Initializable {
             require(
                 _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
+            );
+        }
+
+        // create target vault and migration vault
+        if (_vaultFactory != address(0)) {
+            require(
+                vaultRegistry.isActive(_vaultFactory),
+                "_vaultFactory inactive"
+            );
+            require(
+                migrationRegistry.isActive(_migrationFactory),
+                "_migrationFactory inactive"
+            );
+            targetVault = IVaultFactory(_vaultFactory).create(
+                _encodedVaultArgs
+            );
+            migration = IMigrationFactory(_migrationFactory).create(
+                _id,
+                msg.sender,
+                hub_.vault,
+                targetVault,
+                _encodedMigrationArgs
             );
         }
 
@@ -127,9 +155,10 @@ contract Hub is Ownable, Initializable {
             reconfigure = true;
         }
 
-        if (_migration != address(0) && _targetVault != address(0)) {
-            hub_.migration = _migration;
-            hub_.targetVault = _targetVault;
+        if (migration != address(0)) {
+            // only set these values now that everything else has passed
+            hub_.migration = migration;
+            hub_.targetVault = targetVault;
         }
 
         if (_targetRefundRatio != 0) {
@@ -137,10 +166,6 @@ contract Hub is Ownable, Initializable {
         }
         if (_targetCurve != address(0)) {
             hub_.targetCurve = _targetCurve;
-        }
-        if (_migration != address(0) && _targetVault != address(0)) {
-            hub_.migration = _migration;
-            hub_.targetVault = _targetVault;
         }
 
         hub_.reconfigure = reconfigure;

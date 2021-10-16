@@ -95,9 +95,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         uint256 _targetHubId,
         uint256 _startTime,
         uint256 _endTime,
-        address _migrationOwner,
         address _migrationFactory,
-        bytes8 _encodedMigrationArgs
+        bytes memory _encodedMigrationArgs
     ) external {
         require(_startTime > block.timestamp && _startTime < _endTime);
 
@@ -122,10 +121,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         );
 
         address migration = IMigrationFactory(_migrationFactory).create(
-            meToken_.hubId, // hub id
-            _migrationOwner, // owner
-            hub_.vault, // initial Vault
-            targetHubId_.vault // target vault
+            meToken_.hubId,
+            msg.sender,
+            hub_.vault,
+            targetHubId_.vault,
+            _encodedMigrationArgs
         );
 
         meToken_.startTime = _startTime;
