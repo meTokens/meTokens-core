@@ -74,7 +74,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
         // Send accrued fees to DAO since now accruedFees will be denominated in
         // the targetToken
-        withdraw(true, 0);
+        _withdraw(true, 0);
 
         amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
@@ -107,11 +107,11 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
         finished = true;
 
+        // Transfer accrued fees of target vault token
+        _withdraw(true, 0);
+
         // Send token to new vault
         IERC20(token).transfer(targetVault, amountOut);
-
-        // Transfer accrued fees of target vault token
-        withdraw(true, 0);
     }
 
     function hasFinished() external view returns (bool) {
