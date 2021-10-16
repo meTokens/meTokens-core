@@ -32,7 +32,7 @@ contract UniswapSingleTransferFactory {
         address _targetVault,
         bytes memory _encodedArgs
     ) external returns (address) {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
 
         address migration = Clones.cloneDeterministic(
             implementation,

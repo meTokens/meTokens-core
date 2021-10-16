@@ -6,6 +6,7 @@ interface IMigrationFactory {
         uint256 _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault
+        address _targetVault,
+        bytes memory _encodedMigrationArgs
     ) external returns (address);
 }
