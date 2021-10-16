@@ -111,7 +111,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         require(hub_.active, "hub inactive");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
-        if (meToken_.positionOfLastRatio < hub_.vaultMultipliers.length) {
+        if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {
             updateBalances(_meToken);
         }
 
@@ -152,7 +152,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         meToken_.targetHubId = 0;
         meToken_.migration = address(0);
         Details.Hub memory hub_ = hub.getDetails(meToken_.targetHubId);
-        meToken_.positionOfLastRatio = hub_.vaultMultipliers.length;
+        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
         return meToken_;
     }
 
@@ -178,7 +178,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
         for (
-            uint256 i = meToken_.positionOfLastRatio;
+            uint256 i = meToken_.posOfLastMultiplier;
             i < hub_.vaultMultipliers.length;
             i++
         ) {
@@ -189,7 +189,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             meToken_.balancePooled *= multiplier / PRECISION;
             meToken_.balanceLocked *= multiplier / PRECISION;
         }
-        meToken_.positionOfLastRatio = hub_.vaultMultipliers.length;
+        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
     }
 
     /// @inheritdoc IMeTokenRegistry

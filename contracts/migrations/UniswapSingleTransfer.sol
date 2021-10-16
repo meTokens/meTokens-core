@@ -16,7 +16,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    uint256 public multiplier;
+    uint256 private _multiplier;
     uint256 public earliestSwapTime;
 
     uint256 public hubId;
@@ -92,7 +92,8 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
         // The call to `exactInputSingle` executes the swap.
         amountOut = _router.exactInputSingle(params);
-        multiplier = (PRECISION * amountOut) / amountIn;
+        // TODO: validate
+        _multiplier = (PRECISION**2 * amountOut) / amountIn / PRECISION;
 
         // TODO: what if tokenOut changes balances?
         swapped = true;
@@ -115,5 +116,9 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
     function hasFinished() external view returns (bool) {
         return swapped && finished;
+    }
+
+    function getMultiplier() external view returns (uint256) {
+        return _multiplier;
     }
 }

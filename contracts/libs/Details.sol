@@ -11,7 +11,7 @@ library Details {
         uint256 endTime;
         uint256 targetHubId;
         address migration;
-        uint256 positionOfLastRatio;
+        uint256 posOfLastMultiplier;
     }
 
     struct Hub {

@@ -103,7 +103,7 @@ contract Hub is Ownable, Initializable {
         bool reconfigure;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
-        // First, do all checks
+
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < _precision,
@@ -119,7 +119,6 @@ contract Hub is Ownable, Initializable {
             if (_targetCurve == address(0)) {
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
-                // _targetCurve != address(0))
                 require(
                     curveRegistry.isActive(_targetCurve),
                     "_targetCurve inactive"
@@ -153,11 +152,17 @@ contract Hub is Ownable, Initializable {
 
     function finishUpdate(uint256 id) external returns (Details.Hub memory) {
         // TODO: only callable from foundry
-
         Details.Hub storage hub_ = _hubs[id];
 
-        if (hub_.migration != address(0)) {
+        if (hub_.targetVault != address(0)) {
             require(IMigration(hub_.migration).hasFinished());
+            hub_.vaultMultipliers.push(
+                IMigration(hub_.migration).getMultiplier()
+            );
+
+            hub_.migration = address(0);
+            hub_.vault = hub_.targetVault;
+            hub_.targetVault = address(0);
         }
 
         if (hub_.targetRefundRatio != 0) {
@@ -165,7 +170,6 @@ contract Hub is Ownable, Initializable {
             hub_.targetRefundRatio = 0;
         }
 
-        // Updating curve details and staying with the same curve
         if (hub_.reconfigure) {
             if (hub_.targetCurve == address(0)) {
                 ICurve(hub_.curve).finishReconfigure(id);
@@ -177,6 +181,8 @@ contract Hub is Ownable, Initializable {
         }
 
         hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
         return hub_;
     }
 
