@@ -15,7 +15,7 @@ interface IUpdater {
     /// @param _targetVault TODO
     /// @param _recollateralizationFactory TODO
     /// @param _targetRefundRatio TODO
-    /// @param _targetEncodedValueSet TODO
+    /// @param _targetEncodedCurveDetails TODO
     /// @param _startTime TODO
     /// @param _duration TODO
     function initUpdate(
@@ -24,7 +24,7 @@ interface IUpdater {
         address _targetVault,
         address _recollateralizationFactory,
         uint256 _targetRefundRatio,
-        bytes32 _targetEncodedValueSet,
+        bytes32 _targetEncodedCurveDetails,
         uint256 _startTime,
         uint256 _duration
     ) external;

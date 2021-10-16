@@ -15,15 +15,15 @@ contract BancorZeroCurve is ICurve, Power {
     // NOTE: keys are their respective hubId
     mapping(uint256 => Details.Bancor) private _bancors;
 
-    function register(uint256 _hubId, bytes calldata _encodedValueSet)
+    function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
         // TODO: access control
-        require(_encodedValueSet.length > 0, "ValueSet empty");
+        require(_encodedDetails.length > 0, "_encodedDetails empty");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
-            _encodedValueSet,
+            _encodedDetails,
             (uint256, uint32)
         );
         require(
@@ -40,13 +40,13 @@ contract BancorZeroCurve is ICurve, Power {
         bancor_.reserveWeight = reserveWeight;
     }
 
-    function initReconfigure(uint256 _hubId, bytes calldata _encodedValueSet)
+    function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
         // TODO: access control
 
-        uint32 targetReserveWeight = abi.decode(_encodedValueSet, (uint32));
+        uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
 
         Details.Bancor storage bancor_ = _bancors[_hubId];
         require(

@@ -111,7 +111,7 @@ async function main() {
     vaultRegistry.address,
     curveRegistry.address
   );
-  const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+  const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [ethers.utils.parseEther("1000000000000000000"), 5000]
   );
@@ -121,7 +121,7 @@ async function main() {
     bancorZeroCurve.address,
     DAI,
     REFUND_RATIO,
-    encodedValueSet,
+    encodedCurveDetails,
     ethers.utils.toUtf8Bytes("")
   );
 
