@@ -99,7 +99,7 @@ describe("MeTokenRegistry.sol", () => {
       bancorZeroCurve.address,
       DAI,
       50000,
-      encodedValueSet,
+      encodedCurveDetails,
       ethers.utils.toUtf8Bytes("")
     );
     hubId = 0;

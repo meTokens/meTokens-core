@@ -21,18 +21,14 @@ contract SingleAssetVault is Vault, Initializable {
     // TODO: figure out where to set these
     IMeTokenRegistry public meTokenRegistry = IMeTokenRegistry(address(0));
     IHub public hub = IHub(address(0));
+    address public foundry = address(0); // TODO
 
-    function initialize(
-        address _foundry,
-        address _token,
-        bytes memory _encodedAdditionalArgs
-    ) external initializer {
+    function initialize(address _token) external initializer {
         // TODO: access control?
         token = _token;
-        encodedAdditionalArgs = _encodedAdditionalArgs;
 
         // Approve Foundry to spend all collateral in vault
-        IERC20(token).approve(_foundry, 2**256 - 1);
+        IERC20(token).approve(foundry, 2**256 - 1);
     }
     /*
     // NOTE: this is only callable by hub

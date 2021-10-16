@@ -52,7 +52,7 @@ contract Hub is Ownable, Initializable {
         address _curve,
         address _token,
         uint256 _refundRatio,
-        bytes memory _encodedValueSetArgs,
+        bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultAdditionalArgs
     ) external {
         // TODO: access control
@@ -64,12 +64,11 @@ contract Hub is Ownable, Initializable {
         );
         require(_refundRatio < _precision, "_refundRatio > _precision");
         // Store value set base paramaters to `{CurveName}.sol`
-        ICurve(_curve).register(_count, _encodedValueSetArgs);
+        ICurve(_curve).register(_count, _encodedCurveDetails);
 
         // Create new vault
         // ALl new _hubs will create a vault
         address vault = IVaultFactory(_vaultFactory).create(
-            _token,
             _encodedVaultAdditionalArgs
         );
         // Save the hub to the registry

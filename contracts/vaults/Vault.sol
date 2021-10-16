@@ -37,11 +37,10 @@ contract Vault is Ownable, IVault {
         if (_max) {
             _amount = accruedFees;
         } else {
-            require(
-                _amount <= accruedFees,
-                "_amount cannot exceed accruedFees"
-            );
+            require(_amount <= accruedFees, "_amount > accruedFees");
         }
+        uint256 balance = IERC20(token).balanceOf(token);
+        require(_amount <= balance, "_amount > balance");
 
         accruedFees -= _amount;
 

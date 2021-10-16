@@ -29,11 +29,14 @@ contract SingleAssetFactory is IVaultFactory {
     }
 
     /// @inheritdoc IVaultFactory
-    function create(address _token, bytes memory _encodedAdditionalArgs)
+    function create(bytes memory _encodedArgs)
         external
         override
         returns (address vaultAddress)
     {
+        require(_encodedArgs.length > 0, "_encodedArgs.length == 0");
+        address token = abi.decode(_encodedArgs, (address));
+
         // TODO: access control
         vaultAddress = Clones.cloneDeterministic(
             implementation,
@@ -41,11 +44,7 @@ contract SingleAssetFactory is IVaultFactory {
         );
 
         // create our vault
-        SingleAssetVault(vaultAddress).initialize(
-            foundry,
-            _token,
-            _encodedAdditionalArgs
-        );
+        SingleAssetVault(vaultAddress).initialize(token);
 
         // Add vault to vaultRegistry
         vaultRegistry.register(vaultAddress);
