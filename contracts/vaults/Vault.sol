@@ -29,7 +29,11 @@ contract Vault is Ownable, IVault {
     }
 
     /// @inheritdoc IVault
-    function withdraw(bool _max, uint256 _amount) public override onlyOwner {
+    function withdraw(bool _max, uint256 _amount) external override onlyOwner {
+        _withdraw(_max, _amount);
+    }
+
+    function _withdraw(bool _max, uint256 _amount) internal {
         if (_max) {
             _amount = accruedFees;
         } else {
