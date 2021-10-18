@@ -19,9 +19,11 @@ library Details {
         address vault;
         address curve;
         uint256 refundRatio;
+        uint256[] vaultMultipliers;
         bool updating;
         uint256 startTime;
         uint256 endTime;
+        uint256 endCooldown;
         // TODO: add logic to use this if MeToken is resubscribing
         address migration;
         address targetVault;
@@ -29,7 +31,6 @@ library Details {
         address targetCurve;
         // TODO: add logic to use this if MeToken is resubscribing
         uint256 targetRefundRatio;
-        uint256[] vaultMultipliers;
     }
 
     struct Bancor {

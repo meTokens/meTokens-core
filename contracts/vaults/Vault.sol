@@ -19,7 +19,6 @@ contract Vault is Ownable, IVault {
     address public constant DAO = address(0);
     address public token;
     uint256 public accruedFees;
-    bytes public encodedAdditionalArgs;
 
     /// @inheritdoc IVault
     function addFee(uint256 _amount) external override {

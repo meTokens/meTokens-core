@@ -21,10 +21,9 @@ import "./libs/Details.sol";
 ///     and their respective subscribed meTokens
 contract Hub is Ownable, Initializable {
     uint256 private immutable _precision = 10**18;
-    uint256 private _minSecondsUntilStart = 0; // TODO
-    uint256 private _maxSecondsUntilStart = 0; // TODO
-    uint256 private _minDuration = 0; // TODO
-    uint256 private _maxDuration = 0; // TODO
+    uint256 private _warmup;
+    uint256 private _duration;
+    uint256 private _cooldown;
 
     uint256 private _count;
     address public foundry;
@@ -89,25 +88,17 @@ contract Hub is Ownable, Initializable {
         uint256 _targetRefundRatio,
         bytes memory _encodedVaultArgs,
         bytes memory _encodedMigrationArgs,
-        bytes memory _encodedCurveDetails,
-        uint256 _startTime,
-        uint256 _duration
+        bytes memory _encodedCurveDetails
     ) external {
-        require(
-            _startTime - block.timestamp >= _minSecondsUntilStart &&
-                _startTime - block.timestamp <= _maxSecondsUntilStart,
-            "Unacceptable _startTime"
-        );
-        require(
-            _minDuration <= _duration && _maxDuration >= _duration,
-            "Unacceptable update duration"
-        );
-
         bool reconfigure;
         address targetVault;
         address migration;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
+        if (hub_.endCooldown > 0) {
+            require(hub_.endCooldown > block.timestamp, "Still cooling down");
+            hub_.endCooldown = 0;
+        }
 
         if (_targetRefundRatio != 0) {
             require(
@@ -170,8 +161,9 @@ contract Hub is Ownable, Initializable {
 
         hub_.reconfigure = reconfigure;
         hub_.updating = true;
-        hub_.startTime = _startTime;
-        hub_.endTime = _startTime + _duration;
+        hub_.startTime = block.timestamp + _warmup;
+        hub_.endTime = block.timestamp + _warmup + _duration;
+        hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
     }
 
     function finishUpdate(uint256 id) external returns (Details.Hub memory) {
@@ -221,5 +213,32 @@ contract Hub is Ownable, Initializable {
         returns (Details.Hub memory hub_)
     {
         hub_ = _hubs[id];
+    }
+
+    function getWarmup() external view returns (uint256) {
+        return _warmup;
+    }
+
+    function setWarmup(uint256 warmup_) external onlyOwner {
+        require(warmup_ != _warmup, "warmup_ == _warmup");
+        _warmup = warmup_;
+    }
+
+    function getDuration() external view returns (uint256) {
+        return _duration;
+    }
+
+    function setDuration(uint256 duration_) external onlyOwner {
+        require(duration_ != _duration, "duration_ == _duration");
+        _duration = duration_;
+    }
+
+    function getCooldown() external view returns (uint256) {
+        return _cooldown;
+    }
+
+    function setCooldown(uint256 cooldown_) external onlyOwner {
+        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
+        _cooldown = cooldown_;
     }
 }

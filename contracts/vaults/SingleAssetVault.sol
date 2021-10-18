@@ -30,37 +30,4 @@ contract SingleAssetVault is Vault, Initializable {
         // Approve Foundry to spend all collateral in vault
         IERC20(token).approve(foundry, 2**256 - 1);
     }
-    /*
-    // NOTE: this is only callable by hub
-    function migrateFromHub(address _migration) external {
-        // TODO: access control
-
-        require(!migrated, "migrated");
-        uint256 balanceAfterFees = IERC20(token).balanceOf(address(this)) -
-            accruedFees;
-
-        IERC20(token).transfer(_migration, balanceAfterFees);
-
-        migrated = true;
-        emit Migrate();
-    }
-
-    // This is only callable by meTokenRegistry
-    function migrateFromRegistry(address _meToken, address _migration) external {
-        meTokenRegistry.updateBalances(_meToken);
-
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-
-        require(
-            hub_.vault == address(this),
-            "Hub not subscribed to this vault"
-        );
-
-        uint256 amtToTransfer = meToken_.balancePooled + meToken_.balanceLocked;
-        address tokenToTransfer = IVault(hub_.vault).getToken();
-
-        IERC20(tokenToTransfer).transfer(_migration, amtToTransfer);
-    }
-*/
 }

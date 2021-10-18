@@ -31,10 +31,9 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
-    // address public tokenIn;
     address public targetToken;
     address public recipient;
-    uint24 public immutable fee = 3000; // NOTE: 0.3%
+    uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
     uint256 public amountIn;
     uint256 public amountOut;
 
