@@ -172,26 +172,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         emit TransferOwnership(msg.sender, _newOwner, _meToken);
     }
 
-    function updateBalances(address _meToken) public override {
-        // require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-
-        for (
-            uint256 i = meToken_.posOfLastMultiplier;
-            i < hub_.vaultMultipliers.length;
-            i++
-        ) {
-            uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
-
-            // Update balancePooled and balanceLocked based on the
-            // multiplier from the vaultRatio
-            meToken_.balancePooled *= multiplier / PRECISION;
-            meToken_.balanceLocked *= multiplier / PRECISION;
-        }
-        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
-    }
-
     /// @inheritdoc IMeTokenRegistry
     function incrementBalancePooled(
         bool add,
@@ -244,6 +224,26 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         returns (Details.MeToken memory meToken_)
     {
         meToken_ = _meTokens[_meToken];
+    }
+
+    function updateBalances(address _meToken) public override {
+        // require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+
+        for (
+            uint256 i = meToken_.posOfLastMultiplier;
+            i < hub_.vaultMultipliers.length;
+            i++
+        ) {
+            uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
+
+            // Update balancePooled and balanceLocked based on the
+            // multiplier from the vaultRatio
+            meToken_.balancePooled *= multiplier / PRECISION;
+            meToken_.balanceLocked *= multiplier / PRECISION;
+        }
+        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
     }
 
     /// @inheritdoc IMeTokenRegistry

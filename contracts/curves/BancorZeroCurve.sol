@@ -51,21 +51,21 @@ contract BancorZeroCurve is ICurve {
     {
         // TODO: access control
 
-        uint32 targetReserveWeight = abi.decode(_encodedValueSet, (uint32));
-        Details.BancorDetails storage bancorDetails = _bancors[_hubId];
+        uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
+        Details.Bancor storage bancorDetails = _bancors[_hubId];
 
         require(targetReserveWeight > 0, "reserveWeight not in range");
         require(
-            targetReserveWeight != bancor_.reserveWeight,
+            targetReserveWeight != bancorDetails.reserveWeight,
             "targeReserveWeight == reserveWeight"
         );
 
         // targetBaseY = (old baseY * oldR) / newR
-        uint256 targetBaseY = (bancor_.baseY * bancor_.reserveWeight) /
-            targetReserveWeight;
+        uint256 targetBaseY = (bancorDetails.baseY *
+            bancorDetails.reserveWeight) / targetReserveWeight;
 
-        bancor_.targetBaseY = targetBaseY;
-        bancor_.targetReserveWeight = targetReserveWeight;
+        bancorDetails.targetBaseY = targetBaseY;
+        bancorDetails.targetReserveWeight = targetReserveWeight;
     }
 
     function finishReconfigure(uint256 _hubId) external override {
@@ -80,7 +80,7 @@ contract BancorZeroCurve is ICurve {
     function getDetails(uint256 bancor)
         external
         view
-        returns (Details.BancorDetails memory)
+        returns (Details.Bancor memory)
     {
         return _bancors[bancor];
     }
@@ -92,11 +92,11 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
-                bancor_.reserveWeight,
+                bancorDetails.reserveWeight,
                 _supply,
                 _balancePooled
             );
@@ -116,11 +116,11 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
-                bancor_.targetReserveWeight,
+                bancorDetails.targetReserveWeight,
                 _supply,
                 _balancePooled
             );
@@ -140,10 +140,10 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
-            bancor_.reserveWeight,
+            bancorDetails.reserveWeight,
             _supply,
             _balancePooled
         );
@@ -155,10 +155,10 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
-            bancor_.targetReserveWeight,
+            bancorDetails.targetReserveWeight,
             _supply,
             _balancePooled
         );
@@ -178,6 +178,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) private view returns (uint256) {
+        // validate input
         require(
             _balancePooled > 0 &&
                 _reserveWeight > 0 &&
@@ -282,23 +283,5 @@ contract BancorZeroCurve is ICurve {
             _balancePooled.fromUInt().mul(s.ln().mul(exponent).exp())
         );
         return res.toUInt();
-    }
-
-    /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
-    ///         constant y, calculates the return for a given conversion (in the meToken)
-    /// @dev _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
-    /// @param _tokensDeposited   amount of collateral tokens to deposit
-    /// @param _reserveWeight connector weight, represented in ppm, 1 - 1,000,000
-    /// @param _baseX          constant X
-    /// @param _baseY          constant y
-    /// @return tokensReturned amount of meTokens minted
-    function _calculateMintReturnFromZero(
-        uint256 _tokensDeposited,
-        uint256 _reserveWeight,
-        uint256 _baseX,
-        uint256 _baseY
-    ) private view returns (uint256) {
-        uint256 exponent = PRECISION**2 / _reserveWeight - PRECISION;
-        // return (_baseY * _tokensDeposited**exponent) / (_baseX**exponent);
     }
 }

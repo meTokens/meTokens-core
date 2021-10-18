@@ -67,6 +67,28 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         targetToken = IVault(_targetVault).getToken();
     }
 
+    // sends targetVault.getToken() to targetVault
+    function finishMigration() external {
+        // TODO: foundry access control
+        require(swapped && !finished);
+
+        finished = true;
+
+        // Transfer accrued fees of target vault token
+        _withdraw(true, 0);
+
+        // Send token to new vault
+        IERC20(token).transfer(targetVault, amountOut);
+    }
+
+    function hasFinished() external view returns (bool) {
+        return swapped && finished;
+    }
+
+    function getMultiplier() external view returns (uint256) {
+        return _multiplier;
+    }
+
     // Trades vault.getToken() to targetVault.getToken();
     function swap() public {
         require(!swapped, "swapped");
@@ -98,27 +120,5 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         // TODO: what if tokenOut changes balances?
         swapped = true;
         token = targetToken;
-    }
-
-    // sends targetVault.getToken() to targetVault
-    function finishMigration() external {
-        // TODO: foundry access control
-        require(swapped && !finished);
-
-        finished = true;
-
-        // Transfer accrued fees of target vault token
-        _withdraw(true, 0);
-
-        // Send token to new vault
-        IERC20(token).transfer(targetVault, amountOut);
-    }
-
-    function hasFinished() external view returns (bool) {
-        return swapped && finished;
-    }
-
-    function getMultiplier() external view returns (uint256) {
-        return _multiplier;
     }
 }

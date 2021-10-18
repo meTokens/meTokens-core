@@ -33,6 +33,15 @@ contract Vault is Ownable, IVault {
         _withdraw(_max, _amount);
     }
 
+    function getAccruedFees() external view override returns (uint256) {
+        return accruedFees;
+    }
+
+    /// @inheritdoc IVault
+    function getToken() external view override returns (address) {
+        return token;
+    }
+
     function _withdraw(bool _max, uint256 _amount) internal {
         if (_max) {
             _amount = accruedFees;
@@ -46,14 +55,5 @@ contract Vault is Ownable, IVault {
 
         IERC20(token).transfer(DAO, _amount);
         emit Withdraw(_amount, DAO);
-    }
-
-    function getAccruedFees() external view override returns (uint256) {
-        return accruedFees;
-    }
-
-    /// @inheritdoc IVault
-    function getToken() external view override returns (address) {
-        return token;
     }
 }
