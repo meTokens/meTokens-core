@@ -16,18 +16,15 @@ contract SingleAssetFactory is IVaultFactory {
     uint256 private _count;
     address public hub;
     address public implementation; // TODO: this will be the SingleAsset contract
-    address public foundry;
     IVaultRegistry public vaultRegistry;
 
     constructor(
         address _hub,
         address _implementation,
-        address _foundry,
         address _vaultRegistry
     ) {
         hub = _hub;
         implementation = _implementation;
-        foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
     }
 

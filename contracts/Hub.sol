@@ -96,7 +96,7 @@ contract Hub is Ownable, Initializable {
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
         if (hub_.endCooldown > 0) {
-            require(hub_.endCooldown > block.timestamp, "Still cooling down");
+            require(hub_.endCooldown <= block.timestamp, "Still cooling down");
             hub_.endCooldown = 0;
         }
 
