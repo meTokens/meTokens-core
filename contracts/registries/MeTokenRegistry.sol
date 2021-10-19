@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "../MeToken.sol";
 import "../Roles.sol";
 
@@ -19,8 +21,12 @@ import "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry, Roles {
+contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     uint256 public constant PRECISION = 10**18;
+    uint256 private _warmup;
+    uint256 private _duration;
+    uint256 private _cooldown;
+
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
     IMigrationRegistry public migrationRegistry;
@@ -93,21 +99,21 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
     function resubscribe(
         address _meToken,
         uint256 _targetHubId,
-        uint256 _startTime,
-        uint256 _endTime,
         address _migrationFactory,
         bytes memory _encodedMigrationArgs
     ) external {
-        require(_startTime > block.timestamp && _startTime < _endTime);
-
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHubId_ = hub.getDetails(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
-        require(meToken_.targetHubId == 0, "Already resubscribing");
+        require(
+            block.timestamp >= meToken_.endCooldown,
+            "Cooldown not complete"
+        );
         require(meToken_.hubId != _targetHubId, "same hub");
         require(hub_.active, "hub inactive");
+        require(!hub_.updating, "hub updating");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
         if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {
@@ -128,8 +134,13 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
             _encodedMigrationArgs
         );
 
-        meToken_.startTime = _startTime;
-        meToken_.endTime = _endTime;
+        meToken_.startTime = block.timestamp + _warmup;
+        meToken_.endTime = block.timestamp + _warmup + _duration;
+        meToken_.endCooldown =
+            block.timestamp +
+            _warmup +
+            _duration +
+            _cooldown;
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = migration;
     }
@@ -251,6 +262,32 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles {
         return _owners[_owner] != address(0);
     }
 
-    // TODO
-    // function resubscribe(address _meToken) {}
+    function getWarmup() external view returns (uint256) {
+        return _warmup;
+    }
+
+    function setWarmup(uint256 warmup_) external onlyOwner {
+        require(warmup_ != _warmup, "warmup_ == _warmup");
+        require(warmup_ + _duration < hub.getWarmup(), "too long");
+        _warmup = warmup_;
+    }
+
+    function getDuration() external view returns (uint256) {
+        return _duration;
+    }
+
+    function setDuration(uint256 duration_) external onlyOwner {
+        require(duration_ != _duration, "duration_ == _duration");
+        require(duration_ + _warmup < hub.getWarmup(), "too long");
+        _duration = duration_;
+    }
+
+    function getCooldown() external view returns (uint256) {
+        return _cooldown;
+    }
+
+    function setCooldown(uint256 cooldown_) external onlyOwner {
+        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
+        _cooldown = cooldown_;
+    }
 }

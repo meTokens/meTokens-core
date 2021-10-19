@@ -9,6 +9,7 @@ library Details {
         uint256 balanceLocked;
         uint256 startTime;
         uint256 endTime;
+        uint256 endCooldown;
         uint256 targetHubId;
         address migration;
         uint256 posOfLastMultiplier;

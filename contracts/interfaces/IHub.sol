@@ -54,4 +54,16 @@ interface IHub {
     /// @notice TODO
     /// @return count of hubs created
     function count() external view returns (uint256);
+
+    function getWarmup() external view returns (uint256);
+
+    function setWarmup(uint256 warmup_) external;
+
+    function getDuration() external view returns (uint256);
+
+    function setDuration(uint256 duration_) external;
+
+    function getCooldown() external view returns (uint256);
+
+    function setCooldown(uint256 cooldown_) external;
 }

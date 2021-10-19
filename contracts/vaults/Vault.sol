@@ -19,6 +19,13 @@ contract Vault is Ownable, IVault {
     address public constant DAO = address(0);
     address public token;
     uint256 public accruedFees;
+    mapping(address => uint256) public accruedMapFees;
+    mapping(address => address) public tokens; // key: users meToken addr, value: collateral token
+
+    function addMapFee(address _token, uint256 _amount) external {
+        accruedMapFees[_token] += _amount;
+        // emit AddMapFee(_token, _amount);
+    }
 
     /// @inheritdoc IVault
     function addFee(uint256 _amount) external override {
@@ -39,6 +46,10 @@ contract Vault is Ownable, IVault {
     /// @inheritdoc IVault
     function getToken() external view override returns (address) {
         return token;
+    }
+
+    function getMapToken(address _meToken) external view returns (address) {
+        return tokens[_meToken];
     }
 
     function _withdraw(bool _max, uint256 _amount) internal {
