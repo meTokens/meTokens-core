@@ -104,7 +104,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     ) external {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHubId_ = hub.getDetails(_targetHubId);
+        Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -130,7 +130,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             meToken_.hubId,
             msg.sender,
             hub_.vault,
-            targetHubId_.vault,
+            targetHub_.vault,
             _encodedMigrationArgs
         );
 
