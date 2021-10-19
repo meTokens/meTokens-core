@@ -219,16 +219,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         emit IncrementBalanceLocked(add, _meToken, _amount);
     }
 
-    /// @inheritdoc IMeTokenRegistry
-    function getOwnerMeToken(address _owner)
-        external
-        view
-        override
-        returns (address)
-    {
-        return _owners[_owner];
-    }
-
     // function updateBalances(address _meToken) public override {
     //     // require(hasRole(FOUNDRY, msg.sender), "!foundry");
     //     Details.MeToken storage meToken_ = _meTokens[_meToken];
@@ -264,6 +254,16 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     function setCooldown(uint256 cooldown_) external onlyOwner {
         require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
         _cooldown = cooldown_;
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function getOwnerMeToken(address _owner)
+        external
+        view
+        override
+        returns (address)
+    {
+        return _owners[_owner];
     }
 
     // @inheritdoc IMeTokenRegistry
