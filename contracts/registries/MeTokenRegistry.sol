@@ -229,16 +229,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         return _owners[_owner];
     }
 
-    // @inheritdoc IMeTokenRegistry
-    function getDetails(address _meToken)
-        external
-        view
-        override
-        returns (Details.MeToken memory meToken_)
-    {
-        meToken_ = _meTokens[_meToken];
-    }
-
     function updateBalances(address _meToken) public override {
         // require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
@@ -259,6 +249,33 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
     }
 
+    function setWarmup(uint256 warmup_) external onlyOwner {
+        require(warmup_ != _warmup, "warmup_ == _warmup");
+        require(warmup_ + _duration < hub.getWarmup(), "too long");
+        _warmup = warmup_;
+    }
+
+    function setDuration(uint256 duration_) external onlyOwner {
+        require(duration_ != _duration, "duration_ == _duration");
+        require(duration_ + _warmup < hub.getWarmup(), "too long");
+        _duration = duration_;
+    }
+
+    function setCooldown(uint256 cooldown_) external onlyOwner {
+        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
+        _cooldown = cooldown_;
+    }
+
+    // @inheritdoc IMeTokenRegistry
+    function getDetails(address _meToken)
+        external
+        view
+        override
+        returns (Details.MeToken memory meToken_)
+    {
+        meToken_ = _meTokens[_meToken];
+    }
+
     /// @inheritdoc IMeTokenRegistry
     function isOwner(address _owner) public view override returns (bool) {
         return _owners[_owner] != address(0);
@@ -268,28 +285,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         return _warmup;
     }
 
-    function setWarmup(uint256 warmup_) external onlyOwner {
-        require(warmup_ != _warmup, "warmup_ == _warmup");
-        require(warmup_ + _duration < hub.getWarmup(), "too long");
-        _warmup = warmup_;
-    }
-
     function getDuration() external view returns (uint256) {
         return _duration;
     }
 
-    function setDuration(uint256 duration_) external onlyOwner {
-        require(duration_ != _duration, "duration_ == _duration");
-        require(duration_ + _warmup < hub.getWarmup(), "too long");
-        _duration = duration_;
-    }
-
     function getCooldown() external view returns (uint256) {
         return _cooldown;
-    }
-
-    function setCooldown(uint256 cooldown_) external onlyOwner {
-        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
-        _cooldown = cooldown_;
     }
 }

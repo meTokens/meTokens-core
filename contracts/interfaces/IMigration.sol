@@ -8,5 +8,7 @@ interface IMigration {
 
     function isReady() external view returns (bool);
 
+    function hasFinished() external view returns (bool);
+
     function getMultiplier() external view returns (uint256);
 }
