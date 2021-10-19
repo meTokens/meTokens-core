@@ -55,7 +55,7 @@ interface IMeTokenRegistry {
 
     function transferOwnership(address _meToken, address _newOwner) external;
 
-    function updateBalances(address _meToken) external;
+    // function updateBalances(address _meToken) external;
 
     function incrementBalancePooled(
         bool add,

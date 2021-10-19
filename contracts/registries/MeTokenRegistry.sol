@@ -118,9 +118,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!targetHub_.updating, "targetHub updating");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
-        if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {
-            updateBalances(_meToken);
-        }
+        // if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {
+        //     updateBalances(_meToken);
+        // }
 
         // Ensure the migration factory we're using is approved
         require(
@@ -229,25 +229,25 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         return _owners[_owner];
     }
 
-    function updateBalances(address _meToken) public override {
-        // require(hasRole(FOUNDRY, msg.sender), "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+    // function updateBalances(address _meToken) public override {
+    //     // require(hasRole(FOUNDRY, msg.sender), "!foundry");
+    //     Details.MeToken storage meToken_ = _meTokens[_meToken];
+    //     Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
-        for (
-            uint256 i = meToken_.posOfLastMultiplier;
-            i < hub_.vaultMultipliers.length;
-            i++
-        ) {
-            uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
+    //     for (
+    //         uint256 i = meToken_.posOfLastMultiplier;
+    //         i < hub_.vaultMultipliers.length;
+    //         i++
+    //     ) {
+    //         uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
 
-            // Update balancePooled and balanceLocked based on the
-            // multiplier from the vaultRatio
-            meToken_.balancePooled *= multiplier / PRECISION;
-            meToken_.balanceLocked *= multiplier / PRECISION;
-        }
-        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
-    }
+    //         // Update balancePooled and balanceLocked based on the
+    //         // multiplier from the vaultRatio
+    //         meToken_.balancePooled *= multiplier / PRECISION;
+    //         meToken_.balanceLocked *= multiplier / PRECISION;
+    //     }
+    //     meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
+    // }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
         require(warmup_ != _warmup, "warmup_ == _warmup");
@@ -276,11 +276,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_ = _meTokens[_meToken];
     }
 
-    /// @inheritdoc IMeTokenRegistry
-    function isOwner(address _owner) public view override returns (bool) {
-        return _owners[_owner] != address(0);
-    }
-
     function getWarmup() external view returns (uint256) {
         return _warmup;
     }
@@ -291,5 +286,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
 
     function getCooldown() external view returns (uint256) {
         return _cooldown;
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function isOwner(address _owner) public view override returns (bool) {
+        return _owners[_owner] != address(0);
     }
 }
