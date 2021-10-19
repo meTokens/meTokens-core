@@ -6,6 +6,8 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 describe("VaultRegistry.sol", () => {
   let DAI: string;
@@ -44,18 +46,26 @@ describe("VaultRegistry.sol", () => {
 
     it("Emits Register(address)", async () => {
       vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      const foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
       factory = await deploy<SingleAssetFactory>(
         "SingleAssetFactory",
         undefined, //no lib
-        implementation.address,
         hub.address,
+        implementation.address,
+        foundry.address, // foundry
         vaultRegistry.address
       );
 
       // clone implementation to make it a SingleAssetVault with hub and DAI
       await vaultRegistry.approve(factory.address);
-      expect(await factory.create(DAI, ethers.utils.toUtf8Bytes(""))).to.emit(
+      const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+        ["address"],
+        [DAI]
+      );
+      expect(await factory.create(encodedVaultArgs)).to.emit(
         vaultRegistry,
         "Register"
       );
