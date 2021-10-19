@@ -202,7 +202,7 @@ describe("BancorZeroCurve", () => {
 
     expect(estimate).to.equal(ethers.utils.parseEther("0.002"));
   });
-  /*  it("registerTarget() should work", async () => {
+  it("initReconfigure() should work", async () => {
     const baseY = PRECISION.div(1000);
 
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2);
@@ -211,13 +211,13 @@ describe("BancorZeroCurve", () => {
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await bancorZeroCurve.registerTarget(hubId, encodedValueSet);
+    await bancorZeroCurve.initReconfigure(hubId, encodedValueSet);
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
- */
+
   it("calculateTargetMintReturn() from zero should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     let amount = one.mul(2);

@@ -8,10 +8,14 @@ import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 
 describe("VaultRegistry.sol", () => {
   let DAI: string;
   let vaultRegistry: VaultRegistry;
+  let curveRegistry: CurveRegistry;
   let implementation: SingleAssetVault;
   let factory: SingleAssetFactory;
   let hub: Hub;
@@ -21,21 +25,36 @@ describe("VaultRegistry.sol", () => {
     ({ DAI } = await getNamedAccounts());
     hub = await deploy<Hub>("Hub");
     implementation = await deploy<SingleAssetVault>("SingleAssetVault");
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    const migrationRegistry = await deploy<MigrationRegistry>(
+      "MigrationRegistry"
+    );
+    const foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+
+    await hub.initialize(
+      foundry.address,
+      vaultRegistry.address,
+      curveRegistry.address,
+      migrationRegistry.address
+    );
+
     signers = await ethers.getSigners();
   });
 
   describe("approve()", () => {
     it("Vault is not yet approved", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-
       expect(await vaultRegistry.isApproved(DAI)).to.equal(false);
     });
 
     it("Emits Approve(address)", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
 
-      expect(await vaultRegistry.approve(DAI))
-        .to.emit(vaultRegistry, "Approve")
+      expect(await newVaultRegistry.approve(DAI))
+        .to.emit(newVaultRegistry, "Approve")
         .withArgs(DAI);
     });
   });
@@ -45,7 +64,7 @@ describe("VaultRegistry.sol", () => {
     });
 
     it("Emits Register(address)", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      //vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
       const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
       const foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
@@ -65,50 +84,64 @@ describe("VaultRegistry.sol", () => {
         ["address"],
         [DAI]
       );
-      expect(await factory.create(encodedVaultArgs)).to.emit(
-        vaultRegistry,
-        "Register"
+      const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+      const baseY = "10000000000000000";
+      const reserveWeight = "500000";
+      const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "uint32"],
+        [baseY, reserveWeight]
       );
+      await curveRegistry.register(bancorZeroCurve.address);
+
+      expect(
+        await hub.register(
+          factory.address,
+          bancorZeroCurve.address,
+          5000, //refund ratio
+          encodedCurveDetails,
+          encodedVaultArgs
+        )
+      ).to.emit(vaultRegistry, "Register");
     });
   });
   describe("unapprove()", () => {
     it("Revert if not yet approved", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
 
       await expect(
         // TODO: This is supposed to revert, why error?
-        vaultRegistry.unapprove(DAI)
+        newVaultRegistry.unapprove(DAI)
       ).to.revertedWith("Factory not _approved");
     });
 
     it("Emits Unapprove(address)", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
 
-      await vaultRegistry.approve(DAI);
-      await expect(vaultRegistry.unapprove(DAI))
-        .to.emit(vaultRegistry, "Unapprove")
+      await newVaultRegistry.approve(DAI);
+      await expect(newVaultRegistry.unapprove(DAI))
+        .to.emit(newVaultRegistry, "Unapprove")
         .withArgs(DAI);
     });
   });
 
   describe("isActive()", () => {
     it("Return false for inactive/nonexistent vault", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-      expect(await vaultRegistry.isActive(DAI)).to.equal(false);
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      expect(await newVaultRegistry.isActive(DAI)).to.equal(false);
     });
     it("register Revert if not yet approved", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-      await expect(vaultRegistry.register(DAI)).to.revertedWith(
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      await expect(newVaultRegistry.register(DAI)).to.revertedWith(
         "Only vault factories can register _vaults"
       );
     });
     it("Return true for active vault", async () => {
-      vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+      const newVaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
 
       // TODO: vaultRegistry.approve(msg.sender)
-      await vaultRegistry.approve(signers[0].address);
-      await vaultRegistry.register(DAI);
-      expect(await vaultRegistry.isActive(DAI)).to.equal(true);
+      await newVaultRegistry.approve(signers[0].address);
+      await newVaultRegistry.register(DAI);
+      expect(await newVaultRegistry.isActive(DAI)).to.equal(true);
     });
   });
 });
