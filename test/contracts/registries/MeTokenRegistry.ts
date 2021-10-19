@@ -58,15 +58,17 @@ describe("MeTokenRegistry.sol", () => {
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
+
+    hub = await deploy<Hub>("Hub");
     singleAssetFactory = await deploy<SingleAssetFactory>(
       "SingleAssetFactory",
       undefined, //no libs
+      hub.address,
       singleAssetVault.address, // implementation to clone
       foundry.address, // foundry
       vaultRegistry.address // vault registry
     );
 
-    hub = await deploy<Hub>("Hub");
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -82,25 +84,27 @@ describe("MeTokenRegistry.sol", () => {
     await hub.initialize(
       foundry.address,
       vaultRegistry.address,
-      curveRegistry.address
+      curveRegistry.address,
+      migrationRegistry.address
     );
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+
+    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    /*   require(
-      hasRole(FOUNDRY, msg.sender) ||
-          hasRole(METOKEN_REGISTRY, msg.sender) */
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
+    );
 
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
-      DAI,
-      50000,
+      50000, //refund ratio
       encodedCurveDetails,
-      ethers.utils.toUtf8Bytes("")
+      encodedVaultArgs
     );
     hubId = 0;
   });
