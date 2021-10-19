@@ -80,7 +80,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IERC20(token).transfer(targetVault, amountOut);
     }
 
-    function hasFinished() external view returns (bool) {
+    function isReady() external view returns (bool) {
         return swapped && finished;
     }
 

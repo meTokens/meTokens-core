@@ -113,7 +113,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         );
         require(meToken_.hubId != _targetHubId, "same hub");
         require(hub_.active, "hub inactive");
+        require(targetHub_.active, "targetHub inactive");
         require(!hub_.updating, "hub updating");
+        require(!targetHub_.updating, "targetHub updating");
 
         // First make sure meToken has been updated to the most recent hub.vaultRatio
         if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {

@@ -95,10 +95,7 @@ contract Hub is Ownable, Initializable {
         address migration;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
-        if (hub_.endCooldown > 0) {
-            require(hub_.endCooldown <= block.timestamp, "Still cooling down");
-            hub_.endCooldown = 0;
-        }
+        require(block.timestamp >= hub_.endCooldown, "Still cooling down");
 
         if (_targetRefundRatio != 0) {
             require(
@@ -171,7 +168,9 @@ contract Hub is Ownable, Initializable {
         Details.Hub storage hub_ = _hubs[id];
 
         if (hub_.targetVault != address(0)) {
-            require(IMigration(hub_.migration).hasFinished());
+            if (!IMigration(hub_.migration).isReady()) {
+                IMigration(hub_.migration).finishMigration();
+            }
             hub_.vaultMultipliers.push(
                 IMigration(hub_.migration).getMultiplier()
             );

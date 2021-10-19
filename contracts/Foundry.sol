@@ -47,12 +47,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Handling changes
         // TODO: turn this conditional into a func
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            if (hub_.reconfigure) {
-                ICurve(hub_.curve).finishReconfigure(meToken_.hubId);
-            }
-            if (hub_.migration != address(0)) {
-                IMigration(hub_.migration).finishMigration();
-            }
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (
             // Handle resubscribes
@@ -104,12 +98,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         require(hub_.active, "Hub inactive");
 
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            if (hub_.reconfigure) {
-                ICurve(hub_.curve).finishReconfigure(meToken_.hubId);
-            }
-            if (hub_.migration != address(0)) {
-                IMigration(hub_.migration).finishMigration();
-            }
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (
             meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
