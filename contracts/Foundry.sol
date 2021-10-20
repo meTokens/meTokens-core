@@ -63,19 +63,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensDepositedAfterFees
         );
 
-        IVault vault;
-        if (hub_.migration != address(0)) {
-            vault = IVault(hub_.migration);
-        } else {
-            vault = IVault(hub_.vault);
-        }
-
-        IERC20(vault.getToken()).transferFrom(
-            msg.sender,
-            address(vault),
-            _tokensDeposited
-        );
-        vault.addFee(fee);
+        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
+        IERC20(asset).transferFrom(msg.sender, hub_.vault, _tokensDeposited);
+        IVault(hub_.vault).addFee(_meToken, fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -164,22 +154,13 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        // TODO: approve foundry to spend from migration vault
-        // If hub is migrating, send tokens from migration vault
-        IVault vault;
-        if (hub_.migration != address(0)) {
-            vault = IVault(hub_.migration);
-        } else {
-            vault = IVault(hub_.vault);
-        }
-
-        IERC20(vault.getToken()).transferFrom(
-            address(vault),
-            _recipient,
+        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
+        IERC20(asset).transferFrom(
+            msg.sender,
+            hub_.vault,
             actualTokensReturned
         );
-
-        vault.addFee(fee);
+        IVault(hub_.vault).addFee(_meToken, fee);
     }
 
     // NOTE: for now this does not include fees

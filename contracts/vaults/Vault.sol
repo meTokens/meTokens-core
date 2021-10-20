@@ -13,10 +13,7 @@ import "hardhat/console.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract Vault is Ownable, IVault {
-    uint256 public constant PRECISION = 10**18;
-
     // TODO
-    address public constant DAO = address(0);
     address public token;
     uint256 public accruedFees;
     mapping(address => uint256) public accruedMapFees;

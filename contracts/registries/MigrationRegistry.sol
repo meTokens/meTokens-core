@@ -6,59 +6,42 @@ import "../interfaces/IMigrationRegistry.sol";
 /// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all used migration strategies
-contract MigrationRegistry is IMigrationRegistry {
-    mapping(address => bool) private _migrations;
-    mapping(address => bool) private _approved;
+contract MigrationRegistry {
+    // Initial vault, target vault, migration vault, approved status
+    mapping(address => mapping(address => mapping(address => bool)))
+        private _migrations;
 
-    /// @inheritdoc IMigrationRegistry
-    function register(address _migration) external override {
-        require(_approved[msg.sender], "!_approved");
-        _migrations[_migration] = true;
-
-        emit Register(_migration);
-    }
-
-    /// @inheritdoc IMigrationRegistry
-    function deactivate(address _migration) external override {
-        // TODO: access controll
-        require(_migrations[_migration], "!active");
-        _migrations[_migration] = false;
-        emit Deactivate(_migration);
-    }
-
-    /// @inheritdoc IMigrationRegistry
-    function approve(address _factory) external override {
+    function approve(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external {
         // TODO: access control
-        require(!_approved[_factory], "_approved");
-        _approved[_factory] = true;
-        emit Approve(_factory);
+        require(
+            !_migrations[initialVault][targetVault][migration],
+            "migration already approved"
+        );
+        _migrations[initialVault][targetVault][migration] = true;
     }
 
-    /// @inheritdoc IMigrationRegistry
-    function unapprove(address _factory) external override {
+    function unapprove(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external {
         // TODO: access control
-        require(_approved[_factory], "!_approved");
-        _approved[_factory] = false;
-        emit Unapprove(_factory);
+        require(
+            _migrations[initialVault][targetVault][migration],
+            "migration not approved"
+        );
+        _migrations[initialVault][targetVault][migration] = false;
     }
 
-    /// @inheritdoc IMigrationRegistry
-    function isApproved(address _factory)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return _approved[_factory];
-    }
-
-    /// @inheritdoc IMigrationRegistry
-    function isActive(address _migration)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return _migrations[_migration];
+    function isApproved(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external view returns (bool) {
+        return _migrations[initialVault][targetVault][migration];
     }
 }

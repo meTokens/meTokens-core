@@ -12,7 +12,6 @@ library Details {
         uint256 endCooldown;
         uint256 targetHubId;
         address migration;
-        uint256 posOfLastMultiplier;
     }
 
     struct Hub {
@@ -20,17 +19,12 @@ library Details {
         address vault;
         address curve;
         uint256 refundRatio;
-        uint256[] vaultMultipliers;
         bool updating;
         uint256 startTime;
         uint256 endTime;
         uint256 endCooldown;
-        // TODO: add logic to use this if MeToken is resubscribing
-        address migration;
-        address targetVault;
         bool reconfigure;
         address targetCurve;
-        // TODO: add logic to use this if MeToken is resubscribing
         uint256 targetRefundRatio;
     }
 
