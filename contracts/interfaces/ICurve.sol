@@ -8,17 +8,17 @@ interface ICurve {
     event Updated(uint256 indexed hubId);
 
     /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
-    /// BancorZero ValueSet registry
-    /// @dev ValueSet need to be encoded as the Hub may register ValueSets for different curves
-    ///      that may contain different ValueSet arguments
+    /// BancorZero Curve registry
+    /// @dev Curve need to be encoded as the Hub may register Curves for different curves
+    ///      that may contain different Curve arguments
     /// @param _hubId                   unique hub identifier
-    /// @param _encodedValueSet     encoded ValueSet arguments
-    function register(uint256 _hubId, bytes calldata _encodedValueSet) external;
+    /// @param _encodedDetails          encoded Curve arguments
+    function register(uint256 _hubId, bytes calldata _encodedDetails) external;
 
     /// @notice TODO
     /// @param _hubId                   unique hub identifier
-    /// @param _encodedValueSet     encoded target ValueSet arguments
-    function registerTarget(uint256 _hubId, bytes calldata _encodedValueSet)
+    /// @param _encodedDetails          encoded target Curve arguments
+    function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external;
 
     function calculateMintReturn(
@@ -49,5 +49,5 @@ interface ICurve {
         uint256 _balancePooled
     ) external view returns (uint256 tokensReturned);
 
-    function finishUpdate(uint256 id) external;
+    function finishReconfigure(uint256 id) external;
 }

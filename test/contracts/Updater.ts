@@ -22,7 +22,7 @@ describe("Updater.sol", () => {
                     targetVault,
                     recollateralizationFactory,
                     targetRefundRatio,
-                    targetEncodedValueSet,
+                    targetEncodedCurveDetails,
                     startTime,
                     duration
                 )
@@ -37,7 +37,7 @@ describe("Updater.sol", () => {
                     targetVault,
                     recollateralizationFactory,
                     targetRefundRatio,
-                    targetEncodedValueSet,
+                    targetEncodedCurveDetails,
                     startTime,
                     duration
                 )

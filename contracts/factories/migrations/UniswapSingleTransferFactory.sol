@@ -8,7 +8,7 @@ import "../../interfaces/IMigrationRegistry.sol";
 import "../../interfaces/IVault.sol";
 
 contract UniswapSingleTransferFactory {
-    uint256 public count;
+    uint256 private _count;
     address public hub;
     address public implementation;
     IMigrationRegistry public migrationRegistry;
@@ -29,26 +29,28 @@ contract UniswapSingleTransferFactory {
         uint256 _hubId,
         address _owner,
         address _initialVault,
-        address _targetVault
+        address _targetVault,
+        bytes memory _encodedArgs
     ) external returns (address) {
-        // TODO: access control
-        address migrationVault = Clones.cloneDeterministic(
+        require(msg.sender == hub, "!hub");
+
+        address migration = Clones.cloneDeterministic(
             implementation,
-            bytes32(count++)
+            bytes32(_count++)
         );
 
         // create our migration
-        UniswapSingleTransfer(migrationVault).initialize(
+        UniswapSingleTransfer(migration).initialize(
             _hubId,
             _owner,
+            _initialVault,
             _targetVault,
-            IVault(_initialVault).getToken(),
-            IVault(_targetVault).getToken()
+            _encodedArgs
         );
 
         // Add migration to migrationRegistry
-        migrationRegistry.register(migrationVault);
+        migrationRegistry.register(migration);
 
-        return migrationVault;
+        return migration;
     }
 }

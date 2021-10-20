@@ -30,14 +30,14 @@ interface IHub {
     /// @notice Function to end the update, setting the target values of the hub,
     ///         as well as modifying a hubs' status to ACTIVE
     /// @param id Unique hub identifier
-    function finishUpdate(uint256 id) external;
+    function finishUpdate(uint256 id) external returns (Details.Hub memory);
 
     function initUpdate(
         uint256 _id,
-        address _migrationVault,
+        address _migration,
         address _targetVault,
         address _targetCurve,
-        bool _curveDetails,
+        bool _reconfigure,
         uint256 _targetRefundRatio,
         uint256 _startTime,
         uint256 _duration
@@ -45,34 +45,25 @@ interface IHub {
 
     /// @notice TODO
     /// @param id Unique hub identifier
-    /// @return hubDetails Details of hub
+    /// @return hub_ Details of hub
     function getDetails(uint256 id)
         external
         view
-        returns (Details.HubDetails memory hubDetails);
-
-    /// @notice Helper to fetch only owner of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of owner
-    function getOwner(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only vault of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of vault
-    function getVault(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only curve of hubDetails
-    /// @param id Unique hub identifier
-    /// @return Address of curve
-    function getCurve(uint256 id) external view returns (address);
-
-    /// @notice Helper to fetch only refundRatio of hubDetails
-    /// @param id Unique hub identifier
-    /// @return uint Return refundRatio
-    function getRefundRatio(uint256 id) external view returns (uint256);
+        returns (Details.Hub memory hub_);
 
     /// @notice TODO
-    /// @param id Unique hub identifier
-    /// @return bool is the hub active?
-    function isActive(uint256 id) external view returns (bool);
+    /// @return count of hubs created
+    function count() external view returns (uint256);
+
+    function getWarmup() external view returns (uint256);
+
+    function setWarmup(uint256 warmup_) external;
+
+    function getDuration() external view returns (uint256);
+
+    function setDuration(uint256 duration_) external;
+
+    function getCooldown() external view returns (uint256);
+
+    function setCooldown(uint256 cooldown_) external;
 }

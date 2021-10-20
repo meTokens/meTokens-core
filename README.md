@@ -25,7 +25,7 @@
     ✓ create()
 
   UniswapSingleTransferFactory.sol
-    ✓ 
+    ✓
 
   SingleAssetFactory.sol
     create()
@@ -124,7 +124,7 @@
       ✓ Return true for active vault (56ms)
 
   SingleAsset.sol
-    
+
       ✓ Should do something
 
   Vault.sol

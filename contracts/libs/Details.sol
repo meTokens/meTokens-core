@@ -2,36 +2,41 @@
 pragma solidity ^0.8.0;
 
 library Details {
-    struct MeTokenDetails {
+    struct MeToken {
         address owner;
         uint256 hubId;
         uint256 balancePooled;
         uint256 balanceLocked;
-        bool updating; // TODO: validate
         uint256 startTime;
         uint256 endTime;
-        uint256 targetHub;
+        uint256 endCooldown;
+        uint256 targetHubId;
+        address migration;
+        uint256 posOfLastMultiplier;
     }
 
-    struct HubDetails {
+    struct Hub {
         bool active;
         address vault;
         address curve;
         uint256 refundRatio;
+        uint256[] vaultMultipliers;
         bool updating;
         uint256 startTime;
         uint256 endTime;
-        address migrationVault;
+        uint256 endCooldown;
+        // TODO: add logic to use this if MeToken is resubscribing
+        address migration;
         address targetVault;
-        bool curveDetails;
+        bool reconfigure;
         address targetCurve;
+        // TODO: add logic to use this if MeToken is resubscribing
         uint256 targetRefundRatio;
     }
 
-    struct BancorDetails {
+    struct Bancor {
         uint256 baseY;
         uint32 reserveWeight;
-        // bool updating;
         uint256 targetBaseY;
         uint32 targetReserveWeight;
     }

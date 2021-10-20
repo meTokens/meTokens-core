@@ -15,6 +15,7 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { impersonate } from "../../utils/hardhatNode";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { expect } from "chai";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;
@@ -24,6 +25,7 @@ describe("BancorZeroCurve", () => {
   let bancorZeroCurve: BancorZeroCurve;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
+  let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
   let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
@@ -52,25 +54,29 @@ describe("BancorZeroCurve", () => {
     bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
     singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
+
+    hub = await deploy<Hub>("Hub");
     singleAssetFactory = await deploy<SingleAssetFactory>(
       "SingleAssetFactory",
       undefined, //no libs
+      hub.address,
       singleAssetVault.address, // implementation to clone
       foundry.address, // foundry
       vaultRegistry.address // vault registry
     );
 
-    hub = await deploy<Hub>("Hub");
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
       hub.address,
-      meTokenFactory.address
+      meTokenFactory.address,
+      migrationRegistry.address
     );
     await curveRegistry.register(bancorZeroCurve.address);
 
@@ -79,25 +85,29 @@ describe("BancorZeroCurve", () => {
     await hub.initialize(
       foundry.address,
       vaultRegistry.address,
-      curveRegistry.address
+      curveRegistry.address,
+      migrationRegistry.address
     );
     // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
     // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
     // this gives us m = 1/1000
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
+    );
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
     );
 
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
-      DAI,
       5000, //refund ratio
-      encodedValueSet,
-      ethers.utils.toUtf8Bytes("")
+      encodedCurveDetails,
+      encodedVaultArgs
     );
   });
   it("calculateMintReturn() from zero should work", async () => {
@@ -192,7 +202,7 @@ describe("BancorZeroCurve", () => {
 
     expect(estimate).to.equal(ethers.utils.parseEther("0.002"));
   });
-  it("registerTarget() should work", async () => {
+  it("initReconfigure() should work", async () => {
     const baseY = PRECISION.div(1000);
 
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2);
@@ -201,7 +211,7 @@ describe("BancorZeroCurve", () => {
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await bancorZeroCurve.registerTarget(hubId, encodedValueSet);
+    await bancorZeroCurve.initReconfigure(hubId, encodedValueSet);
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);

@@ -13,6 +13,7 @@ import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
+import "./interfaces/IMigration.sol";
 
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
@@ -39,50 +40,48 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _tokensDeposited,
         address _recipient
     ) external override {
-        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-            .getDetails(_meToken);
-        Details.HubDetails memory hubDetails = hub.getDetails(
-            meTokenDetails.hubId
-        );
-        require(hubDetails.active, "Hub inactive");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        require(hub_.active, "Hub inactive");
+
+        // Handling changes
+        // TODO: turn this conditional into a func
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            hub_ = hub.finishUpdate(meToken_.hubId);
+        } else if (
+            // Handle resubscribes
+            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
+        ) {
+            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+        }
 
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
         uint256 tokensDepositedAfterFees = _tokensDeposited - fee;
 
-        if (hubDetails.updating && block.timestamp > hubDetails.endTime) {
-            // Finish updating curve
-            hub.finishUpdate(meTokenDetails.hubId);
-            if (hubDetails.curveDetails) {
-                // Finish updating curve
-                ICurve(hubDetails.curve).finishUpdate(meTokenDetails.hubId);
-            }
-        }
-
         uint256 meTokensMinted = calculateMintReturn(
             _meToken,
-            tokensDepositedAfterFees,
-            meTokenDetails,
-            hubDetails
+            tokensDepositedAfterFees
         );
 
-        // Send tokens to vault and update balance pooled
-        address vaultToken = IVault(hubDetails.vault).getToken();
-        IERC20(vaultToken).transferFrom(
+        IVault vault;
+        if (hub_.migration != address(0)) {
+            vault = IVault(hub_.migration);
+        } else {
+            vault = IVault(hub_.vault);
+        }
+
+        IERC20(vault.getToken()).transferFrom(
             msg.sender,
-            address(this),
+            address(vault),
             _tokensDeposited
         );
+        vault.addFee(fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,
             _meToken,
             tokensDepositedAfterFees
         );
-
-        // Transfer fees
-        if (fee > 0) {
-            IVault(hubDetails.vault).addFee(fee);
-        }
 
         // Mint meToken to user
         IERC20(_meToken).mint(_recipient, meTokensMinted);
@@ -94,55 +93,54 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         address _recipient
     ) external override {
-        Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-            .getDetails(_meToken);
-        Details.HubDetails memory hubDetails = hub.getDetails(
-            meTokenDetails.hubId
-        );
-        require(hubDetails.active, "Hub inactive");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        require(hub_.active, "Hub inactive");
+
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            hub_ = hub.finishUpdate(meToken_.hubId);
+        } else if (
+            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
+        ) {
+            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+        }
 
         // Calculate how many tokens tokens are returned
-        uint256 tokensReturned = calculateBurnReturn(
-            _meToken,
-            _meTokensBurned,
-            meTokenDetails,
-            hubDetails
-        );
+        uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
 
         uint256 feeRate;
         uint256 actualTokensReturned;
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == meTokenDetails.owner) {
+        if (msg.sender == meToken_.owner) {
             feeRate = fees.burnOwnerFee();
             actualTokensReturned =
                 tokensReturned +
                 (((PRECISION * _meTokensBurned) /
-                    IERC20(_meToken).totalSupply()) *
-                    meTokenDetails.balanceLocked) /
+                    IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            // tokensReturnedAfterFees = tokensReturned * (PRECISION - feeRate) / PRECISION;
-            uint256 refundRatio = hubDetails.refundRatio;
-            if (hubDetails.targetRefundRatio == 0) {
+            uint256 refundRatio = hub_.refundRatio;
+            if (hub_.targetRefundRatio == 0) {
                 // Not updating targetRefundRatio
-                actualTokensReturned = tokensReturned * hubDetails.refundRatio;
+                actualTokensReturned = tokensReturned * hub_.refundRatio;
             } else {
                 actualTokensReturned =
                     tokensReturned *
                     WeightedAverage.calculate(
-                        hubDetails.refundRatio,
-                        hubDetails.targetRefundRatio,
-                        hubDetails.startTime,
-                        hubDetails.endTime
+                        hub_.refundRatio,
+                        hub_.targetRefundRatio,
+                        hub_.startTime,
+                        hub_.endTime
                     );
             }
             actualTokensReturned *= refundRatio;
         }
 
-        // TODO: tokensReturnedAfterFees
+        uint256 fee = actualTokensReturned * feeRate;
+        actualTokensReturned -= fee;
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -166,115 +164,140 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        // Transfer fees - TODO
-        // if ((tokensReturnedWeighted * feeRate / PRECISION) > 0) {
-        //     uint256 fee = tokensReturnedWeighted * feeRate / PRECISION;
-        //     IVault(hubDetails.vault).addFee(fee);
-        // }
+        // TODO: approve foundry to spend from migration vault
+        // If hub is migrating, send tokens from migration vault
+        IVault vault;
+        if (hub_.migration != address(0)) {
+            vault = IVault(hub_.migration);
+        } else {
+            vault = IVault(hub_.vault);
+        }
 
-        // Send tokens from vault
-        address vaultToken = IVault(hubDetails.vault).getToken();
-        // IERC20(vaultToken).transferFrom(hubDetails.vault, _recipient, tokensReturnedAfterFees);
-        IERC20(vaultToken).transferFrom(
-            hubDetails.vault,
+        IERC20(vault.getToken()).transferFrom(
+            address(vault),
             _recipient,
             actualTokensReturned
         );
+
+        vault.addFee(fee);
     }
 
     // NOTE: for now this does not include fees
-    function calculateMintReturn(
-        address _meToken,
-        uint256 _tokensDeposited,
-        Details.MeTokenDetails memory _meTokenDetails,
-        Details.HubDetails memory _hubDetails
-    ) public view returns (uint256 meTokensMinted) {
-        // Calculate return assuming update is not happening
-        meTokensMinted = ICurve(_hubDetails.curve).calculateMintReturn(
+    function calculateMintReturn(address _meToken, uint256 _tokensDeposited)
+        public
+        view
+        returns (uint256 meTokensMinted)
+    {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        // gas savings
+        uint256 totalSupply_ = IERC20(_meToken).totalSupply();
+
+        // Calculate return assuming update/resubscribe is not happening
+        meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
             _tokensDeposited,
-            _meTokenDetails.hubId,
-            IERC20(_meToken).totalSupply(),
-            _meTokenDetails.balancePooled
+            meToken_.hubId,
+            totalSupply_,
+            meToken_.balancePooled
         );
 
-        // Logic for if we're switching to a new curve type // updating curveDetails
+        // Logic for if we're switching to a new curve type // reconfiguring
         if (
-            (_hubDetails.updating && (_hubDetails.targetCurve != address(0))) ||
-            (_hubDetails.curveDetails)
+            (hub_.updating && (hub_.targetCurve != address(0))) ||
+            (hub_.reconfigure)
         ) {
             uint256 targetMeTokensMinted;
-            if (_hubDetails.targetCurve != address(0)) {
+            if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
-                targetMeTokensMinted = ICurve(_hubDetails.targetCurve)
+                targetMeTokensMinted = ICurve(hub_.targetCurve)
                     .calculateMintReturn(
                         _tokensDeposited,
-                        _meTokenDetails.hubId,
-                        IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
                     );
             } else {
-                // Must mean we're updating curveDetails
-                targetMeTokensMinted = ICurve(_hubDetails.curve)
+                // Must mean we're reconfiguring
+                targetMeTokensMinted = ICurve(hub_.curve)
                     .calculateTargetMintReturn(
                         _tokensDeposited,
-                        _meTokenDetails.hubId,
-                        IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
                     );
             }
             meTokensMinted = WeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
-                _hubDetails.startTime,
-                _hubDetails.endTime
+                hub_.startTime,
+                hub_.endTime
+            );
+        } else if (meToken_.targetHubId != 0) {
+            Details.Hub memory targetHub = hub.getDetails(meToken_.targetHubId);
+            uint256 targetMeTokensMinted = ICurve(targetHub.curve)
+                .calculateMintReturn(
+                    _tokensDeposited,
+                    meToken_.targetHubId,
+                    totalSupply_,
+                    meToken_.balancePooled
+                );
+            meTokensMinted = WeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                meToken_.startTime,
+                meToken_.endTime
             );
         }
     }
 
-    function calculateBurnReturn(
-        address _meToken,
-        uint256 _meTokensBurned,
-        Details.MeTokenDetails memory _meTokenDetails,
-        Details.HubDetails memory _hubDetails
-    ) public view returns (uint256 tokensReturned) {
+    function calculateBurnReturn(address _meToken, uint256 _meTokensBurned)
+        public
+        view
+        returns (uint256 tokensReturned)
+    {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        // gas savings
+        uint256 totalSupply_ = IERC20(_meToken).totalSupply();
+
         // Calculate return assuming update is not happening
-        tokensReturned = ICurve(_hubDetails.curve).calculateBurnReturn(
+        tokensReturned = ICurve(hub_.curve).calculateBurnReturn(
             _meTokensBurned,
-            _meTokenDetails.hubId,
-            IERC20(_meToken).totalSupply(),
-            _meTokenDetails.balancePooled
+            meToken_.hubId,
+            totalSupply_,
+            meToken_.balancePooled
         );
 
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
-            (_hubDetails.updating && (_hubDetails.targetCurve != address(0))) ||
-            (_hubDetails.curveDetails)
+            (hub_.updating && (hub_.targetCurve != address(0))) ||
+            (hub_.reconfigure)
         ) {
             uint256 targetTokensReturned;
-            if (_hubDetails.targetCurve != address(0)) {
+            if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
-                targetTokensReturned = ICurve(_hubDetails.targetCurve)
+                targetTokensReturned = ICurve(hub_.targetCurve)
                     .calculateBurnReturn(
                         _meTokensBurned,
-                        _meTokenDetails.hubId,
-                        IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetTokensReturned = ICurve(_hubDetails.curve)
+                targetTokensReturned = ICurve(hub_.curve)
                     .calculateTargetBurnReturn(
                         _meTokensBurned,
-                        _meTokenDetails.hubId,
-                        IERC20(_meToken).totalSupply(),
-                        _meTokenDetails.balancePooled
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
                     );
             }
             tokensReturned = WeightedAverage.calculate(
                 tokensReturned,
                 targetTokensReturned,
-                _hubDetails.startTime,
-                _hubDetails.endTime
+                hub_.startTime,
+                hub_.endTime
             );
         }
     }

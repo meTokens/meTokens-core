@@ -3,10 +3,7 @@ pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
+import "../vaults/Vault.sol";
 import "../libs/Details.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -15,11 +12,15 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable {
+contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
+    uint256 private _multiplier;
+    uint256 public earliestSwapTime;
+
     uint256 public hubId;
+    address public initialVault;
     address public targetVault;
     bool public finished;
     bool public swapped;
@@ -30,41 +31,78 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
-    address public tokenIn;
-    address public tokenOut;
+    address public targetToken;
     address public recipient;
-    uint24 public immutable fee = 3000; // NOTE: 0.3%
+    uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
     uint256 public amountIn;
     uint256 public amountOut;
-    uint256 public sum;
 
     function initialize(
         uint256 _hubId,
         address _owner,
+        address _initialVault,
         address _targetVault,
-        address _tokenIn,
-        address _tokenOut
+        bytes memory _encodedMigrationArgs
     ) external initializer onlyOwner {
+        require(
+            _encodedMigrationArgs.length > 0,
+            "_encodedMigrationArgs empty"
+        );
+        uint256 earliestSwapTime_ = abi.decode(
+            _encodedMigrationArgs,
+            (uint256)
+        );
+        earliestSwapTime = earliestSwapTime_;
+
         // require(migrationRegistry.isApproved(msg.sender), "!approved");
         transferOwnership(_owner);
 
         hubId = _hubId;
 
-        tokenIn = _tokenIn;
-        tokenOut = _tokenOut;
+        initialVault = _initialVault;
         targetVault = _targetVault;
+
+        token = IVault(_initialVault).getToken();
+        targetToken = IVault(_targetVault).getToken();
+    }
+
+    // sends targetVault.getToken() to targetVault
+    function finishMigration() external {
+        // TODO: foundry access control
+        require(swapped && !finished);
+
+        finished = true;
+
+        // Transfer accrued fees of target vault token
+        _withdraw(true, 0);
+
+        // Send token to new vault
+        IERC20(token).transfer(targetVault, amountOut);
+    }
+
+    function isReady() external view returns (bool) {
+        return swapped && finished;
+    }
+
+    function getMultiplier() external view returns (uint256) {
+        return _multiplier;
     }
 
     // Trades vault.getToken() to targetVault.getToken();
-    function swap() external {
+    function swap() public {
         require(!swapped, "swapped");
+        require(block.timestamp > earliestSwapTime, "too soon");
 
-        amountIn = IERC20(tokenIn).balanceOf(address(this));
+        // Send accrued fees to DAO since now accruedFees will be denominated in
+        // the targetToken
+        _withdraw(true, 0);
+
+        amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: tokenIn,
-                tokenOut: tokenOut,
+                tokenIn: token,
+                tokenOut: targetToken,
                 fee: fee,
                 recipient: msg.sender,
                 deadline: block.timestamp,
@@ -75,35 +113,11 @@ contract UniswapSingleTransfer is Initializable, Ownable {
 
         // The call to `exactInputSingle` executes the swap.
         amountOut = _router.exactInputSingle(params);
+        // TODO: validate
+        _multiplier = (PRECISION**2 * amountOut) / amountIn / PRECISION;
 
+        // TODO: what if tokenOut changes balances?
         swapped = true;
-    }
-
-    // Get sum of balancePooled and balanceLocked for all meTokens
-    //      subscribed to the hub/vault
-    function sumBalances() external returns (uint256) {
-        sum = 0;
-
-        // Loop through all subscribed meTokens
-        /*  address[] memory subscribed = hub.getSubscribedMeTokens(hubId);
-
-        for (uint256 i = 0; i < subscribed.length; i++) {
-            address meToken = subscribed[i];
-            Details.MeTokenDetails memory meTokenDetails = meTokenRegistry
-                .getDetails(meToken);
-            sum += meTokenDetails.balancePooled + meTokenDetails.balanceLocked;
-        } */
-        return sum;
-    }
-
-    // sends targetVault.getToken() to targetVault
-    function finishMigration() external {
-        require(swapped && !finished);
-        require(sum > 0, "sum not set");
-
-        finished = true;
-
-        // Send token to new vault
-        IERC20(tokenOut).transfer(targetVault, amountOut);
+        token = targetToken;
     }
 }

@@ -5,6 +5,7 @@ import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
@@ -25,6 +26,7 @@ describe("MeTokenRegistry.sol", () => {
   let bancorZeroCurve: BancorZeroCurve;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
+  let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
   let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
@@ -51,25 +53,29 @@ describe("MeTokenRegistry.sol", () => {
     bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
     singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
+
+    hub = await deploy<Hub>("Hub");
     singleAssetFactory = await deploy<SingleAssetFactory>(
       "SingleAssetFactory",
       undefined, //no libs
+      hub.address,
       singleAssetVault.address, // implementation to clone
       foundry.address, // foundry
       vaultRegistry.address // vault registry
     );
 
-    hub = await deploy<Hub>("Hub");
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
       hub.address,
-      meTokenFactory.address
+      meTokenFactory.address,
+      migrationRegistry.address
     );
     await curveRegistry.register(bancorZeroCurve.address);
 
@@ -78,25 +84,27 @@ describe("MeTokenRegistry.sol", () => {
     await hub.initialize(
       foundry.address,
       vaultRegistry.address,
-      curveRegistry.address
+      curveRegistry.address,
+      migrationRegistry.address
     );
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+
+    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    /*   require(
-      hasRole(FOUNDRY, msg.sender) ||
-          hasRole(METOKEN_REGISTRY, msg.sender) */
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
+    );
 
     await hub.register(
       singleAssetFactory.address,
       bancorZeroCurve.address,
-      DAI,
-      50000,
-      encodedValueSet,
-      ethers.utils.toUtf8Bytes("")
+      50000, //refund ratio
+      encodedCurveDetails,
+      encodedVaultArgs
     );
     hubId = 0;
   });
@@ -152,10 +160,6 @@ describe("MeTokenRegistry.sol", () => {
       // should be greater than 0
       expect(await meToken.totalSupply()).to.equal(100000);
     });
-
-    // it("Emits Register()", async () => {
-
-    // });
   });
 
   describe("transferOwnership()", () => {

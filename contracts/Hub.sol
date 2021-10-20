@@ -8,7 +8,10 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/IMigrationRegistry.sol";
+import "./interfaces/IMigrationFactory.sol";
 import "./interfaces/ICurve.sol";
+import "./interfaces/IMigration.sol";
 
 import "./libs/Details.sol";
 
@@ -18,17 +21,17 @@ import "./libs/Details.sol";
 ///     and their respective subscribed meTokens
 contract Hub is Ownable, Initializable {
     uint256 private immutable _precision = 10**18;
-    uint256 private _minSecondsUntilStart = 0; // TODO
-    uint256 private _maxSecondsUntilStart = 0; // TODO
-    uint256 private _minDuration = 0; // TODO
-    uint256 private _maxDuration = 0; // TODO
+    uint256 private _warmup;
+    uint256 private _duration;
+    uint256 private _cooldown;
 
     uint256 private _count;
     address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
+    IMigrationRegistry public migrationRegistry;
 
-    mapping(uint256 => Details.HubDetails) private _hubs;
+    mapping(uint256 => Details.Hub) private _hubs;
     mapping(uint256 => address[]) private _subscribedMeTokens;
 
     modifier exists(uint256 id) {
@@ -36,49 +39,24 @@ contract Hub is Ownable, Initializable {
         _;
     }
 
-    /*
-    // TODO: actually subscribe/resubscribe/unsubscribe meToken
-    function subscribeMeToken(uint256 _id, address _meToken)
-        public
-        exists(_id)
-    {
-        _subscribedMeTokens[_id].push(_meToken);
-    }
-
-    function getSubscribedMeTokenCount(uint256 _id)
-        public
-        view
-        returns (uint256)
-    {
-        return _subscribedMeTokens[_id].length;
-    }
-
-    function getSubscribedMeTokens(uint256 _id)
-        external
-        view
-        returns (address[] memory)
-    {
-        return _subscribedMeTokens[_id];
-    }
-    */
-
     function initialize(
         address _foundry,
         address _vaultRegistry,
-        address _curveRegistry
+        address _curveRegistry,
+        address _migrationRegistry
     ) external onlyOwner initializer {
         foundry = _foundry;
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
+        migrationRegistry = IMigrationRegistry(_migrationRegistry);
     }
 
     function register(
         address _vaultFactory,
         address _curve,
-        address _token,
         uint256 _refundRatio,
-        bytes memory _encodedValueSetArgs,
-        bytes memory _encodedVaultAdditionalArgs
+        bytes memory _encodedCurveDetails,
+        bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
 
@@ -89,154 +67,177 @@ contract Hub is Ownable, Initializable {
         );
         require(_refundRatio < _precision, "_refundRatio > _precision");
         // Store value set base paramaters to `{CurveName}.sol`
-        ICurve(_curve).register(_count, _encodedValueSetArgs);
+        ICurve(_curve).register(_count, _encodedCurveDetails);
 
         // Create new vault
         // ALl new _hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(
-            _token,
-            _encodedVaultAdditionalArgs
-        );
+        address vault = IVaultFactory(_vaultFactory).create(_encodedVaultArgs);
         // Save the hub to the registry
-        Details.HubDetails storage newHubDetails = _hubs[_count++];
-        newHubDetails.active = true;
-        newHubDetails.vault = vault;
-        newHubDetails.curve = _curve;
-        newHubDetails.refundRatio = _refundRatio;
+        Details.Hub storage hub_ = _hubs[_count++];
+        hub_.active = true;
+        hub_.vault = vault;
+        hub_.curve = _curve;
+        hub_.refundRatio = _refundRatio;
     }
 
     function initUpdate(
         uint256 _id,
-        address _migrationVault,
-        address _targetVault,
+        address _vaultFactory, // to create the target vault
+        address _migrationFactory,
         address _targetCurve,
         uint256 _targetRefundRatio,
-        bytes memory _encodedCurveDetails,
-        uint256 _startTime,
-        uint256 _duration
+        bytes memory _encodedVaultArgs,
+        bytes memory _encodedMigrationArgs,
+        bytes memory _encodedCurveDetails
     ) external {
-        require(
-            _startTime - block.timestamp >= _minSecondsUntilStart &&
-                _startTime - block.timestamp <= _maxSecondsUntilStart,
-            "Unacceptable _startTime"
-        );
-        require(
-            _minDuration <= _duration && _maxDuration >= _duration,
-            "Unacceptable update duration"
-        );
+        bool reconfigure;
+        address targetVault;
+        address migration;
+        Details.Hub storage hub_ = _hubs[_id];
+        require(!hub_.updating, "already updating");
+        require(block.timestamp >= hub_.endCooldown, "Still cooling down");
 
-        bool curveDetails;
-        Details.HubDetails storage hubDetails = _hubs[_id];
-        require(!hubDetails.updating, "already updating");
-        // First, do all checks
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < _precision,
                 "_targetRefundRatio >= _precision"
             );
             require(
-                _targetRefundRatio != hubDetails.refundRatio,
+                _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
+            );
+        }
+
+        // create target vault and migration vault
+        if (_vaultFactory != address(0)) {
+            require(
+                vaultRegistry.isActive(_vaultFactory),
+                "_vaultFactory inactive"
+            );
+            require(
+                migrationRegistry.isActive(_migrationFactory),
+                "_migrationFactory inactive"
+            );
+            targetVault = IVaultFactory(_vaultFactory).create(
+                _encodedVaultArgs
+            );
+            migration = IMigrationFactory(_migrationFactory).create(
+                _id,
+                msg.sender,
+                hub_.vault,
+                targetVault,
+                _encodedMigrationArgs
             );
         }
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                ICurve(hubDetails.curve).registerTarget(
-                    _id,
-                    _encodedCurveDetails
-                );
+                ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
-                // _targetCurve != address(0))
                 require(
                     curveRegistry.isActive(_targetCurve),
                     "_targetCurve inactive"
                 );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
             }
-            curveDetails = true;
+            reconfigure = true;
         }
 
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hubDetails.migrationVault = _migrationVault;
-            hubDetails.targetVault = _targetVault;
+        if (migration != address(0)) {
+            // only set these values now that everything else has passed
+            hub_.migration = migration;
+            hub_.targetVault = targetVault;
         }
 
         if (_targetRefundRatio != 0) {
-            hubDetails.targetRefundRatio = _targetRefundRatio;
+            hub_.targetRefundRatio = _targetRefundRatio;
         }
         if (_targetCurve != address(0)) {
-            hubDetails.targetCurve = _targetCurve;
-        }
-        if (_migrationVault != address(0) && _targetVault != address(0)) {
-            hubDetails.migrationVault = _migrationVault;
-            hubDetails.targetVault = _targetVault;
+            hub_.targetCurve = _targetCurve;
         }
 
-        hubDetails.curveDetails = curveDetails;
-        hubDetails.updating = true;
-        hubDetails.startTime = _startTime;
-        hubDetails.endTime = _startTime + _duration;
+        hub_.reconfigure = reconfigure;
+        hub_.updating = true;
+        hub_.startTime = block.timestamp + _warmup;
+        hub_.endTime = block.timestamp + _warmup + _duration;
+        hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
     }
 
-    function finishUpdate(uint256 id) external {
+    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
         // TODO: only callable from foundry
+        Details.Hub storage hub_ = _hubs[id];
 
-        Details.HubDetails storage hubDetails = _hubs[id];
-        if (hubDetails.targetRefundRatio != 0) {
-            hubDetails.refundRatio = hubDetails.targetRefundRatio;
-            hubDetails.targetRefundRatio = 0;
-        }
-
-        // Updating curve details and staying with the same curve
-        if (hubDetails.curveDetails) {
-            if (hubDetails.targetCurve == address(0)) {
-                ICurve(hubDetails.curve).finishUpdate(id);
-            } else {
-                hubDetails.curve = hubDetails.targetCurve;
-                hubDetails.targetCurve = address(0);
+        if (hub_.targetVault != address(0)) {
+            if (!IMigration(hub_.migration).isReady()) {
+                IMigration(hub_.migration).finishMigration();
             }
-            hubDetails.curveDetails = false;
+            hub_.vaultMultipliers.push(
+                IMigration(hub_.migration).getMultiplier()
+            );
+
+            hub_.migration = address(0);
+            hub_.vault = hub_.targetVault;
+            hub_.targetVault = address(0);
         }
 
-        hubDetails.updating = false;
+        if (hub_.targetRefundRatio != 0) {
+            hub_.refundRatio = hub_.targetRefundRatio;
+            hub_.targetRefundRatio = 0;
+        }
+
+        if (hub_.reconfigure) {
+            if (hub_.targetCurve == address(0)) {
+                ICurve(hub_.curve).finishReconfigure(id);
+            } else {
+                hub_.curve = hub_.targetCurve;
+                hub_.targetCurve = address(0);
+            }
+            hub_.reconfigure = false;
+        }
+
+        hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
+        return hub_;
     }
 
-    function getCount() external view returns (uint256) {
+    function setWarmup(uint256 warmup_) external onlyOwner {
+        require(warmup_ != _warmup, "warmup_ == _warmup");
+        _warmup = warmup_;
+    }
+
+    function setDuration(uint256 duration_) external onlyOwner {
+        require(duration_ != _duration, "duration_ == _duration");
+        _duration = duration_;
+    }
+
+    function setCooldown(uint256 cooldown_) external onlyOwner {
+        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
+        _cooldown = cooldown_;
+    }
+
+    function count() external view returns (uint256) {
         return _count;
-    }
-
-    function getRefundRatio(uint256 id)
-        external
-        view
-        exists(id)
-        returns (uint256)
-    {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.refundRatio;
     }
 
     function getDetails(uint256 id)
         external
         view
         exists(id)
-        returns (Details.HubDetails memory hubDetails)
+        returns (Details.Hub memory hub_)
     {
-        hubDetails = _hubs[id];
+        hub_ = _hubs[id];
     }
 
-    function getCurve(uint256 id) external view exists(id) returns (address) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.curve;
+    function getWarmup() external view returns (uint256) {
+        return _warmup;
     }
 
-    function getVault(uint256 id) external view exists(id) returns (address) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.vault;
+    function getDuration() external view returns (uint256) {
+        return _duration;
     }
 
-    function isActive(uint256 id) public view returns (bool) {
-        Details.HubDetails memory hubDetails = _hubs[id];
-        return hubDetails.active;
+    function getCooldown() external view returns (uint256) {
+        return _cooldown;
     }
 }

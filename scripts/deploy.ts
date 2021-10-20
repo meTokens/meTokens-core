@@ -140,7 +140,7 @@ async function main() {
     bancorZeroCurve.address,
     currencyAddress(chainId),
     REFUND_RATIO,
-    encodedValueSet,
+    encodedCurveDetails,
     ethers.utils.toUtf8Bytes("")
   );
   await tx.wait();

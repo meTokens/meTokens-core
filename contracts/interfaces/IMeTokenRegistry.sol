@@ -15,6 +15,10 @@ interface IMeTokenRegistry {
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
+    function finishResubscribe(address _meToken)
+        external
+        returns (Details.MeToken memory);
+
     /// @notice TODO
     /// @param _name TODO
     /// @param _symbol TODO
@@ -43,13 +47,15 @@ interface IMeTokenRegistry {
 
     /// @notice TODO
     /// @param meToken Address of meToken queried
-    /// @return meTokenDetails details of the meToken
+    /// @return meToken_ details of the meToken
     function getDetails(address meToken)
         external
         view
-        returns (Details.MeTokenDetails memory meTokenDetails);
+        returns (Details.MeToken memory meToken_);
 
     function transferOwnership(address _meToken, address _newOwner) external;
+
+    // function updateBalances(address _meToken) external;
 
     function incrementBalancePooled(
         bool add,
