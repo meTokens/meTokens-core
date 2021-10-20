@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import { Hub } from "../../artifacts/types/Hub";
-import { Updater } from "../../artifacts/types/Updater";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
@@ -19,7 +18,6 @@ const policyFactory = await ethers.getContractFactory("PolicyLib", {
 
 describe("Hub.sol", () => {
   let hub: Hub;
-  let updater: Updater;
   let foundry: Foundry;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
@@ -28,10 +26,6 @@ describe("Hub.sol", () => {
     const hubFactory = await ethers.getContractFactory("Hub");
     hub = (await hubFactory.deploy()) as Hub;
     await hub.deployed();
-
-    const updaterFactory = await ethers.getContractFactory("Updater");
-    updater = (await updaterFactory.deploy()) as Updater;
-    await updater.deployed();
 
     const weightedAverageLibFactory = await ethers.getContractFactory(
       "WeightedAverage"

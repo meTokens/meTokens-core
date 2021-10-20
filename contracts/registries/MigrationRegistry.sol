@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/IMigrationRegistry.sol";
-
 /// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all used migration strategies

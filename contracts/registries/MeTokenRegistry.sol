@@ -8,7 +8,6 @@ import "../Roles.sol";
 
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
-import "../interfaces/IMigrationFactory.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
@@ -116,7 +115,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!targetHub_.updating, "targetHub updating");
 
         // Ensure the migration we're using is approved
-        require(migrationRegistry.isApproved(address(_migration)), "!approved");
+        require(
+            migrationRegistry.isApproved(
+                hub_.vault,
+                targetHub_.vault,
+                _migration
+            ),
+            "!approved"
+        );
 
         meToken_.startTime = block.timestamp + _warmup;
         meToken_.endTime = block.timestamp + _warmup + _duration;

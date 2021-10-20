@@ -13,8 +13,6 @@ import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
-import "./interfaces/IMigration.sol";
-
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
 
