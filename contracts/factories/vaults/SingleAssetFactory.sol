@@ -44,10 +44,10 @@ contract SingleAssetFactory is IVaultFactory {
         );
 
         // create our vault
-        SingleAssetVault(vaultAddress).initialize(token);
+        // SingleAssetVault(vaultAddress).initialize(token);
 
         // Add vault to vaultRegistry
-        vaultRegistry.register(vaultAddress);
+        // vaultRegistry.register(vaultAddress);
 
         emit Create(vaultAddress);
     }

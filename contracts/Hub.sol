@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
 import "./interfaces/IVaultFactory.sol";
+import "./interfaces/IVault.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
 import "./interfaces/ICurve.sol";
@@ -43,32 +44,32 @@ contract Hub is Ownable, Initializable {
     }
 
     function register(
-        address _vault,
-        address _curve,
+        IVault _vault,
+        ICurve _curve,
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
 
-        require(curveRegistry.isActive(_curve), "_curve !approved");
-        require(vaultRegistry.isApproved(_vault), "_vault !approved");
+        require(curveRegistry.isActive(address(_curve)), "_curve !approved");
+        require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
         // Validate encoded vault args
         // For example, for single asset vault make sure the token is whitelisted
-        IVault(_vault).validate(_encodedVaultArgs); // TODO
+        require(_vault.validate(_encodedVaultArgs), "Vault validation vailed"); // TODO
 
         // Store value set base parameters to `{CurveName}.sol`
-        ICurve(_curve).register(_count, _encodedCurveDetails);
+        _curve.register(_count, _encodedCurveDetails);
 
-        IVault(_vault).register(_count, _encodedVaultArgs);
+        _vault.register(_count, _encodedVaultArgs);
 
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
-        hub_.vault = _vault;
-        hub_.curve = _curve;
+        hub_.vault = address(_vault);
+        hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
     }
 

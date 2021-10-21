@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import "../vaults/Vault.sol";
 import "../libs/Details.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -12,7 +13,7 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable, Vault {
+contract UniswapSingleTransfer is Initializable, Ownable {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
@@ -24,6 +25,17 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     address public targetVault;
     bool public finished;
     bool public swapped;
+
+    mapping(address => ISwapRouter.ExactInputSingleParams) public params;
+    struct UniswapSingleTransferDetails {
+        address initialToken;
+        address targetToken;
+        uint256 amountIn;
+        uint256 amountOut;
+        bool swapped;
+        bool finished;
+    }
+    // mapping (address => Config) public configs;
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
@@ -62,8 +74,8 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         initialVault = _initialVault;
         targetVault = _targetVault;
 
-        token = IVault(_initialVault).getToken();
-        targetToken = IVault(_targetVault).getToken();
+        // token = IVault(_initialVault).getToken();
+        // targetToken = IVault(_targetVault).getToken();
     }
 
     // sends targetVault.getToken() to targetVault
@@ -74,10 +86,10 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         finished = true;
 
         // Transfer accrued fees of target vault token
-        _withdraw(true, 0);
+        // _withdraw(true, 0);
 
         // Send token to new vault
-        IERC20(token).transfer(targetVault, amountOut);
+        // IERC20(token).transfer(targetVault, amountOut);
     }
 
     function isReady() external view returns (bool) {
@@ -95,10 +107,11 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
         // Send accrued fees to DAO since now accruedFees will be denominated in
         // the targetToken
-        _withdraw(true, 0);
+        // _withdraw(true, 0);
 
-        amountIn = IERC20(token).balanceOf(address(this));
+        // amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
+        /*
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: token,
@@ -119,5 +132,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         // TODO: what if tokenOut changes balances?
         swapped = true;
         token = targetToken;
+        */
     }
 }

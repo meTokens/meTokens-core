@@ -9,6 +9,10 @@ interface IVault {
 
     function addFee(address _meToken, uint256 _amount) external;
 
+    function validate(bytes memory encodedArgs) external returns (bool);
+
+    function register(uint256 hubId, bytes memory encodedArgs) external;
+
     function withdraw(
         address _asset,
         bool _max,
