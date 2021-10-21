@@ -14,16 +14,18 @@ import "hardhat/console.sol";
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract Vault is Ownable {
     address public dao;
+    address public foundry;
     uint256 public constant PRECISION = 10**18;
     mapping(address => uint256) public accruedFees;
     mapping(uint256 => address) public assets; // key: hubId, value: collateral token
 
-    constructor(address _dao) {
+    constructor(address _dao, address _foundry) {
         dao = _dao;
+        foundry = _foundry;
     }
 
     function addFee(address _asset, uint256 _amount) external {
-        // TODO: access control - foundry
+        require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }
 
@@ -39,7 +41,7 @@ contract Vault is Ownable {
             require(_amount <= accruedFees[_asset]);
         }
         accruedFees[_asset] -= _amount;
-        IERC20(_asset).transfer(DAO, _amount);
+        IERC20(_asset).transfer(dao, _amount);
     }
 
     function getAsset(uint256 _hubId) external view returns (address) {
