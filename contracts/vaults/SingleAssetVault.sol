@@ -10,5 +10,5 @@ import "./Vault.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Ownable, Vault {
-    constructor(address _dao) Vault(_dao) {}
+    constructor(address _dao, address _foundry) Vault(_dao, _foundry) {}
 }
