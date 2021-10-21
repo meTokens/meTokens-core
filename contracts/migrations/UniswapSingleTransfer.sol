@@ -13,7 +13,7 @@ import "../libs/Details.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable {
+contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
@@ -79,14 +79,11 @@ contract UniswapSingleTransfer is Initializable, Ownable {
     }
 
     // sends targetVault.getToken() to targetVault
-    function finishMigration() external {
+    function finishMigration(address _meToken) external {
         // TODO: foundry access control
         require(swapped && !finished);
 
         finished = true;
-
-        // Transfer accrued fees of target vault token
-        // _withdraw(true, 0);
 
         // Send token to new vault
         // IERC20(token).transfer(targetVault, amountOut);
@@ -105,13 +102,8 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         require(!swapped, "swapped");
         require(block.timestamp > earliestSwapTime, "too soon");
 
-        // Send accrued fees to DAO since now accruedFees will be denominated in
-        // the targetToken
-        // _withdraw(true, 0);
-
         // amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
-        /*
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: token,
@@ -132,6 +124,5 @@ contract UniswapSingleTransfer is Initializable, Ownable {
         // TODO: what if tokenOut changes balances?
         swapped = true;
         token = targetToken;
-        */
     }
 }

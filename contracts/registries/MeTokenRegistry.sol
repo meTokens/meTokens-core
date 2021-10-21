@@ -54,6 +54,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         Details.Hub memory hub_ = hub.getDetails(_hubId);
         require(hub_.active, "Hub inactive");
+        require(!hub_.updating, "Hub updating");
 
         address asset = IVault(hub_.vault).getAsset(_hubId);
         if (_assetsDeposited > 0) {
@@ -140,11 +141,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         override
         returns (Details.MeToken memory)
     {
-        // TODO: acccess control (foundry?)
-
         Details.MeToken storage meToken_ = _meTokens[_meToken];
-        // Make sure meToken has migrated vaults
-        require(IMigration(meToken_.migration).hasFinished(), "!finished");
+
+        require(meToken_.migration != address(0), "!migrating");
+        IMigration(meToken_.migration).finishMigration(_meToken);
 
         // Finish updating metoken details
         meToken_.startTime = 0;
@@ -152,7 +152,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.hubId = meToken_.targetHubId;
         meToken_.targetHubId = 0;
         meToken_.migration = address(0);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.targetHubId);
         return meToken_;
     }
 

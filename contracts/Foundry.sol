@@ -63,7 +63,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
         IERC20(asset).transferFrom(msg.sender, hub_.vault, _tokensDeposited);
-        IVault(hub_.vault).addFee(_meToken, fee);
+        IVault(hub_.vault).addFee(asset, fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -158,7 +158,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             hub_.vault,
             actualTokensReturned
         );
-        IVault(hub_.vault).addFee(_meToken, fee);
+        IVault(hub_.vault).addFee(asset, fee);
     }
 
     // NOTE: for now this does not include fees
