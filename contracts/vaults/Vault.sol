@@ -12,58 +12,43 @@ import "hardhat/console.sol";
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract Vault is Ownable, IVault {
+contract Vault is Ownable {
+    address public dao;
+    address public foundry;
     uint256 public constant PRECISION = 10**18;
+    mapping(address => uint256) public accruedFees;
+    mapping(uint256 => address) public assets; // key: hubId, value: collateral token
 
-    // TODO
-    address public constant DAO = address(0);
-    address public token;
-    uint256 public accruedFees;
-    mapping(address => uint256) public accruedMapFees;
-    mapping(address => address) public tokens; // key: users meToken addr, value: collateral token
-
-    function addMapFee(address _token, uint256 _amount) external {
-        accruedMapFees[_token] += _amount;
-        // emit AddMapFee(_token, _amount);
+    constructor(address _dao, address _foundry) {
+        dao = _dao;
+        foundry = _foundry;
     }
 
-    /// @inheritdoc IVault
-    function addFee(uint256 _amount) external override {
-        // TODO: access control
-        accruedFees += _amount;
-        emit AddFee(_amount);
+    function addFee(address _asset, uint256 _amount) external {
+        require(msg.sender == foundry, "!foundry");
+        accruedFees[_asset] += _amount;
     }
 
-    /// @inheritdoc IVault
-    function withdraw(bool _max, uint256 _amount) external override onlyOwner {
-        _withdraw(_max, _amount);
-    }
-
-    function getAccruedFees() external view override returns (uint256) {
-        return accruedFees;
-    }
-
-    /// @inheritdoc IVault
-    function getToken() external view override returns (address) {
-        return token;
-    }
-
-    function getMapToken(address _meToken) external view returns (address) {
-        return tokens[_meToken];
-    }
-
-    function _withdraw(bool _max, uint256 _amount) internal {
+    function withdraw(
+        address _asset,
+        bool _max,
+        uint256 _amount
+    ) external {
+        require(msg.sender == dao, "!DAO");
         if (_max) {
-            _amount = accruedFees;
+            _amount = accruedFees[_asset];
         } else {
-            require(_amount <= accruedFees, "_amount > accruedFees");
+            require(_amount <= accruedFees[_asset]);
         }
-        uint256 balance = IERC20(token).balanceOf(token);
-        require(_amount <= balance, "_amount > balance");
+        accruedFees[_asset] -= _amount;
+        IERC20(_asset).transfer(dao, _amount);
+    }
 
-        accruedFees -= _amount;
+    function getAsset(uint256 _hubId) external view returns (address) {
+        return assets[_hubId];
+    }
 
-        IERC20(token).transfer(DAO, _amount);
-        emit Withdraw(_amount, DAO);
+    function getAccruedFees(address _asset) external view returns (uint256) {
+        return accruedFees[_asset];
     }
 }

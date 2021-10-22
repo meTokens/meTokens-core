@@ -15,54 +15,23 @@ contract VaultRegistry is IVaultRegistry {
     mapping(address => bool) private _approved;
 
     /// @inheritdoc IVaultRegistry
-    function register(address _vault) external override {
-        require(
-            _approved[msg.sender],
-            "Only vault factories can register _vaults"
-        );
-
-        // Add vault details to storage
-        _vaults[_vault] = true;
-
-        emit Register(_vault, msg.sender);
-    }
-
-    /// @inheritdoc IVaultRegistry
-    function approve(address _factory) external override {
+    function approve(address _vault) external override {
         // TODO: access control
-        require(!_approved[_factory], "Factory already _approved");
-        _approved[_factory] = true;
-        emit Approve(_factory);
+        require(!_approved[_vault], "_vault approved");
+        _approved[_vault] = true;
+        emit Approve(_vault);
     }
 
     /// @inheritdoc IVaultRegistry
-    function deactivate(address _vault) external override {
+    function unapprove(address _vault) external override {
         // TODO: access control
-        require(_vaults[_vault], "Vault not active");
-        _vaults[_vault] = false;
-        emit Deactivate(_vault);
+        require(_approved[_vault], "_vault !approved");
+        _approved[_vault] = false;
+        emit Unapprove(_vault);
     }
 
     /// @inheritdoc IVaultRegistry
-    function unapprove(address _factory) external override {
-        // TODO: access control
-        require(_approved[_factory], "Factory not _approved");
-        _approved[_factory] = false;
-        emit Unapprove(_factory);
-    }
-
-    /// @inheritdoc IVaultRegistry
-    function isActive(address _vault) external view override returns (bool) {
-        return _vaults[_vault];
-    }
-
-    /// @inheritdoc IVaultRegistry
-    function isApproved(address _factory)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return _approved[_factory];
+    function isApproved(address _vault) external view override returns (bool) {
+        return _approved[_vault];
     }
 }

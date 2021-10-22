@@ -5,13 +5,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
-import "./interfaces/IVaultFactory.sol";
+import "./interfaces/IVault.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
-import "./interfaces/IMigrationRegistry.sol";
-import "./interfaces/IMigrationFactory.sol";
 import "./interfaces/ICurve.sol";
-import "./interfaces/IMigration.sol";
 
 import "./libs/Details.sol";
 
@@ -26,77 +23,64 @@ contract Hub is Ownable, Initializable {
     uint256 private _cooldown;
 
     uint256 private _count;
-    address public foundry;
     IVaultRegistry public vaultRegistry;
     ICurveRegistry public curveRegistry;
-    IMigrationRegistry public migrationRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
-    mapping(uint256 => address[]) private _subscribedMeTokens;
 
     modifier exists(uint256 id) {
         require(id <= _count, "id exceeds _count");
         _;
     }
 
-    function initialize(
-        address _foundry,
-        address _vaultRegistry,
-        address _curveRegistry,
-        address _migrationRegistry
-    ) external onlyOwner initializer {
-        foundry = _foundry;
+    function initialize(address _vaultRegistry, address _curveRegistry)
+        external
+        onlyOwner
+        initializer
+    {
         vaultRegistry = IVaultRegistry(_vaultRegistry);
         curveRegistry = ICurveRegistry(_curveRegistry);
-        migrationRegistry = IMigrationRegistry(_migrationRegistry);
     }
 
     function register(
-        address _vaultFactory,
-        address _curve,
+        IVault _vault,
+        ICurve _curve,
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
 
-        require(curveRegistry.isActive(_curve), "_curve !approved");
-        require(
-            vaultRegistry.isApproved(_vaultFactory),
-            "_vaultFactory !approved"
-        );
+        require(curveRegistry.isActive(address(_curve)), "_curve !approved");
+        require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
-        // Store value set base paramaters to `{CurveName}.sol`
-        ICurve(_curve).register(_count, _encodedCurveDetails);
 
-        // Create new vault
-        // ALl new _hubs will create a vault
-        address vault = IVaultFactory(_vaultFactory).create(_encodedVaultArgs);
+        // Validate encoded vault args
+        // For example, for single asset vault make sure the token is whitelisted
+        require(_vault.validate(_encodedVaultArgs), "Vault validation vailed"); // TODO
+
+        // Store value set base parameters to `{CurveName}.sol`
+        _curve.register(_count, _encodedCurveDetails);
+
+        _vault.register(_count, _encodedVaultArgs);
+
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
-        hub_.vault = vault;
-        hub_.curve = _curve;
+        hub_.vault = address(_vault);
+        hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
     }
 
     function initUpdate(
         uint256 _id,
-        address _vaultFactory, // to create the target vault
-        address _migrationFactory,
         address _targetCurve,
         uint256 _targetRefundRatio,
-        bytes memory _encodedVaultArgs,
-        bytes memory _encodedMigrationArgs,
         bytes memory _encodedCurveDetails
     ) external {
-        bool reconfigure;
-        address targetVault;
-        address migration;
         Details.Hub storage hub_ = _hubs[_id];
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
-
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < _precision,
@@ -107,31 +91,11 @@ contract Hub is Ownable, Initializable {
                 "_targetRefundRatio == refundRatio"
             );
         }
-
-        // create target vault and migration vault
-        if (_vaultFactory != address(0)) {
-            require(
-                vaultRegistry.isActive(_vaultFactory),
-                "_vaultFactory inactive"
-            );
-            require(
-                migrationRegistry.isActive(_migrationFactory),
-                "_migrationFactory inactive"
-            );
-            targetVault = IVaultFactory(_vaultFactory).create(
-                _encodedVaultArgs
-            );
-            migration = IMigrationFactory(_migrationFactory).create(
-                _id,
-                msg.sender,
-                hub_.vault,
-                targetVault,
-                _encodedMigrationArgs
-            );
-        }
+        bool reconfigure;
 
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
+                reconfigure = true;
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
                 require(
@@ -139,21 +103,12 @@ contract Hub is Ownable, Initializable {
                     "_targetCurve inactive"
                 );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
+                hub_.targetCurve = _targetCurve;
             }
-            reconfigure = true;
-        }
-
-        if (migration != address(0)) {
-            // only set these values now that everything else has passed
-            hub_.migration = migration;
-            hub_.targetVault = targetVault;
         }
 
         if (_targetRefundRatio != 0) {
             hub_.targetRefundRatio = _targetRefundRatio;
-        }
-        if (_targetCurve != address(0)) {
-            hub_.targetCurve = _targetCurve;
         }
 
         hub_.reconfigure = reconfigure;
@@ -164,21 +119,8 @@ contract Hub is Ownable, Initializable {
     }
 
     function finishUpdate(uint256 id) external returns (Details.Hub memory) {
-        // TODO: only callable from foundry
         Details.Hub storage hub_ = _hubs[id];
-
-        if (hub_.targetVault != address(0)) {
-            if (!IMigration(hub_.migration).isReady()) {
-                IMigration(hub_.migration).finishMigration();
-            }
-            hub_.vaultMultipliers.push(
-                IMigration(hub_.migration).getMultiplier()
-            );
-
-            hub_.migration = address(0);
-            hub_.vault = hub_.targetVault;
-            hub_.targetVault = address(0);
-        }
+        require(block.timestamp > hub_.endTime, "Still updating");
 
         if (hub_.targetRefundRatio != 0) {
             hub_.refundRatio = hub_.targetRefundRatio;

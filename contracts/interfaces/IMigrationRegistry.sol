@@ -2,34 +2,41 @@
 pragma solidity ^0.8.0;
 
 interface IMigrationRegistry {
-    event Register(address migration);
-    event Deactivate(address migration);
-    event Approve(address factory);
-    event Unapprove(address factory);
+    event Approve(address initialVault, address targetVault, address migration);
+    event Unapprove(
+        address initialVault,
+        address targetVault,
+        address migration
+    );
 
     /// @notice TODO
-    /// @param _migration TODO
-    function register(address _migration) external;
+    /// @param initialVault TODO
+    /// @param targetVault TODO
+    /// @param migration TODO
+    function unapprove(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external;
 
     /// @notice TODO
-    /// @param _migration TODO
-    function deactivate(address _migration) external;
+    /// @param initialVault) TODO
+    /// @param targetVault TODO
+    /// @param migration TODO
+    function approve(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external;
 
     /// @notice TODO
-    /// @param _factory TODO
-    function unapprove(address _factory) external;
-
-    /// @notice TODO
-    /// @param _factory) TODO
-    function approve(address _factory) external;
-
-    /// @notice TODO
-    /// @param _factory TODO
+    /// @param initialVault TODO
+    /// @param targetVault TODO
+    /// @param migration TODO
     /// @return bool status of factory
-    function isApproved(address _factory) external view returns (bool);
-
-    /// @notice TODO
-    /// @param _migration TODO
-    /// @return bool status of migration
-    function isActive(address _migration) external view returns (bool);
+    function isApproved(
+        address initialVault,
+        address targetVault,
+        address migration
+    ) external view returns (bool);
 }

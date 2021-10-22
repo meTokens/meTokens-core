@@ -8,7 +8,6 @@ import "../Roles.sol";
 
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
-import "../interfaces/IMigrationFactory.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMeTokenFactory.sol";
 import "../interfaces/IHub.sol";
@@ -49,22 +48,21 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
-        uint256 _tokensDeposited
+        uint256 _assetsDeposited
     ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         Details.Hub memory hub_ = hub.getDetails(_hubId);
         require(hub_.active, "Hub inactive");
+        require(!hub_.updating, "Hub updating");
 
-        // Initial collateral deposit from owner by finding the vault,
-        // and then the collateral asset tied to that vault
-        address token = IVault(hub_.vault).getToken();
-        if (_tokensDeposited > 0) {
+        address asset = IVault(hub_.vault).getAsset(_hubId);
+        if (_assetsDeposited > 0) {
             require(
-                IERC20(token).transferFrom(
+                IERC20(asset).transferFrom(
                     msg.sender,
                     hub_.vault,
-                    _tokensDeposited
+                    _assetsDeposited
                 ),
                 "transfer failed"
             );
@@ -73,10 +71,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         // Create meToken erc20 contract
         address meTokenAddr = meTokenFactory.create(_name, _symbol);
 
-        // Transfer collateral to vault and return the minted meToken
-        if (_tokensDeposited > 0) {
+        // Mint meToken to user
+        if (_assetsDeposited > 0) {
             uint256 _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
-                _tokensDeposited, // _deposit_amount
+                _assetsDeposited, // _deposit_amount
                 _hubId, // _hubId
                 0, // _supply
                 0 // _balancePooled
@@ -91,7 +89,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         Details.MeToken storage meToken_ = _meTokens[meTokenAddr];
         meToken_.owner = msg.sender;
         meToken_.hubId = _hubId;
-        meToken_.balancePooled = _tokensDeposited;
+        meToken_.balancePooled = _assetsDeposited;
 
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
@@ -99,9 +97,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     function resubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migrationFactory,
-        bytes memory _encodedMigrationArgs
-    ) external {
+        address _migration
+    ) external // bytes memory _encodedMigrationArgs
+    {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
@@ -117,23 +115,14 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
 
-        // First make sure meToken has been updated to the most recent hub.vaultRatio
-        // if (meToken_.posOfLastMultiplier < hub_.vaultMultipliers.length) {
-        //     updateBalances(_meToken);
-        // }
-
-        // Ensure the migration factory we're using is approved
+        // Ensure the migration we're using is approved
         require(
-            migrationRegistry.isApproved(address(_migrationFactory)),
+            migrationRegistry.isApproved(
+                hub_.vault,
+                targetHub_.vault,
+                _migration
+            ),
             "!approved"
-        );
-
-        address migration = IMigrationFactory(_migrationFactory).create(
-            meToken_.hubId,
-            msg.sender,
-            hub_.vault,
-            targetHub_.vault,
-            _encodedMigrationArgs
         );
 
         meToken_.startTime = block.timestamp + _warmup;
@@ -144,7 +133,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             _duration +
             _cooldown;
         meToken_.targetHubId = _targetHubId;
-        meToken_.migration = migration;
+        meToken_.migration = _migration;
     }
 
     function finishResubscribe(address _meToken)
@@ -152,11 +141,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         override
         returns (Details.MeToken memory)
     {
-        // TODO: acccess control (foundry?)
-
         Details.MeToken storage meToken_ = _meTokens[_meToken];
-        // Make sure meToken has migrated vaults
-        require(IMigration(meToken_.migration).hasFinished(), "!finished");
+
+        require(meToken_.migration != address(0), "!migrating");
+        IMigration(meToken_.migration).finishMigration(_meToken);
 
         // Finish updating metoken details
         meToken_.startTime = 0;
@@ -164,8 +152,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.hubId = meToken_.targetHubId;
         meToken_.targetHubId = 0;
         meToken_.migration = address(0);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.targetHubId);
-        meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
         return meToken_;
     }
 
@@ -218,26 +204,6 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
 
         emit IncrementBalanceLocked(add, _meToken, _amount);
     }
-
-    // function updateBalances(address _meToken) public override {
-    //     // require(hasRole(FOUNDRY, msg.sender), "!foundry");
-    //     Details.MeToken storage meToken_ = _meTokens[_meToken];
-    //     Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-
-    //     for (
-    //         uint256 i = meToken_.posOfLastMultiplier;
-    //         i < hub_.vaultMultipliers.length;
-    //         i++
-    //     ) {
-    //         uint256 multiplier = hub_.vaultMultipliers[i] * PRECISION;
-
-    //         // Update balancePooled and balanceLocked based on the
-    //         // multiplier from the vaultRatio
-    //         meToken_.balancePooled *= multiplier / PRECISION;
-    //         meToken_.balanceLocked *= multiplier / PRECISION;
-    //     }
-    //     meToken_.posOfLastMultiplier = hub_.vaultMultipliers.length;
-    // }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
         require(warmup_ != _warmup, "warmup_ == _warmup");
