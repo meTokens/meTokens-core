@@ -143,6 +143,21 @@ contract Hub is Ownable, Initializable {
         return hub_;
     }
 
+    function setWarmup(uint256 warmup_) external onlyOwner {
+        require(warmup_ != _warmup, "warmup_ == _warmup");
+        _warmup = warmup_;
+    }
+
+    function setDuration(uint256 duration_) external onlyOwner {
+        require(duration_ != _duration, "duration_ == _duration");
+        _duration = duration_;
+    }
+
+    function setCooldown(uint256 cooldown_) external onlyOwner {
+        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
+        _cooldown = cooldown_;
+    }
+
     function count() external view returns (uint256) {
         return _count;
     }
@@ -160,26 +175,11 @@ contract Hub is Ownable, Initializable {
         return _warmup;
     }
 
-    function setWarmup(uint256 warmup_) external onlyOwner {
-        require(warmup_ != _warmup, "warmup_ == _warmup");
-        _warmup = warmup_;
-    }
-
     function getDuration() external view returns (uint256) {
         return _duration;
     }
 
-    function setDuration(uint256 duration_) external onlyOwner {
-        require(duration_ != _duration, "duration_ == _duration");
-        _duration = duration_;
-    }
-
     function getCooldown() external view returns (uint256) {
         return _cooldown;
-    }
-
-    function setCooldown(uint256 cooldown_) external onlyOwner {
-        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
-        _cooldown = cooldown_;
     }
 }

@@ -97,9 +97,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     function resubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migration,
-        bytes memory _encodedMigrationArgs
-    ) external {
+        address _migration
+    ) external // bytes memory _encodedMigrationArgs
+    {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
