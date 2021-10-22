@@ -36,13 +36,7 @@ library Details {
     }
 
     struct UniswapSingleTransfer {
-        uint256 initialHubId;
-        uint256 targetHubId;
-        address initialToken;
-        address targetToken;
         uint256 amountIn;
         uint256 amountOut;
-        bool swapped;
-        bool finished;
     }
 }
