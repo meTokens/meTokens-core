@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
-import "./interfaces/IVaultFactory.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IVaultRegistry.sol";
 import "./interfaces/ICurveRegistry.sol";
