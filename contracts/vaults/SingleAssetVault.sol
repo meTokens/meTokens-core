@@ -10,9 +10,15 @@ import "./Vault.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Ownable, Vault {
-    uint256 foo;
+    uint256 public foo;
 
-    constructor(address _dao, address _foundry) Vault(_dao, _foundry) {}
+    constructor(
+        address _dao,
+        address _foundry,
+        uint256 _foo
+    ) Vault(_dao, _foundry) {
+        foo = _foo;
+    }
 
     function setFoo(uint256 _foo) external {
         foo = _foo;

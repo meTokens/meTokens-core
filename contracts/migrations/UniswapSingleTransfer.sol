@@ -24,13 +24,16 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
     // args for uniswap router
     uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
+    address public hub;
     uint256 public slippage;
 
     constructor(
         address _dao,
         address _foundry,
         address _hub
-    ) Vault(_dao, _foundry) {}
+    ) Vault(_dao, _foundry) {
+        hub = _hub;
+    }
 
     function setSlippage(uint256 _slippage) external {
         require(msg.sender == dao, "!DAO");
