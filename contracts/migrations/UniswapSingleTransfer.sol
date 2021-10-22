@@ -5,6 +5,8 @@ import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRoute
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "../interfaces/IHub.sol";
+import "../interfaces/IMeTokenRegistry.sol";
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
 
@@ -15,6 +17,7 @@ import "../vaults/Vault.sol";
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
 contract UniswapSingleTransfer is Initializable, Ownable, Vault {
+    // NOTE: keys are the meToken address
     mapping(address => Details.UniswapSingleTransfer) public usts;
 
     // NOTE: this can be found at
@@ -24,89 +27,110 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
     // args for uniswap router
     uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
-    address public hub;
+    IHub public hub;
+    IMeTokenRegistry public meTokenRegistry;
     uint256 public slippage;
 
     constructor(
         address _dao,
         address _foundry,
-        address _hub
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry
     ) Vault(_dao, _foundry) {
         hub = _hub;
+        meTokenRegistry = _meTokenRegistry;
     }
 
+    // TODO: validate we need this
     function setSlippage(uint256 _slippage) external {
         require(msg.sender == dao, "!DAO");
         slippage = _slippage;
     }
-    /*
-    function initialize(
-        uint256 _hubId,
-        address _owner,
-        address _initialVault,
-        address _targetVault
-    ) external initializer onlyOwner {
-        // require(migrationRegistry.isApproved(msg.sender), "!approved");
-        transferOwnership(_owner);
 
-        hubId = _hubId;
-
-        initialVault = _initialVault;
-        targetVault = _targetVault;
-
-        // token = IVault(_initialVault).getToken();
-        // targetToken = IVault(_targetVault).getToken();
+    function getVaultAsset(uint256 _hubId) private view returns (address) {
+        Details.Hub memory hub_ = hub.getDetails(_hubId);
+        return IVault(hub_.vault).getAsset(_hubId);
     }
 
-    // sends targetVault.getToken() to targetVault
-    function finishMigration(address _meToken) external {
-        // TODO: foundry access control
-        require(swapped && !finished);
+    function startMigration(address _meToken) external {}
 
-        finished = true;
+    function finishMigration(address _meToken) external {
+        Details.UniswapSingleTransfer storage ust_ = usts[_meToken];
+
+        uint256 amountOut;
+        if (ust_.amountOut > 0) {
+            amountOut = ust_.amountOut;
+        } else {
+            amountOut = swap(_meToken);
+        }
+
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        address asset = getVaultAsset(meToken_.targetHubId);
+        require(asset != address(0), "No target asset");
 
         // Send token to new vault
-        // IERC20(token).transfer(targetVault, amountOut);
+        IERC20(asset).transfer(targetHub_.vault, amountOut);
+
+        ust_.amountIn = 0;
+        ust_.amountOut = 0;
     }
 
-    function isReady() external view returns (bool) {
-        return swapped && finished;
-    }
-
-    function getMultiplier() external view returns (uint256) {
-        return _multiplier;
-    }
-
-    // Trades vault.getToken() to targetVault.getToken();
-    function swap(address _meToken) public {
+    function swap(address _meToken) public returns (uint256) {
         Details.UniswapSingleTransfer storage ust_ = usts[_meToken];
-        Details.Hub memory hub_ = 
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
 
-        require(!ust_.amountIn > 0, "No swap available");
-        require(!ust_.swapped, "swapped");
+        require(ust_.amountIn > 0, "No amountIn");
+        require(ust_.amountOut == 0, "Already swapped");
+
+        address initialToken = getVaultAsset(meToken_.hubId);
+        address targetToken = getVaultAsset(meToken_.targetHubId);
+        require(
+            targetToken != address(0),
+            "MeToken does not have a target hub"
+        );
 
         // amountIn = IERC20(token).balanceOf(address(this));
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: ust_.initialToken,
-                tokenOut: ust_.targetToken,
+                tokenIn: initialToken,
+                tokenOut: targetToken,
                 fee: fee,
-                recipient: msg.sender, // TODO: target vault
+                recipient: address(this), // TODO: target vault
                 deadline: block.timestamp,
-                amountIn: amountIn,
+                amountIn: ust_.amountIn,
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
 
         // The call to `exactInputSingle` executes the swap.
-        amountOut = _router.exactInputSingle(params);
-        // TODO: validate
-        _multiplier = (PRECISION**2 * amountOut) / amountIn / PRECISION;
-
-        // TODO: what if tokenOut changes balances?
-        swapped = true;
-        token = targetToken;
+        ust_.amountOut = _router.exactInputSingle(params);
+        return ust_.amountOut;
     }
-    */
+
+    function calcMultiplier(address _meToken)
+        external
+        view
+        returns (uint256 multiplier)
+    {
+        Details.UniswapSingleTransfer memory ust_ = usts[_meToken];
+        require(
+            ust_.amountOut > 0 && ust_.amountIn > 0,
+            "Multiplier unavailable"
+        );
+        // TODO: validate
+        multiplier =
+            (PRECISION**2 * ust_.amountOut) /
+            ust_.amountIn /
+            PRECISION;
+    }
+
+    function getUniswapSingleTransferDetails(address _meToken)
+        external
+        view
+        returns (Details.UniswapSingleTransfer memory ust_)
+    {
+        ust_ = usts[_meToken];
+    }
 }
