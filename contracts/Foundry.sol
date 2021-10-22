@@ -43,14 +43,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
         require(hub_.active, "Hub inactive");
 
         // Handling changes
-        // TODO: turn this conditional into a func
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
-        } else if (
-            // Handle resubscribes
-            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
-        ) {
-            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+        } else if (meToken_.targetHubId != 0) {
+            if (block.timestamp > meToken_.endTime) {
+                meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+            } else if (block.timestamp > meToken_.startTime) {
+                // Handle migration actions if needed
+            }
         }
 
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
@@ -61,6 +61,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensDepositedAfterFees
         );
 
+        // address asset;
+        // if (block.timestamp > meToken_.startTime) {
+        //     asset = IVault(targetHubId)
+        // }
         address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
         IERC20(asset).transferFrom(msg.sender, hub_.vault, _tokensDeposited);
         IVault(hub_.vault).addFee(asset, fee);
@@ -110,21 +114,35 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            uint256 refundRatio = hub_.refundRatio;
-            if (hub_.targetRefundRatio == 0) {
-                // Not updating targetRefundRatio
+            if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
+                // Not updating targetRefundRatio or resubscribing
                 actualTokensReturned = tokensReturned * hub_.refundRatio;
             } else {
-                actualTokensReturned =
-                    tokensReturned *
-                    WeightedAverage.calculate(
-                        hub_.refundRatio,
-                        hub_.targetRefundRatio,
-                        hub_.startTime,
-                        hub_.endTime
+                if (hub_.targetRefundRatio > 0) {
+                    // Hub is updating
+                    actualTokensReturned =
+                        tokensReturned *
+                        WeightedAverage.calculate(
+                            hub_.refundRatio,
+                            hub_.targetRefundRatio,
+                            hub_.startTime,
+                            hub_.endTime
+                        );
+                } else {
+                    // meToken is resubscribing
+                    Details.Hub memory targetHub_ = hub.getDetails(
+                        meToken_.targetHubId
                     );
+                    actualTokensReturned =
+                        tokensReturned *
+                        WeightedAverage.calculate(
+                            hub_.refundRatio,
+                            targetHub_.refundRatio,
+                            meToken_.startTime,
+                            meToken_.endTime
+                        );
+                }
             }
-            actualTokensReturned *= refundRatio;
         }
 
         uint256 fee = actualTokensReturned * feeRate;
@@ -151,7 +169,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 tokensReturned - actualTokensReturned
             );
         }
-
         address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
         IERC20(asset).transferFrom(
             hub_.vault,
