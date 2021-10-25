@@ -11,6 +11,7 @@ import "./interfaces/IMeToken.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
+import "./interfaces/IMigration.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
@@ -50,6 +51,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 meToken_ = meTokenRegistry.finishResubscribe(_meToken);
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
+                IMigration(meToken_.migration).poke(_meToken);
             }
         }
 
@@ -61,13 +63,29 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensDepositedAfterFees
         );
 
-        // address asset;
-        // if (block.timestamp > meToken_.startTime) {
-        //     asset = IVault(targetHubId)
-        // }
-        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        IERC20(asset).transferFrom(msg.sender, hub_.vault, _tokensDeposited);
-        IVault(hub_.vault).addFee(asset, fee);
+        IVault vault;
+        address asset;
+        // Check if meToken is using a migration vault and in the active stage of resubscribing.
+        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
+        // in which case a migration vault isn't needed
+        if (
+            meToken_.migration != address(0) &&
+            block.timestamp > meToken_.startTime
+        ) {
+            vault = IVault(meToken_.migration);
+            // Use meToken address to get the asset address from the migration vault
+            asset = vault.getAsset(_meToken);
+        } else {
+            vault = IVault(hub_.vault);
+            asset = vault.getAsset(meToken_.hubId);
+        }
+
+        IERC20(asset).transferFrom(
+            msg.sender,
+            address(vault),
+            _tokensDeposited
+        );
+        vault.addFee(asset, fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,

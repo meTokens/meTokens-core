@@ -52,7 +52,13 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         return IVault(hub_.vault).getAsset(_hubId);
     }
 
-    function startMigration(address _meToken) external {}
+    function initMigration(address _meToken, bytes memory _encodedArgs)
+        external
+    {}
+
+    function poke(address _meToken) external {
+        swap(_meToken);
+    }
 
     function finishMigration(address _meToken) external {
         Details.UniswapSingleTransfer storage ust_ = usts[_meToken];
