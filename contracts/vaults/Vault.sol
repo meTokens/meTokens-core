@@ -12,7 +12,7 @@ import "hardhat/console.sol";
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract Vault is Ownable {
+abstract contract Vault is Ownable, IVault {
     address public dao;
     address public foundry;
     uint256 public constant PRECISION = 10**18;
@@ -28,7 +28,7 @@ contract Vault is Ownable {
         foundry = _foundry;
     }
 
-    function addFee(address _asset, uint256 _amount) external {
+    function addFee(address _asset, uint256 _amount) external override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }
@@ -37,7 +37,7 @@ contract Vault is Ownable {
         address _asset,
         bool _max,
         uint256 _amount
-    ) external {
+    ) external override {
         require(msg.sender == dao, "!DAO");
         if (_max) {
             _amount = accruedFees[_asset];
@@ -48,15 +48,38 @@ contract Vault is Ownable {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function getAsset(uint256 _hubId) external view returns (address) {
+    function register(uint256 _hubId, bytes memory _encodedArgs)
+        public
+        virtual
+        override;
+
+    // function register(address _meToken, bytes memory _encodedArgs) public virtual override;
+
+    function getAsset(uint256 _hubId)
+        public
+        view
+        virtual
+        override
+        returns (address)
+    {
         return assetOfHub[_hubId];
     }
 
-    function getAsset(address _meToken) external view returns (address) {
+    function getAsset(address _meToken)
+        external
+        view
+        override
+        returns (address)
+    {
         return assetOfMeToken[_meToken];
     }
 
-    function getAccruedFees(address _asset) external view returns (uint256) {
+    function getAccruedFees(address _asset)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return accruedFees[_asset];
     }
 }

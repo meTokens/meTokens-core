@@ -55,13 +55,10 @@ contract Hub is Ownable, Initializable {
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
-        // Validate encoded vault args
-        // For example, for single asset vault make sure the token is whitelisted
-        require(_vault.validate(_encodedVaultArgs), "Vault validation vailed"); // TODO
-
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);
 
+        // Store vault base parameters to `{VaultName}.sol`
         _vault.register(_count, _encodedVaultArgs);
 
         // Save the hub to the registry

@@ -41,6 +41,13 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         meTokenRegistry = _meTokenRegistry;
     }
 
+    function register(uint256 _hubId, bytes memory _encodedArgs)
+        public
+        override
+    {}
+
+    // function register(address _meToken, bytes memory _encodedArgs) public override {}
+
     // TODO: validate we need this
     function setSlippage(uint256 _slippage) external {
         require(msg.sender == dao, "!DAO");
