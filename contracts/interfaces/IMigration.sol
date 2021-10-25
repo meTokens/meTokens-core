@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IMigration {
+    function poke(address _meToken) external;
+
     function swap() external;
 
     function finishMigration(address _meToken) external;

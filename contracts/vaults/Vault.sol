@@ -16,8 +16,12 @@ contract Vault is Ownable {
     address public dao;
     address public foundry;
     uint256 public constant PRECISION = 10**18;
+    /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
-    mapping(uint256 => address) public assets; // key: hubId, value: collateral token
+    /// @dev key: hubId, value: addr of asset
+    mapping(uint256 => address) public assetOfHub;
+    /// @dev key: meToken addr, value: addr of asset
+    mapping(address => address) public assetOfMeToken;
 
     constructor(address _dao, address _foundry) {
         dao = _dao;
@@ -45,7 +49,11 @@ contract Vault is Ownable {
     }
 
     function getAsset(uint256 _hubId) external view returns (address) {
-        return assets[_hubId];
+        return assetOfHub[_hubId];
+    }
+
+    function getAsset(address _meToken) external view returns (address) {
+        return assetOfMeToken[_meToken];
     }
 
     function getAccruedFees(address _asset) external view returns (uint256) {

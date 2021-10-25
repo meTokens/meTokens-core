@@ -21,5 +21,7 @@ interface IVault {
 
     function getAsset(uint256 _hubId) external view returns (address);
 
+    function getAsset(address _meToken) external view returns (address);
+
     function getAccruedFees(address _asset) external view returns (uint256);
 }
