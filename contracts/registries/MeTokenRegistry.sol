@@ -97,9 +97,8 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     function resubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migration
-    ) external // bytes memory _encodedMigrationArgs
-    {
+        address _migration // bytes memory _encodedMigrationArgs
+    ) external {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
@@ -156,19 +155,17 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function transferOwnership(address _meToken, address _newOwner)
-        external
-        override
-    {
+    function transferMeTokenOwnership(address _newOwner) external override {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        address meToken = _owners[msg.sender];
+        Details.MeToken storage meToken_ = _meTokens[meToken];
         require(msg.sender == meToken_.owner, "!owner");
 
         meToken_.owner = _newOwner;
         _owners[msg.sender] = address(0);
-        _owners[_newOwner] = _meToken;
+        _owners[_newOwner] = meToken;
 
-        emit TransferOwnership(msg.sender, _newOwner, _meToken);
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
     }
 
     /// @inheritdoc IMeTokenRegistry

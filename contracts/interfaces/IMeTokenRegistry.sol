@@ -11,7 +11,7 @@ interface IMeTokenRegistry {
         string symbol,
         uint256 hubId
     );
-    event TransferOwnership(address from, address to, address meToken);
+    event TransferMeTokenOwnership(address from, address to, address meToken);
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
@@ -53,7 +53,7 @@ interface IMeTokenRegistry {
         view
         returns (Details.MeToken memory meToken_);
 
-    function transferOwnership(address _meToken, address _newOwner) external;
+    function transferMeTokenOwnership(address _newOwner) external;
 
     // function updateBalances(address _meToken) external;
 
