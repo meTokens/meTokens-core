@@ -9,13 +9,15 @@ import "../libs/Details.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
+import "hardhat/console.sol";
+
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
-    bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
+    bytes16 private immutable _baseY = uint256(1 ether).fromUInt();
     //  uint256 public BASE_X = uint256(1 ether);
     uint32 public maxWeight = 1000000;
     bytes16 private immutable _one = (uint256(1)).fromUInt();
@@ -30,18 +32,18 @@ contract BancorZeroCurve is ICurve {
         // TODO: access control
         require(_encodedDetails.length > 0, "_encodedDetails empty");
 
-        (uint256 baseY, uint32 reserveWeight) = abi.decode(
+        (uint256 baseX, uint32 reserveWeight) = abi.decode(
             _encodedDetails,
             (uint256, uint32)
         );
-        require(baseY > 0, "baseY not in range");
+        require(baseX > 0, "baseY not in range");
         require(
             reserveWeight > 0 && reserveWeight <= maxWeight,
             "reserveWeight not in range"
         );
 
         Details.Bancor storage bancor_ = _bancors[_hubId];
-        bancor_.baseY = baseY;
+        bancor_.baseX = baseX;
         bancor_.reserveWeight = reserveWeight;
     }
 
@@ -60,11 +62,11 @@ contract BancorZeroCurve is ICurve {
             "targeReserveWeight == reserveWeight"
         );
 
-        // targetBaseY = (old baseY * oldR) / newR
-        uint256 targetBaseY = (bancorDetails.baseY *
+        // targetBaseX = (old baseY * oldR) / newR
+        uint256 targetBaseX = (bancorDetails.baseX *
             bancorDetails.reserveWeight) / targetReserveWeight;
 
-        bancorDetails.targetBaseY = targetBaseY;
+        bancorDetails.targetBaseX = targetBaseX;
         bancorDetails.targetReserveWeight = targetReserveWeight;
     }
 
@@ -72,9 +74,9 @@ contract BancorZeroCurve is ICurve {
         // TODO; only foundry can call
         Details.Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
-        bancor_.baseY = bancor_.targetBaseY;
+        bancor_.baseX = bancor_.targetBaseX;
         bancor_.targetReserveWeight = 0;
-        bancor_.targetBaseY = 0;
+        bancor_.targetBaseX = 0;
     }
 
     function getDetails(uint256 bancor)
@@ -104,7 +106,7 @@ contract BancorZeroCurve is ICurve {
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
                 bancorDetails.reserveWeight,
-                bancorDetails.baseY
+                bancorDetails.baseX
             );
         }
     }
@@ -125,10 +127,16 @@ contract BancorZeroCurve is ICurve {
                 _balancePooled
             );
         } else {
+            console.log(
+                "calculateTargetMintReturn _calculateMintReturnFromZero _tokensDeposited:%s bancorDetails.targetReserveWeight:%s targetBaseX:%s",
+                _tokensDeposited,
+                bancorDetails.targetReserveWeight,
+                bancorDetails.targetBaseX
+            );
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
                 bancorDetails.targetReserveWeight,
-                bancorDetails.targetBaseY
+                bancorDetails.targetBaseX
             );
         }
     }
@@ -211,26 +219,59 @@ contract BancorZeroCurve is ICurve {
     /// @dev  _baseX / (_baseY ^ (MAX_WEIGHT/reserveWeight -1)) * tokensDeposited ^(MAX_WEIGHT/reserveWeight -1)
     /// @dev  _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
     /// @param _tokensDeposited   amount of collateral tokens to deposit
-    /// @param _baseY          constant y
+    /// @param _baseX          constant x
     /// @return amount of meTokens minted
     function _calculateMintReturnFromZero(
         uint256 _tokensDeposited,
         uint256 _reserveWeight,
-        uint256 _baseY
+        uint256 _baseX
     ) private view returns (uint256) {
+        console.log("### _tokensDeposited:%s  ", _tokensDeposited);
+        console.log(
+            "### reserveWeight:%s maxWeight:%s",
+            _reserveWeight,
+            maxWeight
+        );
+        console.log("### _baseX:%s _baseY:%s", _baseX, _baseY.toUInt());
+
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(
+            uint256(maxWeight).fromUInt()
+        );
+        bytes16 numerator = _tokensDeposited.fromUInt().mul(
+            _baseX.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
+        );
+        console.log("### numerator:%s", numerator.toUInt());
+        // as baseY == 1ether and we want to result to be in ether too we simply remove
+        // the multiplication by baseY
+        bytes16 denominator = reserveWeight.mul(_baseX.fromUInt());
+        console.log("### denominator:%s", denominator.toUInt());
+        // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
+        // (numerator/denominator) ^ (reserveWeight )
+        bytes16 division = numerator.div(denominator);
+        console.log("### division:%s", division.toUInt());
+        bytes16 res = (numerator.div(denominator))
+            .ln()
+            .mul(reserveWeight)
+            .exp();
+        return res.toUInt();
         // (MAX_WEIGHT/reserveWeight -1)
-        bytes16 exponent = uint256(maxWeight)
+        /*  bytes16 exponent = uint256(maxWeight)
             .fromUInt()
             .div(_reserveWeight.fromUInt())
             .sub(_one);
         // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
-        // _baseY ^ (MAX_WEIGHT/reserveWeight -1)
-        bytes16 denominator = (_baseY.fromUInt().ln().mul(exponent)).exp();
-        // ( baseX * tokensDeposited  ^ (MAX_WEIGHT/reserveWeight -1) ) /  _baseY ^ (MAX_WEIGHT/reserveWeight -1)
-        bytes16 res = _baseX
-            .mul(_tokensDeposited.fromUInt().ln().mul(exponent).exp())
-            .div(denominator);
-        return res.toUInt();
+        // _baseX ^ (MAX_WEIGHT/reserveWeight )
+        bytes16 denominator_denominator = (_baseX.ln().mul(exponent)).exp();
+        bytes16 denominator = _reserveWeight.fromUInt().mul(_baseX).mul(
+            _baseY.fromUInt()
+        );
+        // tokensDeposited / (reserveWeight * baseX * baseY) / baseX ^ (MAX_WEIGHT/reserveWeight)
+        bytes16 base = _tokensDeposited.fromUInt().div(denominator).div(
+            denominator_denominator
+        );
+        // [tokensDeposited / (reserveWeight * baseX * baseY) / baseX ^ (MAX_WEIGHT/reserveWeight)] ^ reserveWeight
+        bytes16 res = (base.ln().mul(_reserveWeight.fromUInt()).exp());
+        return res.toUInt(); */
     }
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,

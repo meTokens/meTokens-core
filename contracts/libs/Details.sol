@@ -30,9 +30,9 @@ library Details {
     }
 
     struct Bancor {
-        uint256 baseY;
+        uint256 baseX;
         uint32 reserveWeight;
-        uint256 targetBaseY;
+        uint256 targetBaseX;
         uint32 targetReserveWeight;
     }
 

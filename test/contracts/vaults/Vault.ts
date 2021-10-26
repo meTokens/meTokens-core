@@ -1,12 +1,13 @@
-import { ethers } from "hardhat";
+import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 
 describe("Vault.sol", () => {
   const amount = 3;
   let vault: SingleAssetVault;
-
+  let DAI: string;
   before(async () => {
+    ({ DAI } = await getNamedAccounts());
     const vaultFactory = await ethers.getContractFactory("SingleAssetVault");
     vault = (await vaultFactory.deploy()) as SingleAssetVault;
     await vault.deployed();
@@ -18,16 +19,16 @@ describe("Vault.sol", () => {
     });
 
     it("Increments accruedFees by amount", async () => {
-      const accruedFeesBefore = await vault.accruedFees();
-      await vault.addFee(amount);
-      const accruedFeesAfter = await vault.accruedFees();
+      const accruedFeesBefore = await vault.getAccruedFees(DAI);
+      await vault.addFee(DAI, amount);
+      const accruedFeesAfter = await vault.getAccruedFees(DAI);
       expect(Number(accruedFeesBefore)).to.equal(
         Number(accruedFeesAfter) - amount
       );
     });
 
     it("Emits AddFee(amount)", async () => {
-      expect(await vault.addFee(amount))
+      expect(await vault.addFee(DAI, amount))
         .to.emit(vault, "AddFee")
         .withArgs(amount);
     });

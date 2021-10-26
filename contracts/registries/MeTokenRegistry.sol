@@ -187,10 +187,10 @@ contract MeTokenRegistry is Roles, Ownable {
 
     function transferMeTokenOwnership(address _newOwner) external {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        address meToken = _owners[msg.sender];
-        Details.MeToken storage meToken_ = _meTokens[meToken];
-        require(msg.sender == meToken_.owner, "!owner");
+        address _meToken = _owners[msg.sender];
 
+        require(_meToken != address(0), "!meToken");
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
         meToken_.owner = _newOwner;
         _owners[msg.sender] = address(0);
         _owners[_newOwner] = meToken;

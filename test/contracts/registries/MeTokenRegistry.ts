@@ -8,7 +8,6 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
@@ -28,7 +27,6 @@ describe("MeTokenRegistry.sol", () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
@@ -54,19 +52,17 @@ describe("MeTokenRegistry.sol", () => {
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
     migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
+
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
 
     hub = await deploy<Hub>("Hub");
-    singleAssetFactory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
       undefined, //no libs
-      hub.address,
-      singleAssetVault.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
+      account0.address, // DAO
+      foundry.address // foundry
     );
 
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
@@ -79,14 +75,9 @@ describe("MeTokenRegistry.sol", () => {
     );
     await curveRegistry.register(bancorZeroCurve.address);
 
-    await vaultRegistry.approve(singleAssetFactory.address);
+    await vaultRegistry.approve(singleAssetVault.address);
 
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address,
-      migrationRegistry.address
-    );
+    await hub.initialize(vaultRegistry.address, curveRegistry.address);
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
@@ -100,7 +91,7 @@ describe("MeTokenRegistry.sol", () => {
     );
 
     await hub.register(
-      singleAssetFactory.address,
+      singleAssetVault.address,
       bancorZeroCurve.address,
       50000, //refund ratio
       encodedCurveDetails,
@@ -168,13 +159,13 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr, account2.address)
+        meTokenRegistry.transferMeTokenOwnership(account2.address)
       ).to.revertedWith("!owner");
       const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
         account0.address
       );
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr2, account1.address)
+        meTokenRegistry.transferMeTokenOwnership(account1.address)
       ).to.revertedWith("_newOwner already owns a meToken");
     });
     it("Emits TransferOwnership()", async () => {
@@ -184,7 +175,7 @@ describe("MeTokenRegistry.sol", () => {
 
       const tx = meTokenRegistry
         .connect(account1)
-        .transferOwnership(meTokenAddr, account2.address);
+        .transferMeTokenOwnership(account2.address);
 
       await expect(tx)
         .to.emit(meTokenRegistry, "TransferOwnership")
