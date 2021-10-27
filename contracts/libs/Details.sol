@@ -34,9 +34,4 @@ library Details {
         uint256 targetBaseY;
         uint32 targetReserveWeight;
     }
-
-    struct UniswapSingleTransfer {
-        uint256 amountIn;
-        uint256 amountOut;
-    }
 }
