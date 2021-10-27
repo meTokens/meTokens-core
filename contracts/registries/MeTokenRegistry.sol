@@ -44,7 +44,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function register(
+    function subscribe(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
@@ -94,11 +94,11 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
     }
 
-    function resubscribe(
+    function initResubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migration // bytes memory _encodedMigrationArgs
-    ) external {
+        address _migration // TODO: bytes memory _encodedMigrationArgs??
+    ) external override {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
@@ -143,7 +143,25 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
 
         require(meToken_.targetHubId != 0, "No targetHubId");
-        IMigration(meToken_.migration).finishMigration(_meToken);
+        require(
+            block.timestamp > meToken_.endTime,
+            "block.timestamp < endTime"
+        );
+        // Update balancePooled / balanceLocked
+
+        uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
+        uint256 newBalance = IMigration(meToken_.migration).finishMigration(
+            _meToken
+        );
+
+        meToken_.balancePooled *=
+            (PRECISION * newBalance) /
+            oldBalance /
+            PRECISION;
+        meToken_.balanceLocked *=
+            (PRECISION * newBalance) /
+            oldBalance /
+            PRECISION;
 
         // Finish updating metoken details
         meToken_.startTime = 0;

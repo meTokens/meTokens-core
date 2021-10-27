@@ -6,7 +6,7 @@ interface IMigration {
 
     function swap() external;
 
-    function finishMigration(address _meToken) external;
+    function finishMigration(address _meToken) external returns (uint256);
 
     function isReady() external view returns (bool);
 

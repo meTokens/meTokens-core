@@ -15,6 +15,14 @@ interface IMeTokenRegistry {
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
+    function updateBalances(address _meToken) external;
+
+    function initResubscribe(
+        address _meToken,
+        uint256 _targetHubId,
+        address _migration
+    ) external;
+
     function finishResubscribe(address _meToken)
         external
         returns (Details.MeToken memory);
@@ -24,7 +32,7 @@ interface IMeTokenRegistry {
     /// @param _symbol TODO
     /// @param _hubId TODO
     /// @param _tokensDeposited TODO
-    function register(
+    function subscribe(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,

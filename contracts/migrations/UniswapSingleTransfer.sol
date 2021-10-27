@@ -142,28 +142,25 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         }
     }
 
-    function finishMigration(address _meToken) external {
+    function finishMigration(address _meToken)
+        external
+        returns (uint256 amountOut)
+    {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
 
         require(!finished[_meToken], "already finished");
-        require(
-            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime,
-            "Unable to finish"
-        );
 
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!started[_meToken]) {
             startMigration(_meToken);
         }
 
-        // Get amount to send to targetHub's vault based on balancePooled/balanceLocked
-        uint256 amountOut;
-
         if (!swapped[_meToken]) {
             amountOut = swap(_meToken);
         } else {
+            // No swap, amountOut = amountIn
             amountOut = meToken_.balancePooled + meToken_.balanceLocked;
         }
 
@@ -220,30 +217,5 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         uint256 amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
-    }
-
-    function calcMultiplier(address _meToken)
-        external
-        view
-        returns (uint256 multiplier)
-    {
-        Details.UniswapSingleTransfer memory ust_ = usts[_meToken];
-        require(
-            ust_.amountOut > 0 && ust_.amountIn > 0,
-            "Multiplier unavailable"
-        );
-        // TODO: validate
-        multiplier =
-            (PRECISION**2 * ust_.amountOut) /
-            ust_.amountIn /
-            PRECISION;
-    }
-
-    function getDetails(address _meToken)
-        external
-        view
-        returns (Details.UniswapSingleTransfer memory ust_)
-    {
-        ust_ = usts[_meToken];
     }
 }
