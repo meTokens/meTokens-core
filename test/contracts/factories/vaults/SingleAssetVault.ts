@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { Foundry } from "../../../../artifacts/types/Foundry";
 import { Hub } from "../../../../artifacts/types/Hub";
@@ -10,8 +11,12 @@ describe("SingleAssetVault.sol", () => {
   let singleAssetVault: SingleAssetVault;
   let vaultRegistry: VaultRegistry;
   let hub: Hub;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
 
   before(async () => {
+    [account0, account1, account2] = await ethers.getSigners();
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
     const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
     const foundry = await deploy<Foundry>("Foundry", {
@@ -20,9 +25,10 @@ describe("SingleAssetVault.sol", () => {
     hub = await deploy<Hub>("Hub");
     singleAssetVault = await deploy<SingleAssetVault>(
       "SingleAssetVault",
-      undefined,
-      hub.address, //DAO ?
-      foundry.address
+      undefined, //no libs
+      account1.address, // DAO
+      foundry.address, // foundry
+      hub.address // hub
     );
 
     // TODO: call hub.initialize()

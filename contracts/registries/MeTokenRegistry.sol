@@ -17,6 +17,8 @@ import "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
 
+import "hardhat/console.sol";
+
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
@@ -193,7 +195,7 @@ contract MeTokenRegistry is Roles, Ownable {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         meToken_.owner = _newOwner;
         _owners[msg.sender] = address(0);
-        _owners[_newOwner] = meToken;
+        // _owners[_newOwner] = meToken;
 
         // emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
     }
@@ -203,6 +205,7 @@ contract MeTokenRegistry is Roles, Ownable {
         address _meToken,
         uint256 _amount
     ) external {
+        console.log("## METOKENREGISTRY  msg.sender:%s  ", msg.sender);
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
@@ -221,6 +224,12 @@ contract MeTokenRegistry is Roles, Ownable {
     ) external {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
+        console.log(
+            "## # add:%s meToken_.balanceLocked:%s _amount:%s",
+            add,
+            meToken_.balanceLocked,
+            _amount
+        );
         if (add) {
             meToken_.balanceLocked += _amount;
         } else {

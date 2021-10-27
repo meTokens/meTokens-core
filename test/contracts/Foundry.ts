@@ -50,6 +50,7 @@ describe("Foundry.sol", () => {
     [account0, account1, account2] = await ethers.getSigners();
     dai = await getContractAt<ERC20>("ERC20", DAI);
     daiHolder = await impersonate(DAIWhale);
+    dai.connect(daiHolder).transfer(account0.address, 100);
     dai
       .connect(daiHolder)
       .transfer(account1.address, ethers.utils.parseEther("1000"));
@@ -70,8 +71,9 @@ describe("Foundry.sol", () => {
     singleAssetVault = await deploy<SingleAssetVault>(
       "SingleAssetVault",
       undefined, //no libs
-      account0.address, // DAO
-      foundry.address // foundry
+      account1.address, // DAO
+      foundry.address, // foundry
+      hub.address // hub
     );
 
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
@@ -88,7 +90,12 @@ describe("Foundry.sol", () => {
     fees = await deploy<Fees>("Fees");
 
     await fees.initialize(0, 0, 0, 0, 0, 0);
+    console.log(`
 
+*****
+vaultregistry:${vaultRegistry.address}
+singleAssetVault:${singleAssetVault.address} dai:${DAI}
+`);
     await hub.initialize(vaultRegistry.address, curveRegistry.address);
     // for 1 DAI we get 1000 metokens
     const baseY = PRECISION.div(1000).toString();
@@ -126,6 +133,8 @@ describe("Foundry.sol", () => {
 
     // assert token infos
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    const FOUNDRY = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("FOUNDRY"));
+    await meTokenRegistry.grantRole(FOUNDRY, foundry.address);
   });
 
   it("mint() Should work", async () => {
@@ -137,12 +146,36 @@ describe("Foundry.sol", () => {
     // mint
 
     const amount = 100;
-    const balBefore = await dai.balanceOf(account2.address);
+    const balBefore = await dai.balanceOf(account0.address);
+    console.log(`
+    
+    ******
+    balBefore:${balBefore.toString()}
+    `);
     // need an approve of metoken registry first
-    await dai.connect(account2).approve(meTokenRegistry.address, amount);
+    // await dai.connect(account2).approve(foundry.address, amount);
+    await dai.approve(foundry.address, amount);
+    const tokenBalBefore = await meToken.balanceOf(account2.address);
+    console.log(`
+    
+    ******
+    foundry: ${foundry.address}
+    `);
+    const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
+    // gas savings
+    const totalSupply = await meToken.totalSupply();
+
+    const meTokensMinted = await bancorZeroCurve.calculateMintReturn(
+      amount,
+      hubId,
+      totalSupply,
+      meTokenDetails.balancePooled
+    );
     await foundry.mint(meToken.address, amount, account2.address);
-    const balAfter = await dai.balanceOf(account2.address);
+    const tokenBalAfter = await meToken.balanceOf(account2.address);
+    const balAfter = await dai.balanceOf(account0.address);
     expect(balBefore.sub(balAfter)).equal(amount);
+    expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
     const hubDetail = await hub.getDetails(hubId);
     const balVault = await dai.balanceOf(hubDetail.vault);
     expect(balVault).equal(amount);
@@ -150,13 +183,24 @@ describe("Foundry.sol", () => {
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
     expect(meTokenAddr).to.equal(meToken.address);
     // should be greater than 0
-    expect(await meToken.totalSupply()).to.equal(100000);
+    expect(await meToken.totalSupply()).to.equal(
+      totalSupply.add(meTokensMinted)
+    );
   });
 
   it("burn() Should work", async () => {
     const balBefore = await meToken.balanceOf(account2.address);
+
     const balDaiBefore = await dai.balanceOf(account2.address);
-    await foundry.burn(meToken.address, balBefore, account2.address);
+    console.log(`
+    
+    ******
+    balBefore: ${balBefore.toString()}
+    balDaiBefore: ${balDaiBefore.toString()}
+    `);
+    await foundry
+      .connect(account2)
+      .burn(meToken.address, balBefore, account2.address);
     const balAfter = await meToken.balanceOf(account2.address);
     const balDaiAfter = await dai.balanceOf(account2.address);
     expect(balAfter).equal(0);

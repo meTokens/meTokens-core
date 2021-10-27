@@ -17,7 +17,7 @@ contract Roles is AccessControl {
 
     constructor() {
         _setupRole(DEVELOPER, msg.sender);
-        // _setupRole(DEFAULT_ADMIN_ROLE, daoMultisig);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         // _setupRole(DAO_MULTISIG, daoMultisig);
         // _setupRole(DEV_MULTISIG, devMultisig);
         _setupRole(FOUNDRY, foundry);
