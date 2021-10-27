@@ -142,7 +142,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
 
-        require(meToken_.migration != address(0), "!migrating");
+        require(meToken_.targetHubId != 0, "No targetHubId");
         IMigration(meToken_.migration).finishMigration(_meToken);
 
         // Finish updating metoken details
