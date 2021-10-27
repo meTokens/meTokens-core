@@ -134,7 +134,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
             feeRate = fees.burnBuyerFee();
             if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
                 // Not updating targetRefundRatio or resubscribing
-                actualTokensReturned = tokensReturned * hub_.refundRatio;
+                actualTokensReturned =
+                    (tokensReturned * hub_.refundRatio) /
+                    PRECISION;
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
@@ -163,16 +165,13 @@ contract Foundry is IFoundry, Ownable, Initializable {
             }
         }
 
-        uint256 fee = actualTokensReturned * feeRate;
-        actualTokensReturned -= fee;
-
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
         meTokenRegistry.incrementBalancePooled(false, _meToken, tokensReturned);
 
-        if (actualTokensReturned > tokensReturned) {
+        if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
             meTokenRegistry.incrementBalanceLocked(
                 false,
@@ -187,6 +186,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 tokensReturned - actualTokensReturned
             );
         }
+
+        uint256 fee = actualTokensReturned * feeRate;
+        actualTokensReturned -= fee;
+
         address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
         IERC20(asset).transferFrom(
             hub_.vault,
