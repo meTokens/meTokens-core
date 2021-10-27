@@ -149,19 +149,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         );
         // Update balancePooled / balanceLocked
 
-        uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
         uint256 newBalance = IMigration(meToken_.migration).finishMigration(
             _meToken
         );
-
-        meToken_.balancePooled *=
-            (PRECISION * newBalance) /
-            oldBalance /
-            PRECISION;
-        meToken_.balanceLocked *=
-            (PRECISION * newBalance) /
-            oldBalance /
-            PRECISION;
 
         // Finish updating metoken details
         meToken_.startTime = 0;
@@ -170,6 +160,21 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.targetHubId = 0;
         meToken_.migration = address(0);
         return meToken_;
+    }
+
+    function updateBalances(address _meToken, uint256 _newBalance) external {
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        require(msg.sender == meToken_.migration, "!migration");
+
+        uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
+        meToken_.balancePooled *=
+            (PRECISION * _newBalance) /
+            oldBalance /
+            PRECISION;
+        meToken_.balanceLocked *=
+            (PRECISION * _newBalance) /
+            oldBalance /
+            PRECISION;
     }
 
     /// @inheritdoc IMeTokenRegistry

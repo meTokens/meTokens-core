@@ -15,7 +15,7 @@ interface IMeTokenRegistry {
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
 
-    function updateBalances(address _meToken) external;
+    function updateBalances(address _meToken, uint256 _newBalance) external;
 
     function initResubscribe(
         address _meToken,

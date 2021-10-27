@@ -217,5 +217,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         uint256 amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
+        meTokenRegistry.updateBalances(_meToken, amountOut);
     }
 }
