@@ -36,7 +36,7 @@ describe("BancorZeroCurve", () => {
   let DAIWhale: string;
   const decimals = 18;
   const one = ethers.utils.parseEther("1");
-  let baseX: BigNumber;
+  let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
   let hubId = 0;
   before(async () => {
@@ -81,11 +81,11 @@ describe("BancorZeroCurve", () => {
     // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
     // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
     // this gives us m = 1/1000
-    baseX = one.mul(1000);
+    baseY = one.mul(1000);
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
-      [baseX, reserveWeight]
+      [baseY, reserveWeight]
     );
     const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
       ["address"],
@@ -203,10 +203,10 @@ describe("BancorZeroCurve", () => {
     );
     await bancorZeroCurve.initReconfigure(hubId, encodedValueSet);
     const detail = await bancorZeroCurve.getDetails(hubId);
-    const targetBaseX = baseX.mul(reserveWeight).div(targetReserveWeight);
+    const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     console.log(detail.targetReserveWeight.toString());
-    expect(detail.targetBaseX).to.equal(targetBaseX);
+    expect(detail.targetBaseY).to.equal(targetBaseY);
   });
 
   it("calculateTargetMintReturn() from zero should work", async () => {
