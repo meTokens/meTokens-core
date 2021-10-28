@@ -42,6 +42,7 @@ contract Hub is Ownable, Initializable {
     }
 
     function register(
+        address _asset,
         IVault _vault,
         ICurve _curve,
         uint256 _refundRatio,
@@ -55,7 +56,7 @@ contract Hub is Ownable, Initializable {
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        address asset = _vault.validate(_encodedVaultArgs);
+        require(_vault.isValid(_asset, _encodedVaultArgs));
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);
@@ -63,7 +64,7 @@ contract Hub is Ownable, Initializable {
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
-        hub_.asset = asset;
+        hub_.asset = _asset;
         hub_.vault = address(_vault);
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;

@@ -15,8 +15,7 @@ import "../vaults/Vault.sol";
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
 contract UniswapSingleTransfer is Initializable, Ownable, Vault {
-    // NOTE: keys are the meToken address
-    // mapping(address => Details.UniswapSingleTransfer) public usts;
+    mapping(address => uint256) public soonest;
     /// @dev key = meToken address, value = if meToken has executed the swap and can finish migrating
     mapping(address => bool) public swapped;
     /// @dev key = meToken address, value = if migration is active and startMigration() has not been triggered
@@ -41,12 +40,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    function validate(bytes memory _encodedArgs)
-        public
-        override
-        returns (address)
-    {}
-
     // function register(address _meToken, bytes memory _encodedArgs) public override {}
 
     // TODO: validate we need this
@@ -56,62 +49,26 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
     }
 
     // Kicks off meToken warmup period
-    function initMigration(
-        address _meToken,
-        address _migration,
-        uint256 _targetHubId
-    ) external {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
-
-        require(targetHub_.active, "Inactive _targetHubId");
-
-        // Make sure initial hub, migration, and target hub are a valid path
-        require(
-            migrationRegistry.isApproved(
-                hub_.vault,
-                _migration,
-                targetHub_.vault
-            ),
-            "invalid migration path"
-        );
-
-        // Get asset of initialHub and targetHub, If they're the same w/ no migration address, we're good
-        // TODO: is this needed
-        address initialAsset = hub_.asset;
-        address targetAsset = targetHub_.asset;
-
-        // NOTE: Target hub already knows the asset you're migrating to
-        // Set meToken startTime, endTime, endCooldown, targetHubId, migration
-        // meTokenRegistry.
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        pure
+        override
+        returns (bool)
+    {
+        require(_encodedArgs.length > 0, "_encodedArgs empty");
+        uint256 soon = abi.decode(_encodedArgs, (uint256));
+        require(soon == 0, "soon needs a value");
+        return true;
     }
 
-    // Warmup period has ended, send asset to migrationVault
-    function startMigration(address _meToken) public {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+    function initMigration(address _meToken, bytes memory _encodedArgs)
+        external
+    {
+        // TODO: access control
 
-        require(meToken_.targetHubId != 0, "No targetHubId");
-        require(
-            block.timestamp > meToken_.startTime,
-            "Too soon to start migration"
-        );
-        require(!started[_meToken], "Already started");
-
-        // get asset used as collateral
-        address initialAsset = hub_.asset;
-        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
-
-        // Only transfer to migrationVault if there is one
-        if (meToken_.migration != address(0)) {
-            IERC20(initialAsset).transferFrom(
-                hub_.vault,
-                address(this),
-                balance
-            );
-        }
-
+        uint256 soon = abi.decode(_encodedArgs, (uint256));
+        // TODO: allowable timefame of swap?
+        soonest[_meToken] = soon;
         started[_meToken] = true;
     }
 

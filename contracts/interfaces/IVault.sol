@@ -13,7 +13,9 @@ interface IVault {
         uint256 _amount
     ) external;
 
-    function validate(bytes memory _encodedArgs) external returns (address);
+    function isValid(address _asest, bytes memory _encodedArgs)
+        external
+        returns (bool);
 
     function addFee(address _meToken, uint256 _amount) external;
 

@@ -18,16 +18,15 @@ contract SingleAssetVault is Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    function validate(bytes memory _encodedArgs)
+    function isValid(address _asset, bytes memory _encodedArgs)
         public
         view
         override
-        returns (address asset)
+        returns (bool)
     {
-        require(msg.sender == address(hub), "!Hub");
-
-        asset = abi.decode(_encodedArgs, (address));
+        _asset = abi.decode(_encodedArgs, (address));
         require(_encodedArgs.length > 0, "_encodedArgs empty");
-        require(asset != address(0), "0 address");
+        require(_asset != address(0), "0 address");
+        return true;
     }
 }
