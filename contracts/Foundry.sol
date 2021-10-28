@@ -74,7 +74,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             vault = IVault(meToken_.migration);
             // Use meToken address to get the asset address from the migration vault
-            asset = vault.getAsset(_meToken);
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+            asset = targetHub_.asset;
         } else {
             vault = IVault(hub_.vault);
             asset = hub_.asset;

@@ -55,15 +55,16 @@ contract Hub is Ownable, Initializable {
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
+        // Ensure asset is valid based on encoded args and vault validation logic
+        address asset = _vault.validate(_count, _encodedVaultArgs);
+
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);
-
-        // Store vault base parameters to `{VaultName}.sol`
-        _vault.register(_count, _encodedVaultArgs);
 
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
+        hub_.asset = asset;
         hub_.vault = address(_vault);
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;

@@ -24,10 +24,6 @@ abstract contract Vault is Ownable, IVault {
     IMigrationRegistry public migrationRegistry;
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
-    /// @dev key: hubId, value: addr of asset
-    mapping(uint256 => address) public assetOfHub;
-    /// @dev key: meToken addr, value: addr of asset
-    mapping(address => address) public assetOfMeToken;
 
     constructor(
         address _dao,
@@ -69,19 +65,11 @@ abstract contract Vault is Ownable, IVault {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function register(uint256 _hubId, bytes memory _encodedArgs)
+    function validate(uint256 _hubId, bytes memory _encodedArgs)
         public
         virtual
-        override;
-
-    function getAsset(address _meToken)
-        external
-        view
         override
-        returns (address)
-    {
-        return assetOfMeToken[_meToken];
-    }
+        returns (address);
 
     function getAccruedFees(address _asset)
         external

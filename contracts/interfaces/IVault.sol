@@ -13,13 +13,11 @@ interface IVault {
         uint256 _amount
     ) external;
 
-    function register(uint256 _hubId, bytes memory _encodedArgs) external;
+    function validate(uint256 _hubId, bytes memory _encodedArgs)
+        external
+        returns (address);
 
     function addFee(address _meToken, uint256 _amount) external;
-
-    function getAsset(uint256 _hubId) external view returns (address);
-
-    function getAsset(address _meToken) external view returns (address);
 
     function getAccruedFees(address _asset) external view returns (uint256);
 }

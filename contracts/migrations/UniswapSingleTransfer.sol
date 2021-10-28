@@ -41,9 +41,10 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    function register(uint256 _hubId, bytes memory _encodedArgs)
+    function validate(uint256 _hubId, bytes memory _encodedArgs)
         public
         override
+        returns (address)
     {}
 
     // function register(address _meToken, bytes memory _encodedArgs) public override {}
