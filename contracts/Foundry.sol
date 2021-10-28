@@ -77,7 +77,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             asset = vault.getAsset(_meToken);
         } else {
             vault = IVault(hub_.vault);
-            asset = vault.getAsset(meToken_.hubId);
+            asset = hub_.asset;
         }
 
         IERC20(asset).transferFrom(
@@ -190,13 +190,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = actualTokensReturned * feeRate;
         actualTokensReturned -= fee;
 
-        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        IERC20(asset).transferFrom(
+        IERC20(hub_.asset).transferFrom(
             hub_.vault,
             _recipient,
             actualTokensReturned
         );
-        IVault(hub_.vault).addFee(asset, fee);
+        IVault(hub_.vault).addFee(hub_.asset, fee);
     }
 
     // NOTE: for now this does not include fees

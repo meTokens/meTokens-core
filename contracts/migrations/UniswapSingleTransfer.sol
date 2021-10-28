@@ -54,11 +54,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         slippage = _slippage;
     }
 
-    function getVaultAsset(uint256 _hubId) private view returns (address) {
-        Details.Hub memory hub_ = hub.getDetails(_hubId);
-        return IVault(hub_.vault).getAsset(_hubId);
-    }
-
     // Kicks off meToken warmup period
     function initMigration(
         address _meToken,
@@ -83,10 +78,8 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
         // Get asset of initialHub and targetHub, If they're the same w/ no migration address, we're good
         // TODO: is this needed
-        address initialAsset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        address targetAsset = IVault(targetHub_.vault).getAsset(
-            meToken_.targetHubId
-        );
+        address initialAsset = hub_.asset;
+        address targetAsset = targetHub_.asset;
 
         // NOTE: Target hub already knows the asset you're migrating to
         // Set meToken startTime, endTime, endCooldown, targetHubId, migration
@@ -106,7 +99,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         require(!started[_meToken], "Already started");
 
         // get asset used as collateral
-        address initialAsset = IVault(hub_.vault).getAsset(meToken_.hubId);
+        address initialAsset = hub_.asset;
         uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only transfer to migrationVault if there is one
@@ -155,11 +148,10 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         }
 
         Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
-        address asset = IVault(targetHub_.vault).getAsset(meToken_.targetHubId);
 
         // Send asset to new vault only if there's a migration vault
 
-        IERC20(asset).transfer(targetHub_.vault, amountOut);
+        IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
 
         // reset mappings
         started[_meToken] = false;
@@ -177,10 +169,8 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         );
         require(started[_meToken] && !swapped[_meToken], "Not ready to swap");
 
-        address initialAsset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        address targetAsset = IVault(targetHub_.vault).getAsset(
-            meToken_.targetHubId
-        );
+        address initialAsset = hub_.asset;
+        address targetAsset = hub_.asset;
 
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
         // Only swap if there's a change in asset

@@ -74,16 +74,6 @@ abstract contract Vault is Ownable, IVault {
         virtual
         override;
 
-    function getAsset(uint256 _hubId)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
-        return assetOfHub[_hubId];
-    }
-
     function getAsset(address _meToken)
         external
         view

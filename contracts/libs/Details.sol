@@ -17,6 +17,7 @@ library Details {
     struct Hub {
         bool active;
         address vault;
+        address asset;
         address curve;
         uint256 refundRatio;
         bool updating;

@@ -56,10 +56,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
-        address asset = IVault(hub_.vault).getAsset(_hubId);
         if (_assetsDeposited > 0) {
             require(
-                IERC20(asset).transferFrom(
+                IERC20(hub_.asset).transferFrom(
                     msg.sender,
                     hub_.vault,
                     _assetsDeposited
@@ -115,6 +114,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!targetHub_.updating, "targetHub updating");
 
         // Ensure the migration we're using is approved
+        // If initialHub and targetHub have same asset and _migration == address(0)
+        if (hub_.vault == targetHub_.vault && _migration == address(0)) {
+            // no need to validate migration
+            // TODO: is this needed
+            _migration = address(this);
+        }
         require(
             migrationRegistry.isApproved(
                 hub_.vault,
