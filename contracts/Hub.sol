@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
 import "./interfaces/IVault.sol";
-import "./interfaces/IVaultRegistry.sol";
-import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/IRegistry.sol";
 import "./interfaces/ICurve.sol";
 
 import "./libs/Details.sol";
@@ -23,8 +22,8 @@ contract Hub is Ownable, Initializable {
     uint256 private _cooldown;
 
     uint256 private _count;
-    IVaultRegistry public vaultRegistry;
-    ICurveRegistry public curveRegistry;
+    IRegistry public vaultRegistry;
+    IRegistry public curveRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
 
@@ -38,8 +37,8 @@ contract Hub is Ownable, Initializable {
         onlyOwner
         initializer
     {
-        vaultRegistry = IVaultRegistry(_vaultRegistry);
-        curveRegistry = ICurveRegistry(_curveRegistry);
+        vaultRegistry = IRegistry(_vaultRegistry);
+        curveRegistry = IRegistry(_curveRegistry);
     }
 
     function register(
@@ -51,7 +50,7 @@ contract Hub is Ownable, Initializable {
     ) external {
         // TODO: access control
 
-        require(curveRegistry.isActive(address(_curve)), "_curve !approved");
+        require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
@@ -97,8 +96,8 @@ contract Hub is Ownable, Initializable {
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
                 require(
-                    curveRegistry.isActive(_targetCurve),
-                    "_targetCurve inactive"
+                    curveRegistry.isApproved(_targetCurve),
+                    "_targetCurve !approved"
                 );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
