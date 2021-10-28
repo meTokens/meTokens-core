@@ -15,8 +15,6 @@ interface IVault {
 
     function register(uint256 _hubId, bytes memory _encodedArgs) external;
 
-    // function register(address _meToken, bytes memory _encodedArgs) external;
-
     function addFee(address _meToken, uint256 _amount) external;
 
     function getAsset(uint256 _hubId) external view returns (address);

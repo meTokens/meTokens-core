@@ -5,9 +5,6 @@ import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRoute
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import "../interfaces/IHub.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMigrationRegistry.sol";
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
 
@@ -34,9 +31,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
     // args for uniswap router
     uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
-    IHub public hub;
-    IMeTokenRegistry public meTokenRegistry;
-    IMigrationRegistry public migrationRegistry;
     uint256 public slippage;
 
     constructor(
@@ -45,11 +39,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IHub _hub,
         IMeTokenRegistry _meTokenRegistry,
         IMigrationRegistry _migrationRegistry
-    ) Vault(_dao, _foundry) {
-        hub = _hub;
-        meTokenRegistry = _meTokenRegistry;
-        migrationRegistry = _migrationRegistry;
-    }
+    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
     function register(uint256 _hubId, bytes memory _encodedArgs)
         public

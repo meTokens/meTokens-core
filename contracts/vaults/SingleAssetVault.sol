@@ -10,21 +10,19 @@ import "./Vault.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Ownable, Vault {
-    address public hub;
-
     constructor(
         address _dao,
         address _foundry,
-        address _hub
-    ) Vault(_dao, _foundry) {
-        hub = _hub;
-    }
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry,
+        IMigrationRegistry _migrationRegistry
+    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
     function register(uint256 _hubId, bytes memory _encodedArgs)
         public
         override
     {
-        require(msg.sender == hub, "!Hub");
+        require(msg.sender == address(hub), "!Hub");
         address asset = _validate(_encodedArgs);
         assetOfHub[_hubId] = asset;
     }

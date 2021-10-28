@@ -6,6 +6,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/Details.sol";
 import "../interfaces/IVault.sol";
+import "../interfaces/IHub.sol";
+import "../interfaces/IMeTokenRegistry.sol";
+import "../interfaces/IMigrationRegistry.sol";
 import "../interfaces/IERC20.sol";
 import "hardhat/console.sol";
 
@@ -13,9 +16,12 @@ import "hardhat/console.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 abstract contract Vault is Ownable, IVault {
+    uint256 public constant PRECISION = 10**18;
     address public dao;
     address public foundry;
-    uint256 public constant PRECISION = 10**18;
+    IHub public hub;
+    IMeTokenRegistry public meTokenRegistry;
+    IMigrationRegistry public migrationRegistry;
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
     /// @dev key: hubId, value: addr of asset
@@ -23,9 +29,24 @@ abstract contract Vault is Ownable, IVault {
     /// @dev key: meToken addr, value: addr of asset
     mapping(address => address) public assetOfMeToken;
 
-    constructor(address _dao, address _foundry) {
+    constructor(
+        address _dao,
+        address _foundry,
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry,
+        IMigrationRegistry _migrationRegistry
+    ) {
         dao = _dao;
         foundry = _foundry;
+        hub = _hub;
+        meTokenRegistry = _meTokenRegistry;
+        migrationRegistry = _migrationRegistry;
+    }
+
+    // Send meTokens' collateral to migration vault to begin the
+    // resubscibe process
+    function initMigration(address _meToken, address _migration) external {
+        require(msg.sender == address(hub), "!hub");
     }
 
     function addFee(address _asset, uint256 _amount) external override {
@@ -52,8 +73,6 @@ abstract contract Vault is Ownable, IVault {
         public
         virtual
         override;
-
-    // function register(address _meToken, bytes memory _encodedArgs) public virtual override;
 
     function getAsset(uint256 _hubId)
         public
