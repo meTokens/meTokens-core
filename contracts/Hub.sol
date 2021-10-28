@@ -56,7 +56,7 @@ contract Hub is Ownable, Initializable {
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        address asset = _vault.validate(_count, _encodedVaultArgs);
+        address asset = _vault.validate(_encodedVaultArgs);
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);

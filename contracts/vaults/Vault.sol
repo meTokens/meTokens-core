@@ -65,7 +65,7 @@ abstract contract Vault is Ownable, IVault {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function validate(uint256 _hubId, bytes memory _encodedArgs)
+    function validate(bytes memory _encodedArgs)
         public
         virtual
         override

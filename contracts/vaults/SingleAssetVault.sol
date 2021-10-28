@@ -18,7 +18,7 @@ contract SingleAssetVault is Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    function validate(uint256 _hubId, bytes memory _encodedArgs)
+    function validate(bytes memory _encodedArgs)
         public
         view
         override
