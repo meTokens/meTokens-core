@@ -17,6 +17,7 @@ library Details {
     struct Hub {
         bool active;
         address vault;
+        address asset;
         address curve;
         uint256 refundRatio;
         bool updating;
@@ -33,16 +34,5 @@ library Details {
         uint32 reserveWeight;
         uint256 targetBaseY;
         uint32 targetReserveWeight;
-    }
-
-    struct UniswapSingleTransfer {
-        uint256 initialHubId;
-        uint256 targetHubId;
-        address initialToken;
-        address targetToken;
-        uint256 amountIn;
-        uint256 amountOut;
-        bool swapped;
-        bool finished;
     }
 }

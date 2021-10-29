@@ -6,25 +6,53 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/Details.sol";
 import "../interfaces/IVault.sol";
+import "../interfaces/IHub.sol";
+import "../interfaces/IMeTokenRegistry.sol";
+import "../interfaces/IMigrationRegistry.sol";
 import "../interfaces/IERC20.sol";
 import "hardhat/console.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract Vault is Ownable {
+abstract contract Vault is Ownable, IVault {
+    uint256 public constant PRECISION = 10**18;
     address public dao;
     address public foundry;
-    uint256 public constant PRECISION = 10**18;
+    IHub public hub;
+    IMeTokenRegistry public meTokenRegistry;
+    IMigrationRegistry public migrationRegistry;
+    /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
-    mapping(uint256 => address) public assets; // key: hubId, value: collateral token
 
-    constructor(address _dao, address _foundry) {
+    constructor(
+        address _dao,
+        address _foundry,
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry,
+        IMigrationRegistry _migrationRegistry
+    ) {
         dao = _dao;
         foundry = _foundry;
+        hub = _hub;
+        meTokenRegistry = _meTokenRegistry;
+        migrationRegistry = _migrationRegistry;
     }
 
-    function addFee(address _asset, uint256 _amount) external {
+    // After warmup period, if there's a migration vault,
+    // Send meTokens' collateral to the migration
+    function startMigration(address _meToken) public {
+        require(msg.sender == address(hub), "!hub");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
+
+        if (meToken_.migration != address(0)) {
+            IERC20(hub_.asset).transfer(meToken_.migration, balance);
+        }
+    }
+
+    function addFee(address _asset, uint256 _amount) external override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }
@@ -33,7 +61,7 @@ contract Vault is Ownable {
         address _asset,
         bool _max,
         uint256 _amount
-    ) external {
+    ) external override {
         require(msg.sender == dao, "!DAO");
         if (_max) {
             _amount = accruedFees[_asset];
@@ -44,11 +72,18 @@ contract Vault is Ownable {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function getAsset(uint256 _hubId) external view returns (address) {
-        return assets[_hubId];
-    }
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        virtual
+        override
+        returns (bool);
 
-    function getAccruedFees(address _asset) external view returns (uint256) {
+    function getAccruedFees(address _asset)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return accruedFees[_asset];
     }
 }

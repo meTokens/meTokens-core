@@ -11,6 +11,7 @@ import "./interfaces/IMeToken.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
+import "./interfaces/IMigration.sol";
 import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
@@ -43,14 +44,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
         require(hub_.active, "Hub inactive");
 
         // Handling changes
-        // TODO: turn this conditional into a func
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
-        } else if (
-            // Handle resubscribes
-            meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
-        ) {
-            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+        } else if (meToken_.targetHubId != 0) {
+            if (block.timestamp > meToken_.endTime) {
+                meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+            } else if (block.timestamp > meToken_.startTime) {
+                // Handle migration actions if needed
+                IMigration(meToken_.migration).poke(_meToken);
+            }
         }
 
         uint256 fee = (_tokensDeposited * fees.mintFee()) / PRECISION;
@@ -61,9 +63,32 @@ contract Foundry is IFoundry, Ownable, Initializable {
             tokensDepositedAfterFees
         );
 
-        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        IERC20(asset).transferFrom(msg.sender, hub_.vault, _tokensDeposited);
-        IVault(hub_.vault).addFee(asset, fee);
+        IVault vault;
+        address asset;
+        // Check if meToken is using a migration vault and in the active stage of resubscribing.
+        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
+        // in which case a migration vault isn't needed
+        if (
+            meToken_.migration != address(0) &&
+            block.timestamp > meToken_.startTime
+        ) {
+            vault = IVault(meToken_.migration);
+            // Use meToken address to get the asset address from the migration vault
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+            asset = targetHub_.asset;
+        } else {
+            vault = IVault(hub_.vault);
+            asset = hub_.asset;
+        }
+
+        IERC20(asset).transferFrom(
+            msg.sender,
+            address(vault),
+            _tokensDeposited
+        );
+        vault.addFee(asset, fee);
 
         meTokenRegistry.incrementBalancePooled(
             true,
@@ -110,25 +135,38 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            uint256 refundRatio = hub_.refundRatio;
-            if (hub_.targetRefundRatio == 0) {
-                // Not updating targetRefundRatio
-                actualTokensReturned = tokensReturned * hub_.refundRatio;
-            } else {
+            if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
+                // Not updating targetRefundRatio or resubscribing
                 actualTokensReturned =
-                    tokensReturned *
-                    WeightedAverage.calculate(
-                        hub_.refundRatio,
-                        hub_.targetRefundRatio,
-                        hub_.startTime,
-                        hub_.endTime
+                    (tokensReturned * hub_.refundRatio) /
+                    PRECISION;
+            } else {
+                if (hub_.targetRefundRatio > 0) {
+                    // Hub is updating
+                    actualTokensReturned =
+                        tokensReturned *
+                        WeightedAverage.calculate(
+                            hub_.refundRatio,
+                            hub_.targetRefundRatio,
+                            hub_.startTime,
+                            hub_.endTime
+                        );
+                } else {
+                    // meToken is resubscribing
+                    Details.Hub memory targetHub_ = hub.getDetails(
+                        meToken_.targetHubId
                     );
+                    actualTokensReturned =
+                        tokensReturned *
+                        WeightedAverage.calculate(
+                            hub_.refundRatio,
+                            targetHub_.refundRatio,
+                            meToken_.startTime,
+                            meToken_.endTime
+                        );
+                }
             }
-            actualTokensReturned *= refundRatio;
         }
-
-        uint256 fee = actualTokensReturned * feeRate;
-        actualTokensReturned -= fee;
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
@@ -136,7 +174,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Subtract tokens returned from balance pooled
         meTokenRegistry.incrementBalancePooled(false, _meToken, tokensReturned);
 
-        if (actualTokensReturned > tokensReturned) {
+        if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
             meTokenRegistry.incrementBalanceLocked(
                 false,
@@ -152,13 +190,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        address asset = IVault(hub_.vault).getAsset(meToken_.hubId);
-        IERC20(asset).transferFrom(
+        uint256 fee = actualTokensReturned * feeRate;
+        actualTokensReturned -= fee;
+
+        IERC20(hub_.asset).transferFrom(
             hub_.vault,
             _recipient,
             actualTokensReturned
         );
-        IVault(hub_.vault).addFee(asset, fee);
+        IVault(hub_.vault).addFee(hub_.asset, fee);
     }
 
     // NOTE: for now this does not include fees

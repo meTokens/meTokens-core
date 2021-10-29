@@ -15,7 +15,13 @@ import "../vaults/Vault.sol";
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
 contract UniswapSingleTransfer is Initializable, Ownable, Vault {
-    mapping(address => Details.UniswapSingleTransfer) public usts;
+    mapping(address => uint256) public soonest;
+    /// @dev key = meToken address, value = if meToken has executed the swap and can finish migrating
+    mapping(address => bool) public swapped;
+    /// @dev key = meToken address, value = if migration is active and startMigration() has not been triggered
+    mapping(address => bool) public started;
+    /// @dev key = meToken address, value = finishMigration() has been called so it's not recallable
+    mapping(address => bool) public finished;
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
@@ -24,89 +30,131 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
 
     // args for uniswap router
     uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
-    address public hub;
     uint256 public slippage;
 
     constructor(
         address _dao,
         address _foundry,
-        address _hub
-    ) Vault(_dao, _foundry) {
-        hub = _hub;
-    }
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry,
+        IMigrationRegistry _migrationRegistry
+    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
+    // function register(address _meToken, bytes memory _encodedArgs) public override {}
+
+    // TODO: validate we need this
     function setSlippage(uint256 _slippage) external {
         require(msg.sender == dao, "!DAO");
         slippage = _slippage;
     }
-    /*
-    function initialize(
-        uint256 _hubId,
-        address _owner,
-        address _initialVault,
-        address _targetVault
-    ) external initializer onlyOwner {
-        // require(migrationRegistry.isApproved(msg.sender), "!approved");
-        transferOwnership(_owner);
 
-        hubId = _hubId;
-
-        initialVault = _initialVault;
-        targetVault = _targetVault;
-
-        // token = IVault(_initialVault).getToken();
-        // targetToken = IVault(_targetVault).getToken();
+    // Kicks off meToken warmup period
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        pure
+        override
+        returns (bool)
+    {
+        require(_encodedArgs.length > 0, "_encodedArgs empty");
+        uint256 soon = abi.decode(_encodedArgs, (uint256));
+        require(soon == 0, "soon needs a value");
+        return true;
     }
 
-    // sends targetVault.getToken() to targetVault
-    function finishMigration(address _meToken) external {
-        // TODO: foundry access control
-        require(swapped && !finished);
+    function initMigration(address _meToken, bytes memory _encodedArgs)
+        external
+    {
+        // TODO: access control
 
-        finished = true;
-
-        // Send token to new vault
-        // IERC20(token).transfer(targetVault, amountOut);
+        uint256 soon = abi.decode(_encodedArgs, (uint256));
+        // TODO: allowable timefame of swap?
+        soonest[_meToken] = soon;
+        started[_meToken] = true;
     }
 
-    function isReady() external view returns (bool) {
-        return swapped && finished;
+    function poke(address _meToken) external {
+        // Make sure meToken is in a state of resubscription
+
+        if (!started[_meToken]) {
+            startMigration(_meToken);
+        }
+        if (!swapped[_meToken]) {
+            swap(_meToken);
+        }
     }
 
-    function getMultiplier() external view returns (uint256) {
-        return _multiplier;
+    function finishMigration(address _meToken)
+        external
+        returns (uint256 amountOut)
+    {
+        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+
+        require(!finished[_meToken], "already finished");
+
+        // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
+        if (!started[_meToken]) {
+            startMigration(_meToken);
+        }
+
+        if (!swapped[_meToken]) {
+            amountOut = swap(_meToken);
+        } else {
+            // No swap, amountOut = amountIn
+            amountOut = meToken_.balancePooled + meToken_.balanceLocked;
+        }
+
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+
+        // Send asset to new vault only if there's a migration vault
+
+        IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
+
+        // reset mappings
+        started[_meToken] = false;
+        swapped[_meToken] = false;
     }
 
-    // Trades vault.getToken() to targetVault.getToken();
-    function swap(address _meToken) public {
-        Details.UniswapSingleTransfer storage ust_ = usts[_meToken];
-        Details.Hub memory hub_ = 
+    function swap(address _meToken) public returns (uint256) {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
-        require(!ust_.amountIn > 0, "No swap available");
-        require(!ust_.swapped, "swapped");
+        require(
+            meToken_.migration == address(this),
+            "This is not the migration vault"
+        );
+        require(started[_meToken] && !swapped[_meToken], "Not ready to swap");
 
-        // amountIn = IERC20(token).balanceOf(address(this));
+        address initialAsset = hub_.asset;
+        address targetAsset = hub_.asset;
+
+        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
+        // Only swap if there's a change in asset
+        if (initialAsset == targetAsset) {
+            return amountIn;
+        }
+
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: ust_.initialToken,
-                tokenOut: ust_.targetToken,
+                tokenIn: initialAsset,
+                tokenOut: targetAsset,
                 fee: fee,
-                recipient: msg.sender, // TODO: target vault
+                recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
 
-        // The call to `exactInputSingle` executes the swap.
-        amountOut = _router.exactInputSingle(params);
-        // TODO: validate
-        _multiplier = (PRECISION**2 * amountOut) / amountIn / PRECISION;
+        swapped[_meToken] = true;
 
-        // TODO: what if tokenOut changes balances?
-        swapped = true;
-        token = targetToken;
+        // The call to `exactInputSingle` executes the swap
+        uint256 amountOut = _router.exactInputSingle(params);
+
+        // Based on amountIn and amountOut, update balancePooled and balanceLocked
+        meTokenRegistry.updateBalances(_meToken, amountOut);
     }
-    */
 }

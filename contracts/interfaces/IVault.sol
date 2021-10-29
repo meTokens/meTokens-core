@@ -7,19 +7,17 @@ interface IVault {
     event StartMigration(address migration);
     event Migrate();
 
-    function addFee(address _meToken, uint256 _amount) external;
-
-    function validate(bytes memory encodedArgs) external returns (bool);
-
-    function register(uint256 hubId, bytes memory encodedArgs) external;
-
     function withdraw(
         address _asset,
         bool _max,
         uint256 _amount
     ) external;
 
-    function getAsset(uint256 _hubId) external view returns (address);
+    function isValid(address _asest, bytes memory _encodedArgs)
+        external
+        returns (bool);
+
+    function addFee(address _meToken, uint256 _amount) external;
 
     function getAccruedFees(address _asset) external view returns (uint256);
 }

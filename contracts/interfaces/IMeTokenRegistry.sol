@@ -11,9 +11,17 @@ interface IMeTokenRegistry {
         string symbol,
         uint256 hubId
     );
-    event TransferOwnership(address from, address to, address meToken);
+    event TransferMeTokenOwnership(address from, address to, address meToken);
     event IncrementBalancePooled(bool add, address meToken, uint256 amount);
     event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
+
+    function updateBalances(address _meToken, uint256 _newBalance) external;
+
+    function initResubscribe(
+        address _meToken,
+        uint256 _targetHubId,
+        address _migration
+    ) external;
 
     function finishResubscribe(address _meToken)
         external
@@ -24,7 +32,7 @@ interface IMeTokenRegistry {
     /// @param _symbol TODO
     /// @param _hubId TODO
     /// @param _tokensDeposited TODO
-    function register(
+    function subscribe(
         string calldata _name,
         string calldata _symbol,
         uint256 _hubId,
@@ -53,7 +61,7 @@ interface IMeTokenRegistry {
         view
         returns (Details.MeToken memory meToken_);
 
-    function transferOwnership(address _meToken, address _newOwner) external;
+    function transferMeTokenOwnership(address _newOwner) external;
 
     // function updateBalances(address _meToken) external;
 
