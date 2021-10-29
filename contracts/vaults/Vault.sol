@@ -39,20 +39,7 @@ abstract contract Vault is Ownable, IVault {
         migrationRegistry = _migrationRegistry;
     }
 
-    // After warmup period, if there's a migration vault,
-    // Send meTokens' collateral to the migration
-    function startMigration(address _meToken) public {
-        require(msg.sender == address(hub), "!hub");
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
-
-        if (meToken_.migration != address(0)) {
-            IERC20(hub_.asset).transfer(meToken_.migration, balance);
-        }
-    }
-
-    function addFee(address _asset, uint256 _amount) external override {
+    function addFee(address _asset, uint256 _amount) public override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }

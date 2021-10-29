@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
+import "../interfaces/IMigration.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson)
@@ -14,7 +15,7 @@ import "../vaults/Vault.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable, Vault {
+contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
     mapping(address => uint256) public soonest;
     /// @dev key = meToken address, value = if meToken has executed the swap and can finish migrating
     mapping(address => bool) public swapped;
@@ -29,8 +30,8 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
+    // TODO: configurable fee
     uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
-    uint256 public slippage;
 
     constructor(
         address _dao,
@@ -40,62 +41,60 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    // function register(address _meToken, bytes memory _encodedArgs) public override {}
-
-    // TODO: validate we need this
-    function setSlippage(uint256 _slippage) external {
-        require(msg.sender == dao, "!DAO");
-        slippage = _slippage;
-    }
-
     // Kicks off meToken warmup period
     function isValid(address _meToken, bytes memory _encodedArgs)
         public
-        pure
+        view
         override
         returns (bool)
     {
         require(_encodedArgs.length > 0, "_encodedArgs empty");
         uint256 soon = abi.decode(_encodedArgs, (uint256));
-        require(soon == 0, "soon needs a value");
+        require(soon >= block.timestamp, "Too soon");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
         return true;
     }
 
     function initMigration(address _meToken, bytes memory _encodedArgs)
         external
+        override
     {
         // TODO: access control
 
         uint256 soon = abi.decode(_encodedArgs, (uint256));
-        // TODO: allowable timefame of swap?
         soonest[_meToken] = soon;
-        started[_meToken] = true;
     }
 
-    function poke(address _meToken) external {
+    function poke(address _meToken) external override {
         // Make sure meToken is in a state of resubscription
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        if (!started[_meToken] && meToken_.migration == address(this)) {}
 
-        if (!started[_meToken]) {
-            startMigration(_meToken);
-        }
-        if (!swapped[_meToken]) {
-            swap(_meToken);
-        }
+        // if (!started[_meToken]) {
+        //     ISingleAssetVault()   (startMigration(_meToken);
+        // }
+
+        // if (!swapped[_meToken]) {
+        //     swap(_meToken);
+        // }
     }
 
     function finishMigration(address _meToken)
         external
+        override
         returns (uint256 amountOut)
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        require(!finished[_meToken], "already finished");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-
-        require(!finished[_meToken], "already finished");
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!started[_meToken]) {
-            startMigration(_meToken);
+            ISingleAssetVault(hub_.vault).startMigration(_meToken);
         }
 
         if (!swapped[_meToken]) {
@@ -105,10 +104,7 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
             amountOut = meToken_.balancePooled + meToken_.balanceLocked;
         }
 
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
-
         // Send asset to new vault only if there's a migration vault
-
         IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
 
         // reset mappings

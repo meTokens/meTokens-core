@@ -114,7 +114,6 @@ contract MeTokenRegistry is Roles, Ownable {
         require(!targetHub_.updating, "targetHub updating");
 
         // Ensure the migration we're using is approved
-        // If initialHub and targetHub have same asset and _migration == address(0)
         if (hub_.asset != targetHub_.asset || _migration != address(0)) {
             require(
                 migrationRegistry.isApproved(

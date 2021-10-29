@@ -9,7 +9,6 @@ interface IMigration {
 
     function finishMigration(address _meToken) external returns (uint256);
 
-    function isReady() external view returns (bool);
-
-    function hasFinished() external view returns (bool);
+    // function isReady() external view returns (bool);
+    // function hasFinished() external view returns (bool);
 }
