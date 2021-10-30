@@ -57,14 +57,6 @@ describe("BancorZeroCurve", () => {
       WeightedAverage: weightedAverage.address,
     });
     hub = await deploy<Hub>("Hub");
-    singleAssetVault = await deploy<SingleAssetVault>(
-      "SingleAssetVault",
-      undefined, //no libs
-      account1.address, // DAO
-      foundry.address, // foundry
-      hub.address // hub
-    );
-
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -73,7 +65,18 @@ describe("BancorZeroCurve", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
-    await curveRegistry.register(bancorZeroCurve.address);
+
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
+      undefined, //no libs
+      account1.address, // DAO
+      foundry.address, // foundry
+      hub.address, // hub
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address //IMigrationRegistry
+    );
+
+    await curveRegistry.approve(bancorZeroCurve.address);
 
     await vaultRegistry.approve(singleAssetVault.address);
 
@@ -93,6 +96,7 @@ describe("BancorZeroCurve", () => {
     );
 
     await hub.register(
+      DAI,
       singleAssetVault.address,
       bancorZeroCurve.address,
       5000, //refund ratio

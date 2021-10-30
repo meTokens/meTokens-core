@@ -2,6 +2,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers } from "hardhat";
 import { Foundry } from "../../../../artifacts/types/Foundry";
 import { Hub } from "../../../../artifacts/types/Hub";
+import { MeTokenFactory } from "../../../../artifacts/types/MeTokenFactory";
+import { MeTokenRegistry } from "../../../../artifacts/types/MeTokenRegistry";
+import { MigrationRegistry } from "../../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../../artifacts/types/SingleAssetVault";
 import { VaultRegistry } from "../../../../artifacts/types/VaultRegistry";
 import { WeightedAverage } from "../../../../artifacts/types/WeightedAverage";
@@ -23,12 +26,27 @@ describe("SingleAssetVault.sol", () => {
       WeightedAverage: weightedAverage.address,
     });
     hub = await deploy<Hub>("Hub");
+    const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+    const migrationRegistry = await deploy<MigrationRegistry>(
+      "MigrationRegistry"
+    );
+
+    const meTokenRegistry = await deploy<MeTokenRegistry>(
+      "MeTokenRegistry",
+      undefined,
+      hub.address,
+      meTokenFactory.address,
+      migrationRegistry.address
+    );
+
     singleAssetVault = await deploy<SingleAssetVault>(
       "SingleAssetVault",
       undefined, //no libs
       account1.address, // DAO
       foundry.address, // foundry
-      hub.address // hub
+      hub.address, // hub
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address //IMigrationRegistry
     );
 
     // TODO: call hub.initialize()

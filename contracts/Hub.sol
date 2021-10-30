@@ -10,6 +10,7 @@ import "./interfaces/IRegistry.sol";
 import "./interfaces/ICurve.sol";
 
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
@@ -56,7 +57,7 @@ contract Hub is Ownable, Initializable {
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        require(_vault.isValid(_asset, _encodedVaultArgs));
+        require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);
@@ -90,7 +91,11 @@ contract Hub is Ownable, Initializable {
             );
         }
         bool reconfigure;
-
+        console.log(
+            "#### HUBHUB _encodedCurveDetails.length:%s _targetCurve;%s",
+            _encodedCurveDetails.length,
+            _targetCurve
+        );
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
                 reconfigure = true;

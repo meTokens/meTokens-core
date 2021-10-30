@@ -58,13 +58,6 @@ describe("MeTokenRegistry.sol", () => {
     });
 
     hub = await deploy<Hub>("Hub");
-    singleAssetVault = await deploy<SingleAssetVault>(
-      "SingleAssetVault",
-      undefined, //no libs
-      account0.address, // DAO
-      foundry.address // foundry
-    );
-
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -73,7 +66,16 @@ describe("MeTokenRegistry.sol", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
-    await curveRegistry.register(bancorZeroCurve.address);
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
+      undefined, //no libs
+      account0.address, // DAO
+      foundry.address, // foundry
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address //IMigrationRegistry
+    );
+
+    await curveRegistry.approve(bancorZeroCurve.address);
 
     await vaultRegistry.approve(singleAssetVault.address);
 
@@ -91,6 +93,7 @@ describe("MeTokenRegistry.sol", () => {
     );
 
     await hub.register(
+      DAI,
       singleAssetVault.address,
       bancorZeroCurve.address,
       50000, //refund ratio
@@ -107,7 +110,7 @@ describe("MeTokenRegistry.sol", () => {
 
       const tx = await meTokenRegistry
         .connect(account0)
-        .register(name, "CARL", hubId, 0);
+        .subscribe(name, "CARL", hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account0.address
       );
@@ -126,7 +129,7 @@ describe("MeTokenRegistry.sol", () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
       await expect(
-        meTokenRegistry.connect(account0).register(name, "CARL", hubId, 0)
+        meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
       ).to.be.revertedWith("msg.sender already owns a meToke");
     });
 
@@ -137,7 +140,7 @@ describe("MeTokenRegistry.sol", () => {
       await dai.connect(account1).approve(meTokenRegistry.address, amount);
       await meTokenRegistry
         .connect(account1)
-        .register("Carl1 meToken", "CARL", hubId, amount);
+        .subscribe("Carl1 meToken", "CARL", hubId, amount);
       const balAfter = await dai.balanceOf(account1.address);
       expect(balBefore.sub(balAfter)).equal(amount);
       const hubDetail = await hub.getDetails(hubId);
@@ -198,14 +201,10 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       await expect(
-        meTokenRegistry.incrementBalancePooled(
-          true,
-          meTokenAddr,
-          account2.address
-        )
+        meTokenRegistry.updateBalancePooled(true, meTokenAddr, account2.address)
       ).to.revertedWith("!foundry");
     });
-    it("incrementBalancePooled()", async () => {
+    it("updateBalancePooled()", async () => {
       /*  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account2.address
       );
@@ -214,6 +213,6 @@ describe("MeTokenRegistry.sol", () => {
         .incrementBalancePooled(true, meTokenAddr, account2.address); */
     });
 
-    it("incrementBalanceLocked()", async () => {});
+    it("updateBalanceLocked()", async () => {});
   });
 });

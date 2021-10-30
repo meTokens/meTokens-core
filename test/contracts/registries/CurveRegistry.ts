@@ -15,7 +15,7 @@ describe("CurveRegistry.sol", () => {
   describe("register()", () => {
     it("Emits register()", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-      expect(await curveRegistry.register(curve.address))
+      expect(await curveRegistry.approve(curve.address))
         .to.emit(curveRegistry, "Register")
         .withArgs(curve.address);
     });
@@ -25,14 +25,14 @@ describe("CurveRegistry.sol", () => {
     it("Reverts when deactivating an inactive curve", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
 
-      await expect(curveRegistry.deactivate(curve.address)).to.be.reverted;
+      await expect(curveRegistry.unapprove(curve.address)).to.be.reverted;
     });
 
     it("Emits Deactivate(id) when successful", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
 
-      await curveRegistry.register(curve.address);
-      expect(await curveRegistry.deactivate(curve.address))
+      await curveRegistry.approve(curve.address);
+      expect(await curveRegistry.unapprove(curve.address))
         .to.emit(curveRegistry, "Deactivate")
         .withArgs(curve.address);
     });
@@ -40,10 +40,10 @@ describe("CurveRegistry.sol", () => {
     it("Sets active to from true to false", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
 
-      await curveRegistry.register(curve.address);
-      expect(await curveRegistry.isActive(curve.address)).to.equal(true);
-      await curveRegistry.deactivate(curve.address);
-      expect(await curveRegistry.isActive(curve.address)).to.equal(false);
+      await curveRegistry.approve(curve.address);
+      expect(await curveRegistry.isApproved(curve.address)).to.equal(true);
+      await curveRegistry.unapprove(curve.address);
+      expect(await curveRegistry.isApproved(curve.address)).to.equal(false);
     });
   });
 
@@ -51,14 +51,14 @@ describe("CurveRegistry.sol", () => {
     it("Return false for invalid curve address", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
 
-      expect(await curveRegistry.isActive(curve.address)).to.equal(false);
+      expect(await curveRegistry.isApproved(curve.address)).to.equal(false);
     });
 
     it("Return true for an active ID", async () => {
       curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
 
-      await curveRegistry.register(curve.address);
-      expect(await curveRegistry.isActive(curve.address)).to.equal(true);
+      await curveRegistry.approve(curve.address);
+      expect(await curveRegistry.isApproved(curve.address)).to.equal(true);
     });
   });
 });

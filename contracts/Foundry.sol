@@ -103,7 +103,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         console.log("##  fee:%s", fee);
         vault.addFee(asset, fee);
 
-        meTokenRegistry.incrementBalancePooled(
+        meTokenRegistry.updateBalancePooled(
             true,
             _meToken,
             tokensDepositedAfterFees
@@ -160,7 +160,24 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     (tokensReturned * hub_.refundRatio) /
                     PRECISION;
             } else {
+                console.log(
+                    "##    hub_.targetRefundRatio:%s  tokensReturned:%s timestamp:%s",
+                    hub_.targetRefundRatio,
+                    tokensReturned,
+                    block.timestamp
+                );
                 if (hub_.targetRefundRatio > 0) {
+                    console.log(
+                        "##    hub_.startTime:%s hub_.endTime:%s WeightedAverage:%s",
+                        hub_.startTime,
+                        hub_.endTime,
+                        WeightedAverage.calculate(
+                            hub_.refundRatio,
+                            hub_.targetRefundRatio,
+                            hub_.startTime,
+                            hub_.endTime
+                        )
+                    );
                     // Hub is updating
                     actualTokensReturned =
                         tokensReturned *
@@ -191,23 +208,23 @@ contract Foundry is IFoundry, Ownable, Initializable {
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
-        meTokenRegistry.incrementBalancePooled(false, _meToken, tokensReturned);
+        meTokenRegistry.updateBalancePooled(false, _meToken, tokensReturned);
 
         if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
-            meTokenRegistry.incrementBalanceLocked(
+            meTokenRegistry.updateBalanceLocked(
                 false,
                 _meToken,
                 actualTokensReturned - tokensReturned
             );
         } else {
             console.log(
-                "## Is buyer tokensReturned:%s actualTokensReturned:%s",
+                "## Is buyer actualTokensReturned:%s tokensReturned:%s  sss",
                 actualTokensReturned,
                 tokensReturned
             );
             // Is buyer, add to balance locked using refund ratio
-            meTokenRegistry.incrementBalanceLocked(
+            meTokenRegistry.updateBalanceLocked(
                 true,
                 _meToken,
                 tokensReturned - actualTokensReturned

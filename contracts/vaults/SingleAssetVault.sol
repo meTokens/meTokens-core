@@ -24,7 +24,9 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         view
         override
         returns (bool)
-    {}
+    {
+        return true;
+    }
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration

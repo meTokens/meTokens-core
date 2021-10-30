@@ -200,7 +200,7 @@ contract MeTokenRegistry is Roles, Ownable {
         // emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
     }
 
-    function incrementBalancePooled(
+    function updateBalancePooled(
         bool add,
         address _meToken,
         uint256 _amount
@@ -217,7 +217,7 @@ contract MeTokenRegistry is Roles, Ownable {
         // emit IncrementBalancePooled(add, _meToken, _amount);
     }
 
-    function incrementBalanceLocked(
+    function updateBalanceLocked(
         bool add,
         address _meToken,
         uint256 _amount
@@ -236,7 +236,7 @@ contract MeTokenRegistry is Roles, Ownable {
             meToken_.balanceLocked -= _amount;
         }
 
-        // emit IncrementBalanceLocked(add, _meToken, _amount);
+        // emit UpdateBalanceLocked(add, _meToken, _amount);
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {

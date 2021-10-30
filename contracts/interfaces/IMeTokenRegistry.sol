@@ -12,8 +12,8 @@ interface IMeTokenRegistry {
         uint256 hubId
     );
     event TransferMeTokenOwnership(address from, address to, address meToken);
-    event IncrementBalancePooled(bool add, address meToken, uint256 amount);
-    event IncrementBalanceLocked(bool add, address meToken, uint256 amount);
+    event UpdateBalancePooled(bool add, address meToken, uint256 amount);
+    event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
 
     function updateBalances(address _meToken, uint256 _newBalance) external;
 
@@ -65,13 +65,13 @@ interface IMeTokenRegistry {
 
     // function updateBalances(address _meToken) external;
 
-    function incrementBalancePooled(
+    function updateBalancePooled(
         bool add,
         address _meToken,
         uint256 _amount
     ) external;
 
-    function incrementBalanceLocked(
+    function updateBalanceLocked(
         bool add,
         address _meToken,
         uint256 _amount
