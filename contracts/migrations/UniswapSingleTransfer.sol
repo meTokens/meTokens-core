@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
+import "../interfaces/IMigration.sol";
+import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson)
@@ -14,14 +16,8 @@ import "../vaults/Vault.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransfer is Initializable, Ownable, Vault {
-    mapping(address => uint256) public soonest;
-    /// @dev key = meToken address, value = if meToken has executed the swap and can finish migrating
-    mapping(address => bool) public swapped;
-    /// @dev key = meToken address, value = if migration is active and startMigration() has not been triggered
-    mapping(address => bool) public started;
-    /// @dev key = meToken address, value = finishMigration() has been called so it's not recallable
-    mapping(address => bool) public finished;
+contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
+    mapping(address => Details.UniswapSingleTransfer) private _usts;
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
@@ -29,8 +25,10 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
-    uint24 public immutable fee = 3000; // NOTE: 0.3% - the default uniswap fee
-    uint256 public slippage;
+    // TODO: configurable fee
+    uint24 public immutable MINFEE = 500; // 0.05%
+    uint24 public immutable MIDFEE = 3000; // 0.3% (Default fee)
+    uint24 public immutable MAXFEE = 10000; // 1%
 
     constructor(
         address _dao,
@@ -40,108 +38,107 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    // function register(address _meToken, bytes memory _encodedArgs) public override {}
-
-    // TODO: validate we need this
-    function setSlippage(uint256 _slippage) external {
-        require(msg.sender == dao, "!DAO");
-        slippage = _slippage;
-    }
-
     // Kicks off meToken warmup period
     function isValid(address _meToken, bytes memory _encodedArgs)
         public
-        pure
+        view
         override
         returns (bool)
     {
         require(_encodedArgs.length > 0, "_encodedArgs empty");
-        uint256 soon = abi.decode(_encodedArgs, (uint256));
-        require(soon == 0, "soon needs a value");
+        (uint256 soon, uint24 fee) = abi.decode(
+            _encodedArgs,
+            (uint256, uint24)
+        );
+        require(soon >= block.timestamp, "Too soon");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
+        require(fee == MINFEE || fee == MIDFEE || fee == MAXFEE, "Invalid fee");
         return true;
     }
 
     function initMigration(address _meToken, bytes memory _encodedArgs)
         external
+        override
     {
-        // TODO: access control
+        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        uint256 soonest = abi.decode(_encodedArgs, (uint256));
+        Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
 
-        uint256 soon = abi.decode(_encodedArgs, (uint256));
-        // TODO: allowable timefame of swap?
-        soonest[_meToken] = soon;
-        started[_meToken] = true;
+        ust_.soonest = soonest;
+        ust_.started = true;
     }
 
-    function poke(address _meToken) external {
+    function poke(address _meToken) external override {
         // Make sure meToken is in a state of resubscription
-
-        if (!started[_meToken]) {
-            startMigration(_meToken);
+        Details.UniswapSingleTransfer memory ust_ = _usts[_meToken];
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        if (ust_.soonest != 0 && block.timestamp > ust_.soonest) {
+            ISingleAssetVault(hub_.vault).startMigration(_meToken);
         }
-        if (!swapped[_meToken]) {
-            swap(_meToken);
-        }
+        _swap(_meToken);
     }
 
     function finishMigration(address _meToken)
         external
+        override
         returns (uint256 amountOut)
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
+        require(!ust_.finished, "finished");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-
-        require(!finished[_meToken], "already finished");
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
-        if (!started[_meToken]) {
-            startMigration(_meToken);
+        if (!ust_.started) {
+            ISingleAssetVault(hub_.vault).startMigration(_meToken);
         }
 
-        if (!swapped[_meToken]) {
-            amountOut = swap(_meToken);
+        if (!ust_.swapped) {
+            amountOut = _swap(_meToken);
         } else {
             // No swap, amountOut = amountIn
             amountOut = meToken_.balancePooled + meToken_.balanceLocked;
         }
 
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
-
         // Send asset to new vault only if there's a migration vault
-
         IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
 
         // reset mappings
-        started[_meToken] = false;
-        swapped[_meToken] = false;
+        delete _usts[_meToken];
     }
 
-    function swap(address _meToken) public returns (uint256) {
+    function _swap(address _meToken) private returns (uint256 amountOut) {
+        Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
-        require(
-            meToken_.migration == address(this),
-            "This is not the migration vault"
-        );
-        require(started[_meToken] && !swapped[_meToken], "Not ready to swap");
-
-        address initialAsset = hub_.asset;
-        address targetAsset = hub_.asset;
+        // Only swap if
+        // - The resubscription has started
+        // - The asset hasn't been swapped
+        // - Current time is past the soonest it can swap, and time to swap has been set
+        if (
+            !ust_.started ||
+            ust_.swapped ||
+            ust_.soonest == 0 ||
+            ust_.soonest > block.timestamp
+        ) {
+            return 0;
+        }
 
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
-        // Only swap if there's a change in asset
-        if (initialAsset == targetAsset) {
-            return amountIn;
-        }
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: initialAsset,
-                tokenOut: targetAsset,
-                fee: fee,
+                tokenIn: hub_.asset,
+                tokenOut: targetHub_.asset,
+                fee: ust_.fee,
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
@@ -149,12 +146,20 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault {
                 sqrtPriceLimitX96: 0
             });
 
-        swapped[_meToken] = true;
+        ust_.swapped = true;
 
         // The call to `exactInputSingle` executes the swap
-        uint256 amountOut = _router.exactInputSingle(params);
+        amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         meTokenRegistry.updateBalances(_meToken, amountOut);
+    }
+
+    function getDetails(address _meToken)
+        external
+        view
+        returns (Details.UniswapSingleTransfer memory ust_)
+    {
+        ust_ = _usts[_meToken];
     }
 }

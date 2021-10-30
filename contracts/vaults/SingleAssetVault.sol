@@ -5,11 +5,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../interfaces/IERC20.sol";
 import "./Vault.sol";
+import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract SingleAssetVault is Ownable, Vault {
+contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
     constructor(
         address _dao,
         address _foundry,
@@ -23,10 +24,21 @@ contract SingleAssetVault is Ownable, Vault {
         view
         override
         returns (bool)
-    {
-        _asset = abi.decode(_encodedArgs, (address));
-        require(_encodedArgs.length > 0, "_encodedArgs empty");
-        require(_asset != address(0), "0 address");
-        return true;
+    {}
+
+    // After warmup period, if there's a migration vault,
+    // Send meTokens' collateral to the migration
+    function startMigration(address _meToken) external override {
+        require(msg.sender == address(hub), "!hub");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
+
+        if (
+            meToken_.migration != address(0) &&
+            address(this) != meToken_.migration
+        ) {
+            IERC20(hub_.asset).transfer(meToken_.migration, balance);
+        }
     }
 }
