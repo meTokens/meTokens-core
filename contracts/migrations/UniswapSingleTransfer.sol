@@ -26,9 +26,9 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
 
     // args for uniswap router
     // TODO: configurable fee
-    uint24 public immutable MINFEE = 500; // 0.05%
-    uint24 public immutable MIDFEE = 3000; // 0.3% (Default fee)
-    uint24 public immutable MAXFEE = 10000; // 1%
+    uint24 public constant MINFEE = 500; // 0.05%
+    uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
+    uint24 public constant MAXFEE = 10000; // 1%
 
     constructor(
         address _dao,
@@ -37,25 +37,6 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
         IMeTokenRegistry _meTokenRegistry,
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
-
-    // Kicks off meToken warmup period
-    function isValid(address _meToken, bytes memory _encodedArgs)
-        public
-        view
-        override
-        returns (bool)
-    {
-        require(_encodedArgs.length > 0, "_encodedArgs empty");
-        (uint256 soon, uint24 fee) = abi.decode(
-            _encodedArgs,
-            (uint256, uint24)
-        );
-        require(soon >= block.timestamp, "Too soon");
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
-        require(fee == MINFEE || fee == MIDFEE || fee == MAXFEE, "Invalid fee");
-        return true;
-    }
 
     function initMigration(address _meToken, bytes memory _encodedArgs)
         external
@@ -112,6 +93,33 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
         delete _usts[_meToken];
     }
 
+    function getDetails(address _meToken)
+        external
+        view
+        returns (Details.UniswapSingleTransfer memory ust_)
+    {
+        ust_ = _usts[_meToken];
+    }
+
+    // Kicks off meToken warmup period
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        view
+        override
+        returns (bool)
+    {
+        require(_encodedArgs.length > 0, "_encodedArgs empty");
+        (uint256 soon, uint24 fee) = abi.decode(
+            _encodedArgs,
+            (uint256, uint24)
+        );
+        require(soon >= block.timestamp, "Too soon");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
+        require(fee == MINFEE || fee == MIDFEE || fee == MAXFEE, "Invalid fee");
+        return true;
+    }
+
     function _swap(address _meToken) private returns (uint256 amountOut) {
         Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
@@ -153,13 +161,5 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         meTokenRegistry.updateBalances(_meToken, amountOut);
-    }
-
-    function getDetails(address _meToken)
-        external
-        view
-        returns (Details.UniswapSingleTransfer memory ust_)
-    {
-        ust_ = _usts[_meToken];
     }
 }

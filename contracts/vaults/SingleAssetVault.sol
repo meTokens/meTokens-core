@@ -19,15 +19,6 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         IMigrationRegistry _migrationRegistry
     ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
 
-    function isValid(address _asset, bytes memory _encodedArgs)
-        public
-        view
-        override
-        returns (bool)
-    {
-        return true;
-    }
-
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
     function startMigration(address _meToken) external override {
@@ -42,5 +33,15 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         ) {
             IERC20(hub_.asset).transfer(meToken_.migration, balance);
         }
+    }
+
+    // solhint-disable-next-line
+    function isValid(address _asset, bytes memory _encodedArgs)
+        public
+        pure
+        override
+        returns (bool)
+    {
+        return true;
     }
 }

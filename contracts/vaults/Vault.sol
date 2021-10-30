@@ -66,12 +66,6 @@ abstract contract Vault is Ownable, IVault {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function isValid(address _meToken, bytes memory _encodedArgs)
-        public
-        virtual
-        override
-        returns (bool);
-
     function getAccruedFees(address _asset)
         external
         view
@@ -80,4 +74,10 @@ abstract contract Vault is Ownable, IVault {
     {
         return accruedFees[_asset];
     }
+
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        virtual
+        override
+        returns (bool);
 }

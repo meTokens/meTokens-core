@@ -156,7 +156,7 @@ contract MeTokenRegistry is Roles, Ownable {
             "block.timestamp < endTime"
         );
         // Update balancePooled / balanceLocked
-
+        // solhint-disable-next-line
         uint256 newBalance = IMigration(meToken_.migration).finishMigration(
             _meToken
         );
