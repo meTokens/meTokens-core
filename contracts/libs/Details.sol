@@ -35,4 +35,17 @@ library Details {
         uint256 targetBaseY;
         uint32 targetReserveWeight;
     }
+
+    struct UniswapSingleTransfer {
+        // The earliest time that the swap can occur
+        uint256 soonest;
+        // Fee configured to pay on swap
+        uint24 fee;
+        // if migration is active and startMigration() has not been triggered
+        bool started;
+        // meToken has executed the swap and can finish migrating
+        bool swapped;
+        // finishMigration() has been called so it's not recallable
+        bool finished;
+    }
 }
