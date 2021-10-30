@@ -1,8 +1,7 @@
-import { network, run, ethers } from "hardhat";
+import { network, run, ethers, getNamedAccounts } from "hardhat";
 import { Hub } from "../artifacts/types/Hub";
 import { VaultRegistry } from "../artifacts/types/VaultRegistry";
 import { SingleAssetVault } from "../artifacts/types/SingleAssetVault";
-import { SingleAssetFactory } from "../artifacts/types/SingleAssetFactory";
 import fs from "fs";
 import { deploy } from "../test/utils/helpers";
 import { MeTokenFactory } from "../artifacts/types/MeTokenFactory";
@@ -12,14 +11,24 @@ import { CurveRegistry } from "../artifacts/types/CurveRegistry";
 import { Foundry } from "../artifacts/types/Foundry";
 import { WeightedAverage } from "../artifacts/types/WeightedAverage";
 import { BigNumber } from "ethers";
+import { MigrationRegistry } from "../artifacts/types/MigrationRegistry";
+import { Fees } from "../artifacts/types/Fees";
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
+const deployDir = "deployment";
 const contracts: any[] = [];
 const REFUND_RATIO = 50000;
 const PRECISION = BigNumber.from(10).pow(18);
 const MAX_WEIGHT = 1000000;
-const deployDir = "deployment";
-
+const RESERVE_WEIGHT = BigNumber.from(MAX_WEIGHT).div(2).toString();
+const baseY = PRECISION.div(1000).toString();
+const MINT_FEE = 0;
+const BURN_BUYER_FEE = 0;
+const BURN_OWNER_FEE = 0;
+const TRANSFER_FEE = 0;
+const INTEREST_FEE = 0;
+const YIELD_FEE = 0;
+let DAI;
 function currencySymbol(chainId: number) {
   switch (chainId.toString()) {
     case "100":
@@ -44,15 +53,17 @@ function currencyAddress(chainId: number) {
   }
 }
 function printLog(msg: string) {
-  if (process.stdout.isTTY) {
+  console.log(msg);
+  /*  if (process.stdout.isTTY) {
     process.stdout.clearLine(-1);
     process.stdout.cursorTo(0);
     process.stdout.write(msg);
-  }
+  } */
 }
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const [deployer, DAO] = await ethers.getSigners();
+  ({ DAI } = await getNamedAccounts());
   const address = await deployer.getAddress();
   if (!deployer.provider) {
     process.exit(1);
@@ -81,67 +92,95 @@ async function main() {
   printLog("Deploying VaultRegistry Contract...");
   const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   contracts.push(vaultRegistry.address);
-  printLog("Deploying SingleAssetVault Contract...");
-  const singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
-  contracts.push(singleAssetVault.address);
+  const migrationRegistry = await deploy<MigrationRegistry>(
+    "MigrationRegistry"
+  );
+  contracts.push(migrationRegistry.address);
   printLog("Deploying Foundry Contract...");
   const foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   });
+
   contracts.push(foundry.address);
-  printLog("Deploying SingleAssetFactory Contract...");
-  const singleAssetFactory = await deploy<SingleAssetFactory>(
-    "SingleAssetFactory",
-    undefined, //no libs
-    singleAssetVault.address, // implementation to clone
-    foundry.address, // foundry
-    vaultRegistry.address // vault registry
-  );
+
   printLog("Deploying Hub Contract...");
   const hub = await deploy<Hub>("Hub");
   contracts.push(hub.address);
+
   printLog("Deploying MeTokenFactory Contract...");
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   contracts.push(meTokenFactory.address);
+
   printLog("Deploying MeTokenRegistry Contract...");
   const meTokenRegistry = await deploy<MeTokenRegistry>(
     "MeTokenRegistry",
     undefined,
     hub.address,
-    meTokenFactory.address
+    meTokenFactory.address,
+    migrationRegistry.address
   );
+
+  printLog("Deploying SingleAssetVault Contract...");
+  const singleAssetVault = await deploy<SingleAssetVault>(
+    "SingleAssetVault",
+    undefined, //no libs
+    DAO.address, // DAO
+    foundry.address, // foundry
+    hub.address, // hub
+    meTokenRegistry.address, //IMeTokenRegistry
+    migrationRegistry.address //IMigrationRegistry
+  );
+  printLog("Deploying fees Contract...");
+  const fees = await deploy<Fees>("Fees");
+  contracts.push(fees.address);
+
   printLog("Registering Bancor Curve to curve registry...");
-  let tx = await curveRegistry.register(bancorZeroCurve.address);
+  let tx = await curveRegistry.approve(bancorZeroCurve.address);
   await tx.wait();
-  printLog("Initializing SingleAssetVault...");
-  tx = await singleAssetVault.initialize(
-    foundry.address,
-    currencyAddress(chainId),
-    ethers.utils.toUtf8Bytes("")
+  printLog("Registering vault to vault registry...");
+  tx = await vaultRegistry.approve(singleAssetVault.address);
+  await tx.wait();
+
+  printLog("Initializing fees...");
+  tx = await fees.initialize(
+    MINT_FEE,
+    BURN_BUYER_FEE,
+    BURN_OWNER_FEE,
+    TRANSFER_FEE,
+    INTEREST_FEE,
+    YIELD_FEE
   );
   await tx.wait();
+
   printLog("Initializing hub Contract...");
-  tx = await vaultRegistry.approve(singleAssetFactory.address);
+
+  tx = await hub.initialize(vaultRegistry.address, curveRegistry.address);
   await tx.wait();
-  tx = await hub.initialize(
-    foundry.address,
-    vaultRegistry.address,
-    curveRegistry.address
-  );
-  await tx.wait();
-  const baseY = PRECISION.div(1000).toString();
-  const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-  const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
+
+  const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
-    [baseY, reserveWeight]
+    [baseY, RESERVE_WEIGHT]
   );
+  const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+    ["address"],
+    [DAI]
+  );
+
+  printLog("Registering hub ...");
   tx = await hub.register(
-    singleAssetFactory.address,
+    DAI,
+    singleAssetVault.address,
     bancorZeroCurve.address,
-    currencyAddress(chainId),
-    REFUND_RATIO,
+    REFUND_RATIO, //refund ratio
     encodedCurveDetails,
-    ethers.utils.toUtf8Bytes("")
+    encodedVaultArgs
+  );
+  await tx.wait();
+  printLog("Initializing foundry Contract...");
+  tx = await foundry.initialize(
+    hub.address,
+    fees.address,
+    meTokenRegistry.address
   );
   await tx.wait();
   const receipt = await deployer.provider.getTransactionReceipt(tx.hash);
@@ -152,21 +191,28 @@ async function main() {
     printLog("Verifying Contracts...\n");
 
     const TASK_VERIFY = "verify";
+
     try {
       await run(TASK_VERIFY, {
-        address: singleAssetFactory.address,
+        address: singleAssetVault.address,
         constructorArgsParams: [
-          hub.address,
-          vaultRegistry.address,
-          singleAssetVault.address,
+          DAO, // DAO
+          foundry.address, // foundry
+          hub.address, // hub
+          meTokenRegistry.address, //IMeTokenRegistry
+          migrationRegistry.address, //IMigrationRegistry
         ],
       });
       await run(TASK_VERIFY, {
         address: meTokenRegistry.address,
-        constructorArgsParams: [hub.address, meTokenFactory.address],
+        constructorArgsParams: [
+          hub.address,
+          meTokenFactory.address,
+          migrationRegistry.address,
+        ],
       });
     } catch (error) {
-      console.error(`Error verifying ${singleAssetFactory.address}: `, error);
+      console.error(`Error verifying ${singleAssetVault.address}: `, error);
     }
 
     for (let i = 0; i < contracts.length; ++i) {
@@ -182,14 +228,15 @@ async function main() {
 
     console.log("\nVerified Contracts.");
   }
-  printLog("Deploying SingleAssetFactory Contract...");
+  printLog("Deployment done !");
 
   const deploymentInfo = {
     network: network.name,
     "Hub Contract Address": hub.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
     "SingleAssetVault Contract Address": singleAssetVault.address,
-    "SingleAsset Factory Contract Address": singleAssetFactory.address,
+    "SingleAsset Vault Contract Address": singleAssetVault.address,
+    "Fee Contract Address": fees.address,
     "Curve Registry Contract Address": curveRegistry.address,
     "Bancor Curve Contract Address": bancorZeroCurve.address,
     "Foundry Contract Address": foundry.address,
