@@ -9,8 +9,6 @@ import "../libs/Details.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
-import "hardhat/console.sol";
-
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson)
 contract BancorZeroCurve is ICurve {
@@ -30,16 +28,16 @@ contract BancorZeroCurve is ICurve {
         override
     {
         // TODO: access control
-        require(_encodedDetails.length > 0, "_encodedDetails empty");
+        require(_encodedDetails.length > 0, "!_encodedDetails");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
             _encodedDetails,
             (uint256, uint32)
         );
-        require(baseY > 0, "baseY not in range");
+        require(baseY > 0, "!baseY");
         require(
             reserveWeight > 0 && reserveWeight <= maxWeight,
-            "reserveWeight not in range"
+            "!reserveWeight"
         );
 
         Details.Bancor storage bancor_ = _bancors[_hubId];
@@ -56,10 +54,10 @@ contract BancorZeroCurve is ICurve {
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
         Details.Bancor storage bancorDetails = _bancors[_hubId];
 
-        require(targetReserveWeight > 0, "reserveWeight not in range");
+        require(targetReserveWeight > 0, "!reserveWeight");
         require(
             targetReserveWeight != bancorDetails.reserveWeight,
-            "targeReserveWeight == reserveWeight"
+            "targetWeight!=Weight"
         );
 
         // targetBaseX = (old baseY * oldR) / newR
@@ -127,12 +125,6 @@ contract BancorZeroCurve is ICurve {
                 _balancePooled
             );
         } else {
-            console.log(
-                "calculateTargetMintReturn _calculateMintReturnFromZero _tokensDeposited:%s bancorDetails.targetReserveWeight:%s targetBaseX:%s",
-                _tokensDeposited,
-                bancorDetails.targetReserveWeight,
-                bancorDetails.targetBaseY
-            );
             meTokensReturned = _calculateMintReturnFromZero(
                 _tokensDeposited,
                 bancorDetails.targetReserveWeight,
@@ -226,29 +218,22 @@ contract BancorZeroCurve is ICurve {
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
-        console.log("### _tokensDeposited:%s  ", _tokensDeposited);
-        console.log(
-            "### reserveWeight:%s maxWeight:%s",
-            _reserveWeight,
-            maxWeight
-        );
-        console.log("### _baseX:%s _baseY:%s", _baseY, _baseX.toUInt());
-
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(
             uint256(maxWeight).fromUInt()
         );
         bytes16 numerator = _tokensDeposited.fromUInt().mul(
             _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
         );
-        console.log("### numerator:%s", numerator.toUInt());
+        //  console.log("### numerator:%s", numerator.toUInt());
+
         // as baseY == 1ether and we want to result to be in ether too we simply remove
-        // the multiplication by baseY
+        // the multiplication by baseX
         bytes16 denominator = reserveWeight.mul(_baseY.fromUInt());
-        console.log("### denominator:%s", denominator.toUInt());
+        //   console.log("### denominator:%s", denominator.toUInt());
         // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
         // (numerator/denominator) ^ (reserveWeight )
-        bytes16 division = numerator.div(denominator);
-        console.log("### division:%s", division.toUInt());
+        // bytes16 division = numerator.div(denominator);
+        //    console.log("### division:%s", division.toUInt());
         bytes16 res = (numerator.div(denominator))
             .ln()
             .mul(reserveWeight)

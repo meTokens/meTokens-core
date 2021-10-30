@@ -34,12 +34,19 @@ abstract contract Vault is Ownable, IVault {
     ) {
         dao = _dao;
         foundry = _foundry;
+
         hub = _hub;
         meTokenRegistry = _meTokenRegistry;
         migrationRegistry = _migrationRegistry;
     }
 
-    function addFee(address _asset, uint256 _amount) public override {
+    function approveAsset(address _asset, uint256 _amount) external override {
+        require(msg.sender == foundry, "!foundry");
+        // increase the allowance to be able to burn tokens and retrieve the collateral
+        IERC20(_asset).approve(foundry, _amount);
+    }
+
+    function addFee(address _asset, uint256 _amount) external override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }

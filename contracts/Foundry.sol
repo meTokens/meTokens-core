@@ -16,11 +16,10 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
-import "hardhat/console.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
     uint256 public constant PRECISION = 10**18;
-
+    uint256 public constant MAX_REFUND_RATIO = 10**6;
     IHub public hub;
     IFees public fees;
     IMeTokenRegistry public meTokenRegistry;
@@ -83,24 +82,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
             vault = IVault(hub_.vault);
             asset = hub_.asset;
         }
-        console.log(
-            "## vault:%s asset:%s hubID:%s",
-            hub_.vault,
-            asset,
-            meToken_.hubId
-        );
-        console.log(
-            "##  msg.sender:%s _tokensDeposited:%s   IERC20(asset).balanceOf(msg.sender):%s",
-            msg.sender,
-            _tokensDeposited,
-            IERC20(asset).balanceOf(msg.sender)
-        );
+
         IERC20(asset).transferFrom(
             msg.sender,
             address(vault),
             _tokensDeposited
         );
-        console.log("##  fee:%s", fee);
+        vault.approveAsset(asset, _tokensDeposited);
+
         vault.addFee(asset, fee);
 
         meTokenRegistry.updateBalancePooled(
@@ -141,11 +130,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // If msg.sender != owner, give msg.sender the burn rate
         if (msg.sender == meToken_.owner) {
             feeRate = fees.burnOwnerFee();
-            console.log(
-                "## meToken owner feeRate:%s meToken_.balanceLocked:%s ",
-                feeRate,
-                meToken_.balanceLocked
-            );
             actualTokensReturned =
                 tokensReturned +
                 (((PRECISION * _meTokensBurned) /
@@ -153,53 +137,37 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 PRECISION;
         } else {
             feeRate = fees.burnBuyerFee();
-            console.log("## meToken BUYER feeRate:%s  ", feeRate);
             if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
                 // Not updating targetRefundRatio or resubscribing
                 actualTokensReturned =
                     (tokensReturned * hub_.refundRatio) /
-                    PRECISION;
+                    MAX_REFUND_RATIO;
             } else {
-                console.log(
-                    "##    hub_.targetRefundRatio:%s  tokensReturned:%s timestamp:%s",
-                    hub_.targetRefundRatio,
-                    tokensReturned,
-                    block.timestamp
-                );
                 if (hub_.targetRefundRatio > 0) {
-                    console.log(
-                        "##    hub_.startTime:%s hub_.endTime:%s WeightedAverage:%s",
-                        hub_.startTime,
-                        hub_.endTime,
-                        WeightedAverage.calculate(
-                            hub_.refundRatio,
-                            hub_.targetRefundRatio,
-                            hub_.startTime,
-                            hub_.endTime
-                        )
-                    );
                     // Hub is updating
                     actualTokensReturned =
-                        tokensReturned *
-                        WeightedAverage.calculate(
-                            hub_.refundRatio,
-                            hub_.targetRefundRatio,
-                            hub_.startTime,
-                            hub_.endTime
-                        );
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                hub_.targetRefundRatio,
+                                hub_.startTime,
+                                hub_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
                 } else {
                     // meToken is resubscribing
                     Details.Hub memory targetHub_ = hub.getDetails(
                         meToken_.targetHubId
                     );
                     actualTokensReturned =
-                        tokensReturned *
-                        WeightedAverage.calculate(
-                            hub_.refundRatio,
-                            targetHub_.refundRatio,
-                            meToken_.startTime,
-                            meToken_.endTime
-                        );
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                targetHub_.refundRatio,
+                                meToken_.startTime,
+                                meToken_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
                 }
             }
         }
@@ -218,11 +186,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 actualTokensReturned - tokensReturned
             );
         } else {
-            console.log(
-                "## Is buyer actualTokensReturned:%s tokensReturned:%s  sss",
-                actualTokensReturned,
-                tokensReturned
-            );
             // Is buyer, add to balance locked using refund ratio
             meTokenRegistry.updateBalanceLocked(
                 true,
@@ -233,7 +196,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         uint256 fee = actualTokensReturned * feeRate;
         actualTokensReturned -= fee;
-
         IERC20(hub_.asset).transferFrom(
             hub_.vault,
             _recipient,
