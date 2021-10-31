@@ -8,7 +8,6 @@ import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
@@ -27,7 +26,6 @@ describe("BancorZeroCurve", () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
@@ -61,15 +59,6 @@ describe("BancorZeroCurve", () => {
     });
 
     hub = await deploy<Hub>("Hub");
-    singleAssetFactory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
-      undefined, //no libs
-      hub.address,
-      singleAssetVault.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
-    );
-
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -78,16 +67,10 @@ describe("BancorZeroCurve", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
-    await curveRegistry.register(bancorZeroCurve.address);
+    await curveRegistry.approve(bancorZeroCurve.address);
+    await vaultRegistry.approve(singleAssetVault.address);
 
-    await vaultRegistry.approve(singleAssetFactory.address);
-
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address,
-      migrationRegistry.address
-    );
+    await hub.initialize(vaultRegistry.address, curveRegistry.address);
     // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
     // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
     // this gives us m = 1/1000
@@ -103,7 +86,8 @@ describe("BancorZeroCurve", () => {
     );
 
     await hub.register(
-      singleAssetFactory.address,
+      dai.address,
+      singleAssetVault.address,
       bancorZeroCurve.address,
       5000, //refund ratio
       encodedCurveDetails,

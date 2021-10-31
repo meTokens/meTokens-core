@@ -8,7 +8,6 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
@@ -28,7 +27,6 @@ describe("MeTokenRegistry.sol", () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
@@ -60,15 +58,6 @@ describe("MeTokenRegistry.sol", () => {
     });
 
     hub = await deploy<Hub>("Hub");
-    singleAssetFactory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
-      undefined, //no libs
-      hub.address,
-      singleAssetVault.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
-    );
-
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -77,16 +66,10 @@ describe("MeTokenRegistry.sol", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
-    await curveRegistry.register(bancorZeroCurve.address);
+    await curveRegistry.approve(bancorZeroCurve.address);
+    await vaultRegistry.approve(singleAssetVault.address);
 
-    await vaultRegistry.approve(singleAssetFactory.address);
-
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address,
-      migrationRegistry.address
-    );
+    await hub.initialize(foundry.address, vaultRegistry.address);
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
@@ -100,7 +83,8 @@ describe("MeTokenRegistry.sol", () => {
     );
 
     await hub.register(
-      singleAssetFactory.address,
+      dai.address,
+      singleAssetVault.address,
       bancorZeroCurve.address,
       50000, //refund ratio
       encodedCurveDetails,

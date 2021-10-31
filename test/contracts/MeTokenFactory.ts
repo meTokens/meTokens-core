@@ -1,14 +1,14 @@
 import { BaseContract, Contract } from "@ethersproject/contracts";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Hub } from "../../../artifacts/types/Hub";
-import { deploy } from "../../utils/helpers";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import { Hub } from "../../artifacts/types/Hub";
+import { deploy } from "../utils/helpers";
+import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
+import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import {
   MeTokenRegistry,
   MeTokenRegistryInterface,
-} from "../../../artifacts/types/MeTokenRegistry";
+} from "../../artifacts/types/MeTokenRegistry";
 
 describe("MeTokenFactory.sol", function () {
   let hub: Hub;
