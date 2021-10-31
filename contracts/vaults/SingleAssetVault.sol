@@ -21,10 +21,16 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
 
     function isValid(address _asset, bytes memory _encodedArgs)
         public
-        view
+        pure
         override
         returns (bool)
-    {}
+    {
+        if (_asset == address(0)) {
+            return false;
+        }
+        // TODO: add logic to check uniswap
+        return true;
+    }
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration

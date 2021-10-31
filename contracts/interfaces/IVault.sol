@@ -2,10 +2,8 @@
 pragma solidity ^0.8.0;
 
 interface IVault {
-    event Withdraw(uint256 amount, address to);
-    event AddFee(uint256 amount);
-    event StartMigration(address migration);
-    event Migrate();
+    event Withdraw(address _asset, uint256 _amount);
+    event AddFee(address _asset, uint256 _amount);
 
     function withdraw(
         address _asset,
@@ -13,11 +11,12 @@ interface IVault {
         uint256 _amount
     ) external;
 
-    function isValid(address _asest, bytes memory _encodedArgs)
+    function isValid(address _asset, bytes memory _encodedArgs)
         external
+        view
         returns (bool);
 
-    function addFee(address _meToken, uint256 _amount) external;
+    function addFee(address _asset, uint256 _amount) external;
 
     function getAccruedFees(address _asset) external view returns (uint256);
 }

@@ -15,7 +15,7 @@ import "hardhat/console.sol";
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-abstract contract Vault is Ownable, IVault {
+contract Vault is Ownable, IVault {
     uint256 public constant PRECISION = 10**18;
     address public dao;
     address public foundry;
@@ -42,6 +42,8 @@ abstract contract Vault is Ownable, IVault {
     function addFee(address _asset, uint256 _amount) public override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
+
+        emit AddFee(_asset, _amount);
     }
 
     function withdraw(
@@ -57,13 +59,17 @@ abstract contract Vault is Ownable, IVault {
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);
+
+        emit Withdraw(_asset, _amount);
     }
 
-    function isValid(address _meToken, bytes memory _encodedArgs)
-        public
+    function isValid(address _asset, bytes memory _encodedArgs)
+        external
+        view
         virtual
         override
-        returns (bool);
+        returns (bool)
+    {}
 
     function getAccruedFees(address _asset)
         external
