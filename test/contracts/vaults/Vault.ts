@@ -1,13 +1,30 @@
-import { ethers } from "hardhat";
+import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { impersonate } from "../../utils/hardhatNode";
+import { ERC20 } from "../../../artifacts/types/ERC20";
+import { deploy, getContractAt } from "../../utils/helpers";
 
 describe("Vault.sol", () => {
-  const amount = 3;
+  let DAI: string;
+  let dai: ERC20;
+  let DAIWhale: string;
+  let daiHolder: Signer;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
   let vault: SingleAssetVault;
+  const amount = 3;
 
   before(async () => {
+    [account0, account1] = await ethers.getSigners();
+    ({ DAI, DAIWhale } = await getNamedAccounts());
     const vaultFactory = await ethers.getContractFactory("SingleAssetVault");
+    dai = await getContractAt<ERC20>("ERC20", DAI);
+    daiHolder = await impersonate(DAIWhale);
+    dai
+      .connect(daiHolder)
+      .transfer(account1.address, ethers.utils.parseEther("1000"));
+
     vault = (await vaultFactory.deploy()) as SingleAssetVault;
     await vault.deployed();
   });
@@ -18,18 +35,18 @@ describe("Vault.sol", () => {
     });
 
     it("Increments accruedFees by amount", async () => {
-      const accruedFeesBefore = await vault.accruedFees();
-      await vault.addFee(amount);
-      const accruedFeesAfter = await vault.accruedFees();
+      const accruedFeesBefore = await vault.accruedFees(DAI);
+      await vault.addFee(DAI, amount);
+      const accruedFeesAfter = await vault.accruedFees(DAI);
       expect(Number(accruedFeesBefore)).to.equal(
         Number(accruedFeesAfter) - amount
       );
     });
 
     it("Emits AddFee(amount)", async () => {
-      expect(await vault.addFee(amount))
+      expect(await vault.addFee(DAI, amount))
         .to.emit(vault, "AddFee")
-        .withArgs(amount);
+        .withArgs(DAI, amount);
     });
   });
 

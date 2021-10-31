@@ -100,7 +100,7 @@ describe("MeTokenRegistry.sol", () => {
 
       const tx = await meTokenRegistry
         .connect(account0)
-        .register(name, "CARL", hubId, 0);
+        .subscribe(name, "CARL", hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account0.address
       );
@@ -119,7 +119,7 @@ describe("MeTokenRegistry.sol", () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
       await expect(
-        meTokenRegistry.connect(account0).register(name, "CARL", hubId, 0)
+        meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
       ).to.be.revertedWith("msg.sender already owns a meToke");
     });
 
@@ -130,7 +130,7 @@ describe("MeTokenRegistry.sol", () => {
       await dai.connect(account1).approve(meTokenRegistry.address, amount);
       await meTokenRegistry
         .connect(account1)
-        .register("Carl1 meToken", "CARL", hubId, amount);
+        .subscribe("Carl1 meToken", "CARL", hubId, amount);
       const balAfter = await dai.balanceOf(account1.address);
       expect(balBefore.sub(balAfter)).equal(amount);
       const hubDetail = await hub.getDetails(hubId);
@@ -152,13 +152,13 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr, account2.address)
+        meTokenRegistry.transferMeTokenOwnership(account2.address)
       ).to.revertedWith("!owner");
       const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
         account0.address
       );
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr2, account1.address)
+        meTokenRegistry.transferOwnership(account1.address)
       ).to.revertedWith("_newOwner already owns a meToken");
     });
     it("Emits TransferOwnership()", async () => {
@@ -168,7 +168,7 @@ describe("MeTokenRegistry.sol", () => {
 
       const tx = meTokenRegistry
         .connect(account1)
-        .transferOwnership(meTokenAddr, account2.address);
+        .transferMeTokenOwnership(account2.address);
 
       await expect(tx)
         .to.emit(meTokenRegistry, "TransferOwnership")
@@ -198,6 +198,7 @@ describe("MeTokenRegistry.sol", () => {
         )
       ).to.revertedWith("!foundry");
     });
+
     it("incrementBalancePooled()", async () => {
       /*  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account2.address
