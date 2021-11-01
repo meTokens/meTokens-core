@@ -64,6 +64,7 @@ function printLog(msg: string) {
 async function main() {
   const [deployer, DAO] = await ethers.getSigners();
   ({ DAI } = await getNamedAccounts());
+
   const address = await deployer.getAddress();
   if (!deployer.provider) {
     process.exit(1);
@@ -74,6 +75,7 @@ async function main() {
     throw new Error("Un-supported network");
 
   console.log("Deploying meTokens on network:", network.name);
+  console.log("DAI  Address:", DAI);
   console.log("Account address:", address);
   console.log(
     "Account balance:",
