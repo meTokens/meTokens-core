@@ -19,7 +19,7 @@ import "./libs/Details.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
     uint256 public constant PRECISION = 10**18;
-
+    uint256 public constant MAX_REFUND_RATIO = 10**6;
     IHub public hub;
     IFees public fees;
     IMeTokenRegistry public meTokenRegistry;
@@ -88,9 +88,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             address(vault),
             _tokensDeposited
         );
+        vault.approveAsset(asset, _tokensDeposited);
+
         vault.addFee(asset, fee);
 
-        meTokenRegistry.incrementBalancePooled(
+        meTokenRegistry.updateBalancePooled(
             true,
             _meToken,
             tokensDepositedAfterFees
@@ -139,31 +141,33 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 // Not updating targetRefundRatio or resubscribing
                 actualTokensReturned =
                     (tokensReturned * hub_.refundRatio) /
-                    PRECISION;
+                    MAX_REFUND_RATIO;
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
                     actualTokensReturned =
-                        tokensReturned *
-                        WeightedAverage.calculate(
-                            hub_.refundRatio,
-                            hub_.targetRefundRatio,
-                            hub_.startTime,
-                            hub_.endTime
-                        );
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                hub_.targetRefundRatio,
+                                hub_.startTime,
+                                hub_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
                 } else {
                     // meToken is resubscribing
                     Details.Hub memory targetHub_ = hub.getDetails(
                         meToken_.targetHubId
                     );
                     actualTokensReturned =
-                        tokensReturned *
-                        WeightedAverage.calculate(
-                            hub_.refundRatio,
-                            targetHub_.refundRatio,
-                            meToken_.startTime,
-                            meToken_.endTime
-                        );
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                targetHub_.refundRatio,
+                                meToken_.startTime,
+                                meToken_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
                 }
             }
         }
@@ -172,18 +176,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
-        meTokenRegistry.incrementBalancePooled(false, _meToken, tokensReturned);
+        meTokenRegistry.updateBalancePooled(false, _meToken, tokensReturned);
 
         if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
-            meTokenRegistry.incrementBalanceLocked(
+            meTokenRegistry.updateBalanceLocked(
                 false,
                 _meToken,
                 actualTokensReturned - tokensReturned
             );
         } else {
             // Is buyer, add to balance locked using refund ratio
-            meTokenRegistry.incrementBalanceLocked(
+            meTokenRegistry.updateBalanceLocked(
                 true,
                 _meToken,
                 tokensReturned - actualTokensReturned
@@ -192,7 +196,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         uint256 fee = actualTokensReturned * feeRate;
         actualTokensReturned -= fee;
-
         IERC20(hub_.asset).transferFrom(
             hub_.vault,
             _recipient,

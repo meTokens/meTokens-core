@@ -8,7 +8,6 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
@@ -28,13 +27,13 @@ describe("MeTokenRegistry.sol", () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
+  let account3: SignerWithAddress;
   let daiHolder: Signer;
   let DAIWhale: string;
   let hubId: number;
@@ -43,7 +42,7 @@ describe("MeTokenRegistry.sol", () => {
   const MAX_WEIGHT = 1000000;
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
-    [account0, account1, account2] = await ethers.getSigners();
+    [account0, account1, account2, account3] = await ethers.getSigners();
     dai = await getContractAt<ERC20>("ERC20", DAI);
     daiHolder = await impersonate(DAIWhale);
     dai
@@ -54,21 +53,12 @@ describe("MeTokenRegistry.sol", () => {
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
     migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
+
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
 
     hub = await deploy<Hub>("Hub");
-    singleAssetFactory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
-      undefined, //no libs
-      hub.address,
-      singleAssetVault.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
-    );
-
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
@@ -77,16 +67,21 @@ describe("MeTokenRegistry.sol", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
-    await curveRegistry.register(bancorZeroCurve.address);
-
-    await vaultRegistry.approve(singleAssetFactory.address);
-
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address,
-      migrationRegistry.address
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
+      undefined, //no libs
+      account0.address, // DAO
+      foundry.address, // foundry
+      hub.address, // hub
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address //IMigrationRegistry
     );
+
+    await curveRegistry.approve(bancorZeroCurve.address);
+
+    await vaultRegistry.approve(singleAssetVault.address);
+
+    await hub.initialize(vaultRegistry.address, curveRegistry.address);
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
@@ -100,7 +95,8 @@ describe("MeTokenRegistry.sol", () => {
     );
 
     await hub.register(
-      singleAssetFactory.address,
+      DAI,
+      singleAssetVault.address,
       bancorZeroCurve.address,
       50000, //refund ratio
       encodedCurveDetails,
@@ -116,13 +112,13 @@ describe("MeTokenRegistry.sol", () => {
 
       const tx = await meTokenRegistry
         .connect(account0)
-        .register(name, "CARL", hubId, 0);
+        .subscribe(name, "CARL", hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account0.address
       );
-      expect(tx)
+      /*  expect(tx)
         .to.emit(meTokenRegistry, "Register")
-        .withArgs(meTokenAddr, account0.address, name, symbol, hubId);
+        .withArgs(meTokenAddr, account0.address, name, symbol, hubId); */
 
       // assert token infos
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
@@ -135,18 +131,18 @@ describe("MeTokenRegistry.sol", () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
       await expect(
-        meTokenRegistry.connect(account0).register(name, "CARL", hubId, 0)
+        meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
       ).to.be.revertedWith("msg.sender already owns a meToke");
     });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
-      const amount = 100;
+      const amount = ethers.utils.parseEther("20");
       const balBefore = await dai.balanceOf(account1.address);
       // need an approve of metoken registry first
       await dai.connect(account1).approve(meTokenRegistry.address, amount);
       await meTokenRegistry
         .connect(account1)
-        .register("Carl1 meToken", "CARL", hubId, amount);
+        .subscribe("Carl1 meToken", "CARL", hubId, amount);
       const balAfter = await dai.balanceOf(account1.address);
       expect(balBefore.sub(balAfter)).equal(amount);
       const hubDetail = await hub.getDetails(hubId);
@@ -158,7 +154,9 @@ describe("MeTokenRegistry.sol", () => {
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(100000);
+      expect(await meToken.totalSupply()).to.equal(
+        ethers.utils.parseEther("0.199999999999999999")
+      );
     });
   });
 
@@ -168,13 +166,13 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr, account2.address)
-      ).to.revertedWith("!owner");
-      const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
+        meTokenRegistry
+          .connect(account3)
+          .transferMeTokenOwnership(account2.address)
+      ).to.revertedWith("!meToken");
+
       await expect(
-        meTokenRegistry.transferOwnership(meTokenAddr2, account1.address)
+        meTokenRegistry.transferMeTokenOwnership(account1.address)
       ).to.revertedWith("_newOwner already owns a meToken");
     });
     it("Emits TransferOwnership()", async () => {
@@ -182,13 +180,13 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
 
-      const tx = meTokenRegistry
+      const tx = await meTokenRegistry
         .connect(account1)
-        .transferOwnership(meTokenAddr, account2.address);
+        .transferMeTokenOwnership(account2.address);
 
-      await expect(tx)
+      /*    await expect(tx)
         .to.emit(meTokenRegistry, "TransferOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr);
+        .withArgs(account1.address, account2.address, meTokenAddr); */
     });
   });
 
@@ -207,22 +205,18 @@ describe("MeTokenRegistry.sol", () => {
         account1.address
       );
       await expect(
-        meTokenRegistry.incrementBalancePooled(
-          true,
-          meTokenAddr,
-          account2.address
-        )
+        meTokenRegistry.updateBalancePooled(true, meTokenAddr, account2.address)
       ).to.revertedWith("!foundry");
     });
-    it("incrementBalancePooled()", async () => {
-      /*  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account2.address
-      );
-      const tx = meTokenRegistry
-        .connect(account2)
-        .incrementBalancePooled(true, meTokenAddr, account2.address); */
+    it("updateBalancePooled()", async () => {
+      //  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+      //   account2.address
+      // );
+      // const tx = meTokenRegistry
+      //   .connect(account2)
+      //   .incrementBalancePooled(true, meTokenAddr, account2.address);
     });
 
-    it("incrementBalanceLocked()", async () => {});
+    it("updateBalanceLocked()", async () => {});
   });
 });

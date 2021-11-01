@@ -34,12 +34,19 @@ abstract contract Vault is Ownable, IVault {
     ) {
         dao = _dao;
         foundry = _foundry;
+
         hub = _hub;
         meTokenRegistry = _meTokenRegistry;
         migrationRegistry = _migrationRegistry;
     }
 
-    function addFee(address _asset, uint256 _amount) public override {
+    function approveAsset(address _asset, uint256 _amount) external override {
+        require(msg.sender == foundry, "!foundry");
+        // increase the allowance to be able to burn tokens and retrieve the collateral
+        IERC20(_asset).approve(foundry, _amount);
+    }
+
+    function addFee(address _asset, uint256 _amount) external override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
     }
@@ -59,12 +66,6 @@ abstract contract Vault is Ownable, IVault {
         IERC20(_asset).transfer(dao, _amount);
     }
 
-    function isValid(address _meToken, bytes memory _encodedArgs)
-        public
-        virtual
-        override
-        returns (bool);
-
     function getAccruedFees(address _asset)
         external
         view
@@ -73,4 +74,10 @@ abstract contract Vault is Ownable, IVault {
     {
         return accruedFees[_asset];
     }
+
+    function isValid(address _meToken, bytes memory _encodedArgs)
+        public
+        virtual
+        override
+        returns (bool);
 }

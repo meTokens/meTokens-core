@@ -13,6 +13,8 @@ interface IVault {
         uint256 _amount
     ) external;
 
+    function approveAsset(address _asset, uint256 _amount) external;
+
     function isValid(address _asest, bytes memory _encodedArgs)
         external
         returns (bool);

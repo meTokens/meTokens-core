@@ -16,7 +16,7 @@ import "./libs/Details.sol";
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens
 contract Hub is Ownable, Initializable {
-    uint256 private immutable _precision = 10**18;
+    uint256 public constant MAX_REFUND_RATIO = 10**6;
     uint256 private _warmup;
     uint256 private _duration;
     uint256 private _cooldown;
@@ -53,10 +53,10 @@ contract Hub is Ownable, Initializable {
 
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
-        require(_refundRatio < _precision, "_refundRatio > _precision");
+        require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        require(_vault.isValid(_asset, _encodedVaultArgs));
+        require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(_count, _encodedCurveDetails);
@@ -81,8 +81,8 @@ contract Hub is Ownable, Initializable {
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         if (_targetRefundRatio != 0) {
             require(
-                _targetRefundRatio < _precision,
-                "_targetRefundRatio >= _precision"
+                _targetRefundRatio < MAX_REFUND_RATIO,
+                "_targetRefundRatio >= MAX"
             );
             require(
                 _targetRefundRatio != hub_.refundRatio,
@@ -90,7 +90,6 @@ contract Hub is Ownable, Initializable {
             );
         }
         bool reconfigure;
-
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
                 reconfigure = true;

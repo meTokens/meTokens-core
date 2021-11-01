@@ -9,7 +9,7 @@ module.exports = {
     "function-max-lines": ["error", 100],
     "max-line-length": ["error", 140],
     "max-states-count": ["error", 20],
-    "no-empty-blocks": "error",
+    "no-empty-blocks": "off",
     "no-unused-vars": "error",
     "payable-fallback": "off",
     "reason-string": ["off", { maxLength: 32 }],
