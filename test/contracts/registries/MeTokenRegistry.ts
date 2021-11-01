@@ -52,11 +52,10 @@ describe("MeTokenRegistry.sol", () => {
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
     migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
+
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-
     hub = await deploy<Hub>("Hub");
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
@@ -66,10 +65,20 @@ describe("MeTokenRegistry.sol", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
+      undefined,
+      account0.address,
+      foundry.address,
+      hub.address,
+      meTokenRegistry.address,
+      migrationRegistry.address
+    );
+
+    await hub.initialize(vaultRegistry.address, curveRegistry.address);
     await curveRegistry.approve(bancorZeroCurve.address);
     await vaultRegistry.approve(singleAssetVault.address);
 
-    await hub.initialize(foundry.address, vaultRegistry.address);
     const baseY = PRECISION.div(1000).toString();
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
@@ -120,7 +129,7 @@ describe("MeTokenRegistry.sol", () => {
       const symbol = "CARL";
       await expect(
         meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
-      ).to.be.revertedWith("msg.sender already owns a meToke");
+      ).to.be.revertedWith("msg.sender already owns a meToken");
     });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
@@ -146,58 +155,57 @@ describe("MeTokenRegistry.sol", () => {
     });
   });
 
-  describe("transferOwnership()", () => {
-    it("Fails if not owner", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
-      await expect(
-        meTokenRegistry.transferMeTokenOwnership(account2.address)
-      ).to.revertedWith("!owner");
-      const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
-      await expect(
-        meTokenRegistry.transferOwnership(account1.address)
-      ).to.revertedWith("_newOwner already owns a meToken");
-    });
-    it("Emits TransferOwnership()", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
-
-      const tx = meTokenRegistry
-        .connect(account1)
-        .transferMeTokenOwnership(account2.address);
-
-      await expect(tx)
-        .to.emit(meTokenRegistry, "TransferOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr);
-    });
+  describe("transferMeTokenOwnership()", () => {
+    // it("Fails if not owner", async () => {
+    //   const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+    //     account1.address
+    //   );
+    //   await expect(
+    //     meTokenRegistry.transferMeTokenOwnership(account2.address)
+    //   ).to.be.revertedWith("!owner");
+    //   const meTokenAddr2 = await meTokenRegistry.getOwnerMeToken(
+    //     account0.address
+    //   );
+    //   await expect(
+    //     meTokenRegistry.transferOwnership(account1.address)
+    //   ).to.be.revertedWith("_newOwner already owns a meToken");
+    // });
+    // it("Emits TransferOwnership()", async () => {
+    //   const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+    //     account1.address
+    //   );
+    //   const tx = meTokenRegistry
+    //     .connect(account1)
+    //     .transferMeTokenOwnership(account2.address);
+    //   await expect(tx)
+    //     .to.emit(meTokenRegistry, "TransferOwnership")
+    //     .withArgs(account1.address, account2.address, meTokenAddr);
+    // });
   });
 
   describe("isOwner()", () => {
-    it("Returns false for address(0)", async () => {
-      expect(await meTokenRegistry.isOwner(ethers.constants.AddressZero)).to.be
-        .false;
-    });
-    it("Returns true for a meToken issuer", async () => {
-      expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
-    });
+    // it("Returns false for address(0)", async () => {
+    //   expect(await meTokenRegistry.isOwner(ethers.constants.AddressZero)).to.be
+    //     .false;
+    // });
+    // it("Returns true for a meToken issuer", async () => {
+    //   expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
+    // });
   });
+
   describe("balancePool", () => {
-    it("Fails if not foundry", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
-      await expect(
-        meTokenRegistry.incrementBalancePooled(
-          true,
-          meTokenAddr,
-          account2.address
-        )
-      ).to.revertedWith("!foundry");
-    });
+    // it("Fails if not foundry", async () => {
+    //   const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+    //     account1.address
+    //   );
+    //   await expect(
+    //     meTokenRegistry.incrementBalancePooled(
+    //       true,
+    //       meTokenAddr,
+    //       account2.address
+    //     )
+    //   ).to.be.revertedWith("!foundry");
+    // });
 
     it("incrementBalancePooled()", async () => {
       /*  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(

@@ -53,11 +53,9 @@ describe("BancorZeroCurve", () => {
     curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
     vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
     migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-
     hub = await deploy<Hub>("Hub");
     meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     meTokenRegistry = await deploy<MeTokenRegistry>(
@@ -67,6 +65,16 @@ describe("BancorZeroCurve", () => {
       meTokenFactory.address,
       migrationRegistry.address
     );
+    singleAssetVault = await deploy<SingleAssetVault>(
+      "SingleAssetVault",
+      undefined,
+      account0.address,
+      foundry.address,
+      hub.address,
+      meTokenRegistry.address,
+      migrationRegistry.address
+    );
+
     await curveRegistry.approve(bancorZeroCurve.address);
     await vaultRegistry.approve(singleAssetVault.address);
 

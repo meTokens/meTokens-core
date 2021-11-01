@@ -43,30 +43,30 @@ contract Hub is Ownable, Initializable {
 
     function register(
         address _asset,
-        IVault _vault,
-        ICurve _curve,
+        address _vault,
+        address _curve,
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
 
-        require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
-        require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
+        require(curveRegistry.isApproved(_curve), "_curve !approved");
+        require(vaultRegistry.isApproved(_vault), "_vault !approved");
         require(_refundRatio < _precision, "_refundRatio > _precision");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        require(_vault.isValid(_asset, _encodedVaultArgs));
+        require(IVault(_vault).isValid(_asset, _encodedVaultArgs));
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(_count, _encodedCurveDetails);
+        ICurve(_curve).register(_count, _encodedCurveDetails);
 
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count++];
         hub_.active = true;
         hub_.asset = _asset;
-        hub_.vault = address(_vault);
-        hub_.curve = address(_curve);
+        hub_.vault = _vault;
+        hub_.curve = _curve;
         hub_.refundRatio = _refundRatio;
     }
 

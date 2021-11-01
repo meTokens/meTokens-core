@@ -20,7 +20,7 @@ import "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is Roles, Ownable {
+contract MeTokenRegistry is Roles, Ownable, IMeTokenRegistry {
     uint256 public constant PRECISION = 10**18;
     uint256 private _warmup;
     uint256 private _duration;
@@ -48,7 +48,7 @@ contract MeTokenRegistry is Roles, Ownable {
         string calldata _symbol,
         uint256 _hubId,
         uint256 _assetsDeposited
-    ) external {
+    ) external override {
         // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         Details.Hub memory hub_ = hub.getDetails(_hubId);
@@ -97,7 +97,7 @@ contract MeTokenRegistry is Roles, Ownable {
         uint256 _targetHubId,
         address _migration,
         bytes memory _encodedMigrationArgs
-    ) external {
+    ) external override {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
@@ -146,6 +146,7 @@ contract MeTokenRegistry is Roles, Ownable {
 
     function finishResubscribe(address _meToken)
         external
+        override
         returns (Details.MeToken memory)
     {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
@@ -170,7 +171,10 @@ contract MeTokenRegistry is Roles, Ownable {
         return meToken_;
     }
 
-    function updateBalances(address _meToken, uint256 _newBalance) external {
+    function updateBalances(address _meToken, uint256 _newBalance)
+        external
+        override
+    {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         require(msg.sender == meToken_.migration, "!migration");
 
@@ -185,7 +189,7 @@ contract MeTokenRegistry is Roles, Ownable {
             PRECISION;
     }
 
-    function transferMeTokenOwnership(address _newOwner) external {
+    function transferMeTokenOwnership(address _newOwner) external override {
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
         address meToken = _owners[msg.sender];
         Details.MeToken storage meToken_ = _meTokens[meToken];
@@ -195,14 +199,14 @@ contract MeTokenRegistry is Roles, Ownable {
         _owners[msg.sender] = address(0);
         _owners[_newOwner] = meToken;
 
-        // emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
     }
 
     function incrementBalancePooled(
         bool add,
         address _meToken,
         uint256 _amount
-    ) external {
+    ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
@@ -218,7 +222,7 @@ contract MeTokenRegistry is Roles, Ownable {
         bool add,
         address _meToken,
         uint256 _amount
-    ) external {
+    ) external override {
         require(hasRole(FOUNDRY, msg.sender), "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
@@ -247,13 +251,19 @@ contract MeTokenRegistry is Roles, Ownable {
         _cooldown = cooldown_;
     }
 
-    function getOwnerMeToken(address _owner) external view returns (address) {
+    function getOwnerMeToken(address _owner)
+        external
+        view
+        override
+        returns (address)
+    {
         return _owners[_owner];
     }
 
     function getDetails(address _meToken)
         external
         view
+        override
         returns (Details.MeToken memory meToken_)
     {
         meToken_ = _meTokens[_meToken];
@@ -271,7 +281,7 @@ contract MeTokenRegistry is Roles, Ownable {
         return _cooldown;
     }
 
-    function isOwner(address _owner) public view returns (bool) {
+    function isOwner(address _owner) public view override returns (bool) {
         return _owners[_owner] != address(0);
     }
 }

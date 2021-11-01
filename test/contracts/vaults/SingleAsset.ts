@@ -13,28 +13,23 @@ describe("SingleAsset.sol", () => {
   let factory: SingleAssetFactory;
   let hub: Hub;
   before(async () => {
-    hub = await deploy<Hub>("Hub");
-    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-    implementation = await deploy<SingleAssetVault>("SingleAssetVault");
-
-    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    const foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
-
-    factory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
-      undefined, //no libs
-      hub.address,
-      implementation.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
-    );
+    // hub = await deploy<Hub>("Hub");
+    // vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+    // implementation = await deploy<SingleAssetVault>("SingleAssetVault");
+    // const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    // const foundry = await deploy<Foundry>("Foundry", {
+    //   WeightedAverage: weightedAverage.address,
+    // });
   });
 
-  describe("", () => {
-    it("Should do something", async () => {
+  describe("isValid()", () => {
+    it("Returns true with valid args", async () => {
+      // Do something
+    });
+    it("Returns false with invalid args", async () => {
       // Do something
     });
   });
+
+  describe("startMigration()", () => {});
 });

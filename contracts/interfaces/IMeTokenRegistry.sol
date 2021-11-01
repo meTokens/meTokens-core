@@ -20,7 +20,8 @@ interface IMeTokenRegistry {
     function initResubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migration
+        address _migration,
+        bytes memory _encodedMigrationArgs
     ) external;
 
     function finishResubscribe(address _meToken)
