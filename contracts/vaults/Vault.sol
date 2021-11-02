@@ -49,6 +49,7 @@ abstract contract Vault is Ownable, IVault {
     function addFee(address _asset, uint256 _amount) external override {
         require(msg.sender == foundry, "!foundry");
         accruedFees[_asset] += _amount;
+        emit AddFee(_asset, _amount);
     }
 
     function withdraw(
@@ -64,6 +65,7 @@ abstract contract Vault is Ownable, IVault {
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);
+        emit Withdraw(_asset, _amount);
     }
 
     function getAccruedFees(address _asset)

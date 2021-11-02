@@ -33,6 +33,7 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         ) {
             IERC20(hub_.asset).transfer(meToken_.migration, balance);
         }
+        emit StartMigration(_meToken);
     }
 
     // solhint-disable-next-line
@@ -42,6 +43,9 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         override
         returns (bool)
     {
+        if (_asset == address(0)) {
+            return false;
+        }
         return true;
     }
 }
