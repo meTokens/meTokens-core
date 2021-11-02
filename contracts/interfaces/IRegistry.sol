@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IRegistry {
     event Approve(address _addr);
-    event UnApprove(address _addr);
+    event Unapprove(address _addr);
 
     function approve(address _addr) external;
 

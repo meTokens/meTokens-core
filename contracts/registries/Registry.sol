@@ -23,7 +23,7 @@ contract Registry is IRegistry, Ownable {
     function unapprove(address _addr) external override onlyOwner {
         require(_approved[_addr], "_addr !approved");
         _approved[_addr] = false;
-        emit UnApprove(_addr);
+        emit Unapprove(_addr);
     }
 
     /// @inheritdoc IRegistry
