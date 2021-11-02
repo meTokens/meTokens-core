@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IVault {
-    event Withdraw(address _asset, address _to);
+    event Withdraw(address _asset, uint256 _amount);
     event AddFee(address _asset, uint256 _amount);
 
     function withdraw(
