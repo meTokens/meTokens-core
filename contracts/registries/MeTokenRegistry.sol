@@ -113,6 +113,7 @@ contract MeTokenRegistry is Roles, Ownable {
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
 
+        // TODO: check about no balancePooled / balanceLocked
         // Ensure the migration we're using is approved
         if (hub_.asset != targetHub_.asset || _migration != address(0)) {
             require(

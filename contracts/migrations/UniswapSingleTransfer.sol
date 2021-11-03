@@ -43,11 +43,14 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
         override
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
-        uint256 soonest = abi.decode(_encodedArgs, (uint256));
+        (uint256 soonest, uint24 fee) = abi.decode(
+            _encodedArgs,
+            (uint256, uint24)
+        );
         Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
 
         ust_.soonest = soonest;
-        ust_.started = true;
+        ust_.fee = fee;
     }
 
     function poke(address _meToken) external override {
@@ -109,14 +112,20 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
         returns (bool)
     {
         require(_encodedArgs.length > 0, "_encodedArgs empty");
-        (uint256 soon, uint24 fee) = abi.decode(
+        (uint256 soonest, uint24 fee) = abi.decode(
             _encodedArgs,
             (uint256, uint24)
         );
-        require(soon >= block.timestamp, "Too soon");
+        if (soonest < block.timestamp) {
+            return false;
+        }
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
-        require(fee == MINFEE || fee == MIDFEE || fee == MAXFEE, "Invalid fee");
+        if (meToken_.hubId == 0) {
+            return false;
+        }
+        if (fee != MINFEE && fee != MIDFEE && fee != MAXFEE) {
+            return false;
+        }
         return true;
     }
 
