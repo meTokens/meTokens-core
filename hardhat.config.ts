@@ -91,8 +91,11 @@ const config: HardhatUserConfig = {
       4: "0xc7ad46e0b8a400bb3c915120d284aafba8fc4735", // but for rinkeby it will be a specific address
       goerli: "0x84b9514E013710b9dD0811c9Fe46b837a4A0d8E0", //it can also specify a specific netwotk name (specified in hardhat.config.js)
     },
-
+    WETH: {
+      default: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    },
     DAIWhale: "0x0000006daea1723962647b7e189d311d757Fb793",
+    WETHWhale: "0x32fe8EA5D0B3c919F2AF1b5A932495c74680Ba06",
     USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   },
