@@ -38,7 +38,7 @@ describe("BancorZeroCurve", () => {
   const one = ethers.utils.parseEther("1");
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
-  let hubId = 0;
+  let hubId = 1;
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
     [account0, account1, account2] = await ethers.getSigners();

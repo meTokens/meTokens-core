@@ -36,10 +36,11 @@ describe("MeTokenRegistry.sol", () => {
   let account3: SignerWithAddress;
   let daiHolder: Signer;
   let DAIWhale: string;
-  let hubId: number;
-
+  const hubId = 1;
   const PRECISION = BigNumber.from(10).pow(18);
   const MAX_WEIGHT = 1000000;
+  const baseY = PRECISION.div(1000).toString();
+  const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
     [account0, account1, account2, account3] = await ethers.getSigners();
@@ -82,8 +83,6 @@ describe("MeTokenRegistry.sol", () => {
     await vaultRegistry.approve(singleAssetVault.address);
 
     await hub.initialize(vaultRegistry.address, curveRegistry.address);
-    const baseY = PRECISION.div(1000).toString();
-    const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
@@ -102,7 +101,6 @@ describe("MeTokenRegistry.sol", () => {
       encodedCurveDetails,
       encodedVaultArgs
     );
-    hubId = 0;
   });
 
   describe("register()", () => {
@@ -132,7 +130,7 @@ describe("MeTokenRegistry.sol", () => {
       const symbol = "CARL";
       await expect(
         meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
-      ).to.be.revertedWith("msg.sender already owns a meToke");
+      ).to.be.revertedWith("msg.sender already owns a meToken");
     });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
