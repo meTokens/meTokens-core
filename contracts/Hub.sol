@@ -59,10 +59,10 @@ contract Hub is Ownable, Initializable {
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(_count, _encodedCurveDetails);
+        _curve.register(++_count, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = _hubs[_count++];
+        Details.Hub storage hub_ = _hubs[_count];
         hub_.active = true;
         hub_.asset = _asset;
         hub_.vault = address(_vault);

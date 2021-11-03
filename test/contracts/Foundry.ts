@@ -39,13 +39,17 @@ describe("Foundry.sol", () => {
   let account2: SignerWithAddress;
   let daiHolder: Signer;
   let DAIWhale: string;
-  let hubId: number;
+  const hubId = 1;
   const name = "Carl0 meToken";
   const symbol = "CARL";
   const PRECISION = BigNumber.from(10).pow(6);
   const MAX_WEIGHT = 1000000;
   const amount = ethers.utils.parseEther("100");
   const initRefundRatio = 500000;
+  // for 1 DAI we get 1000 metokens
+  const baseY = ethers.utils.parseEther("1").mul(1000).toString();
+  // weight at 50% linear curve
+  const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
     [account0, account1, account2] = await ethers.getSigners();
@@ -96,10 +100,6 @@ describe("Foundry.sol", () => {
 
     await fees.initialize(0, 0, 0, 0, 0, 0);
     await hub.initialize(vaultRegistry.address, curveRegistry.address);
-    // for 1 DAI we get 1000 metokens
-    const baseY = ethers.utils.parseEther("1").div(1000).toString();
-    // weight at 50% linear curve
-    const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
@@ -121,7 +121,6 @@ describe("Foundry.sol", () => {
       encodedCurveDetails,
       encodedVaultArgs
     );
-    hubId = 0;
     await foundry.initialize(
       hub.address,
       fees.address,
