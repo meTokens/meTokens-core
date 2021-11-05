@@ -64,6 +64,7 @@ describe("MeTokenRegistry.sol", () => {
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
+      foundry.address,
       hub.address,
       meTokenFactory.address,
       migrationRegistry.address
@@ -77,12 +78,13 @@ describe("MeTokenRegistry.sol", () => {
       meTokenRegistry.address, //IMeTokenRegistry
       migrationRegistry.address //IMigrationRegistry
     );
-
     await curveRegistry.approve(bancorZeroCurve.address);
-
     await vaultRegistry.approve(singleAssetVault.address);
-
-    await hub.initialize(vaultRegistry.address, curveRegistry.address);
+    await hub.initialize(
+      foundry.address,
+      vaultRegistry.address,
+      curveRegistry.address
+    );
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],

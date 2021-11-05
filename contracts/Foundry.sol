@@ -100,6 +100,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         // Mint meToken to user
         IERC20(_meToken).mint(_recipient, meTokensMinted);
+        emit Mint(
+            _meToken,
+            asset,
+            msg.sender,
+            _recipient,
+            _tokensDeposited,
+            meTokensMinted
+        );
     }
 
     /// @inheritdoc IFoundry
@@ -202,6 +210,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
             actualTokensReturned
         );
         IVault(hub_.vault).addFee(hub_.asset, fee);
+
+        emit Burn(
+            _meToken,
+            hub_.asset,
+            msg.sender,
+            _recipient,
+            _meTokensBurned,
+            actualTokensReturned
+        );
+    }
+
+    function approveVaultToSpendAsset(address _vault, address _asset)
+        external
+        override
+    {
+        IERC20(_asset).approve(_vault, type(uint256).max);
     }
 
     // NOTE: for now this does not include fees

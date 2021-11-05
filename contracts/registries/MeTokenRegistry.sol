@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../MeToken.sol";
-import "../Roles.sol";
 
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
@@ -20,12 +19,13 @@ import "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is Roles, Ownable {
+contract MeTokenRegistry is Ownable {
     uint256 public constant PRECISION = 10**18;
     uint256 private _warmup;
     uint256 private _duration;
     uint256 private _cooldown;
 
+    address public foundry;
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
     IMigrationRegistry public migrationRegistry;
@@ -34,10 +34,12 @@ contract MeTokenRegistry is Roles, Ownable {
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
 
     constructor(
+        address _foundry,
         IHub _hub,
         IMeTokenFactory _meTokenFactory,
         IMigrationRegistry _migrationRegistry
     ) {
+        foundry = _foundry;
         hub = _hub;
         meTokenFactory = _meTokenFactory;
         migrationRegistry = _migrationRegistry;
@@ -203,7 +205,7 @@ contract MeTokenRegistry is Roles, Ownable {
         address _meToken,
         uint256 _amount
     ) external {
-        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        require(msg.sender == foundry, "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
             meToken_.balancePooled += _amount;
@@ -219,7 +221,7 @@ contract MeTokenRegistry is Roles, Ownable {
         address _meToken,
         uint256 _amount
     ) external {
-        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        require(msg.sender == foundry, "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
 
         if (add) {

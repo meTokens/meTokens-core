@@ -82,27 +82,33 @@ async function main() {
     ethers.utils.formatEther(await deployer.provider.getBalance(address)),
     currencySymbol(chainId)
   );
+
   printLog("Deploying weightedAverage Contract...");
   const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
   contracts.push(weightedAverage.address);
+
   printLog("Deploying BancorZeroCurve Contract...");
   const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
   contracts.push(bancorZeroCurve.address);
+
   printLog("Deploying CurveRegistry Contract...");
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   contracts.push(curveRegistry.address);
+
   printLog("Deploying VaultRegistry Contract...");
   const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   contracts.push(vaultRegistry.address);
+
+  printLog("Deploing MigrationRegistry Contract...");
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"
   );
   contracts.push(migrationRegistry.address);
+
   printLog("Deploying Foundry Contract...");
   const foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   });
-
   contracts.push(foundry.address);
 
   printLog("Deploying Hub Contract...");
@@ -117,6 +123,7 @@ async function main() {
   const meTokenRegistry = await deploy<MeTokenRegistry>(
     "MeTokenRegistry",
     undefined,
+    foundry.address,
     hub.address,
     meTokenFactory.address,
     migrationRegistry.address
@@ -132,6 +139,7 @@ async function main() {
     meTokenRegistry.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
   );
+
   printLog("Deploying fees Contract...");
   const fees = await deploy<Fees>("Fees");
   contracts.push(fees.address);
@@ -155,8 +163,11 @@ async function main() {
   await tx.wait();
 
   printLog("Initializing hub Contract...");
-
-  tx = await hub.initialize(vaultRegistry.address, curveRegistry.address);
+  tx = await hub.initialize(
+    foundry.address,
+    vaultRegistry.address,
+    curveRegistry.address
+  );
   await tx.wait();
 
   const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
@@ -178,6 +189,7 @@ async function main() {
     encodedVaultArgs
   );
   await tx.wait();
+
   printLog("Initializing foundry Contract...");
   tx = await foundry.initialize(
     hub.address,
@@ -208,6 +220,7 @@ async function main() {
       await run(TASK_VERIFY, {
         address: meTokenRegistry.address,
         constructorArgsParams: [
+          foundry.address,
           hub.address,
           meTokenFactory.address,
           migrationRegistry.address,

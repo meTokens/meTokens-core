@@ -61,6 +61,7 @@ describe("BancorZeroCurve", () => {
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
+      foundry.address,
       hub.address,
       meTokenFactory.address,
       migrationRegistry.address
@@ -77,10 +78,13 @@ describe("BancorZeroCurve", () => {
     );
 
     await curveRegistry.approve(bancorZeroCurve.address);
-
     await vaultRegistry.approve(singleAssetVault.address);
 
-    await hub.initialize(vaultRegistry.address, curveRegistry.address);
+    await hub.initialize(
+      foundry.address,
+      vaultRegistry.address,
+      curveRegistry.address
+    );
     // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
     // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
     // this gives us m = 1/1000

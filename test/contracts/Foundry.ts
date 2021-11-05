@@ -79,6 +79,7 @@ describe("Foundry.sol", () => {
     meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
+      foundry.address,
       hub.address,
       meTokenFactory.address,
       migrationRegistry.address
@@ -94,12 +95,15 @@ describe("Foundry.sol", () => {
     );
 
     await curveRegistry.approve(bancorZeroCurve.address);
-
     await vaultRegistry.approve(singleAssetVault.address);
     fees = await deploy<Fees>("Fees");
 
     await fees.initialize(0, 0, 0, 0, 0, 0);
-    await hub.initialize(vaultRegistry.address, curveRegistry.address);
+    await hub.initialize(
+      foundry.address,
+      vaultRegistry.address,
+      curveRegistry.address
+    );
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
@@ -133,10 +137,7 @@ describe("Foundry.sol", () => {
       .subscribe(name, symbol, hubId, 0);
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
 
-    // assert token infos
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-    const FOUNDRY = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("FOUNDRY"));
-    await meTokenRegistry.grantRole(FOUNDRY, foundry.address);
   });
   it("mint() from owner should work", async () => {});
   it("mint() from owner with a small amount should work", async () => {});

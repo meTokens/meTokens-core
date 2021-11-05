@@ -8,6 +8,7 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IRegistry.sol";
 import "./interfaces/ICurve.sol";
+import "./interfaces/IFoundry.sol";
 
 import "./libs/Details.sol";
 
@@ -22,21 +23,24 @@ contract Hub is Ownable, Initializable {
     uint256 private _cooldown;
 
     uint256 private _count;
+    IFoundry public foundry;
     IRegistry public vaultRegistry;
     IRegistry public curveRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
+    mapping(address => mapping(address => bool)) private _vaultAllowances;
 
     modifier exists(uint256 id) {
         require(id <= _count, "id exceeds _count");
         _;
     }
 
-    function initialize(address _vaultRegistry, address _curveRegistry)
-        external
-        onlyOwner
-        initializer
-    {
+    function initialize(
+        address _foundry,
+        address _vaultRegistry,
+        address _curveRegistry
+    ) external onlyOwner initializer {
+        foundry = IFoundry(_foundry);
         vaultRegistry = IRegistry(_vaultRegistry);
         curveRegistry = IRegistry(_curveRegistry);
     }
@@ -60,6 +64,12 @@ contract Hub is Ownable, Initializable {
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(++_count, _encodedCurveDetails);
+
+        if (!_vaultAllowances[address(_vault)][_asset]) {
+            // Approve foundry to spend asset from vault
+            foundry.approveVaultToSpendAsset(address(_vault), _asset);
+            _vaultAllowances[address(_vault)][_asset] = true;
+        }
 
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count];

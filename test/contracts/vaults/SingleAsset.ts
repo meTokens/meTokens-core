@@ -36,6 +36,7 @@ describe("SingleAsset.sol", () => {
     const meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
+      foundry.address,
       hub.address,
       meTokenFactory.address,
       migrationRegistry.address
