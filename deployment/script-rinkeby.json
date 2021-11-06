@@ -1,15 +1,15 @@
 {
   "network": "rinkeby",
-  "Hub Contract Address": "0x7b10c1aEA71e60755584979F371410CDe4cAB543",
+  "Hub Contract Address": "0x05D6C7B5460eF728a068A4a8fE2A921df2c52CF6",
   "VaultRegistry Contract Address": "0xCA82C0B535aaD7b26FE6feFE0B3D243ACf180D93",
   "SingleAssetVault Contract Address": "0x1a96C7bB64070f6129a64F981CFCb544D78e7842",
   "SingleAsset Vault Contract Address": "0x1a96C7bB64070f6129a64F981CFCb544D78e7842",
   "Fee Contract Address": "0x889356A0325cF68Ea7aAE3554baa003E0297f963",
   "Curve Registry Contract Address": "0xB8b36dcF76bE040dB276f5353e7cb23C51798811",
   "Bancor Curve Contract Address": "0x6551A593a18586baeF221355886697cb39410587",
-  "Foundry Contract Address": "0xA5054E8aDf090cBFDB8E07b3686E05fb2715b98d",
+  "Foundry Contract Address": "0x14435948a3f606baeF7e3893f59c10a3A67d9D97",
   "MeToken Factory Contract Address": "0xf4a2AacCB5C9dCa49E6F65d497dED9616d127B92",
-  "MeToken Registry Contract Address": "0xc131B48c99021E9a854c3Db3E2577918f74ac0D5",
+  "MeToken Registry Contract Address": "0x745E3643C8B9f68184825e60bC4a0B8498cCEe87",
   "WeightedAverage Contract Address": "0x13e7bF4A65822fC846b07fbad3e806eD1D094b59",
   "Block Number": "9556651"
 }
