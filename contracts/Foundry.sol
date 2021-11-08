@@ -129,85 +129,54 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         // Calculate how many tokens tokens are returned
-        uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
-
-        uint256 feeRate;
-        uint256 actualTokensReturned;
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
-        //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == meToken_.owner) {
-            feeRate = fees.burnOwnerFee();
-            actualTokensReturned =
-                tokensReturned +
-                (((PRECISION * _meTokensBurned) /
-                    IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
-                PRECISION;
-        } else {
-            feeRate = fees.burnBuyerFee();
-            if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
-                // Not updating targetRefundRatio or resubscribing
-                actualTokensReturned =
-                    (tokensReturned * hub_.refundRatio) /
-                    MAX_REFUND_RATIO;
-            } else {
-                if (hub_.targetRefundRatio > 0) {
-                    // Hub is updating
-                    actualTokensReturned =
-                        (tokensReturned *
-                            WeightedAverage.calculate(
-                                hub_.refundRatio,
-                                hub_.targetRefundRatio,
-                                hub_.startTime,
-                                hub_.endTime
-                            )) /
-                        MAX_REFUND_RATIO;
-                } else {
-                    // meToken is resubscribing
-                    Details.Hub memory targetHub_ = hub.getDetails(
-                        meToken_.targetHubId
-                    );
-                    actualTokensReturned =
-                        (tokensReturned *
-                            WeightedAverage.calculate(
-                                hub_.refundRatio,
-                                targetHub_.refundRatio,
-                                meToken_.startTime,
-                                meToken_.endTime
-                            )) /
-                        MAX_REFUND_RATIO;
-                }
-            }
-        }
+        // NOTE: very inefficient
+        uint256 rawTokensReturned = calculateRawBurnReturn(
+            _meToken,
+            _meTokensBurned
+        );
+        // NOTE: actualTokensReturned does not account for fees
+        uint256 actualTokensReturned = calculateBurnReturn(
+            msg.sender,
+            _meToken,
+            _meTokensBurned
+        );
 
         // Burn metoken from user
         IERC20(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
-        meTokenRegistry.updateBalancePooled(false, _meToken, tokensReturned);
+        meTokenRegistry.updateBalancePooled(false, _meToken, rawTokensReturned);
 
+        uint256 fee;
+        if (msg.sender == meToken_.owner) {
+            fee = actualTokensReturned * fees.burnOwnerFee();
+        } else {
+            fee = actualTokensReturned * fees.burnBuyerFee();
+        }
+
+        // NOTE: if actualTokensReturned == rawTokensReturned, that means owner
+        //  has burned before any buyers have burned, in which case balanceLocked = 0
+        // if (actualTokensReturned > rawTokensReturned) {
         if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
             meTokenRegistry.updateBalanceLocked(
                 false,
                 _meToken,
-                actualTokensReturned - tokensReturned
+                actualTokensReturned - rawTokensReturned
             );
         } else {
             // Is buyer, add to balance locked using refund ratio
             meTokenRegistry.updateBalanceLocked(
                 true,
                 _meToken,
-                tokensReturned - actualTokensReturned
+                rawTokensReturned - actualTokensReturned - fee
             );
         }
 
-        uint256 fee = actualTokensReturned * feeRate;
-        actualTokensReturned -= fee;
         IERC20(hub_.asset).transferFrom(
             hub_.vault,
             _recipient,
-            actualTokensReturned
+            actualTokensReturned - fee
         );
         IVault(hub_.vault).addFee(hub_.asset, fee);
 
@@ -296,18 +265,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
     }
 
-    function calculateBurnReturn(address _meToken, uint256 _meTokensBurned)
+    function calculateRawBurnReturn(address _meToken, uint256 _meTokensBurned)
         public
         view
         returns (uint256 tokensReturned)
     {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        // gas savings
+
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
 
         // Calculate return assuming update is not happening
-        tokensReturned = ICurve(hub_.curve).calculateBurnReturn(
+        uint256 tokensReturned = ICurve(hub_.curve).calculateBurnReturn(
             _meTokensBurned,
             meToken_.hubId,
             totalSupply_,
@@ -345,6 +314,67 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.startTime,
                 hub_.endTime
             );
+        }
+    }
+
+    function calculateBurnReturn(
+        address _sender,
+        address _meToken,
+        uint256 _meTokensBurned
+    ) public view returns (uint256 actualTokensReturned) {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+
+        uint256 tokensReturned = calculateRawBurnReturn(
+            _meToken,
+            _meTokensBurned
+        );
+
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        //      aka. meTokensBurned / supply * balanceLocked
+        // If msg.sender != owner, give msg.sender the burn rate
+        if (_sender == meToken_.owner) {
+            actualTokensReturned =
+                tokensReturned +
+                (PRECISION * _meTokensBurned * meToken_.balanceLocked) /
+                IERC20(_meToken).totalSupply() /
+                PRECISION;
+        } else {
+            // Not owner, subtract refundRatio
+            if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
+                // Not updating refundRatio of hub or resusbscribing meToken
+                actualTokensReturned =
+                    (tokensReturned * hub_.refundRatio) /
+                    MAX_REFUND_RATIO;
+            } else {
+                if (hub_.targetRefundRatio > 0) {
+                    // Hub is updating
+                    actualTokensReturned =
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                hub_.targetRefundRatio,
+                                hub_.startTime,
+                                hub_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
+                } else {
+                    // meToken is resubscribing
+                    Details.Hub memory targetHub_ = hub.getDetails(
+                        meToken_.targetHubId
+                    );
+                    actualTokensReturned =
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                targetHub_.refundRatio,
+                                meToken_.startTime,
+                                meToken_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
+                }
+            }
         }
     }
 }
