@@ -296,6 +296,67 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
     }
 
+    function viewBurn(
+        address _sender,
+        address _meToken,
+        uint256 _meTokensBurned
+    ) external view returns (uint256 actualtokensReturned) {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+
+        // Calculate how many tokens tokens are returned
+        uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
+
+        uint256 feeRate;
+        uint256 actualTokensReturned;
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        // If msg.sender != owner, give msg.sender the burn rate
+        if (msg.sender == meToken_.owner) {
+            feeRate = fees.burnOwnerFee();
+            actualTokensReturned =
+                tokensReturned +
+                (((PRECISION * _meTokensBurned) /
+                    IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
+                PRECISION;
+        } else {
+            feeRate = fees.burnBuyerFee();
+            if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
+                // Not updating targetRefundRatio or resubscribing
+                actualTokensReturned =
+                    (tokensReturned * hub_.refundRatio) /
+                    MAX_REFUND_RATIO;
+            } else {
+                if (hub_.targetRefundRatio > 0) {
+                    // Hub is updating
+                    actualTokensReturned =
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                hub_.targetRefundRatio,
+                                hub_.startTime,
+                                hub_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
+                } else {
+                    // meToken is resubscribing
+                    Details.Hub memory targetHub_ = hub.getDetails(
+                        meToken_.targetHubId
+                    );
+                    actualTokensReturned =
+                        (tokensReturned *
+                            WeightedAverage.calculate(
+                                hub_.refundRatio,
+                                targetHub_.refundRatio,
+                                meToken_.startTime,
+                                meToken_.endTime
+                            )) /
+                        MAX_REFUND_RATIO;
+                }
+            }
+        }
+    }
+
     function calculateBurnReturn(address _meToken, uint256 _meTokensBurned)
         public
         view
