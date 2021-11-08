@@ -312,7 +312,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (msg.sender == meToken_.owner) {
+        if (_sender == meToken_.owner) {
             feeRate = fees.burnOwnerFee();
             actualTokensReturned =
                 tokensReturned +
