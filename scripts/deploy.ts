@@ -210,7 +210,7 @@ async function main() {
       await run(TASK_VERIFY, {
         address: singleAssetVault.address,
         constructorArgsParams: [
-          DAO, // DAO
+          DAO.address, // DAO
           foundry.address, // foundry
           hub.address, // hub
           meTokenRegistry.address, //IMeTokenRegistry
@@ -249,7 +249,7 @@ async function main() {
     network: network.name,
     "Hub Contract Address": hub.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
-    "SingleAssetVault Contract Address": singleAssetVault.address,
+    "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
     "Fee Contract Address": fees.address,
     "Curve Registry Contract Address": curveRegistry.address,
