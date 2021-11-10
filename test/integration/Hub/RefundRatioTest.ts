@@ -82,7 +82,9 @@ describe("Hub - update RefundRatio", () => {
       // TODO: fast to active duration
     });
 
-    it("Assets received for owner based on weighted average", async () => {});
+    it("Assets received for owner based on weighted average", async () => {
+      // TODO: calculate weighted refundRatio based on current time relative to duration
+    });
 
     it("Assets received for buyer based on weighted average", async () => {});
   });
@@ -94,7 +96,7 @@ describe("Hub - update RefundRatio", () => {
 
     it("Before refundRatio set, burn() should use the targetRefundRatio", async () => {});
 
-    it("Should update refundRatio to targetRefundRatio", async () => {});
+    it("Call finishUpdate() and update refundRatio to targetRefundRatio", async () => {});
   });
 
   describe("After cooldown", () => {
@@ -102,8 +104,8 @@ describe("Hub - update RefundRatio", () => {
       // TODO: fast fwd to after cooldown
     });
 
-    it("If no burns during cooldown, new targetRefundRatio cannot equal hub.targetRefundRatio", async () => {});
+    it("If no burns during cooldown, initUpdate() first calls finishUpdate()", async () => {});
 
-    it("If no burns during cooldown, set refundRatio to old targetRefundRatio", async () => {});
+    it("If no burns during cooldown, initUpdate() args are compared to new vals set from on finishUpdate()", async () => {});
   });
 });
