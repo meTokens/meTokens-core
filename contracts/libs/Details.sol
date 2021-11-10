@@ -34,4 +34,11 @@ library Details {
         uint256 targetBaseY;
         uint32 targetReserveWeight;
     }
+
+    struct Stepwise {
+        uint256 stepX;
+        uint32 stepY;
+        uint256 targetStepX;
+        uint32 targetStepY;
+    }
 }
