@@ -21,9 +21,9 @@ describe("Hub - update RefundRatio", () => {
   // const amount = ethers.utils.parseEther("100");
   // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
   // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
+  // const refundRatio = 500000;
 
   const hubIdTarget = 2;
-  const refundRatioInitial = 500000;
   const refundRatioTarget = 750000;
 
   before(async () => {
