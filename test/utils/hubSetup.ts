@@ -2,11 +2,9 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
-import { BancorZeroCurve } from "../../artifacts/types/BancorZeroCurve";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
-import { MeToken } from "../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { Hub } from "../../artifacts/types/Hub";
@@ -14,13 +12,13 @@ import { ERC20 } from "../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "./helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { impersonate } from "./hardhatNode";
-import { BigNumber, Signer } from "ethers";
+import { Signer } from "ethers";
+import { ICurve } from "../../artifacts/types/ICurve";
 
 let tokenAddr: string;
 let weightedAverage: WeightedAverage;
 let meTokenRegistry: MeTokenRegistry;
 let meTokenFactory: MeTokenFactory;
-let bancorZeroCurve: BancorZeroCurve;
 let curveRegistry: CurveRegistry;
 let vaultRegistry: VaultRegistry;
 let migrationRegistry: MigrationRegistry;
@@ -35,8 +33,10 @@ let account3: SignerWithAddress;
 let tokenHolder: Signer;
 let tokenWhale: string;
 export default async function hubSetup(
-  reserveWeight: number,
+  encodedCurveDetails: string,
+  encodedVaultArgs: string,
   refundRatio: number,
+  curve: ICurve,
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
@@ -44,7 +44,6 @@ export default async function hubSetup(
   weightedAverage: WeightedAverage;
   meTokenRegistry: MeTokenRegistry;
   meTokenFactory: MeTokenFactory;
-  bancorZeroCurve: BancorZeroCurve;
   curveRegistry: CurveRegistry;
   vaultRegistry: VaultRegistry;
   migrationRegistry: MigrationRegistry;
@@ -59,10 +58,6 @@ export default async function hubSetup(
   tokenHolder: Signer;
   tokenWhale: string;
 }> {
-  const hubId = 1;
-  const PRECISION = BigNumber.from(10).pow(18);
-  const MAX_WEIGHT = 1000000;
-  const baseY = PRECISION.div(1000).toString();
   if (!erc20Address || !erc20Whale) {
     let DAI;
     let DAIWhale;
@@ -77,7 +72,7 @@ export default async function hubSetup(
     .connect(tokenHolder)
     .transfer(account1.address, ethers.utils.parseEther("1000"));
   weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+
   curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
@@ -105,7 +100,7 @@ export default async function hubSetup(
     meTokenRegistry.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
   );
-  await curveRegistry.approve(bancorZeroCurve.address);
+  await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   await hub.initialize(
     foundry.address,
@@ -113,19 +108,10 @@ export default async function hubSetup(
     curveRegistry.address
   );
 
-  const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
-    ["address"],
-    [tokenAddr]
-  );
-
   await hub.register(
     tokenAddr,
     singleAssetVault.address,
-    bancorZeroCurve.address,
+    curve.address,
     refundRatio, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
@@ -135,7 +121,6 @@ export default async function hubSetup(
     weightedAverage,
     meTokenRegistry,
     meTokenFactory,
-    bancorZeroCurve,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,

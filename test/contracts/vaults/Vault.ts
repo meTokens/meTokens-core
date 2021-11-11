@@ -1,18 +1,13 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import VaultRegistry from "../../../deploy/VaultRegistry";
-import { impersonate } from "../../utils/hardhatNode";
-import { getContractAt, deploy } from "../../utils/helpers";
+import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("Vault.sol", () => {

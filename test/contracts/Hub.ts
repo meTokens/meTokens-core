@@ -3,7 +3,6 @@ import { Hub } from "../../artifacts/types/Hub";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});

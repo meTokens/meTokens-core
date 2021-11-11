@@ -1,20 +1,13 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import hubSetup from "../../utils/hubSetup";
-import { BigNumber, Signer } from "ethers";
+import { BigNumber } from "ethers";
 import { expect } from "chai";
 
 describe("MeTokenRegistry.sol", () => {
@@ -29,9 +22,30 @@ describe("MeTokenRegistry.sol", () => {
 
   const hubId = 1;
   const MAX_WEIGHT = 1000000;
+  const PRECISION = BigNumber.from(10).pow(18);
+
   before(async () => {
+    const baseY = PRECISION.div(1000).toString();
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
+
+    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint32"],
+      [baseY, reserveWeight]
+    );
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
+    );
+    const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     ({ token, hub, account0, account1, account2, account3, meTokenRegistry } =
-      await hubSetup(MAX_WEIGHT / 2, 50000));
+      await hubSetup(
+        encodedCurveDetails,
+        encodedVaultArgs,
+        50000,
+        bancorZeroCurve
+      ));
   });
 
   describe("register()", () => {
