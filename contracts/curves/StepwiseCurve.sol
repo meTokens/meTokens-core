@@ -12,6 +12,7 @@ import "../utils/ABDKMathQuad.sol";
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
 contract StepwiseCurve is ICurve {
+    uint256 public constant PRECISION = 10**18;
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -21,7 +22,7 @@ contract StepwiseCurve is ICurve {
     // bytes16 private immutable _one = (uint256(1)).fromUInt();
 
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Details.Stepwise) private _stepwise;
+    mapping(uint256 => Details.Stepwise) private _stepwises;
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
@@ -34,8 +35,8 @@ contract StepwiseCurve is ICurve {
             _encodedDetails,
             (uint256, uint256)
         );
-        require(stepX > 0, "stepX must be >0");
-        require(stepY > 0, "stepY must be >0");
+        require(stepX > 0 && stepX < PRECISION, "stepX not in range");
+        require(stepY > 0 && stepY < PRECISION, "stepY not in range");
 
         Details.Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepX;
@@ -57,10 +58,16 @@ contract StepwiseCurve is ICurve {
         );
         Details.Stepwise storage stepwiseDetails = _stepwises[_hubId];
 
-        require(targetStepX > 0, "stepX must be > 0");
+        require(
+            targetStepX > 0 && targetStepX < PRECISION,
+            "stepX not in range"
+        );
         require(targetStepX != stepwiseDetails.stepX, "targeStepX == stepX");
 
-        require(targetStepY > 0, "stepY must be > 0");
+        require(
+            targetStepY > 0 && targetStepY < PRECISION,
+            "stepY not in range"
+        );
         require(targetStepY != stepwiseDetails.stepY, "targeStepY == stepY");
 
         stepwiseDetails.targetStepY = targetStepY;
@@ -88,7 +95,7 @@ contract StepwiseCurve is ICurve {
     function calculateMintReturn(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _hubId, // hubId
-        uint256 _supply, // curret supply
+        uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view override returns (uint256 meTokensReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
@@ -105,7 +112,7 @@ contract StepwiseCurve is ICurve {
     function calculateTargetMintReturn(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _hubId, // hubId
-        uint256 _supply, // curret supply
+        uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view override returns (uint256 meTokensReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
@@ -126,8 +133,8 @@ contract StepwiseCurve is ICurve {
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        meTokensReturned = _calculateBurnReturn(
-            _tokensDeposited,
+        tokensReturned = _calculateBurnReturn(
+            _meTokensBurned,
             stepwiseDetails.stepX,
             stepwiseDetails.stepY,
             _supply,
@@ -142,8 +149,8 @@ contract StepwiseCurve is ICurve {
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        meTokensReturned = _calculateBurnReturn(
-            _tokensDeposited,
+        tokensReturned = _calculateBurnReturn(
+            _meTokensBurned,
             stepwiseDetails.targetStepX,
             stepwiseDetails.targetStepY,
             _supply,
@@ -156,14 +163,14 @@ contract StepwiseCurve is ICurve {
     /// @param _tokensDeposited, // tokens deposited
     /// @param _stepX, // length of step (aka supply duration)
     /// @param _stepY, // height of step (aka price delta)
-    /// @param _supply, // curret supply
+    /// @param _supply, // current supply
     /// @param _balancePooled // current collateral amount
     /// @return amount of meTokens minted
     function _calculateMintReturn(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _stepX, // length of step (aka supply duration)
         uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // curret supply
+        uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) private view returns (uint256) {
         // validate input
@@ -177,23 +184,28 @@ contract StepwiseCurve is ICurve {
         // return _calculateSupply(_balancePooled + _tokensDeposited, _stepX, _stepY) - _supply;
 
         /// @Note: _calculateSupply() without the method (use if we don't need a dedicated _calculateMintReturnFromZero() function)
-        uint256 steps = (((_balancePooled + _tokensDeposited) *
-            _stepX *
-            _stepX) / ((_stepX * _stepY) / 2))**(1 / 2); // TODO: make sure !modulo
+        uint256 steps = (PRECISION *
+            (((_balancePooled + _tokensDeposited) * _stepX * _stepX) /
+                ((_stepX * _stepY) / 2)) **
+                (1 / 2)) / PRECISION;
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
         uint256 supply;
         if (stepBalance > (_balancePooled + _tokensDeposited)) {
             supply =
                 _stepX *
                 steps -
-                (stepBalance - (_balancePooled + _tokensDeposited)) /
-                (_stepY * steps);
+                (PRECISION *
+                    (stepBalance - (_balancePooled + _tokensDeposited))) /
+                (_stepY * steps) /
+                PRECISION;
         } else {
             supply =
                 _stepX *
                 steps +
-                ((_balancePooled + _tokensDeposited) - stepBalance) /
-                (_stepY * (steps + 1));
+                (PRECISION *
+                    ((_balancePooled + _tokensDeposited) - stepBalance)) /
+                (_stepY * (steps + 1)) /
+                PRECISION;
         }
         return supply - _supply;
     }
@@ -203,14 +215,14 @@ contract StepwiseCurve is ICurve {
     /// @param _meTokensBurned, // meTokens burned
     /// @param _stepX, // length of step (aka supply duration)
     /// @param _stepY, // height of step (aka price delta)
-    /// @param _supply, // curret supply
+    /// @param _supply, // current supply
     /// @param _balancePooled // current collateral amount
     /// @return amount of collateral tokens received
     function _calculateBurnReturn(
         uint256 _meTokensBurned, // meTokens burned
         uint256 _stepX, // length of step (aka supply duration)
         uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // curret supply
+        uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) private view returns (uint256) {
         // validate input
@@ -222,10 +234,13 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        uint256 steps = _supply / _stepX; // TODO: make sure !modulo
-        uint256 stepSupply = _supply - steps * _stepX;
-        uint256 steps_ = (_supply - _meTokensBurned) / _stepX; // TODO: make sure !modulo
-        uint256 stepSupply_ = _supply - steps_ * _stepX;
+        uint256 steps = (PRECISION * _supply) / _stepX;
+        uint256 stepSupply = _supply - (steps * _stepX) / PRECISION;
+        uint256 steps_ = (PRECISION * (_supply - _meTokensBurned)) / _stepX;
+        uint256 stepSupply_ = _supply - (steps_ * _stepX) / PRECISION;
+
+        steps /= PRECISION;
+        steps_ /= PRECISION;
 
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
         uint256 stepBalance_ = ((steps_ * steps_ + steps_) / 2) *
@@ -238,7 +253,7 @@ contract StepwiseCurve is ICurve {
             _stepY -
             stepBalance_ -
             stepSupply_ *
-            stepY;
+            _stepY;
     }
 
     // function _calculateSupply(
