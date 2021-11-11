@@ -222,8 +222,18 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        // TODO: come up with a burn formula
+        uint256 steps = _supply / _stepX; // !modulo
+        uint256 stepSupply = _supply - steps * _stepX;
+        uint256 steps_ = (_supply - _meTokensBurned) / _stepX; // !modulo
+        uint256 stepSupply_ = _supply - steps_ * _stepX;
+
+        uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
+        uint256 stepBalance_ = ((steps_ * steps_ + steps_) / 2) *
+            _stepX *
+            _stepY;
+
         return;
+        stepBalance + stepSupply * _stepY - stepBalance_ - stepSupply_ * stepY;
     }
 
     // function _calculateSupply(
