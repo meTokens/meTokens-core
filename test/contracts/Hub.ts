@@ -5,7 +5,15 @@ describe("Hub.sol", () => {
   before(async () => {});
 
   describe("register()", () => {
-    // Do something
+    it("Should revert from invalid address arguments", async () => {
+      // TODO
+    });
+    it("Should revert from invalid encodedCurveDetails", async () => {
+      // TODO
+    });
+    it("Should revert from invalid encodedVaultArgs", async () => {
+      // TODO
+    });
   });
 
   describe("initUpdate()", () => {
@@ -27,6 +35,9 @@ describe("Hub.sol", () => {
   });
 
   describe("finishUpdate()", () => {
+    it("Should revert if all arguments are the same", async () => {
+      // TODO
+    });
     it("Doesn't trigger during warmup or duration", async () => {
       // TODO
     });
