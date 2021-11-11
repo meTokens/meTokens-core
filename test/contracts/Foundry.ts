@@ -13,11 +13,12 @@ import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { impersonate, mineBlock, passOneHour } from "../utils/hardhatNode";
+import { mineBlock } from "../utils/hardhatNode";
 import { Fees } from "../../artifacts/types/Fees";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransfer } from "../../artifacts/types/UniswapSingleTransfer";
+import hubSetup from "../utils/hubSetup";
 
 describe("Foundry.sol", () => {
   let DAI: string;
@@ -47,63 +48,14 @@ describe("Foundry.sol", () => {
   const amount = ethers.utils.parseEther("100");
   const initRefundRatio = 500000;
   // for 1 DAI we get 1000 metokens
-  const baseY = ethers.utils.parseEther("1").mul(1000).toString();
+  // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
   // weight at 50% linear curve
-  const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
+  // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
   before(async () => {
-    ({ DAI, DAIWhale } = await getNamedAccounts());
-    [account0, account1, account2] = await ethers.getSigners();
-    dai = await getContractAt<ERC20>("ERC20", DAI);
-    daiHolder = await impersonate(DAIWhale);
-    dai
-      .connect(daiHolder)
-      .transfer(account0.address, ethers.utils.parseEther("100"));
-    dai
-      .connect(daiHolder)
-      .transfer(account1.address, ethers.utils.parseEther("1000"));
-    dai
-      .connect(daiHolder)
-      .transfer(account2.address, ethers.utils.parseEther("1000"));
-    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-    curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-
-    foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
-
-    hub = await deploy<Hub>("Hub");
-    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-    meTokenRegistry = await deploy<MeTokenRegistry>(
-      "MeTokenRegistry",
-      undefined,
-      foundry.address,
-      hub.address,
-      meTokenFactory.address,
-      migrationRegistry.address
-    );
-    singleAssetVault = await deploy<SingleAssetVault>(
-      "SingleAssetVault",
-      undefined, //no libs
-      account1.address, // DAO
-      foundry.address, // foundry
-      hub.address, // hub
-      meTokenRegistry.address, //IMeTokenRegistry
-      migrationRegistry.address //IMigrationRegistry
-    );
-
-    await curveRegistry.approve(bancorZeroCurve.address);
-    await vaultRegistry.approve(singleAssetVault.address);
-    fees = await deploy<Fees>("Fees");
-
-    await fees.initialize(0, 0, 0, 0, 0, 0);
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address
-    );
+    const baseY = PRECISION.div(1000).toString();
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
@@ -113,18 +65,39 @@ describe("Foundry.sol", () => {
       ["address"],
       [DAI]
     );
-
-    // refund ratio of 50000 = 0.00000000000005 ETH
-    // max ratio is 1 ETH = 1000000000000000000
-    // refund ratio is therefor 0,000000000005 %
-    await hub.register(
-      DAI,
-      singleAssetVault.address,
-      bancorZeroCurve.address,
-      initRefundRatio, //refund ratio
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    let token;
+    let tokenHolder;
+    ({
+      token,
+      tokenHolder,
+      hub,
+      curveRegistry,
+      migrationRegistry,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
       encodedCurveDetails,
-      encodedVaultArgs
-    );
+      encodedVaultArgs,
+      initRefundRatio,
+      bancorZeroCurve
+    ));
+    dai = token;
+    dai
+      .connect(tokenHolder)
+      .transfer(account0.address, ethers.utils.parseEther("100"));
+    dai
+      .connect(tokenHolder)
+      .transfer(account1.address, ethers.utils.parseEther("1000"));
+    dai
+      .connect(tokenHolder)
+      .transfer(account2.address, ethers.utils.parseEther("1000"));
+    fees = await deploy<Fees>("Fees");
+
+    await fees.initialize(0, 0, 0, 0, 0, 0);
     await foundry.initialize(
       hub.address,
       fees.address,
@@ -208,10 +181,7 @@ describe("Foundry.sol", () => {
       // refund ratio stays the same
       const targetRefundRatio = 200000;
       const newCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-      const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
-        ["address"],
-        [DAI]
-      );
+
       await curveRegistry.approve(newCurve.address);
       // for 1 DAI we get 1 metokens
       const baseY = PRECISION.toString();
@@ -234,10 +204,10 @@ describe("Foundry.sol", () => {
       const block = await ethers.provider.getBlock("latest");
       // earliestSwapTime 10 hour
       const earliestSwapTime = block.timestamp + 600 * 60;
-      const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+      /*   const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256"],
         [earliestSwapTime]
-      );
+      ); */
       // 10 hour
       await hub.setDuration(600 * 60);
       await hub.setWarmup(60 * 60);

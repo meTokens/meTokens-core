@@ -11,10 +11,10 @@ import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { impersonate } from "../../utils/hardhatNode";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { deploy } from "../../utils/helpers";
 import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import hubSetup from "../../utils/hubSetup";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;
@@ -40,56 +40,11 @@ describe("BancorZeroCurve", () => {
   const MAX_WEIGHT = 1000000;
   let hubId = 1;
   before(async () => {
-    ({ DAI, DAIWhale } = await getNamedAccounts());
-    [account0, account1, account2] = await ethers.getSigners();
-    dai = await getContractAt<ERC20>("ERC20", DAI);
-    daiHolder = await impersonate(DAIWhale);
-    dai
-      .connect(daiHolder)
-      .transfer(account1.address, ethers.utils.parseEther("1000"));
-    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-    curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-
-    foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
-    hub = await deploy<Hub>("Hub");
-    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-    meTokenRegistry = await deploy<MeTokenRegistry>(
-      "MeTokenRegistry",
-      undefined,
-      foundry.address,
-      hub.address,
-      meTokenFactory.address,
-      migrationRegistry.address
-    );
-
-    singleAssetVault = await deploy<SingleAssetVault>(
-      "SingleAssetVault",
-      undefined, //no libs
-      account1.address, // DAO
-      foundry.address, // foundry
-      hub.address, // hub
-      meTokenRegistry.address, //IMeTokenRegistry
-      migrationRegistry.address //IMigrationRegistry
-    );
-
-    await curveRegistry.approve(bancorZeroCurve.address);
-    await vaultRegistry.approve(singleAssetVault.address);
-
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address
-    );
-    // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
-    // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
-    // this gives us m = 1/1000
     baseY = one.mul(1000);
-    const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
+
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
@@ -98,15 +53,26 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    let token;
 
-    await hub.register(
-      DAI,
-      singleAssetVault.address,
-      bancorZeroCurve.address,
-      5000, //refund ratio
+    ({
+      token,
+      hub,
+      curveRegistry,
+      migrationRegistry,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
       encodedCurveDetails,
-      encodedVaultArgs
-    );
+      encodedVaultArgs,
+      5000,
+      bancorZeroCurve
+    ));
+    dai = token;
   });
   it("calculateMintReturn() from zero should work", async () => {
     let amount = one.mul(20);
@@ -213,7 +179,6 @@ describe("BancorZeroCurve", () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
-    console.log(detail.targetReserveWeight.toString());
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
 
