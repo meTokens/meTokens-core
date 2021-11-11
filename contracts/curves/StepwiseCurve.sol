@@ -179,7 +179,7 @@ contract StepwiseCurve is ICurve {
         /// @Note: _calculateSupply() without the method (use if we don't need a dedicated _calculateMintReturnFromZero() function)
         uint256 steps = (((_balancePooled + _tokensDeposited) *
             _stepX *
-            _stepX) / ((_stepX * _stepY) / 2))**(1 / 2);
+            _stepX) / ((_stepX * _stepY) / 2))**(1 / 2); // TODO: make sure !modulo
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
         uint256 supply;
         if (stepBalance > (_balancePooled + _tokensDeposited)) {
@@ -222,9 +222,9 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        uint256 steps = _supply / _stepX; // !modulo
+        uint256 steps = _supply / _stepX; // TODO: make sure !modulo
         uint256 stepSupply = _supply - steps * _stepX;
-        uint256 steps_ = (_supply - _meTokensBurned) / _stepX; // !modulo
+        uint256 steps_ = (_supply - _meTokensBurned) / _stepX; // TODO: make sure !modulo
         uint256 stepSupply_ = _supply - steps_ * _stepX;
 
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
