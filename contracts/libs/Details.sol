@@ -37,8 +37,8 @@ library Details {
 
     struct Stepwise {
         uint256 stepX;
-        uint32 stepY;
+        uint256 stepY;
         uint256 targetStepX;
-        uint32 targetStepY;
+        uint256 targetStepY;
     }
 }
