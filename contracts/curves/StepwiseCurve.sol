@@ -232,8 +232,13 @@ contract StepwiseCurve is ICurve {
             _stepX *
             _stepY;
 
-        return;
-        stepBalance + stepSupply * _stepY - stepBalance_ - stepSupply_ * stepY;
+        return
+            stepBalance +
+            stepSupply *
+            _stepY -
+            stepBalance_ -
+            stepSupply_ *
+            stepY;
     }
 
     // function _calculateSupply(
