@@ -232,7 +232,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _sender,
         address _meToken,
         uint256 _meTokensBurned
-    ) external view returns (uint256 actualtokensReturned) {
+    ) external view returns (uint256 actualTokensReturned) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
@@ -240,7 +240,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
 
         uint256 feeRate;
-        uint256 actualTokensReturned;
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
