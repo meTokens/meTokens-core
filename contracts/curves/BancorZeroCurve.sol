@@ -164,6 +164,38 @@ contract BancorZeroCurve is ICurve {
         );
     }
 
+    function calculateTokensDeposited(
+        uint256 _desiredMeTokensReturned,
+        uint256 _hubId,
+        uint256 _supply,
+        uint256 _balancePooled
+    ) external view returns (uint256 tokensDeposited) {
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        if (_supply > 0) {
+            tokensDeposited = _calculateTokensDeposited();
+            // TODO
+        } else {
+            tokensDeposited = _calculateTokensDepositedFromZero();
+            // TODO
+        }
+    }
+
+    function calculateTargetTokensDeposited(
+        uint256 _desiredMeTokensReturned,
+        uint256 _hubId,
+        uint256 _supply,
+        uint256 _balancePooled
+    ) external view returns (uint256 tokensDeposited) {
+        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        if (_supply > 0) {
+            tokensDeposited = _calculateTokensDeposited();
+            // TODO
+        } else {
+            tokensDeposited = _calculateTokensDepositedFromZero();
+            // TODO
+        }
+    }
+
     /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @dev _supply * ((1 + _tokensDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
@@ -310,4 +342,13 @@ contract BancorZeroCurve is ICurve {
         );
         return res.toUInt();
     }
+
+    function _calculateTokensDepositedFromZero()
+        private
+        view
+        returns (uint256)
+    {}
+
+    // TODO
+    function _calculateTokensDeposited() private view returns (uint256) {}
 }
