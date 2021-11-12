@@ -7,6 +7,9 @@ interface IMeTokenRegistry {
     event Subscribe(
         address indexed _meToken,
         address indexed _owner,
+        uint256 _minted,
+        address _collateralToken,
+        uint256 _collateralDeposited,
         string _name,
         string _symbol,
         uint256 _hubId
