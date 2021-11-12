@@ -1,12 +1,66 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { expect } from "chai";
+import hubSetup from "../../utils/hubSetup";
+import { deploy } from "../../utils/helpers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { ERC20 } from "../../../artifacts/types/ERC20";
+import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { Hub } from "../../../artifacts/types/Hub";
+import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 
 describe("Hub - update CurveDetails", () => {
-  const hubIdTarget = 2;
+  let meTokenRegistry: MeTokenRegistry;
+  let bancorZeroCurve: BancorZeroCurve;
+  let curveRegistry: CurveRegistry;
+  let migrationRegistry: MigrationRegistry;
+  let foundry: Foundry;
+  let hub: Hub;
+  let dai: ERC20;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  const one = ethers.utils.parseEther("1");
+  let baseY: BigNumber;
+  const MAX_WEIGHT = 1000000;
   let encodedCurveDetailsTarget: string;
 
   before(async () => {
-    setupHub();
+    baseY = one.mul(1000);
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
+
+    encodedCurveDetailsTarget = ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint32"],
+      [baseY, reserveWeight]
+    );
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
+    );
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    let token;
+
+    ({
+      token,
+      hub,
+      curveRegistry,
+      migrationRegistry,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
+      encodedCurveDetailsTarget,
+      encodedVaultArgs,
+      5000,
+      bancorZeroCurve
+    ));
+    dai = token;
   });
 
   describe("Warmup", () => {

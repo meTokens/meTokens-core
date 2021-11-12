@@ -1,35 +1,68 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Signer, BigNumber } from "ethers";
+import { BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { expect } from "chai";
+import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { Hub } from "../../../artifacts/types/Hub";
+import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import hubSetup from "../../utils/hubSetup";
 
 describe("Hub - update RefundRatio", () => {
-  // TODO: these should all be already initialized
-  // let DAI: string;
-  // let dai: ERC20;
-  // let daiHolder: Signer;
-  // let DAIWhale: string;
-  // const hubId = 1;
-  // const meTokenName = "Carl meToken";
-  // const meTokenSymbol = "CARL";
-  // const PRECISION = BigNumber.from(10).pow(6);
-  // const MAX_WEIGHT = 1000000;
-  // const amount = ethers.utils.parseEther("100");
-  // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
-  // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
-  // const refundRatio = 500000;
-
-  const hubIdTarget = 2;
-  const refundRatioTarget = 750000;
+  let meTokenRegistry: MeTokenRegistry;
+  let bancorZeroCurve: BancorZeroCurve;
+  let curveRegistry: CurveRegistry;
+  let migrationRegistry: MigrationRegistry;
+  let foundry: Foundry;
+  let hub: Hub;
+  let dai: ERC20;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  const one = ethers.utils.parseEther("1");
+  let baseY: BigNumber;
+  const MAX_WEIGHT = 1000000;
+  let encodedCurveDetailsTarget: string;
 
   before(async () => {
     // TODO: pre-load contracts
     // NOTE: hub.register() should have already been called
-    setup();
+    baseY = one.mul(1000);
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
+
+    encodedCurveDetailsTarget = ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint32"],
+      [baseY, reserveWeight]
+    );
+    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+      ["address"],
+      [DAI]
+    );
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    let token;
+
+    ({
+      token,
+      hub,
+      curveRegistry,
+      migrationRegistry,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
+      encodedCurveDetailsTarget,
+      encodedVaultArgs,
+      5000,
+      bancorZeroCurve
+    ));
+    dai = token;
 
     // Pre-load owner and buyer w/ DAI
 
