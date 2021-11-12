@@ -30,11 +30,6 @@ contract Hub is Ownable, Initializable {
     mapping(uint256 => Details.Hub) private _hubs;
     mapping(address => mapping(address => bool)) private _vaultAllowances;
 
-    modifier exists(uint256 id) {
-        require(id <= _count, "id exceeds _count");
-        _;
-    }
-
     function initialize(
         address _foundry,
         address _vaultRegistry,
@@ -172,7 +167,6 @@ contract Hub is Ownable, Initializable {
     function getDetails(uint256 id)
         external
         view
-        exists(id)
         returns (Details.Hub memory hub_)
     {
         hub_ = _hubs[id];
