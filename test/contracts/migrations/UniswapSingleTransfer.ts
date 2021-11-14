@@ -1,12 +1,22 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { Hub } from "../../../artifacts/types/Hub";
+import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
+import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { MeToken } from "../../../artifacts/types/MeToken";
 import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
-import { expect } from "chai";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
+import hubSetup from "../../utils/hubSetup";
+import { expect } from "chai";
+import { Fees } from "../../../artifacts/types/Fees";
 
 describe("UniswapSingleTransfer.sol", () => {
   let earliestSwapTime: number;
@@ -18,13 +28,36 @@ describe("UniswapSingleTransfer.sol", () => {
   let wethHolder: Signer;
   let dai: ERC20;
   let weth: ERC20;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
   let migrationRegistry: MigrationRegistry;
   let migration: UniswapSingleTransfer;
+  let curve: BancorZeroCurve;
+  let meTokenRegistry: MeTokenRegistry;
+  let singleAssetVault: SingleAssetVault;
+  let foundry: Foundry;
+  let meToken: MeToken;
+  let hub: Hub;
+  let fees: Fees;
 
-  let encodedVaultDAIArgs: string;
-  let encodedVaultWETHArgs: string;
+  const hubId1 = 1;
+  const hubId2 = 2;
+  const name = "Carl meToken";
+  const symbol = "CARL";
+  const amount = ethers.utils.parseEther("100");
+  const fee = 3000;
+  const refundRatio = 500000;
+  const MAX_WEIGHT = 1000000;
+  const reserveWeight = MAX_WEIGHT / 2;
+  const PRECISION = BigNumber.from(10).pow(6);
+  const baseY = PRECISION.div(1000).toString();
+
+  let encodedCurveDetails: string;
   let encodedMigrationArgs: string;
   let badEncodedMigrationArgs: string;
+  let encodedVaultDAIArgs: string;
+  let encodedVaultWETHArgs: string;
 
   before(async () => {
     ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
@@ -47,10 +80,58 @@ describe("UniswapSingleTransfer.sol", () => {
       [earliestSwapTime, fee]
     );
 
-    [account0, account1, account2] = await ethers.getSigners();
+    curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    ({
+      hub,
+      migrationRegistry,
+      singleAssetVault,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
+      encodedCurveDetails,
+      encodedVaultDAIArgs,
+      refundRatio,
+      curve
+    ));
+    fees = await deploy<Fees>("Fees");
+    await fees.initialize(0, 0, 0, 0, 0, 0);
+    await foundry.initialize(
+      hub.address,
+      fees.address,
+      meTokenRegistry.address
+    );
+
+    // Register 2nd hub to which we'll migrate to
+    await hub.register(
+      WETH,
+      singleAssetVault.address,
+      curve.address,
+      refundRatio,
+      encodedCurveDetails,
+      encodedVaultWETHArgs
+    );
+    // Deploy uniswap migration and approve it to the registry
+    migration = await deploy<UniswapSingleTransfer>(
+      "UniswapSingleTransfer",
+      undefined,
+      account0.address,
+      foundry.address,
+      hub.address,
+      meTokenRegistry.address,
+      migrationRegistry.address
+    );
+    await migrationRegistry.approve(
+      singleAssetVault.address,
+      singleAssetVault.address,
+      migration.address
+    );
+
+    // Prefund owner & buyer w/ DAI & WETH
     dai = await getContractAt<ERC20>("ERC20", DAI);
     weth = await getContractAt<ERC20>("ERC20", WETH);
-    // Prefund owner & buyer w/ DAI & WETH
     daiHolder = await impersonate(DAIWhale);
     wethHolder = await impersonate(WETHWhale);
     dai
@@ -66,42 +147,14 @@ describe("UniswapSingleTransfer.sol", () => {
       .connect(wethHolder)
       .transfer(account2.address, ethers.utils.parseEther("100"));
 
-    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-
-    migration = await deploy<UniswapSingleTransfer>(
-      "UniswapSingleTransfer",
-      undefined
-      // account1.address,
-      // foundry.address,
-      // hub.address,
-      // meTokenRegistry.address,
-      // migrationRegistry.address
-    );
-
-    await migrationRegistry
-      .approve
-      // vault.address,
-      // vault.address,
-      // migration.address
-      ();
-
-    await hub.register(
-      DAI,
-      // vault.address,
-      // curve.address,
-      // initRefundRatio,
-      // encodedCurveDetails,
-      encodedVaultDAIArgs
-    );
-    await hub.register(
-      WETH,
-      // vault.address,
-      // curve.address,
-      // initRefundRatio,
-      // encodedCurveDetails,
-      encodedVaultWETHArgs
-    );
+    // Create meToken
+    const tx = await meTokenRegistry
+      .connect(account1)
+      .subscribe(name, symbol, hubId1, amount);
+    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
+
   describe("isValid()", () => {
     it("Returns true for valid encoding", async () => {
       const isValid = await migration.isValid(
