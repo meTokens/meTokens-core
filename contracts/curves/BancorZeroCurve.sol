@@ -171,13 +171,18 @@ contract BancorZeroCurve is ICurve {
     ) external view override returns (uint256 tokensDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
-            // TODO
-            // tokensDeposited = _calculateTokensDeposited();
+            tokensDeposited = _calculateTokensDeposited(
+                _desiredMeTokens,
+                bancor_.reserveWeight,
+                bancor_.baseY,
+                _balancePooled
+            );
         } else {
             tokensDeposited = _calculateTokensDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
-                bancor_.baseY
+                bancor_.baseY,
+                0
             );
         }
     }
@@ -190,13 +195,18 @@ contract BancorZeroCurve is ICurve {
     ) external view override returns (uint256 tokensDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
-            // TODO
-            // tokensDeposited = _calculateTokensDeposited();
+            tokensDeposited = _calculateTokensDeposited(
+                _desiredMeTokens,
+                bancor_.targetReserveWeight,
+                bancor_.targetBaseY,
+                _balancePooled
+            );
         } else {
             tokensDeposited = _calculateTokensDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.targetReserveWeight,
-                bancor_.targetBaseY
+                bancor_.targetBaseY,
+                0
             );
         }
     }
