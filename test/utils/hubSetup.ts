@@ -77,11 +77,6 @@ export async function hubSetup(
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
 
-  console.log(`
-  **************
-  tokenWhale: ${tokenWhale}
-  ${ethers.utils.formatEther(await tokenHolder.getBalance())} ETH
-  ************`);
   token
     .connect(tokenHolder)
     .transfer(account1.address, ethers.utils.parseEther("1000"));

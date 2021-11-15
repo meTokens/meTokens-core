@@ -79,7 +79,6 @@ describe("UniswapSingleTransfer.sol", () => {
       ["uint256", "uint24"],
       [earliestSwapTime, fees]
     );
-    console.log(`before hubSetup`);
     curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     ({
       hub,
@@ -99,8 +98,6 @@ describe("UniswapSingleTransfer.sol", () => {
       undefined
     ));
 
-    console.log(`after hubSetup`);
-
     // Register 2nd hub to which we'll migrate to
     await hub.register(
       WETH,
@@ -110,7 +107,6 @@ describe("UniswapSingleTransfer.sol", () => {
       encodedCurveDetails,
       encodedVaultWETHArgs
     );
-    console.log(`after hub register`);
     // Deploy uniswap migration and approve it to the registry
     migration = await deploy<UniswapSingleTransfer>(
       "UniswapSingleTransfer",
@@ -126,7 +122,6 @@ describe("UniswapSingleTransfer.sol", () => {
       singleAssetVault.address,
       migration.address
     );
-    console.log(`after approve`);
     // Prefund owner & buyer w/ DAI & WETH
     dai = await getContractAt<ERC20>("ERC20", DAI);
     weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -144,13 +139,11 @@ describe("UniswapSingleTransfer.sol", () => {
     weth
       .connect(wethHolder)
       .transfer(account2.address, ethers.utils.parseEther("100"));
-    console.log(`after transfer`);
     await dai.connect(account1).approve(meTokenRegistry.address, amount);
     // Create meToken
     const tx = await meTokenRegistry
       .connect(account1)
       .subscribe(name, symbol, hubId1, amount);
-    console.log(`after subscribe`);
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
@@ -163,39 +156,33 @@ describe("UniswapSingleTransfer.sol", () => {
       );
       expect(isValid).to.be.true;
     });
-    it("Returns false for start time before current time", async () => {
+    it("Revert for start time before current time", async () => {
       badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint24"],
         [earliestSwapTime - 720 * 60, fees] // 2 hours beforehand
       );
-      const isValid = await migration.isValid(
-        meToken.address,
-        badEncodedMigrationArgs
-      );
-      expect(isValid).to.be.false;
+      await expect(
+        migration.isValid(meToken.address, badEncodedMigrationArgs)
+      ).to.be.revertedWith("Too soon");
     });
     it("Returns false for nonexistent meToken", async () => {
-      const isValid = await migration.isValid(
-        account0.address,
-        encodedMigrationArgs
-      );
-      expect(isValid).to.be.false;
+      await expect(
+        migration.isValid(account0.address, encodedMigrationArgs)
+      ).to.be.revertedWith("MeToken not subscribed to a hub");
     });
     it("Returns false for invalid fee", async () => {
       badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint24"],
         [earliestSwapTime, 2999]
       );
-      const isValid = await migration.isValid(
-        meToken.address,
-        badEncodedMigrationArgs
-      );
-      expect(isValid).to.be.false;
+      await expect(
+        migration.isValid(meToken.address, badEncodedMigrationArgs)
+      ).to.be.revertedWith("Invalid fee");
     });
   });
 
   describe("initMigration()", () => {
-    it("Fails from bad encodings", async () => {
+    it("revert if not owner  ", async () => {
       await expect(
         meTokenRegistry.initResubscribe(
           meToken.address,
@@ -203,18 +190,36 @@ describe("UniswapSingleTransfer.sol", () => {
           migration.address,
           badEncodedMigrationArgs
         )
-      ).to.be.revertedWith("Invalid _encodedMigrationArgs");
+      ).to.be.revertedWith("!owner");
+    });
+    it("Fails from bad encodings", async () => {
+      badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "uint24"],
+        [earliestSwapTime - 720 * 60, fees]
+      );
+      await expect(
+        meTokenRegistry
+          .connect(account1)
+          .initResubscribe(
+            meToken.address,
+            hubId2,
+            migration.address,
+            badEncodedMigrationArgs
+          )
+      ).to.be.revertedWith("Too soon");
     });
     it("Set correct _ust values", async () => {
-      await meTokenRegistry.initResubscribe(
-        meToken.address,
-        hubId2,
-        migration.address,
-        encodedMigrationArgs
-      );
+      await meTokenRegistry
+        .connect(account1)
+        .initResubscribe(
+          meToken.address,
+          hubId2,
+          migration.address,
+          encodedMigrationArgs
+        );
       const migrationDetails = await migration.getDetails(meToken.address);
-      expect(migrationDetails.fee).to.equal(fee);
       expect(migrationDetails.soonest).to.equal(earliestSwapTime);
+      expect(migrationDetails.fee).to.equal(fees);
     });
   });
 
