@@ -1,5 +1,5 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";

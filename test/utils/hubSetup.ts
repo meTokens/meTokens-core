@@ -14,6 +14,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
+import { Fees } from "../../artifacts/types/Fees";
 
 let tokenAddr: string;
 let weightedAverage: WeightedAverage;
@@ -24,6 +25,7 @@ let vaultRegistry: VaultRegistry;
 let migrationRegistry: MigrationRegistry;
 let singleAssetVault: SingleAssetVault;
 let foundry: Foundry;
+let fee: Fees;
 let hub: Hub;
 let token: ERC20;
 let account0: SignerWithAddress;
@@ -32,11 +34,13 @@ let account2: SignerWithAddress;
 let account3: SignerWithAddress;
 let tokenHolder: Signer;
 let tokenWhale: string;
-export default async function hubSetup(
+
+export async function hubSetup(
   encodedCurveDetails: string,
   encodedVaultArgs: string,
   refundRatio: number,
   curve: ICurve,
+  fees?: number[],
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
@@ -51,6 +55,7 @@ export default async function hubSetup(
   foundry: Foundry;
   hub: Hub;
   token: ERC20;
+  fee: Fees;
   account0: SignerWithAddress;
   account1: SignerWithAddress;
   account2: SignerWithAddress;
@@ -64,10 +69,19 @@ export default async function hubSetup(
     ({ DAI, DAIWhale } = await getNamedAccounts());
     tokenWhale = DAIWhale;
     tokenAddr = DAI;
+  } else {
+    tokenAddr = erc20Address;
+    tokenWhale = erc20Whale;
   }
   [account0, account1, account2, account3] = await ethers.getSigners();
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
+
+  console.log(`
+  **************
+  tokenWhale: ${tokenWhale}
+  ${ethers.utils.formatEther(await tokenHolder.getBalance())} ETH
+  ************`);
   token
     .connect(tokenHolder)
     .transfer(account1.address, ethers.utils.parseEther("1000"));
@@ -91,6 +105,21 @@ export default async function hubSetup(
     meTokenFactory.address,
     migrationRegistry.address
   );
+  fee = await deploy<Fees>("Fees");
+  let feeInitialization = fees;
+  if (!feeInitialization) {
+    feeInitialization = [0, 0, 0, 0, 0, 0];
+  }
+  await fee.initialize(
+    feeInitialization[0],
+    feeInitialization[1],
+    feeInitialization[2],
+    feeInitialization[3],
+    feeInitialization[4],
+    feeInitialization[5]
+  );
+  await foundry.initialize(hub.address, fee.address, meTokenRegistry.address);
+
   singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
@@ -102,6 +131,7 @@ export default async function hubSetup(
   );
   await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
+
   await hub.initialize(
     foundry.address,
     vaultRegistry.address,
@@ -126,6 +156,7 @@ export default async function hubSetup(
     migrationRegistry,
     singleAssetVault,
     foundry,
+    fee,
     hub,
     token,
     account0,
@@ -134,5 +165,55 @@ export default async function hubSetup(
     account3,
     tokenHolder,
     tokenWhale,
+  };
+}
+
+export async function addHubSetup(
+  hub: Hub,
+  foundry: Foundry,
+  meTokenRegistry: MeTokenRegistry,
+  migrationRegistry: MigrationRegistry,
+  vaultRegistry: VaultRegistry,
+  encodedCurveDetails: string,
+  encodedVaultArgs: string,
+  refundRatio: number,
+  curve: ICurve,
+  daoAddress?: string
+): Promise<{
+  hubId: number;
+}> {
+  const isCurveApproved = curveRegistry.isApproved(curve.address);
+  if (!isCurveApproved) {
+    await curveRegistry.approve(curve.address);
+  }
+  let dao = daoAddress;
+  if (!dao) {
+    [account0] = await ethers.getSigners();
+    dao = account0.address;
+  }
+
+  singleAssetVault = await deploy<SingleAssetVault>(
+    "SingleAssetVault",
+    undefined, //no libs
+    dao, // DAO
+    foundry.address, // foundry
+    hub.address, // hub
+    meTokenRegistry.address, //IMeTokenRegistry
+    migrationRegistry.address //IMigrationRegistry
+  );
+
+  await vaultRegistry.approve(singleAssetVault.address);
+
+  await hub.register(
+    tokenAddr,
+    singleAssetVault.address,
+    curve.address,
+    refundRatio, //refund ratio
+    encodedCurveDetails,
+    encodedVaultArgs
+  );
+  const hubId = (await hub.count()).toNumber();
+  return {
+    hubId,
   };
 }

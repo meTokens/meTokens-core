@@ -14,7 +14,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 
@@ -39,14 +39,14 @@ describe("UniswapSingleTransfer.sol", () => {
   let foundry: Foundry;
   let meToken: MeToken;
   let hub: Hub;
-  let fees: Fees;
+  let fee: Fees;
 
   const hubId1 = 1;
   const hubId2 = 2;
   const name = "Carl meToken";
   const symbol = "CARL";
   const amount = ethers.utils.parseEther("100");
-  const fee = 3000;
+  const fees = 3000;
   const refundRatio = 500000;
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
@@ -77,9 +77,9 @@ describe("UniswapSingleTransfer.sol", () => {
     earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
     encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint24"],
-      [earliestSwapTime, fee]
+      [earliestSwapTime, fees]
     );
-
+    console.log(`before hubSetup`);
     curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     ({
       hub,
@@ -90,19 +90,16 @@ describe("UniswapSingleTransfer.sol", () => {
       account1,
       account2,
       meTokenRegistry,
+      fee,
     } = await hubSetup(
       encodedCurveDetails,
       encodedVaultDAIArgs,
       refundRatio,
-      curve
+      curve,
+      undefined
     ));
-    fees = await deploy<Fees>("Fees");
-    await fees.initialize(0, 0, 0, 0, 0, 0);
-    await foundry.initialize(
-      hub.address,
-      fees.address,
-      meTokenRegistry.address
-    );
+
+    console.log(`after hubSetup`);
 
     // Register 2nd hub to which we'll migrate to
     await hub.register(
@@ -113,6 +110,7 @@ describe("UniswapSingleTransfer.sol", () => {
       encodedCurveDetails,
       encodedVaultWETHArgs
     );
+    console.log(`after hub register`);
     // Deploy uniswap migration and approve it to the registry
     migration = await deploy<UniswapSingleTransfer>(
       "UniswapSingleTransfer",
@@ -128,7 +126,7 @@ describe("UniswapSingleTransfer.sol", () => {
       singleAssetVault.address,
       migration.address
     );
-
+    console.log(`after approve`);
     // Prefund owner & buyer w/ DAI & WETH
     dai = await getContractAt<ERC20>("ERC20", DAI);
     weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -146,11 +144,13 @@ describe("UniswapSingleTransfer.sol", () => {
     weth
       .connect(wethHolder)
       .transfer(account2.address, ethers.utils.parseEther("100"));
-
+    console.log(`after transfer`);
+    await dai.connect(account1).approve(meTokenRegistry.address, amount);
     // Create meToken
     const tx = await meTokenRegistry
       .connect(account1)
       .subscribe(name, symbol, hubId1, amount);
+    console.log(`after subscribe`);
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
@@ -166,7 +166,7 @@ describe("UniswapSingleTransfer.sol", () => {
     it("Returns false for start time before current time", async () => {
       badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint24"],
-        [earliestSwapTime - 720 * 60, fee] // 2 hours beforehand
+        [earliestSwapTime - 720 * 60, fees] // 2 hours beforehand
       );
       const isValid = await migration.isValid(
         meToken.address,
