@@ -181,8 +181,7 @@ contract BancorZeroCurve is ICurve {
             tokensDeposited = _calculateTokensDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
-                bancor_.baseY,
-                0
+                bancor_.baseY
             );
         }
     }
@@ -205,8 +204,7 @@ contract BancorZeroCurve is ICurve {
             tokensDeposited = _calculateTokensDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.targetReserveWeight,
-                bancor_.targetBaseY,
-                0
+                bancor_.targetBaseY
             );
         }
     }
