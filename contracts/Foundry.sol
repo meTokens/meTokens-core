@@ -407,4 +407,55 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
     }
+
+    function calculateTokensDeposited(
+        // TODO: can we just pass in hubId instead of _meToken for first argument?
+        address _meToken,
+        uint256 _desiredMeTokensReturned
+    ) public view returns (uint256 tokensDeposited) {
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        // gas savings
+        uint256 totalSupply_ = IERC20(_meToken).totalSupply();
+
+        // Calculate return assuming update is not happening
+        tokensDeposited = ICurve(hub_.curve).calculateTokensDeposited(
+            _desiredMeTokensReturned,
+            meToken_.hubId,
+            totalSupply_,
+            meToken_.balancePooled
+        );
+        // Logic for if we're switching to a new curve type // updating curveDetails
+        if (
+            (hub_.updating && (hub_.targetCurve != address(0))) ||
+            (hub_.reconfigure)
+        ) {
+            uint256 targetTokensDeposited;
+            if (hub_.targetCurve != address(0)) {
+                // Means we are updating to a new curve type
+                targetTokensDeposited = ICurve(hub_.targetCurve)
+                    .calculateTokensDeposited(
+                        _desiredMeTokensReturned,
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
+                    );
+            } else {
+                // Must mean we're updating curveDetails
+                targetTokensDeposited = ICurve(hub_.curve)
+                    .calculateTargetTokensDeposited(
+                        _desiredMeTokensReturned,
+                        meToken_.hubId,
+                        totalSupply_,
+                        meToken_.balancePooled
+                    );
+            }
+            tokensDeposited = WeightedAverage.calculate(
+                tokensDeposited,
+                targetTokensDeposited,
+                hub_.startTime,
+                hub_.endTime
+            );
+        }
+    }
 }
