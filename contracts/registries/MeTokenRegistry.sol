@@ -73,8 +73,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         address meTokenAddr = meTokenFactory.create(_name, _symbol);
 
         // Mint meToken to user
+        uint256 _meTokensMinted;
         if (_assetsDeposited > 0) {
-            uint256 _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
+            _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
                 _assetsDeposited, // _deposit_amount
                 _hubId, // _hubId
                 0, // _supply
@@ -92,7 +93,16 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
 
-        emit Subscribe(meTokenAddr, msg.sender, _name, _symbol, _hubId);
+        emit Subscribe(
+            meTokenAddr,
+            msg.sender,
+            _meTokensMinted,
+            hub_.asset,
+            _assetsDeposited,
+            _name,
+            _symbol,
+            _hubId
+        );
     }
 
     /// @inheritdoc IMeTokenRegistry
