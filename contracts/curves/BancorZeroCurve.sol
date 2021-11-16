@@ -16,7 +16,6 @@ contract BancorZeroCurve is ICurve {
     using ABDKMathQuad for bytes16;
 
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
-    //  uint256 public BASE_X = uint256(1 ether);
     uint32 public maxWeight = 1000000;
     bytes16 private immutable _one = (uint256(1)).fromUInt();
 
@@ -52,20 +51,20 @@ contract BancorZeroCurve is ICurve {
         // TODO: access control
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
-        Details.Bancor storage bancorDetails = _bancors[_hubId];
+        Details.Bancor storage bancor_ = _bancors[_hubId];
 
         require(targetReserveWeight > 0, "!reserveWeight");
         require(
-            targetReserveWeight != bancorDetails.reserveWeight,
+            targetReserveWeight != bancor_.reserveWeight,
             "targetWeight!=Weight"
         );
 
         // targetBaseX = (old baseY * oldR) / newR
-        uint256 targetBaseY = (bancorDetails.baseY *
-            bancorDetails.reserveWeight) / targetReserveWeight;
+        uint256 targetBaseY = (bancor_.baseY * bancor_.reserveWeight) /
+            targetReserveWeight;
 
-        bancorDetails.targetBaseY = targetBaseY;
-        bancorDetails.targetReserveWeight = targetReserveWeight;
+        bancor_.targetBaseY = targetBaseY;
+        bancor_.targetReserveWeight = targetReserveWeight;
     }
 
     function finishReconfigure(uint256 _hubId) external override {
@@ -164,6 +163,52 @@ contract BancorZeroCurve is ICurve {
         );
     }
 
+    function calculateTokensDeposited(
+        uint256 _desiredMeTokens,
+        uint256 _hubId,
+        uint256 _supply,
+        uint256 _balancePooled
+    ) external view override returns (uint256 tokensDeposited) {
+        Details.Bancor memory bancor_ = _bancors[_hubId];
+        if (_supply > 0) {
+            tokensDeposited = _calculateTokensDeposited(
+                _desiredMeTokens,
+                bancor_.reserveWeight,
+                bancor_.baseY,
+                _balancePooled
+            );
+        } else {
+            tokensDeposited = _calculateTokensDepositedFromZero(
+                _desiredMeTokens,
+                bancor_.reserveWeight,
+                bancor_.baseY
+            );
+        }
+    }
+
+    function calculateTargetTokensDeposited(
+        uint256 _desiredMeTokens,
+        uint256 _hubId,
+        uint256 _supply,
+        uint256 _balancePooled
+    ) external view override returns (uint256 tokensDeposited) {
+        Details.Bancor memory bancor_ = _bancors[_hubId];
+        if (_supply > 0) {
+            tokensDeposited = _calculateTokensDeposited(
+                _desiredMeTokens,
+                bancor_.targetReserveWeight,
+                bancor_.targetBaseY,
+                _balancePooled
+            );
+        } else {
+            tokensDeposited = _calculateTokensDepositedFromZero(
+                _desiredMeTokens,
+                bancor_.targetReserveWeight,
+                bancor_.targetBaseY
+            );
+        }
+    }
+
     /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @dev _supply * ((1 + _tokensDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
@@ -196,6 +241,8 @@ contract BancorZeroCurve is ICurve {
         bytes16 exponent = uint256(_reserveWeight).fromUInt().div(
             uint256(maxWeight).fromUInt()
         );
+        // 1 + balanceDeposited/connectorBalance
+        // TODO: name for `part1`?
         bytes16 part1 = _one.add(
             _tokensDeposited.fromUInt().div(_balancePooled.fromUInt())
         );
@@ -224,39 +271,16 @@ contract BancorZeroCurve is ICurve {
         bytes16 numerator = _tokensDeposited.fromUInt().mul(
             _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
         );
-        //  console.log("### numerator:%s", numerator.toUInt());
-
-        // as baseY == 1ether and we want to result to be in ether too we simply remove
+        // as baseY == 1 ether and we want to result to be in ether too we simply remove
         // the multiplication by baseX
         bytes16 denominator = reserveWeight.mul(_baseY.fromUInt());
-        //   console.log("### denominator:%s", denominator.toUInt());
         // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
         // (numerator/denominator) ^ (reserveWeight )
-        // bytes16 division = numerator.div(denominator);
-        //    console.log("### division:%s", division.toUInt());
         bytes16 res = (numerator.div(denominator))
             .ln()
             .mul(reserveWeight)
             .exp();
         return res.toUInt();
-        // (MAX_WEIGHT/reserveWeight -1)
-        /*  bytes16 exponent = uint256(maxWeight)
-            .fromUInt()
-            .div(_reserveWeight.fromUInt())
-            .sub(_one);
-        // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
-        // _baseX ^ (MAX_WEIGHT/reserveWeight )
-        bytes16 denominator_denominator = (_baseX.ln().mul(exponent)).exp();
-        bytes16 denominator = _reserveWeight.fromUInt().mul(_baseX).mul(
-            _baseY.fromUInt()
-        );
-        // tokensDeposited / (reserveWeight * baseX * baseY) / baseX ^ (MAX_WEIGHT/reserveWeight)
-        bytes16 base = _tokensDeposited.fromUInt().div(denominator).div(
-            denominator_denominator
-        );
-        // [tokensDeposited / (reserveWeight * baseX * baseY) / baseX ^ (MAX_WEIGHT/reserveWeight)] ^ reserveWeight
-        bytes16 res = (base.ln().mul(_reserveWeight.fromUInt()).exp());
-        return res.toUInt(); */
     }
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
@@ -310,4 +334,33 @@ contract BancorZeroCurve is ICurve {
         );
         return res.toUInt();
     }
+
+    // (baseY * desiredMeTokens^2 * reserveWeight) / baseX
+    // Or (baseY * reserveWeight) / baseX * desiredMeTokens^2
+    function _calculateTokensDepositedFromZero(
+        uint256 _desiredMeTokens,
+        uint256 _reserveWeight,
+        uint256 _baseY
+    ) private view returns (uint256) {
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(
+            uint256(maxWeight).fromUInt()
+        );
+        bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
+        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
+        bytes16 squared = _desiredMeTokens
+            .fromUInt()
+            .ln()
+            .mul(uint256(2).fromUInt())
+            .exp();
+        bytes16 res = numerator.mul(squared).div(_baseX);
+        return res.toUInt();
+    }
+
+    // (baseY * (supply + desiredMeTokens)^2 * reserveWeight / baseX - pooledBalance
+    function _calculateTokensDeposited(
+        uint256 _desiredMeTokens,
+        uint256 _reserveWeight,
+        uint256 _supply,
+        uint256 _balancePooled
+    ) private view returns (uint256) {}
 }
