@@ -28,13 +28,14 @@ describe("Generic Curve", () => {
   let meToken: MeToken;
   let hub: Hub;
   let fees: Fees;
+  let singleAssetVault: SingleAssetVault;
 
   const hubId = 1;
   const name = "Carl meToken";
   const symbol = "CARL";
   const refundRatio = 240000;
   const PRECISION = BigNumber.from(10).pow(6);
-  const amount1 = ethers.utils.parseEther("100");
+  const amount1 = ethers.utils.parseEther("1000");
   const amount2 = ethers.utils.parseEther("69");
 
   // TODO: pass in curve arguments to function
@@ -56,8 +57,15 @@ describe("Generic Curve", () => {
     );
     _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
-    ({ hub, foundry, account0, account1, account2, meTokenRegistry } =
-      await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
+    ({
+      hub,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+      singleAssetVault,
+    } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
     fees = await deploy<Fees>("Fees");
     await fees.initialize(0, 0, 0, 0, 0, 0);
     await foundry.initialize(
@@ -91,20 +99,26 @@ describe("Generic Curve", () => {
       0
     );
 
+    // Get balances before mints
+    let ownerDaiBalanceBefore = await dai.balanceOf(account1.address);
+    let buyerDaiBalanceBefore = await dai.balanceOf(account2.address);
+    let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+
     // fast fwd a few blocks
+    // TODO
 
     // Mint first tokens to owner
-    let ownerDaiBalanceBefore = await dai.balanceOf(account1.address);
-    let vaultDaiBalanceBefore = await dai.balanceOf(SingleAssetVault.address);
-    const tx = await meTokenRegistry
+    let tx = await meTokenRegistry
       .connect(account1)
       .subscribe(name, symbol, hubId, amount1);
-    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+    let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
     // Compare expected meTokens minted to actual held
     let meTokensMinted = await meToken.balanceOf(account1.address);
     expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+    let totalSupply = await meToken.totalSupply();
+    expect(totalSupply).to.equal(meTokensMinted);
 
     // Compare owner dai balance before/after
     let ownerDaiBalanceAfter = await dai.balanceOf(account1.address);
@@ -114,13 +128,62 @@ describe("Generic Curve", () => {
     ).to.equal(amount1);
 
     // Expect balance of vault to have increased by assets deposited
+    let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+    expect(
+      Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
+    ).to.equal(amount1);
+
+    // Now, rewind to before the owner minting on meToken creation
+    // TODO
 
     // Mint first tokens to buyer
+    tx = await meTokenRegistry
+      .connect(account1)
+      .subscribe(name, symbol, hubId, 0);
+    meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    await foundry
+      .connect(account2)
+      .mint(meToken.address, amount1, account2.address);
 
-    // Mint first tokens to buyer
+    // Compare expected meTokens minted to actual held
+    meTokensMinted = await meToken.balanceOf(account2.address);
+    expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+    totalSupply = await meToken.totalSupply();
+    expect(totalSupply).to.equal(meTokensMinted);
 
-    // let estimate = await _curve.calculateMintReturn
+    // Compare buyer dai balance before/after
+    let buyerDaiBalanceAfter = await dai.balanceOf(account1.address);
+    expect(
+      Number(buyerDaiBalanceBefore) - Number(buyerDaiBalanceAfter)
+    ).to.equal(amount1);
+
+    // Expect balance of vault to have increased by assets deposited
+    vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+    expect(
+      Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
+    ).to.equal(amount1);
   });
+
+  describe("calculateMintReturn()", () => {
+    it("Should return the same for owner and buyer", async () => {});
+  });
+
+  describe("calculateBurnReturn()", () => {
+    it("Should return correct amount to owner w/o balance locked", async () => {
+      // TODO
+    });
+    it("Should return correct amount to buyer w/o balance locked", async () => {
+      // TODO
+    });
+    it("Should return correct amount to owner w/ balance locked", async () => {
+      // TODO
+    });
+    it("Should return correct amount to buyer w/ balance locked", async () => {
+      // TODO
+    });
+  });
+
   it("calculateMintReturn() should work", async () => {
     let amount = one.mul(2);
     let estimate = await _curve.calculateMintReturn(
@@ -163,8 +226,8 @@ describe("Generic Curve", () => {
     );
     expect(estimate).to.equal(ethers.utils.parseEther("20"));
   });
-  it("calculateBurnReturn() should work", async () => {
-    let amount = ethers.utils.parseEther("585.786437626904952");
+
+  describe("calculateBurnReturn()", () => {
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
     let estimate = await _curve.calculateBurnReturn(
@@ -209,46 +272,6 @@ describe("Generic Curve", () => {
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     expect(detail.targetBaseY).to.equal(targetBaseY);
-  });
-
-  it("calculateTargetMintReturn() from zero should work", async () => {
-    const detail = await _curve.getDetails(hubId);
-    let amount = one.mul(2);
-
-    // (2^((1/0.98)−1))/(0.000510204081632653^((1/0.98)−1)) ==1.183947292541541
-
-    let estimate = await _curve.calculateTargetMintReturn(amount, hubId, 0, 0);
-    expect(estimate).to.equal(ethers.utils.parseEther("2.279096531302603397"));
-  });
-
-  it("calculateTargetMintReturn() should work", async () => {
-    const detail = await _curve.getDetails(hubId);
-    const targetReserveWeight = detail.targetReserveWeight;
-    let amount = one.mul(2);
-
-    //   2/(2000^((1/0.98)−1))* 1944.930817973436691629^((1/0.98)−1)) == 1,998860701224224
-    let estimate = await _curve.calculateTargetMintReturn(
-      amount,
-      hubId,
-      one.mul(2000),
-      one.mul(2)
-    );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("1944.930817973436691629")
-    );
-  });
-
-  it("calculateTargetBurnReturn()  to zero supply should work", async () => {
-    let amount = ethers.utils.parseEther("2000");
-    // 586 burned token should release 1 DAI
-    //  let p = await getRequestParams(amount);
-    let estimate = await _curve.calculateTargetBurnReturn(
-      amount,
-      hubId,
-      one.mul(2000),
-      one.mul(2)
-    );
-    expect(estimate).to.equal(ethers.utils.parseEther("2"));
   });
 
   it("calculateBurnReturn() should work", async () => {
