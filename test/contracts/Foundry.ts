@@ -130,7 +130,7 @@ describe("Foundry.sol", () => {
     // gas savings
     const totalSupply = await meToken.totalSupply();
 
-    const meTokensMinted = await bancorZeroCurve.calculateMintReturn(
+    const meTokensMinted = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       totalSupply,

@@ -75,7 +75,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         // Mint meToken to user
         uint256 _meTokensMinted;
         if (_assetsDeposited > 0) {
-            _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
+            _meTokensMinted = ICurve(hub_.curve).viewMeTokensMinted(
                 _assetsDeposited, // _deposit_amount
                 _hubId, // _hubId
                 0, // _supply
