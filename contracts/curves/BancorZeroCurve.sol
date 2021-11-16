@@ -268,14 +268,18 @@ contract BancorZeroCurve is ICurve {
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(
             uint256(maxWeight).fromUInt()
         );
+        // _tokensDeposited * baseY ^ (1/connectorWeight)
         bytes16 numerator = _tokensDeposited.fromUInt().mul(
             _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
         );
-        // as baseY == 1 ether and we want to result to be in ether too we simply remove
-        // the multiplication by baseX
+        // as baseX == 1 ether and we want to result to be in ether too we simply remove
+        // the multiplication by baseY
         bytes16 denominator = reserveWeight.mul(_baseY.fromUInt());
         // Instead of calculating "x ^ exp", we calculate "e ^ (log(x) * exp)".
         // (numerator/denominator) ^ (reserveWeight )
+        // =>   e^ (log(numerator/denominator) * reserveWeight )
+        // =>   log(numerator/denominator)  == (numerator.div(denominator)).ln()
+        // =>   (numerator.div(denominator)).ln().mul(reserveWeight).exp();
         bytes16 res = (numerator.div(denominator))
             .ln()
             .mul(reserveWeight)
