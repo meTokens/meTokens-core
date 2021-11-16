@@ -9,6 +9,20 @@ export async function passOneHour(): Promise<void> {
   });
 }
 
+export async function passOneDay(): Promise<void> {
+  await network.provider.request({
+    method: "evm_increaseTime",
+    params: [86400],
+  });
+}
+
+export async function passOneWeek(): Promise<void> {
+  await network.provider.request({
+    method: "evm_increaseTime",
+    params: [604800],
+  });
+}
+
 export async function mineBlock(timestamp: number): Promise<void> {
   await network.provider.request({
     method: "evm_mine",

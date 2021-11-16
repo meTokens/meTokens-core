@@ -4,11 +4,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IFees.sol";
 import "./interfaces/IMeTokenRegistry.sol";
 import "./interfaces/IMeToken.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/ICurve.sol";
 import "./interfaces/IVault.sol";
 import "./interfaces/IMigration.sol";
@@ -16,8 +15,10 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
+    using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
     uint256 public constant MAX_REFUND_RATIO = 10**6;
     IHub public hub;
@@ -82,10 +83,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
             vault = IVault(hub_.vault);
             asset = hub_.asset;
         }
-
-        IERC20(asset).transferFrom(
+        console.log("###_tokensDeposited:%s", _tokensDeposited);
+        IERC20(asset).safeTransferFrom(
             msg.sender,
             address(vault),
+            _tokensDeposited
+        );
+        console.log(
+            "                                   ###********###  approveAsset for:%s",
             _tokensDeposited
         );
         vault.approveAsset(asset, _tokensDeposited);
@@ -97,9 +102,13 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meToken,
             tokensDepositedAfterFees
         );
-
+        console.log(
+            "###meTokensMinted:%s  _recipient:%s",
+            meTokensMinted,
+            _recipient
+        );
         // Mint meToken to user
-        IERC20(_meToken).mint(_recipient, meTokensMinted);
+        IMeToken(_meToken).mint(_recipient, meTokensMinted);
         emit Mint(
             _meToken,
             asset,
@@ -150,6 +159,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 actualTokensReturned =
                     (tokensReturned * hub_.refundRatio) /
                     MAX_REFUND_RATIO;
+                console.log(
+                    "##  Buyer targetRefundRatio=0 actualTokensReturned:%s tokensReturned:%s hub_.refundRatio:%s",
+                    actualTokensReturned,
+                    tokensReturned,
+                    hub_.refundRatio
+                );
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
@@ -162,11 +177,18 @@ contract Foundry is IFoundry, Ownable, Initializable {
                                 hub_.endTime
                             )) /
                         MAX_REFUND_RATIO;
+                    console.log(
+                        "##  Buyer targetRefundRatio>0 actualTokensReturned:%s tokensReturned:%s hub_.refundRatio:%s",
+                        actualTokensReturned,
+                        tokensReturned,
+                        hub_.refundRatio
+                    );
                 } else {
                     // meToken is resubscribing
                     Details.Hub memory targetHub_ = hub.getDetails(
                         meToken_.targetHubId
                     );
+
                     actualTokensReturned =
                         (tokensReturned *
                             WeightedAverage.calculate(
@@ -176,12 +198,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
                                 meToken_.endTime
                             )) /
                         MAX_REFUND_RATIO;
+                    console.log(
+                        "##  Buyer  targetRefundRatio!=0 targetRefundRatio=0 actualTokensReturned:%s tokensReturned:%s ",
+                        actualTokensReturned,
+                        tokensReturned
+                    );
+                    console.log(
+                        "##  Buyer  targetRefundRatio!=0  targetHub_.refundRatio:%s hub_.refundRatio:%s",
+                        targetHub_.refundRatio,
+                        hub_.refundRatio
+                    );
                 }
             }
         }
 
         // Burn metoken from user
-        IERC20(_meToken).burn(msg.sender, _meTokensBurned);
+        IMeToken(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
         meTokenRegistry.updateBalancePooled(false, _meToken, tokensReturned);
@@ -203,8 +235,15 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         uint256 fee = actualTokensReturned * feeRate;
+        console.log("## fee:%s feeRate:%s", fee, feeRate);
         actualTokensReturned -= fee;
-        IERC20(hub_.asset).transferFrom(
+
+        console.log("## actualTokensReturned:%s  ", actualTokensReturned);
+        console.log(
+            "## allowance:%s  ",
+            IERC20(hub_.asset).allowance(hub_.vault, address(this))
+        );
+        IERC20(hub_.asset).safeTransferFrom(
             hub_.vault,
             _recipient,
             actualTokensReturned
@@ -219,13 +258,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meTokensBurned,
             actualTokensReturned
         );
-    }
-
-    function approveVaultToSpendAsset(address _vault, address _asset)
-        external
-        override
-    {
-        IERC20(_asset).approve(_vault, type(uint256).max);
     }
 
     function viewBurn(
