@@ -85,23 +85,23 @@ contract BancorZeroCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function calculateMintReturn(
-        uint256 _tokensDeposited,
+    function viewMeTokensMinted(
+        uint256 _assetsDeposited,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 meTokensReturned) {
+    ) external view override returns (uint256 meTokensMinted) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
-            meTokensReturned = _calculateMintReturn(
-                _tokensDeposited,
+            meTokensMinted = _viewMeTokensMinted(
+                _assetsDeposited,
                 bancorDetails.reserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
-            meTokensReturned = _calculateMintReturnFromZero(
-                _tokensDeposited,
+            meTokensMinted = _viewMeTokensMintedFromZero(
+                _assetsDeposited,
                 bancorDetails.reserveWeight,
                 bancorDetails.baseY
             );
@@ -109,23 +109,23 @@ contract BancorZeroCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function calculateTargetMintReturn(
-        uint256 _tokensDeposited,
+    function viewTargetMeTokensMinted(
+        uint256 _assetsDeposited,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 meTokensReturned) {
+    ) external view override returns (uint256 meTokensMinted) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
-            meTokensReturned = _calculateMintReturn(
-                _tokensDeposited,
+            meTokensMinted = _viewMeTokensMinted(
+                _assetsDeposited,
                 bancorDetails.targetReserveWeight,
                 _supply,
                 _balancePooled
             );
         } else {
-            meTokensReturned = _calculateMintReturnFromZero(
-                _tokensDeposited,
+            meTokensMinted = _viewMeTokensMintedFromZero(
+                _assetsDeposited,
                 bancorDetails.targetReserveWeight,
                 bancorDetails.targetBaseY
             );
@@ -133,14 +133,14 @@ contract BancorZeroCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function calculateBurnReturn(
+    function viewAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
-        tokensReturned = _calculateBurnReturn(
+        assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             bancorDetails.reserveWeight,
             _supply,
@@ -148,14 +148,14 @@ contract BancorZeroCurve is ICurve {
         );
     }
 
-    function calculateTargetBurnReturn(
+    function viewTargetAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
-        tokensReturned = _calculateBurnReturn(
+        assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             bancorDetails.targetReserveWeight,
             _supply,
@@ -163,22 +163,22 @@ contract BancorZeroCurve is ICurve {
         );
     }
 
-    function calculateTokensDeposited(
+    function viewAssetsDeposited(
         uint256 _desiredMeTokens,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
-            tokensDeposited = _calculateTokensDeposited(
+            assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
                 bancor_.baseY,
                 _balancePooled
             );
         } else {
-            tokensDeposited = _calculateTokensDepositedFromZero(
+            assetsDeposited = _viewAssetsDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
                 bancor_.baseY
@@ -186,22 +186,22 @@ contract BancorZeroCurve is ICurve {
         }
     }
 
-    function calculateTargetTokensDeposited(
+    function viewTargetAssetsDeposited(
         uint256 _desiredMeTokens,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
-            tokensDeposited = _calculateTokensDeposited(
+            assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
                 bancor_.targetReserveWeight,
                 bancor_.targetBaseY,
                 _balancePooled
             );
         } else {
-            tokensDeposited = _calculateTokensDepositedFromZero(
+            assetsDeposited = _viewAssetsDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.targetReserveWeight,
                 bancor_.targetBaseY
@@ -211,14 +211,14 @@ contract BancorZeroCurve is ICurve {
 
     /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
-    /// @dev _supply * ((1 + _tokensDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
-    /// @param _tokensDeposited   amount of collateral tokens to deposit
+    /// @dev _supply * ((1 + _assetsDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
+    /// @param _assetsDeposited   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply          current meToken supply
     /// @param _balancePooled   total connector balance
     /// @return amount of meTokens minted
-    function _calculateMintReturn(
-        uint256 _tokensDeposited,
+    function _viewMeTokensMinted(
+        uint256 _assetsDeposited,
         uint32 _reserveWeight,
         uint256 _supply,
         uint256 _balancePooled
@@ -230,12 +230,12 @@ contract BancorZeroCurve is ICurve {
                 _reserveWeight <= maxWeight
         );
         // special case for 0 deposit amount
-        if (_tokensDeposited == 0) {
+        if (_assetsDeposited == 0) {
             return 0;
         }
         // special case if the weight = 100%
         if (_reserveWeight == maxWeight) {
-            return (_supply * _tokensDeposited) / _balancePooled;
+            return (_supply * _assetsDeposited) / _balancePooled;
         }
 
         bytes16 exponent = uint256(_reserveWeight).fromUInt().div(
@@ -244,7 +244,7 @@ contract BancorZeroCurve is ICurve {
         // 1 + balanceDeposited/connectorBalance
         // TODO: name for `part1`?
         bytes16 part1 = _one.add(
-            _tokensDeposited.fromUInt().div(_balancePooled.fromUInt())
+            _assetsDeposited.fromUInt().div(_balancePooled.fromUInt())
         );
         //Instead of calculating "base ^ exp", we calculate "e ^ (log(base) * exp)".
         bytes16 res = _supply.fromUInt().mul(
@@ -255,21 +255,21 @@ contract BancorZeroCurve is ICurve {
 
     /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
     ///         constant y, calculates the return for a given conversion (in the meToken)
-    /// @dev  _baseX / (_baseY ^ (MAX_WEIGHT/reserveWeight -1)) * tokensDeposited ^(MAX_WEIGHT/reserveWeight -1)
+    /// @dev  _baseX / (_baseY ^ (MAX_WEIGHT/reserveWeight -1)) * assetsDeposited ^(MAX_WEIGHT/reserveWeight -1)
     /// @dev  _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
-    /// @param _tokensDeposited   amount of collateral tokens to deposit
+    /// @param _assetsDeposited   amount of collateral tokens to deposit
     /// @param _baseY          constant x
     /// @return amount of meTokens minted
-    function _calculateMintReturnFromZero(
-        uint256 _tokensDeposited,
+    function _viewMeTokensMintedFromZero(
+        uint256 _assetsDeposited,
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(
             uint256(maxWeight).fromUInt()
         );
-        // _tokensDeposited * baseY ^ (1/connectorWeight)
-        bytes16 numerator = _tokensDeposited.fromUInt().mul(
+        // _assetsDeposited * baseY ^ (1/connectorWeight)
+        bytes16 numerator = _assetsDeposited.fromUInt().mul(
             _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
         );
         // as baseX == 1 ether and we want to result to be in ether too we simply remove
@@ -295,7 +295,7 @@ contract BancorZeroCurve is ICurve {
     /// @param _supply              current meToken supply
     /// @param _balancePooled       total connector balance
     /// @return amount of collateral tokens received
-    function _calculateBurnReturn(
+    function _viewAssetsReturned(
         uint256 _meTokensBurned,
         uint32 _reserveWeight,
         uint256 _supply,
@@ -341,7 +341,7 @@ contract BancorZeroCurve is ICurve {
 
     // (baseY * desiredMeTokens^2 * reserveWeight) / baseX
     // Or (baseY * reserveWeight) / baseX * desiredMeTokens^2
-    function _calculateTokensDepositedFromZero(
+    function _viewAssetsDepositedFromZero(
         uint256 _desiredMeTokens,
         uint256 _reserveWeight,
         uint256 _baseY
@@ -361,7 +361,7 @@ contract BancorZeroCurve is ICurve {
     }
 
     // (baseY * (supply + desiredMeTokens)^2 * reserveWeight / baseX - pooledBalance
-    function _calculateTokensDeposited(
+    function _viewAssetsDeposited(
         uint256 _desiredMeTokens,
         uint256 _reserveWeight,
         uint256 _supply,

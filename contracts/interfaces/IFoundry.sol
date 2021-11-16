@@ -7,7 +7,7 @@ interface IFoundry {
         address token,
         address depositor,
         address recipient,
-        uint256 tokensDeposited,
+        uint256 assetsDeposited,
         uint256 meTokensMinted
     );
 
@@ -17,12 +17,12 @@ interface IFoundry {
         address burner,
         address recipient,
         uint256 meTokensBurned,
-        uint256 tokensReturned
+        uint256 assetsReturned
     );
 
     function mint(
         address _meToken,
-        uint256 _tokensDeposited,
+        uint256 _assetsDeposited,
         address _recipient
     ) external;
 

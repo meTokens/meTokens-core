@@ -105,9 +105,9 @@ describe("Generic Curve", () => {
     it("Returns correct registered details", async () => {});
   });
 
-  describe("calculateMintReturn()", () => {
+  describe("viewMeTokensMinted()", () => {
     it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
-      let expectedMeTokensMinted = await _curve.calculateMintReturn(
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
         amount1,
         hubId,
         0,
@@ -153,7 +153,7 @@ describe("Generic Curve", () => {
     });
 
     it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
-      let expectedMeTokensMinted = await _curve.calculateMintReturn(
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
         amount1,
         hubId,
         0,
@@ -269,9 +269,9 @@ describe("Generic Curve", () => {
     });
   });
 
-  // it("calculateMintReturn() should work", async () => {
+  // it("viewMeTokensMinted() should work", async () => {
   //   let amount = one.mul(2);
-  //   let estimate = await _curve.calculateMintReturn(
+  //   let estimate = await _curve.viewMeTokensMinted(
   //     amount,
   //     hubId,
   //     one.mul(2000),
@@ -282,7 +282,7 @@ describe("Generic Curve", () => {
   //   );
   //   amount = one.mul(2);
 
-  //   estimate = await _curve.calculateMintReturn(
+  //   estimate = await _curve.viewMeTokensMinted(
   //     amount,
   //     hubId,
   //     ethers.utils.parseEther("2828.427124746190097603"),
@@ -292,9 +292,9 @@ describe("Generic Curve", () => {
   //     ethers.utils.parseEther("635.674490391564489451")
   //   );
   // });
-  // it("calculateMintReturn should work with a max of 1414213562 supply should work", async () => {
+  // it("viewMeTokensMinted should work with a max of 1414213562 supply should work", async () => {
   //   let amount = one.mul(999999999999999);
-  //   let estimate = await _curve.calculateMintReturn(amount, hubId, 0, 0);
+  //   let estimate = await _curve.viewMeTokensMinted(amount, hubId, 0, 0);
   //   expect(estimate).to.equal(
   //     ethers.utils.parseEther("1414213562.373094341694907537")
   //   );

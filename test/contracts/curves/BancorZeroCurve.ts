@@ -74,10 +74,10 @@ describe("BancorZeroCurve", () => {
     ));
     dai = token;
   });
-  it("calculateMintReturn() from zero should work", async () => {
+  it("viewMeTokensMinted() from zero should work", async () => {
     let amount = one.mul(20);
 
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       0,
@@ -87,9 +87,9 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("199.999999999999999999")
     );
   });
-  it("calculateMintReturn() should work", async () => {
+  it("viewMeTokensMinted() should work", async () => {
     let amount = one.mul(2);
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
@@ -100,7 +100,7 @@ describe("BancorZeroCurve", () => {
     );
     amount = one.mul(2);
 
-    estimate = await bancorZeroCurve.calculateMintReturn(
+    estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       ethers.utils.parseEther("2828.427124746190097603"),
@@ -110,9 +110,9 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("635.674490391564489451")
     );
   });
-  it("calculateMintReturn should work with a max of 1414213562 supply should work", async () => {
+  it("viewMeTokensMinted should work with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       0,
