@@ -164,8 +164,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     Details.Hub memory targetHub_ = hub.getDetails(
                         meToken_.targetHubId
                     );
-                    actualTokensReturned =
-                        (tokensReturned *
+                    actualAssetsReturned =
+                        (assetsReturned *
                             WeightedAverage.calculate(
                                 hub_.refundRatio,
                                 targetHub_.refundRatio,
@@ -199,8 +199,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        uint256 fee = actualTokensReturned * feeRate;
-        actualTokensReturned -= fee;
+        uint256 fee = actualAssetsReturned * feeRate;
+        actualAssetsReturned -= fee;
         IERC20(hub_.asset).safeTransferFrom(
             hub_.vault,
             _recipient,
