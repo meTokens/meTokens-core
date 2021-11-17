@@ -15,8 +15,9 @@ contract BancorZeroCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
+    uint32 public constant maxWeight = 1000000;
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
-    uint32 public maxWeight = 1000000;
+    bytes16 private immutable _maxWeight = uint256(maxWeight).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
 
     // NOTE: keys are their respective hubId
@@ -174,6 +175,7 @@ contract BancorZeroCurve is ICurve {
             assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
+                _supply,
                 bancor_.baseY,
                 _balancePooled
             );
@@ -238,9 +240,7 @@ contract BancorZeroCurve is ICurve {
             return (_supply * _assetsDeposited) / _balancePooled;
         }
 
-        bytes16 exponent = uint256(_reserveWeight).fromUInt().div(
-            uint256(maxWeight).fromUInt()
-        );
+        bytes16 exponent = uint256(_reserveWeight).fromUInt().div(_maxWeight);
         // 1 + balanceDeposited/connectorBalance
         // TODO: name for `part1`?
         bytes16 part1 = _one.add(
@@ -265,9 +265,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
-        bytes16 reserveWeight = _reserveWeight.fromUInt().div(
-            uint256(maxWeight).fromUInt()
-        );
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
         // _assetsDeposited * baseY ^ (1/connectorWeight)
         bytes16 numerator = _assetsDeposited.fromUInt().mul(
             _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
@@ -323,9 +321,7 @@ contract BancorZeroCurve is ICurve {
         }
         // 1 / (reserveWeight/MAX_WEIGHT)
         bytes16 exponent = _one.div(
-            uint256(_reserveWeight).fromUInt().div(
-                uint256(maxWeight).fromUInt()
-            )
+            uint256(_reserveWeight).fromUInt().div(_maxWeight)
         );
         // 1 - (meTokensBurned / supply)
         bytes16 s = _one.sub(
@@ -346,9 +342,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
-        bytes16 reserveWeight = _reserveWeight.fromUInt().div(
-            uint256(maxWeight).fromUInt()
-        );
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
         bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
         // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
         bytes16 squared = _desiredMeTokens
@@ -360,11 +354,24 @@ contract BancorZeroCurve is ICurve {
         return res.toUInt();
     }
 
-    // (baseY * (supply + desiredMeTokens)^2 * reserveWeight / baseX - pooledBalance
+    // baseY * (supply + desiredMeTokens)^2 * reserveWeight / baseX - balancePooled
+    // or (baseY * reserveWeight) / baseX * (supply + desiredMeTokens)^2 - balancePooled
     function _viewAssetsDeposited(
         uint256 _desiredMeTokens,
         uint256 _reserveWeight,
         uint256 _supply,
+        uint256 _baseY,
         uint256 _balancePooled
-    ) private view returns (uint256) {}
+    ) private view returns (uint256) {
+        // TODO: does this need to be divided?
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
+        bytes16 k = _baseY.fromUInt().mul(reserveWeight).div(_baseX);
+        bytes16 squared = (_supply + _desiredMeTokens)
+            .fromUInt()
+            .ln()
+            .mul(uint256(2).fromUInt())
+            .exp();
+        bytes16 res = k.mul(squared).sub(_balancePooled.fromUInt());
+        return res.toUInt();
+    }
 }
