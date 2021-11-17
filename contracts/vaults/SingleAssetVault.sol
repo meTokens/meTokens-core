@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
@@ -11,6 +11,8 @@ import "../interfaces/ISingleAssetVault.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
+    using SafeERC20 for IERC20;
+
     constructor(
         address _dao,
         address _foundry,
@@ -31,7 +33,7 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
             meToken_.migration != address(0) &&
             address(this) != meToken_.migration
         ) {
-            IERC20(hub_.asset).transfer(meToken_.migration, balance);
+            IERC20(hub_.asset).safeTransfer(meToken_.migration, balance);
         }
         emit StartMigration(_meToken);
     }

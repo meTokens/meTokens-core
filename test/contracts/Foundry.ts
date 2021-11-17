@@ -18,7 +18,7 @@ import { Fees } from "../../artifacts/types/Fees";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransfer } from "../../artifacts/types/UniswapSingleTransfer";
-import hubSetup from "../utils/hubSetup";
+import { hubSetup } from "../utils/hubSetup";
 
 describe("Foundry.sol", () => {
   let DAI: string;
@@ -96,13 +96,6 @@ describe("Foundry.sol", () => {
       .connect(tokenHolder)
       .transfer(account2.address, ethers.utils.parseEther("1000"));
     fees = await deploy<Fees>("Fees");
-
-    await fees.initialize(0, 0, 0, 0, 0, 0);
-    await foundry.initialize(
-      hub.address,
-      fees.address,
-      meTokenRegistry.address
-    );
 
     // register a metoken
     const tx = await meTokenRegistry

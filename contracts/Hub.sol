@@ -28,7 +28,6 @@ contract Hub is Ownable, Initializable {
     IRegistry public curveRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
-    mapping(address => mapping(address => bool)) private _vaultAllowances;
 
     function initialize(
         address _foundry,
@@ -59,12 +58,6 @@ contract Hub is Ownable, Initializable {
 
         // Store value set base parameters to `{CurveName}.sol`
         _curve.register(++_count, _encodedCurveDetails);
-
-        if (!_vaultAllowances[address(_vault)][_asset]) {
-            // Approve foundry to spend asset from vault
-            foundry.approveVaultToSpendAsset(address(_vault), _asset);
-            _vaultAllowances[address(_vault)][_asset] = true;
-        }
 
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count];

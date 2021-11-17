@@ -43,9 +43,13 @@ contract UniswapSingleTransfer is Initializable, Ownable, Vault, IMigration {
         override
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
-        uint256 soonest = abi.decode(_encodedArgs, (uint256));
-        Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
 
+        (uint256 soonest, uint24 fee) = abi.decode(
+            _encodedArgs,
+            (uint256, uint24)
+        );
+        Details.UniswapSingleTransfer storage ust_ = _usts[_meToken];
+        ust_.fee = fee;
         ust_.soonest = soonest;
         ust_.started = true;
     }

@@ -6,7 +6,7 @@ import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 import { BigNumber } from "ethers";
 import { expect } from "chai";
 
