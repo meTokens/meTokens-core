@@ -9,7 +9,6 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMigrationRegistry.sol";
-import "hardhat/console.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)

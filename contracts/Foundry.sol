@@ -15,7 +15,6 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
-import "hardhat/console.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
     using SafeERC20 for IERC20;
@@ -83,14 +82,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
             vault = IVault(hub_.vault);
             asset = hub_.asset;
         }
-        console.log("###_tokensDeposited:%s", _tokensDeposited);
         IERC20(asset).safeTransferFrom(
             msg.sender,
             address(vault),
-            _tokensDeposited
-        );
-        console.log(
-            "                                   ###********###  approveAsset for:%s",
             _tokensDeposited
         );
         vault.approveAsset(asset, _tokensDeposited);
@@ -101,11 +95,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             true,
             _meToken,
             tokensDepositedAfterFees
-        );
-        console.log(
-            "###meTokensMinted:%s  _recipient:%s",
-            meTokensMinted,
-            _recipient
         );
         // Mint meToken to user
         IMeToken(_meToken).mint(_recipient, meTokensMinted);
@@ -128,7 +117,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         require(hub_.active, "Hub inactive");
-
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (
@@ -159,12 +147,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 actualTokensReturned =
                     (tokensReturned * hub_.refundRatio) /
                     MAX_REFUND_RATIO;
-                console.log(
-                    "##  Buyer targetRefundRatio=0 actualTokensReturned:%s tokensReturned:%s hub_.refundRatio:%s",
-                    actualTokensReturned,
-                    tokensReturned,
-                    hub_.refundRatio
-                );
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
@@ -177,12 +159,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                                 hub_.endTime
                             )) /
                         MAX_REFUND_RATIO;
-                    console.log(
-                        "##  Buyer targetRefundRatio>0 actualTokensReturned:%s tokensReturned:%s hub_.refundRatio:%s",
-                        actualTokensReturned,
-                        tokensReturned,
-                        hub_.refundRatio
-                    );
                 } else {
                     // meToken is resubscribing
                     Details.Hub memory targetHub_ = hub.getDetails(
@@ -198,16 +174,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                                 meToken_.endTime
                             )) /
                         MAX_REFUND_RATIO;
-                    console.log(
-                        "##  Buyer  targetRefundRatio!=0 targetRefundRatio=0 actualTokensReturned:%s tokensReturned:%s ",
-                        actualTokensReturned,
-                        tokensReturned
-                    );
-                    console.log(
-                        "##  Buyer  targetRefundRatio!=0  targetHub_.refundRatio:%s hub_.refundRatio:%s",
-                        targetHub_.refundRatio,
-                        hub_.refundRatio
-                    );
                 }
             }
         }
@@ -235,14 +201,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         uint256 fee = actualTokensReturned * feeRate;
-        console.log("## fee:%s feeRate:%s", fee, feeRate);
         actualTokensReturned -= fee;
 
-        console.log("## actualTokensReturned:%s  ", actualTokensReturned);
-        console.log(
-            "## allowance:%s  ",
-            IERC20(hub_.asset).allowance(hub_.vault, address(this))
-        );
         IERC20(hub_.asset).safeTransferFrom(
             hub_.vault,
             _recipient,

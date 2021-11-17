@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "./MeToken.sol";
-import "hardhat/console.sol";
 
 // import "../Roles.sol";
 
@@ -22,7 +21,6 @@ contract MeTokenFactory {
 
         // Create our meToken
         MeToken erc20 = new MeToken(_name, _symbol);
-        console.log("########MeToken:%s", address(erc20));
         return address(erc20);
     }
 }
