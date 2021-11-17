@@ -88,14 +88,14 @@ contract StepwiseCurve {
     }
 
     function viewMeTokensMinted(
-        uint256 _tokensDeposited, // tokens deposited
+        uint256 _assetsDeposited, // assets deposited
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view returns (uint256 meTokensMinted) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
-            _tokensDeposited,
+            _assetsDeposited,
             stepwiseDetails.stepX,
             stepwiseDetails.stepY,
             _supply,
@@ -104,14 +104,14 @@ contract StepwiseCurve {
     }
 
     function viewTargetMeTokensMinted(
-        uint256 _tokensDeposited, // tokens deposited
+        uint256 _assetsDeposited, // assets deposited
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view returns (uint256 meTokensMinted) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
-            _tokensDeposited,
+            _assetsDeposited,
             stepwiseDetails.targetStepX,
             stepwiseDetails.targetStepY,
             _supply,
@@ -153,49 +153,50 @@ contract StepwiseCurve {
 
     /// @notice Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
-    /// @param _tokensDeposited, // tokens deposited
+    /// @param _assetsDeposited, // assets deposited
     /// @param _stepX, // length of step (aka supply duration)
     /// @param _stepY, // height of step (aka price delta)
     /// @param _supply, // current supply
     /// @param _balancePooled // current collateral amount
     /// @return amount of meTokens minted
     function _viewMeTokensMinted(
-        uint256 _tokensDeposited, // tokens deposited
+        uint256 _assetsDeposited, // assets deposited
         uint256 _stepX, // length of step (aka supply duration)
         uint256 _stepY, // height of step (aka price delta)
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) private view returns (uint256) {
-        // validate input
-        require(_balancePooled > 0);
+    ) private pure returns (uint256) {
         // special case for 0 deposit amount
-        if (_tokensDeposited == 0) {
+        if (_assetsDeposited == 0) {
             return 0;
         }
 
-        // TODO: decide if there needs to be a dedicated _viewMeTokensMintedFromZero() function; if so use this
-        // return _calculateSupply(_balancePooled + _tokensDeposited, _stepX, _stepY) - _supply;
-
         // Note: _calculateSupply() without the method (use if we don't need a dedicated _viewMeTokensMintedFromZero() function)
-        uint256 steps = (((_balancePooled + _tokensDeposited) *
+        uint256 stepsAfterMint = (((_balancePooled + _assetsDeposited) *
             _stepX *
             _stepX) / ((_stepX * _stepY) / 2)); // ^ (1 / 2);
-        uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
-        uint256 supply;
-        if (stepBalance > (_balancePooled + _tokensDeposited)) {
-            supply =
+        uint256 balancePooledAtCurrentSteps = ((stepsAfterMint *
+            stepsAfterMint +
+            stepsAfterMint) / 2) *
+            _stepX *
+            _stepY;
+        uint256 supplyAfterMint;
+        if (balancePooledAtCurrentSteps > (_balancePooled + _assetsDeposited)) {
+            supplyAfterMint =
                 _stepX *
-                steps -
-                (stepBalance - (_balancePooled + _tokensDeposited)) /
-                (_stepY * steps);
+                stepsAfterMint -
+                (balancePooledAtCurrentSteps -
+                    (_balancePooled + _assetsDeposited)) /
+                (_stepY * stepsAfterMint);
         } else {
-            supply =
+            supplyAfterMint =
                 _stepX *
-                steps +
-                ((_balancePooled + _tokensDeposited) - stepBalance) /
-                (_stepY * (steps + 1));
+                stepsAfterMint +
+                ((_balancePooled + _assetsDeposited) -
+                    balancePooledAtCurrentSteps) /
+                (_stepY * (stepsAfterMint + 1));
         }
-        return supply - _supply;
+        return supplyAfterMint - _supply;
     }
 
     /// @notice Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
@@ -212,7 +213,7 @@ contract StepwiseCurve {
         uint256 _stepY, // height of step (aka price delta)
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) private view returns (uint256) {
+    ) private pure returns (uint256) {
         // validate input
         require(
             _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply
@@ -223,35 +224,25 @@ contract StepwiseCurve {
         }
 
         uint256 steps = _supply / _stepX;
-        uint256 stepSupply = _supply - (steps * _stepX);
-        uint256 steps_ = (_supply - _meTokensBurned) / _stepX;
-        uint256 stepSupply_ = _supply - (steps_ * _stepX);
+        uint256 supplyAtCurrentStep = _supply - (steps * _stepX);
+        uint256 stepsAfterBurn = (_supply - _meTokensBurned) / _stepX;
+        uint256 supplyAtStepAfterBurn = _supply - (stepsAfterBurn * _stepX);
 
-        uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
-        uint256 stepBalance_ = ((steps_ * steps_ + steps_) / 2) *
+        uint256 balancePooledAtCurrentSteps = ((steps * steps + steps) / 2) *
+            _stepX *
+            _stepY;
+        uint256 balancePooledAtStepsAfterBurn = ((stepsAfterBurn *
+            stepsAfterBurn +
+            stepsAfterBurn) / 2) *
             _stepX *
             _stepY;
 
         return
-            stepBalance +
-            stepSupply *
+            balancePooledAtCurrentSteps +
+            supplyAtCurrentStep *
             _stepY -
-            stepBalance_ -
-            stepSupply_ *
+            balancePooledAtStepsAfterBurn -
+            supplyAtStepAfterBurn *
             _stepY;
     }
-
-    // function _calculateSupply(
-    //     uint256 _amount, // collateral amount
-    //     uint256 _stepX, // length of step (aka supply duration)
-    //     uint256 _stepY, // height of step (aka price delta)
-    // ) private view returns (uint256) {
-    //     uint256 steps = ((_amount * _stepX * _stepX) / (_stepX * _stepY / 2)) ** (1/2);
-    //     uint256 stepBalance = (steps * steps + steps) / 2 * _stepX * _stepY;
-    //     if (stepBalance > _amount){
-    //         return _stepX * steps - (stepBalance - _amount) / (_stepY * steps);
-    //     } else {
-    //         return _stepX * steps + (_amount - stepBalance) / (_stepY * (steps + 1))
-    //     }
-    // }
 }
