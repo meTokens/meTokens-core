@@ -162,7 +162,10 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         return meToken_;
     }
 
-    function updateBalances(address _meToken, uint256 _newBalance) external {
+    function updateBalances(address _meToken, uint256 _newBalance)
+        external
+        override
+    {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         require(msg.sender == meToken_.migration, "!migration");
 

@@ -11,7 +11,7 @@ import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve is ICurve {
+contract StepwiseCurve {
     uint256 public constant PRECISION = 10**18;
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
@@ -24,10 +24,7 @@ contract StepwiseCurve is ICurve {
     // NOTE: keys are their respective hubId
     mapping(uint256 => Details.Stepwise) private _stepwises;
 
-    function register(uint256 _hubId, bytes calldata _encodedDetails)
-        external
-        override
-    {
+    function register(uint256 _hubId, bytes calldata _encodedDetails) external {
         // TODO: access control
         require(_encodedDetails.length > 0, "_encodedDetails empty");
 
@@ -45,7 +42,6 @@ contract StepwiseCurve is ICurve {
 
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external
-        override
     {
         // TODO: access control
 
@@ -74,7 +70,7 @@ contract StepwiseCurve is ICurve {
         stepwiseDetails.targetStepX = targetStepX;
     }
 
-    function finishReconfigure(uint256 _hubId) external override {
+    function finishReconfigure(uint256 _hubId) external {
         // TODO; only foundry can call
         Details.Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepwise_.targetStepX;
@@ -91,15 +87,14 @@ contract StepwiseCurve is ICurve {
         return _stepwises[stepwise];
     }
 
-    /// @inheritdoc ICurve
-    function calculateMintReturn(
+    function viewMeTokensMinted(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) external view override returns (uint256 meTokensReturned) {
+    ) external view returns (uint256 meTokensMinted) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        meTokensReturned = _calculateMintReturn(
+        meTokensMinted = _viewMeTokensMinted(
             _tokensDeposited,
             stepwiseDetails.stepX,
             stepwiseDetails.stepY,
@@ -108,15 +103,14 @@ contract StepwiseCurve is ICurve {
         );
     }
 
-    /// @inheritdoc ICurve
-    function calculateTargetMintReturn(
+    function viewTargetMeTokensMinted(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) external view override returns (uint256 meTokensReturned) {
+    ) external view returns (uint256 meTokensMinted) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        meTokensReturned = _calculateMintReturn(
+        meTokensMinted = _viewMeTokensMinted(
             _tokensDeposited,
             stepwiseDetails.targetStepX,
             stepwiseDetails.targetStepY,
@@ -125,15 +119,14 @@ contract StepwiseCurve is ICurve {
         );
     }
 
-    /// @inheritdoc ICurve
-    function calculateBurnReturn(
+    function viewAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensReturned) {
+    ) external view returns (uint256 assetsReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        tokensReturned = _calculateBurnReturn(
+        assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             stepwiseDetails.stepX,
             stepwiseDetails.stepY,
@@ -142,14 +135,14 @@ contract StepwiseCurve is ICurve {
         );
     }
 
-    function calculateTargetBurnReturn(
+    function viewTargetAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view override returns (uint256 tokensReturned) {
+    ) external view returns (uint256 assetsReturned) {
         Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        tokensReturned = _calculateBurnReturn(
+        assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             stepwiseDetails.targetStepX,
             stepwiseDetails.targetStepY,
@@ -166,7 +159,7 @@ contract StepwiseCurve is ICurve {
     /// @param _supply, // current supply
     /// @param _balancePooled // current collateral amount
     /// @return amount of meTokens minted
-    function _calculateMintReturn(
+    function _viewMeTokensMinted(
         uint256 _tokensDeposited, // tokens deposited
         uint256 _stepX, // length of step (aka supply duration)
         uint256 _stepY, // height of step (aka price delta)
@@ -180,32 +173,27 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        // TODO: decide if there needs to be a dedicated _calculateMintReturnFromZero() function; if so use this
+        // TODO: decide if there needs to be a dedicated _viewMeTokensMintedFromZero() function; if so use this
         // return _calculateSupply(_balancePooled + _tokensDeposited, _stepX, _stepY) - _supply;
 
-        /// @Note: _calculateSupply() without the method (use if we don't need a dedicated _calculateMintReturnFromZero() function)
-        uint256 steps = (PRECISION *
-            (((_balancePooled + _tokensDeposited) * _stepX * _stepX) /
-                ((_stepX * _stepY) / 2)) **
-                (1 / 2)) / PRECISION;
+        // Note: _calculateSupply() without the method (use if we don't need a dedicated _viewMeTokensMintedFromZero() function)
+        uint256 steps = (((_balancePooled + _tokensDeposited) *
+            _stepX *
+            _stepX) / ((_stepX * _stepY) / 2)); // ^ (1 / 2);
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
         uint256 supply;
         if (stepBalance > (_balancePooled + _tokensDeposited)) {
             supply =
                 _stepX *
                 steps -
-                (PRECISION *
-                    (stepBalance - (_balancePooled + _tokensDeposited))) /
-                (_stepY * steps) /
-                PRECISION;
+                (stepBalance - (_balancePooled + _tokensDeposited)) /
+                (_stepY * steps);
         } else {
             supply =
                 _stepX *
                 steps +
-                (PRECISION *
-                    ((_balancePooled + _tokensDeposited) - stepBalance)) /
-                (_stepY * (steps + 1)) /
-                PRECISION;
+                ((_balancePooled + _tokensDeposited) - stepBalance) /
+                (_stepY * (steps + 1));
         }
         return supply - _supply;
     }
@@ -218,7 +206,7 @@ contract StepwiseCurve is ICurve {
     /// @param _supply, // current supply
     /// @param _balancePooled // current collateral amount
     /// @return amount of collateral tokens received
-    function _calculateBurnReturn(
+    function _viewAssetsReturned(
         uint256 _meTokensBurned, // meTokens burned
         uint256 _stepX, // length of step (aka supply duration)
         uint256 _stepY, // height of step (aka price delta)
@@ -234,13 +222,10 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        uint256 steps = (PRECISION * _supply) / _stepX;
-        uint256 stepSupply = _supply - (steps * _stepX) / PRECISION;
-        uint256 steps_ = (PRECISION * (_supply - _meTokensBurned)) / _stepX;
-        uint256 stepSupply_ = _supply - (steps_ * _stepX) / PRECISION;
-
-        steps /= PRECISION;
-        steps_ /= PRECISION;
+        uint256 steps = _supply / _stepX;
+        uint256 stepSupply = _supply - (steps * _stepX);
+        uint256 steps_ = (_supply - _meTokensBurned) / _stepX;
+        uint256 stepSupply_ = _supply - (steps_ * _stepX);
 
         uint256 stepBalance = ((steps * steps + steps) / 2) * _stepX * _stepY;
         uint256 stepBalance_ = ((steps_ * steps_ + steps_) / 2) *
