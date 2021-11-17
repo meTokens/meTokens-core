@@ -14,7 +14,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 
@@ -128,7 +128,6 @@ describe("UniswapSingleTransfer.sol", () => {
       singleAssetVault.address,
       migration.address
     );
-
     // Prefund owner & buyer w/ DAI & WETH
     dai = await getContractAt<ERC20>("ERC20", DAI);
     weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -146,7 +145,7 @@ describe("UniswapSingleTransfer.sol", () => {
     weth
       .connect(wethHolder)
       .transfer(account2.address, ethers.utils.parseEther("100"));
-
+    await dai.connect(account1).approve(meTokenRegistry.address, amount);
     // Create meToken
     const tx = await meTokenRegistry
       .connect(account1)

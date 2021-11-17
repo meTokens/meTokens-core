@@ -14,7 +14,7 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { deploy } from "../../utils/helpers";
 import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;

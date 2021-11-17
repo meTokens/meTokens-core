@@ -31,6 +31,4 @@ interface IFoundry {
         uint256 _meTokensBurned,
         address _recipient
     ) external;
-
-    function approveVaultToSpendAsset(address _vault, address _asset) external;
 }

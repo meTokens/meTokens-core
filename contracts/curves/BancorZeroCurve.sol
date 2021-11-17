@@ -199,6 +199,7 @@ contract BancorZeroCurve is ICurve {
             assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
                 bancor_.targetReserveWeight,
+                _supply,
                 bancor_.targetBaseY,
                 _balancePooled
             );
