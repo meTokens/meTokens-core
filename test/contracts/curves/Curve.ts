@@ -9,10 +9,9 @@ import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { Fees } from "../../../artifacts/types/Fees";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
-import hubSetup from "../../utils/hubSetup";
+import { hubSetup } from "../../utils/hubSetup";
 
 describe("Generic Curve", () => {
   let DAI: string;
@@ -27,7 +26,6 @@ describe("Generic Curve", () => {
   let foundry: Foundry;
   let meToken: MeToken;
   let hub: Hub;
-  let fees: Fees;
   let singleAssetVault: SingleAssetVault;
 
   const hubId = 1;
@@ -35,7 +33,8 @@ describe("Generic Curve", () => {
   const symbol = "CARL";
   const refundRatio = 240000;
   const PRECISION = BigNumber.from(10).pow(6);
-  const amount1 = ethers.utils.parseEther("100");
+  // const amount1 = ethers.utils.parseEther("10");
+  const amount1 = 100;
   const amount2 = ethers.utils.parseEther("6.9");
 
   // TODO: pass in curve arguments to function
@@ -70,22 +69,24 @@ describe("Generic Curve", () => {
       meTokenRegistry,
       singleAssetVault,
     } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
-    fees = await deploy<Fees>("Fees");
-    await fees.initialize(0, 0, 0, 0, 0, 0);
-    await foundry.initialize(
-      hub.address,
-      fees.address,
-      meTokenRegistry.address
-    );
 
     // Prefund owner/buyer w/ DAI
     dai = token;
-    dai
+    await dai
       .connect(tokenHolder)
-      .transfer(account0.address, ethers.utils.parseEther("100"));
-    dai
+      .transfer(account1.address, ethers.utils.parseEther("100"));
+    await dai
       .connect(tokenHolder)
-      .transfer(account2.address, ethers.utils.parseEther("1000"));
+      .transfer(account2.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(foundry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account2)
+      .approve(foundry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
   });
 
   describe("register()", () => {
@@ -113,7 +114,7 @@ describe("Generic Curve", () => {
         0,
         0
       );
-      let expectedTokensDeposited = await _curve.calculateTokensDeposited(
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
         expectedMeTokensMinted,
         hubId,
         0,
@@ -121,7 +122,7 @@ describe("Generic Curve", () => {
       );
 
       // Get balances before mint
-      let ownerDaiBalanceBefore = await dai.balanceOf(account1.address);
+      let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
 
       // Mint first meTokens to owner
@@ -138,10 +139,10 @@ describe("Generic Curve", () => {
       expect(totalSupply).to.equal(meTokensMinted);
 
       // Compare owner dai balance before/after
-      let ownerDaiBalanceAfter = await dai.balanceOf(account1.address);
+      let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
       expect(
         // TODO: how to verify difference of numbers to type of amount1?
-        Number(ownerDaiBalanceBefore) - Number(ownerDaiBalanceAfter)
+        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
       ).to.equal(amount1);
 
       // Expect balance of vault to have increased by assets deposited
@@ -149,7 +150,7 @@ describe("Generic Curve", () => {
       expect(
         Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
       ).to.equal(amount1);
-      expect(amount1).to.equal(expectedTokensDeposited);
+      expect(amount1).to.equal(expectedAssetsDeposited);
     });
 
     it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
@@ -159,7 +160,7 @@ describe("Generic Curve", () => {
         0,
         0
       );
-      let expectedTokensDeposited = await _curve.calculateTokensDeposited(
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
         expectedMeTokensMinted,
         hubId,
         0,
@@ -167,17 +168,19 @@ describe("Generic Curve", () => {
       );
 
       // Get balances before mint
-      let buyerDaiBalanceBefore = await dai.balanceOf(account2.address);
+      let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
 
-      // Mint first meTokens to buyer
+      // Create meToken w/o issuing supply
       const tx = await meTokenRegistry
-        .connect(account1)
+        .connect(account2)
         .subscribe(name, symbol, hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
+        account2.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      // Mint meToken
       await foundry
         .connect(account2)
         .mint(meToken.address, amount1, account2.address);
@@ -189,9 +192,9 @@ describe("Generic Curve", () => {
       expect(totalSupply).to.equal(meTokensMinted);
 
       // Compare buyer dai balance before/after
-      let buyerDaiBalanceAfter = await dai.balanceOf(account1.address);
+      let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
       expect(
-        Number(buyerDaiBalanceBefore) - Number(buyerDaiBalanceAfter)
+        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
       ).to.equal(amount1);
 
       // Expect balance of vault to have increased by assets deposited
@@ -199,7 +202,7 @@ describe("Generic Curve", () => {
       expect(
         Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
       ).to.equal(amount1);
-      expect(amount1).to.equal(expectedTokensDeposited);
+      expect(amount1).to.equal(expectedAssetsDeposited);
     });
 
     it("balanceLocked = 0, balancePooled > 0", async () => {
