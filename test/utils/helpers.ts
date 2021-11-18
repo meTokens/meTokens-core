@@ -1,3 +1,4 @@
+import { BigNumber } from "@ethersproject/bignumber";
 import { BaseContract, Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
@@ -24,7 +25,40 @@ export async function getContractAt<Type>(
   )) as unknown as Type;
   return ctr;
 }
+export const toETHNum = (amount: BigNumber): number => {
+  return Number(ethers.utils.formatEther(amount));
+};
 
+export const weightedAverageSimulation = (
+  amount: number,
+  targetAmount: number,
+  startTime: number,
+  endTime: number,
+  blockTimestamp: number
+) => {
+  // Currently in an update, return weighted average
+  if (blockTimestamp < startTime) {
+    // Update hasn't started, apply no weighting
+    return amount;
+  } else if (blockTimestamp > endTime) {
+    // Update is over, return target amount
+    return targetAmount;
+  } else {
+    if (targetAmount > amount) {
+      return (
+        amount +
+        ((targetAmount - amount) * (blockTimestamp - startTime)) /
+          (endTime - startTime)
+      );
+    } else {
+      return (
+        amount -
+        ((amount - targetAmount) * (blockTimestamp - startTime)) /
+          (endTime - startTime)
+      );
+    }
+  }
+};
 export const maxExpArray = [
   /*   0 */ "0xd7",
   /*   1 */ "0x19f",

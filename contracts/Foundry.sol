@@ -15,6 +15,7 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
     using SafeERC20 for IERC20;
@@ -124,7 +125,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
-
+        console.log("## ## ## burn meToken_.hubId:%s", meToken_.hubId);
         // Calculate how many tokens tokens are returned
         uint256 tokensReturned = calculateBurnReturn(_meToken, _meTokensBurned);
 
@@ -150,6 +151,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
+                    console.log(
+                        "## ## ## burn weigthed refundRatio:%s targetRefundRatio:%s",
+                        hub_.refundRatio,
+                        hub_.targetRefundRatio
+                    );
                     actualTokensReturned =
                         (tokensReturned *
                             WeightedAverage.calculate(

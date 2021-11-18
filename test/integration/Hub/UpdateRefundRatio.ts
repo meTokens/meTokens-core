@@ -1,5 +1,10 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { deploy, getContractAt } from "../../utils/helpers";
+import {
+  deploy,
+  getContractAt,
+  toETHNum,
+  weightedAverageSimulation,
+} from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
@@ -15,7 +20,7 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
-import { passOneDay } from "../../utils/hardhatNode";
+import { passOneDay, passOneHour } from "../../utils/hardhatNode";
 import { beforeEach } from "mocha";
 
 describe("Hub - update RefundRatio", () => {
@@ -268,16 +273,36 @@ describe("Hub - update RefundRatio", () => {
 
   describe("During duration", () => {
     before(async () => {
-      await passOneDay();
+      await passOneHour();
     });
     it("initUpdate() cannot be called", async () => {
       // TODO: fast to active duration
       await expect(
         hub.initUpdate(1, bancorZeroCurve.address, 1000, encodedCurveDetails)
       ).to.be.revertedWith("already updating");
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+      console.log(`reconfigure :${reconfigure}`);
+      console.log(`endCooldown :${endCooldown.toNumber()}`);
+      console.log(`active :${active}`);
+      console.log(`updating :${updating}`);
+      console.log(`refundRatio :${refundRatio.toNumber()}`);
+      console.log(`startTime :${startTime.toNumber()}`);
+      console.log(`endTime :${endTime.toNumber()}`);
+      console.log(`targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      const block = await ethers.provider.getBlock("latest");
+      console.log(`block.timestamp :${block.timestamp}`);
     });
 
-    it("Assets received for owner based on weighted average", async () => {
+    it("Assets received for owner  are not based on weighted average refund ratio only applies to buyer", async () => {
       // TODO: calculate weighted refundRatio based on current time relative to duration
       const tokenDepositedInETH = 100;
       const tokenDeposited = ethers.utils.parseEther(
@@ -314,22 +339,193 @@ describe("Hub - update RefundRatio", () => {
         foundry.address
       );
       console.log(`//allowance :${ethers.utils.formatEther(allowance)}`);
+      const meTotSupply = await meToken.totalSupply();
+      console.log(`
+      metokens totalSupply:${ethers.utils.formatEther(meTotSupply)}`);
+      const meDetails = await meTokenRegistry.getDetails(meToken.address);
+      console.log(` 
+      meDetails.endCooldown :${meDetails.endCooldown} 
+      meDetails.balanceLocked :${ethers.utils.formatEther(
+        meDetails.balanceLocked
+      )} 
+      meDetails.balancePooled :${ethers.utils.formatEther(
+        meDetails.balancePooled
+      )}
+      meDetails.migration :${meDetails.migration} 
+      meDetails.startTime :${meDetails.startTime.toNumber()} 
+      meDetails.endTime :${meDetails.endTime.toNumber()} `);
+      const tokensReturned = await foundry.calculateBurnReturn(
+        meToken.address,
+        balAfter
+      );
+      console.log(
+        `tokensReturned :${ethers.utils.formatEther(tokensReturned)}`
+      );
+      const rewardFromLockedPool = one
+        .mul(balAfter)
+        .mul(meDetails.balanceLocked)
+        .div(meTotSupply)
+        .div(one);
+      console.log(
+        `rewardFromLockedPool :${ethers.utils.formatEther(
+          rewardFromLockedPool
+        )}`
+      );
       await foundry
         .connect(account0)
         .burn(meToken.address, balAfter, account0.address);
       const balDaiAfter = await token.balanceOf(account0.address);
       console.log(`balDaiAfter :${ethers.utils.formatEther(balDaiAfter)}`);
 
-      /*  expect(
-        Number(
-          ethers.utils.formatEther(
-            tokenDeposited.sub(balDaiBefore.sub(balDaiAfter))
-          )
-        )
-      ).to.equal((tokenDepositedInETH * firstRefundRatio) / MAX_WEIGHT); */
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+      console.log(`
+      reconfigure :${reconfigure} 
+      endCooldown :${endCooldown.toNumber()} 
+      active :${active}
+      updating :${updating} 
+      refundRatio :${refundRatio.toNumber()} 
+      startTime :${startTime.toNumber()} 
+      endTime :${endTime.toNumber()} 
+      targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      const block = await ethers.provider.getBlock("latest");
+      console.log(`block.timestamp :${block.timestamp}`);
+      const calcWAvrgRes = weightedAverageSimulation(
+        refundRatio.toNumber(),
+        targetRefundRatio.toNumber(),
+        startTime.toNumber(),
+        endTime.toNumber(),
+        block.timestamp
+      );
+      console.log(`calcWAvrgRes :${calcWAvrgRes}`);
+
+      const calculatedReturn = tokensReturned
+        .mul(BigNumber.from(calcWAvrgRes))
+        .div(BigNumber.from(10 ** 6));
+
+      expect(toETHNum(balDaiAfter.sub(balDaiBefore))).to.equal(
+        toETHNum(tokensReturned.add(rewardFromLockedPool))
+      );
     });
 
-    it("Assets received for buyer based on weighted average", async () => {});
+    it("Assets received for buyer based on weighted average", async () => {
+      // TODO: calculate weighted refundRatio based on current time relative to duration
+      const tokenDepositedInETH = 100;
+      const tokenDeposited = ethers.utils.parseEther(
+        tokenDepositedInETH.toString()
+      );
+
+      await token.connect(account2).approve(foundry.address, tokenDeposited);
+
+      console.log(`account2 :${account2.address}`);
+      const balBefore = await meToken.balanceOf(account0.address);
+      const balDaiBefore = await token.balanceOf(account0.address);
+      console.log(`meTokssss`);
+      console.log(`balBefore :${ethers.utils.formatEther(balBefore)}`);
+      console.log(`balDaiBefore :${ethers.utils.formatEther(balDaiBefore)}`);
+      const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
+      console.log(
+        `**vault**BalBefore :${ethers.utils.formatEther(vaultBalBefore)}`
+      );
+      // send token to owner
+      await foundry
+        .connect(account2)
+        .mint(meToken.address, tokenDeposited, account0.address);
+      const balAfter = await meToken.balanceOf(account0.address);
+      console.log(`balAfter :${ethers.utils.formatEther(balAfter)}`);
+      const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
+      console.log(
+        `**vault**BalAfterMint :${ethers.utils.formatEther(vaultBalAfterMint)}`
+      );
+      expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
+      //  burnt by owner
+      await meToken.connect(account0).approve(foundry.address, balAfter);
+      const allowance = await token.allowance(
+        singleAssetVault.address,
+        foundry.address
+      );
+      console.log(`//allowance :${ethers.utils.formatEther(allowance)}`);
+      console.log(`
+        metokens totalSupply:${ethers.utils.formatEther(
+          await meToken.totalSupply()
+        )}`);
+      const meDetails = await meTokenRegistry.getDetails(meToken.address);
+      console.log(`
+        metokens totalSupply:${ethers.utils.formatEther(
+          await meToken.totalSupply()
+        )}
+        meDetails.endCooldown :${meDetails.endCooldown} 
+        meDetails.balanceLocked :${ethers.utils.formatEther(
+          meDetails.balanceLocked
+        )} 
+        meDetails.balancePooled :${ethers.utils.formatEther(
+          meDetails.balancePooled
+        )}
+        meDetails.migration :${meDetails.migration} 
+        meDetails.startTime :${meDetails.startTime.toNumber()} 
+        meDetails.endTime :${meDetails.endTime.toNumber()} `);
+      const tokensReturned = await foundry.calculateBurnReturn(
+        meToken.address,
+        balAfter
+      );
+      console.log(
+        `tokensReturned :${ethers.utils.formatEther(tokensReturned)}`
+      );
+      await foundry
+        .connect(account0)
+        .burn(meToken.address, balAfter, account0.address);
+      const balDaiAfter = await token.balanceOf(account0.address);
+      console.log(`balDaiAfter :${ethers.utils.formatEther(balDaiAfter)}`);
+
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+      console.log(`
+        reconfigure :${reconfigure} 
+        endCooldown :${endCooldown.toNumber()} 
+        active :${active}
+        updating :${updating} 
+        refundRatio :${refundRatio.toNumber()} 
+        startTime :${startTime.toNumber()} 
+        endTime :${endTime.toNumber()} 
+        targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      const block = await ethers.provider.getBlock("latest");
+      console.log(`block.timestamp :${block.timestamp}`);
+      const calcWAvrgRes = weightedAverageSimulation(
+        refundRatio.toNumber(),
+        targetRefundRatio.toNumber(),
+        startTime.toNumber(),
+        endTime.toNumber(),
+        block.timestamp
+      );
+      console.log(`calcWAvrgRes :${calcWAvrgRes}`);
+      const calculatedReturn = tokensReturned
+        .mul(BigNumber.from(calcWAvrgRes))
+        .div(BigNumber.from(10 ** 6));
+
+      console.log(
+        `calculatedReturn :${ethers.utils.formatEther(calculatedReturn)}`
+      );
+
+      expect(
+        Number(ethers.utils.formatEther(balDaiAfter.sub(balDaiBefore)))
+      ).to.equal((tokenDepositedInETH * firstRefundRatio) / MAX_WEIGHT);
+    });
   });
 
   describe("During cooldown", () => {
