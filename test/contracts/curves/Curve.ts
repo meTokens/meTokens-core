@@ -24,7 +24,9 @@ describe("Generic Curve", () => {
   let _curve: BancorZeroCurve;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
+  let token: ERC20;
   let meToken: MeToken;
+  let tokenHolder: Signer;
   let hub: Hub;
   let singleAssetVault: SingleAssetVault;
 
@@ -34,7 +36,7 @@ describe("Generic Curve", () => {
   const refundRatio = 240000;
   const PRECISION = BigNumber.from(10).pow(6);
   // const amount1 = ethers.utils.parseEther("10");
-  const amount1 = 100;
+  const amount1 = ethers.utils.parseEther("100");
   const amount2 = ethers.utils.parseEther("6.9");
 
   // TODO: pass in curve arguments to function
@@ -56,8 +58,6 @@ describe("Generic Curve", () => {
     );
     _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
-    let token;
-    let tokenHolder;
     ({
       token,
       tokenHolder,
@@ -107,23 +107,32 @@ describe("Generic Curve", () => {
   });
 
   describe("viewMeTokensMinted()", () => {
-    it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
+    it.only("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
       let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
         amount1,
         hubId,
         0,
         0
       );
-      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
-        expectedMeTokensMinted,
-        hubId,
-        0,
-        0
+      console.log(
+        `expectedMeTokensMinted:${ethers.utils.formatEther(
+          expectedMeTokensMinted
+        )}`
       );
 
       // Get balances before mint
       let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceBefore:${ethers.utils.formatEther(
+          minterDaiBalanceBefore
+        )}`
+      );
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+      console.log(
+        `vaultDaiBalanceBefore:${ethers.utils.formatEther(
+          vaultDaiBalanceBefore
+        )}`
+      );
 
       // Mint first meTokens to owner
       let tx = await meTokenRegistry
@@ -131,6 +140,18 @@ describe("Generic Curve", () => {
         .subscribe(name, symbol, hubId, amount1);
       let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
+      console.log(
+        `expectedAssetsDeposited:${ethers.utils.formatEther(
+          expectedAssetsDeposited
+        )}`
+      );
 
       // Compare expected meTokens minted to actual held
       let meTokensMinted = await meToken.balanceOf(account1.address);
@@ -140,16 +161,22 @@ describe("Generic Curve", () => {
 
       // Compare owner dai balance before/after
       let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceAfter:${ethers.utils.formatEther(
+          minterDaiBalanceAfter
+        )}`
+      );
       expect(
         // TODO: how to verify difference of numbers to type of amount1?
-        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
+        minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
       ).to.equal(amount1);
 
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
-      expect(
-        Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
-      ).to.equal(amount1);
+      console.log(
+        `vaultDaiBalanceAfter:${ethers.utils.formatEther(vaultDaiBalanceAfter)}`
+      );
+      expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
       expect(amount1).to.equal(expectedAssetsDeposited);
     });
 
