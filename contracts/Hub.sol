@@ -124,31 +124,6 @@ contract Hub is Ownable, Initializable {
         hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
     }
 
-    function finishUpdate(uint256 id) public returns (Details.Hub memory) {
-        Details.Hub storage hub_ = _hubs[id];
-        require(block.timestamp > hub_.endTime, "Still updating");
-
-        if (hub_.targetRefundRatio != 0) {
-            hub_.refundRatio = hub_.targetRefundRatio;
-            hub_.targetRefundRatio = 0;
-        }
-
-        if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
-            hub_.reconfigure = false;
-        }
-
-        hub_.updating = false;
-        hub_.startTime = 0;
-        hub_.endTime = 0;
-        return hub_;
-    }
-
     function setWarmup(uint256 warmup_) external onlyOwner {
         require(warmup_ != _warmup, "warmup_ == _warmup");
         _warmup = warmup_;
@@ -186,5 +161,30 @@ contract Hub is Ownable, Initializable {
 
     function getCooldown() external view returns (uint256) {
         return _cooldown;
+    }
+
+    function finishUpdate(uint256 id) public returns (Details.Hub memory) {
+        Details.Hub storage hub_ = _hubs[id];
+        require(block.timestamp > hub_.endTime, "Still updating");
+
+        if (hub_.targetRefundRatio != 0) {
+            hub_.refundRatio = hub_.targetRefundRatio;
+            hub_.targetRefundRatio = 0;
+        }
+
+        if (hub_.reconfigure) {
+            if (hub_.targetCurve == address(0)) {
+                ICurve(hub_.curve).finishReconfigure(id);
+            } else {
+                hub_.curve = hub_.targetCurve;
+                hub_.targetCurve = address(0);
+            }
+            hub_.reconfigure = false;
+        }
+
+        hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
+        return hub_;
     }
 }
