@@ -20,8 +20,9 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
-import { passOneDay, passOneHour } from "../../utils/hardhatNode";
+import { passDays, passHours, passSeconds } from "../../utils/hardhatNode";
 import { beforeEach } from "mocha";
+import { BlockList } from "net";
 
 describe("Hub - update RefundRatio", () => {
   let meTokenRegistry: MeTokenRegistry;
@@ -42,9 +43,10 @@ describe("Hub - update RefundRatio", () => {
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
   let encodedCurveDetails: string;
+  let encodedVaultArgs: string;
   const firstHubId = 1;
   const firstRefundRatio = 5000;
-  const targetRefundRatio = 500000; // 50%
+  const targetedRefundRatio = 500000; // 50%
   before(async () => {
     // TODO: pre-load contracts
     // NOTE: hub.register() should have already been called
@@ -57,10 +59,7 @@ describe("Hub - update RefundRatio", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
-      ["address"],
-      [DAI]
-    );
+    encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(["address"], [DAI]);
     bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
     console.log(`before hubsetup`);
@@ -135,22 +134,34 @@ describe("Hub - update RefundRatio", () => {
     console.log(`vaultBalAfter :${ethers.utils.formatEther(vaultBalAfter)}`);
     expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
     console.log(`balAfter :${ethers.utils.formatEther(balAfter)}`);
-    // Initialize Hub1 update to Hub2 param
+    //setWarmup for 2 days
+    let warmup = await hub.getWarmup();
+    expect(warmup).to.equal(0);
+    await hub.setWarmup(172800);
+
+    warmup = await hub.getWarmup();
+    expect(warmup).to.equal(172800);
+    let cooldown = await hub.getCooldown();
+    expect(cooldown).to.equal(0);
+    //setCooldown for 1 day
+    await hub.setCooldown(86400);
+    cooldown = await hub.getCooldown();
+    expect(cooldown).to.equal(86400);
+
+    let duration = await hub.getDuration();
+    expect(duration).to.equal(0);
+    //setDuration for 1 week
+    await hub.setDuration(604800);
+    duration = await hub.getDuration();
+    expect(duration).to.equal(604800);
   });
 
   describe("During warmup", () => {
     before(async () => {
-      //setWarmup for 2 days
-      let warmup = await hub.getWarmup();
-      expect(warmup).to.equal(0);
-      await hub.setWarmup(172800);
-
-      warmup = await hub.getWarmup();
-      expect(warmup).to.equal(172800);
       await hub.initUpdate(
         firstHubId,
         bancorZeroCurve.address,
-        targetRefundRatio,
+        targetedRefundRatio,
         encodedCurveDetails
       );
     });
@@ -159,7 +170,7 @@ describe("Hub - update RefundRatio", () => {
       let lastBlock = await ethers.provider.getBlock("latest");
       console.log(`lastBlock.timestamp:${lastBlock.timestamp}`);
 
-      await passOneDay();
+      await passDays(1);
       lastBlock = await ethers.provider.getBlock("latest");
       console.log(`lastBlock.timestamp:${lastBlock.timestamp}`);
       //await hub.setWarmup(172801);
@@ -273,7 +284,7 @@ describe("Hub - update RefundRatio", () => {
 
   describe("During duration", () => {
     before(async () => {
-      await passOneHour();
+      await passHours(1);
     });
     it("initUpdate() cannot be called", async () => {
       // TODO: fast to active duration
@@ -302,8 +313,9 @@ describe("Hub - update RefundRatio", () => {
       console.log(`block.timestamp :${block.timestamp}`);
     });
 
-    it("Assets received for owner  are not based on weighted average refund ratio only applies to buyer", async () => {
-      // TODO: calculate weighted refundRatio based on current time relative to duration
+    it("Assets received for owner are not based on weighted average refund ratio only applies to buyer", async () => {
+      //move forward  2 Days
+      await passDays(2);
       const tokenDepositedInETH = 100;
       const tokenDeposited = ethers.utils.parseEther(
         tokenDepositedInETH.toString()
@@ -311,105 +323,47 @@ describe("Hub - update RefundRatio", () => {
 
       await token.connect(account2).approve(foundry.address, tokenDeposited);
 
-      console.log(`account2 :${account2.address}`);
       const balBefore = await meToken.balanceOf(account0.address);
       const balDaiBefore = await token.balanceOf(account0.address);
-      console.log(`meTokssss`);
-      console.log(`balBefore :${ethers.utils.formatEther(balBefore)}`);
-      console.log(`balDaiBefore :${ethers.utils.formatEther(balDaiBefore)}`);
       const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
-      console.log(
-        `**vault**BalBefore :${ethers.utils.formatEther(vaultBalBefore)}`
-      );
+
       // send token to owner
       await foundry
         .connect(account2)
         .mint(meToken.address, tokenDeposited, account0.address);
       const balAfter = await meToken.balanceOf(account0.address);
-      console.log(`balAfter :${ethers.utils.formatEther(balAfter)}`);
       const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
-      console.log(
-        `**vault**BalAfterMint :${ethers.utils.formatEther(vaultBalAfterMint)}`
-      );
+
       expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //  burnt by owner
       await meToken.connect(account0).approve(foundry.address, balAfter);
-      const allowance = await token.allowance(
-        singleAssetVault.address,
-        foundry.address
-      );
-      console.log(`//allowance :${ethers.utils.formatEther(allowance)}`);
+
       const meTotSupply = await meToken.totalSupply();
-      console.log(`
-      metokens totalSupply:${ethers.utils.formatEther(meTotSupply)}`);
+
       const meDetails = await meTokenRegistry.getDetails(meToken.address);
-      console.log(` 
-      meDetails.endCooldown :${meDetails.endCooldown} 
-      meDetails.balanceLocked :${ethers.utils.formatEther(
-        meDetails.balanceLocked
-      )} 
-      meDetails.balancePooled :${ethers.utils.formatEther(
-        meDetails.balancePooled
-      )}
-      meDetails.migration :${meDetails.migration} 
-      meDetails.startTime :${meDetails.startTime.toNumber()} 
-      meDetails.endTime :${meDetails.endTime.toNumber()} `);
+
       const tokensReturned = await foundry.calculateBurnReturn(
         meToken.address,
         balAfter
       );
-      console.log(
-        `tokensReturned :${ethers.utils.formatEther(tokensReturned)}`
-      );
+
       const rewardFromLockedPool = one
         .mul(balAfter)
         .mul(meDetails.balanceLocked)
         .div(meTotSupply)
         .div(one);
-      console.log(
-        `rewardFromLockedPool :${ethers.utils.formatEther(
-          rewardFromLockedPool
-        )}`
-      );
+
       await foundry
         .connect(account0)
         .burn(meToken.address, balAfter, account0.address);
+      const balAfterBurn = await meToken.balanceOf(account0.address);
+      expect(balBefore).to.equal(balAfterBurn);
       const balDaiAfter = await token.balanceOf(account0.address);
       console.log(`balDaiAfter :${ethers.utils.formatEther(balDaiAfter)}`);
 
-      const {
-        active,
-        refundRatio,
-        updating,
-        startTime,
-        endTime,
-        endCooldown,
-        reconfigure,
-        targetRefundRatio,
-      } = await hub.getDetails(1);
-      console.log(`
-      reconfigure :${reconfigure} 
-      endCooldown :${endCooldown.toNumber()} 
-      active :${active}
-      updating :${updating} 
-      refundRatio :${refundRatio.toNumber()} 
-      startTime :${startTime.toNumber()} 
-      endTime :${endTime.toNumber()} 
-      targetRefundRatio :${targetRefundRatio.toNumber()}`);
-      const block = await ethers.provider.getBlock("latest");
-      console.log(`block.timestamp :${block.timestamp}`);
-      const calcWAvrgRes = weightedAverageSimulation(
-        refundRatio.toNumber(),
-        targetRefundRatio.toNumber(),
-        startTime.toNumber(),
-        endTime.toNumber(),
-        block.timestamp
-      );
-      console.log(`calcWAvrgRes :${calcWAvrgRes}`);
-
-      const calculatedReturn = tokensReturned
-        .mul(BigNumber.from(calcWAvrgRes))
-        .div(BigNumber.from(10 ** 6));
+      const { active, updating } = await hub.getDetails(1);
+      expect(active).to.be.true;
+      expect(updating).to.be.true;
 
       expect(toETHNum(balDaiAfter.sub(balDaiBefore))).to.equal(
         toETHNum(tokensReturned.add(rewardFromLockedPool))
@@ -417,6 +371,8 @@ describe("Hub - update RefundRatio", () => {
     });
 
     it("Assets received for buyer based on weighted average", async () => {
+      //move forward  3 Days
+      await passDays(3);
       // TODO: calculate weighted refundRatio based on current time relative to duration
       const tokenDepositedInETH = 100;
       const tokenDeposited = ethers.utils.parseEther(
@@ -426,8 +382,8 @@ describe("Hub - update RefundRatio", () => {
       await token.connect(account2).approve(foundry.address, tokenDeposited);
 
       console.log(`account2 :${account2.address}`);
-      const balBefore = await meToken.balanceOf(account0.address);
-      const balDaiBefore = await token.balanceOf(account0.address);
+      const balBefore = await meToken.balanceOf(account2.address);
+      const balDaiBefore = await token.balanceOf(account2.address);
       console.log(`meTokssss`);
       console.log(`balBefore :${ethers.utils.formatEther(balBefore)}`);
       console.log(`balDaiBefore :${ethers.utils.formatEther(balDaiBefore)}`);
@@ -438,21 +394,23 @@ describe("Hub - update RefundRatio", () => {
       // send token to owner
       await foundry
         .connect(account2)
-        .mint(meToken.address, tokenDeposited, account0.address);
-      const balAfter = await meToken.balanceOf(account0.address);
-      console.log(`balAfter :${ethers.utils.formatEther(balAfter)}`);
+        .mint(meToken.address, tokenDeposited, account2.address);
+      const balDaiAfterMint = await token.balanceOf(account2.address);
+      console.log(
+        `balDaiAfterMint :${ethers.utils.formatEther(balDaiAfterMint)}`
+      );
+
+      const balAfter = await meToken.balanceOf(account2.address);
+
+      console.log(`balAfter :${ethers.utils.formatEther(balAfter)} `);
       const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
       console.log(
         `**vault**BalAfterMint :${ethers.utils.formatEther(vaultBalAfterMint)}`
       );
       expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //  burnt by owner
-      await meToken.connect(account0).approve(foundry.address, balAfter);
-      const allowance = await token.allowance(
-        singleAssetVault.address,
-        foundry.address
-      );
-      console.log(`//allowance :${ethers.utils.formatEther(allowance)}`);
+      await meToken.connect(account2).approve(foundry.address, balAfter);
+
       console.log(`
         metokens totalSupply:${ethers.utils.formatEther(
           await meToken.totalSupply()
@@ -480,11 +438,62 @@ describe("Hub - update RefundRatio", () => {
         `tokensReturned :${ethers.utils.formatEther(tokensReturned)}`
       );
       await foundry
-        .connect(account0)
-        .burn(meToken.address, balAfter, account0.address);
-      const balDaiAfter = await token.balanceOf(account0.address);
-      console.log(`balDaiAfter :${ethers.utils.formatEther(balDaiAfter)}`);
+        .connect(account2)
+        .burn(meToken.address, balAfter, account2.address);
+      const balDaiAfterBurn = await token.balanceOf(account2.address);
+      console.log(
+        `balDaiAfterBurn :${ethers.utils.formatEther(balDaiAfterBurn)}`
+      );
 
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+      expect(active).to.be.true;
+      expect(updating).to.be.true;
+      console.log(`
+        reconfigure :${reconfigure} 
+        endCooldown :${endCooldown.toNumber()} 
+        active :${active}
+        updating :${updating} 
+        refundRatio :${refundRatio.toNumber()} 
+        startTime :${startTime.toNumber()} 
+        endTime :${endTime.toNumber()} 
+        targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      const block = await ethers.provider.getBlock("latest");
+      console.log(
+        `block.timestamp :${block.timestamp} second to endtime ${endTime.sub(
+          block.timestamp
+        )}`
+      );
+      const calcWAvrgRes = weightedAverageSimulation(
+        refundRatio.toNumber(),
+        targetRefundRatio.toNumber(),
+        startTime.toNumber(),
+        endTime.toNumber(),
+        block.timestamp
+      );
+      console.log(`calcWAvrgRes :${calcWAvrgRes}`);
+      const calculatedReturn = tokensReturned
+        .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+        .div(BigNumber.from(10 ** 6));
+
+      console.log(
+        `calculatedReturn :${ethers.utils.formatEther(calculatedReturn)}`
+      );
+      // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+      expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
+    });
+  });
+
+  describe("During cooldown", () => {
+    it("initUpdate() cannot be called", async () => {
       const {
         active,
         refundRatio,
@@ -504,46 +513,461 @@ describe("Hub - update RefundRatio", () => {
         startTime :${startTime.toNumber()} 
         endTime :${endTime.toNumber()} 
         targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      expect(active).to.be.true;
+      expect(updating).to.be.true;
       const block = await ethers.provider.getBlock("latest");
-      console.log(`block.timestamp :${block.timestamp}`);
-      const calcWAvrgRes = weightedAverageSimulation(
-        refundRatio.toNumber(),
-        targetRefundRatio.toNumber(),
-        startTime.toNumber(),
-        endTime.toNumber(),
-        block.timestamp
+
+      //Block.timestamp should be between endtime and endCooldown
+      console.log(
+        `block.timestamp :${block.timestamp} 
+          second to endtime ${endTime.sub(block.timestamp)}
+          second to endCooldown ${endCooldown.sub(block.timestamp)}
+          `
       );
-      console.log(`calcWAvrgRes :${calcWAvrgRes}`);
+      // move forward to cooldown
+      await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
+      await expect(
+        hub.initUpdate(1, bancorZeroCurve.address, 1000, encodedCurveDetails)
+      ).to.be.revertedWith("Still cooling down");
+    });
+
+    it("Before refundRatio set, burn() for owner should not use the targetRefundRatio", async () => {
+      const tokenDepositedInETH = 100;
+      const tokenDeposited = ethers.utils.parseEther(
+        tokenDepositedInETH.toString()
+      );
+
+      await token.connect(account2).approve(foundry.address, tokenDeposited);
+
+      const balBefore = await meToken.balanceOf(account0.address);
+      const balDaiBefore = await token.balanceOf(account0.address);
+      const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
+
+      // send token to owner
+      await foundry
+        .connect(account2)
+        .mint(meToken.address, tokenDeposited, account0.address);
+      const {
+        active,
+        updating,
+        refundRatio,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+      // update has been finished by calling mint function as we passed the end time
+      expect(targetRefundRatio).to.equal(0);
+      expect(refundRatio).to.equal(targetedRefundRatio);
+      const balAfter = await meToken.balanceOf(account0.address);
+      const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
+
+      expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
+      //  burnt by owner
+      await meToken.connect(account0).approve(foundry.address, balAfter);
+
+      const meTotSupply = await meToken.totalSupply();
+
+      const meDetails = await meTokenRegistry.getDetails(meToken.address);
+
+      const tokensReturned = await foundry.calculateBurnReturn(
+        meToken.address,
+        balAfter
+      );
+
+      const rewardFromLockedPool = one
+        .mul(balAfter)
+        .mul(meDetails.balanceLocked)
+        .div(meTotSupply)
+        .div(one);
+
+      await foundry
+        .connect(account0)
+        .burn(meToken.address, balAfter, account0.address);
+      const balAfterBurn = await meToken.balanceOf(account0.address);
+      expect(balBefore).to.equal(balAfterBurn);
+      const balDaiAfter = await token.balanceOf(account0.address);
+      console.log(`balDaiAfter :${ethers.utils.formatEther(balDaiAfter)}`);
+
+      console.log(`
+      active:${active} 
+      , updating:${updating} 
+        reconfigure :${reconfigure} 
+        endCooldown :${endCooldown.toNumber()}  
+        refundRatio :${refundRatio.toNumber()} 
+        startTime :${startTime.toNumber()} 
+        endTime :${endTime.toNumber()} 
+        targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      //Block.timestamp should be between endtime and endCooldown
+      const block = await ethers.provider.getBlock("latest");
+      expect(block.timestamp).to.be.gt(endTime);
+      expect(block.timestamp).to.be.lt(endCooldown);
+
+      expect(active).to.be.true;
+      expect(updating).to.be.false;
+
+      expect(toETHNum(balDaiAfter.sub(balDaiBefore))).to.equal(
+        toETHNum(tokensReturned.add(rewardFromLockedPool))
+      );
+    });
+
+    it("Before refundRatio set, burn() for buyers should use the targetRefundRatio", async () => {
+      await passHours(4);
+      // TODO: calculate weighted refundRatio based on current time relative to duration
+      const tokenDepositedInETH = 100;
+      const tokenDeposited = ethers.utils.parseEther(
+        tokenDepositedInETH.toString()
+      );
+
+      await token.connect(account2).approve(foundry.address, tokenDeposited);
+
+      console.log(`account2 :${account2.address}`);
+      const balBefore = await meToken.balanceOf(account2.address);
+      const balDaiBefore = await token.balanceOf(account2.address);
+      console.log(`meTokssss`);
+      console.log(`balBefore :${ethers.utils.formatEther(balBefore)}`);
+      console.log(`balDaiBefore :${ethers.utils.formatEther(balDaiBefore)}`);
+      const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
+      console.log(
+        `**vault**BalBefore :${ethers.utils.formatEther(vaultBalBefore)}`
+      );
+      // send token to owner
+      await foundry
+        .connect(account2)
+        .mint(meToken.address, tokenDeposited, account2.address);
+      const balDaiAfterMint = await token.balanceOf(account2.address);
+      console.log(
+        `balDaiAfterMint :${ethers.utils.formatEther(balDaiAfterMint)}`
+      );
+
+      const balAfter = await meToken.balanceOf(account2.address);
+
+      console.log(`balAfter :${ethers.utils.formatEther(balAfter)} `);
+      const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
+      console.log(
+        `**vault**BalAfterMint :${ethers.utils.formatEther(vaultBalAfterMint)}`
+      );
+      expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
+      //  burnt by owner
+      await meToken.connect(account2).approve(foundry.address, balAfter);
+
+      console.log(`
+              metokens totalSupply:${ethers.utils.formatEther(
+                await meToken.totalSupply()
+              )}`);
+      const meDetails = await meTokenRegistry.getDetails(meToken.address);
+      console.log(`
+              metokens totalSupply:${ethers.utils.formatEther(
+                await meToken.totalSupply()
+              )}
+              meDetails.endCooldown :${meDetails.endCooldown} 
+              meDetails.balanceLocked :${ethers.utils.formatEther(
+                meDetails.balanceLocked
+              )} 
+              meDetails.balancePooled :${ethers.utils.formatEther(
+                meDetails.balancePooled
+              )}
+              meDetails.migration :${meDetails.migration} 
+              meDetails.startTime :${meDetails.startTime.toNumber()} 
+              meDetails.endTime :${meDetails.endTime.toNumber()} `);
+      const tokensReturned = await foundry.calculateBurnReturn(
+        meToken.address,
+        balAfter
+      );
+      console.log(
+        `tokensReturned :${ethers.utils.formatEther(tokensReturned)}`
+      );
+      await foundry
+        .connect(account2)
+        .burn(meToken.address, balAfter, account2.address);
+      const balDaiAfterBurn = await token.balanceOf(account2.address);
+      console.log(
+        `balDaiAfterBurn :${ethers.utils.formatEther(balDaiAfterBurn)}`
+      );
+
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+
+      console.log(`
+              reconfigure :${reconfigure} 
+              endCooldown :${endCooldown.toNumber()} 
+              active :${active}
+              updating :${updating} 
+              refundRatio :${refundRatio.toNumber()} 
+              startTime :${startTime.toNumber()} 
+              endTime :${endTime.toNumber()} 
+              targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      expect(active).to.be.true;
+      expect(updating).to.be.false;
+      expect(targetRefundRatio).to.equal(0);
+      expect(refundRatio).to.equal(targetedRefundRatio);
+      //Block.timestamp should be between endtime and endCooldown
+      const block = await ethers.provider.getBlock("latest");
+
+      console.log(
+        `block.timestamp :${block.timestamp} second to endtime ${endTime.sub(
+          block.timestamp
+        )}`
+      );
+      expect(block.timestamp).to.be.gt(endTime);
+      expect(block.timestamp).to.be.lt(endCooldown);
       const calculatedReturn = tokensReturned
-        .mul(BigNumber.from(calcWAvrgRes))
+        .mul(BigNumber.from(targetedRefundRatio))
         .div(BigNumber.from(10 ** 6));
 
       console.log(
         `calculatedReturn :${ethers.utils.formatEther(calculatedReturn)}`
       );
-
-      expect(
-        Number(ethers.utils.formatEther(balDaiAfter.sub(balDaiBefore)))
-      ).to.equal((tokenDepositedInETH * firstRefundRatio) / MAX_WEIGHT);
-    });
-  });
-
-  describe("During cooldown", () => {
-    it("initUpdate() cannot be called", async () => {
-      // TODO: fast fwd to active cooldown
+      // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+      expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
     });
 
-    it("Before refundRatio set, burn() should use the targetRefundRatio", async () => {});
+    it("Call finishUpdate() and update refundRatio to targetRefundRatio", async () => {
+      await hub.register(
+        token.address,
+        singleAssetVault.address,
+        bancorZeroCurve.address,
+        targetedRefundRatio / 2, //refund ratio
+        encodedCurveDetails,
+        encodedVaultArgs
+      );
+      const hubId = (await hub.count()).toNumber();
+      expect(hubId).to.be.equal(firstHubId + 1);
+      await hub.setWarmup(0);
+      await hub.setCooldown(0);
+      await hub.setDuration(0);
 
-    it("Call finishUpdate() and update refundRatio to targetRefundRatio", async () => {});
+      let warmup = await hub.getWarmup();
+      expect(warmup).to.equal(0);
+
+      let cooldown = await hub.getCooldown();
+      expect(cooldown).to.equal(0);
+
+      let duration = await hub.getDuration();
+      expect(duration).to.equal(0);
+      const detBefore = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detBefore.reconfigure} 
+              endCooldown :${detBefore.endCooldown.toNumber()} 
+              active :${detBefore.active}
+              updating :${detBefore.updating} 
+              refundRatio :${detBefore.refundRatio.toNumber()} 
+              startTime :${detBefore.startTime.toNumber()} 
+              endTime :${detBefore.endTime.toNumber()} 
+              targetRefundRatio :${detBefore.targetRefundRatio.toNumber()}`);
+      expect(detBefore.active).to.be.true;
+      expect(detBefore.updating).to.be.false;
+      expect(detBefore.targetRefundRatio).to.equal(0);
+      await hub.initUpdate(
+        hubId,
+        bancorZeroCurve.address,
+        targetedRefundRatio,
+        encodedCurveDetails
+      );
+      const detAfterInit = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detAfterInit.reconfigure} 
+              endCooldown :${detAfterInit.endCooldown.toNumber()} 
+              active :${detAfterInit.active}
+              updating :${detAfterInit.updating} 
+              refundRatio :${detAfterInit.refundRatio.toNumber()} 
+              startTime :${detAfterInit.startTime.toNumber()} 
+              endTime :${detAfterInit.endTime.toNumber()} 
+              targetRefundRatio :${detAfterInit.targetRefundRatio.toNumber()}`);
+
+      expect(detAfterInit.active).to.be.true;
+      expect(detAfterInit.updating).to.be.true;
+      expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio / 2);
+      expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
+
+      await hub.finishUpdate(hubId);
+      const detAfterUpdate = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detAfterUpdate.reconfigure} 
+              endCooldown :${detAfterUpdate.endCooldown.toNumber()} 
+              active :${detAfterUpdate.active}
+              updating :${detAfterUpdate.updating} 
+              refundRatio :${detAfterUpdate.refundRatio.toNumber()} 
+              startTime :${detAfterUpdate.startTime.toNumber()} 
+              endTime :${detAfterUpdate.endTime.toNumber()} 
+              targetRefundRatio :${detAfterUpdate.targetRefundRatio.toNumber()}`);
+
+      expect(detAfterUpdate.active).to.be.true;
+      expect(detAfterUpdate.updating).to.be.false;
+      expect(detAfterUpdate.refundRatio).to.equal(targetedRefundRatio);
+      expect(detAfterUpdate.targetRefundRatio).to.equal(0);
+    });
   });
 
   describe("After cooldown", () => {
     it("initUpdate() can be called again", async () => {
       // TODO: fast fwd to after cooldown
+      const {
+        active,
+        refundRatio,
+        updating,
+        startTime,
+        endTime,
+        endCooldown,
+        reconfigure,
+        targetRefundRatio,
+      } = await hub.getDetails(1);
+
+      console.log(`
+              reconfigure :${reconfigure} 
+              endCooldown :${endCooldown.toNumber()} 
+              active :${active}
+              updating :${updating} 
+              refundRatio :${refundRatio.toNumber()} 
+              startTime :${startTime.toNumber()} 
+              endTime :${endTime.toNumber()} 
+              targetRefundRatio :${targetRefundRatio.toNumber()}`);
+      expect(active).to.be.true;
+      expect(updating).to.be.false;
+      expect(targetRefundRatio).to.equal(0);
+      expect(refundRatio).to.equal(targetedRefundRatio);
+      //Block.timestamp should be between endtime and endCooldown
+      const block = await ethers.provider.getBlock("latest");
+
+      console.log(
+        `block.timestamp :${block.timestamp} second to endtime ${endTime.sub(
+          block.timestamp
+        )} second to endCooldown ${endCooldown.sub(block.timestamp)}`
+      );
+      expect(block.timestamp).to.be.gt(endTime);
+      expect(block.timestamp).to.be.lt(endCooldown);
+
+      await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
+      await hub.initUpdate(
+        1,
+        bancorZeroCurve.address,
+        1000,
+        encodedCurveDetails
+      );
+
+      const detAfterInit = await hub.getDetails(1);
+
+      console.log(`
+              reconfigure :${detAfterInit.reconfigure} 
+              endCooldown :${detAfterInit.endCooldown.toNumber()} 
+              active :${detAfterInit.active}
+              updating :${detAfterInit.updating} 
+              refundRatio :${detAfterInit.refundRatio.toNumber()} 
+              startTime :${detAfterInit.startTime.toNumber()} 
+              endTime :${detAfterInit.endTime.toNumber()} 
+              targetRefundRatio :${detAfterInit.targetRefundRatio.toNumber()}`);
+
+      expect(detAfterInit.active).to.be.true;
+      expect(detAfterInit.updating).to.be.true;
+      expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio);
+      expect(detAfterInit.targetRefundRatio).to.equal(1000);
     });
 
-    it("If no burns during cooldown, initUpdate() first calls finishUpdate()", async () => {});
+    it("If no burns during cooldown, initUpdate() first calls finishUpdate()", async () => {
+      await hub.register(
+        token.address,
+        singleAssetVault.address,
+        bancorZeroCurve.address,
+        targetedRefundRatio / 2, //refund ratio
+        encodedCurveDetails,
+        encodedVaultArgs
+      );
+      const hubId = (await hub.count()).toNumber();
+      expect(hubId).to.be.equal(firstHubId + 2);
+
+      let warmup = await hub.getWarmup();
+      expect(warmup).to.equal(0);
+
+      let cooldown = await hub.getCooldown();
+      expect(cooldown).to.equal(0);
+
+      let duration = await hub.getDuration();
+      expect(duration).to.equal(0);
+      const detBefore = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detBefore.reconfigure} 
+              endCooldown :${detBefore.endCooldown.toNumber()} 
+              active :${detBefore.active}
+              updating :${detBefore.updating} 
+              refundRatio :${detBefore.refundRatio.toNumber()} 
+              startTime :${detBefore.startTime.toNumber()} 
+              endTime :${detBefore.endTime.toNumber()} 
+              targetRefundRatio :${detBefore.targetRefundRatio.toNumber()}`);
+      expect(detBefore.active).to.be.true;
+      expect(detBefore.updating).to.be.false;
+      expect(detBefore.targetRefundRatio).to.equal(0);
+      await hub.initUpdate(
+        hubId,
+        bancorZeroCurve.address,
+        targetedRefundRatio,
+        encodedCurveDetails
+      );
+      const detAfterInit = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detAfterInit.reconfigure} 
+              endCooldown :${detAfterInit.endCooldown.toNumber()} 
+              active :${detAfterInit.active}
+              updating :${detAfterInit.updating} 
+              refundRatio :${detAfterInit.refundRatio.toNumber()} 
+              startTime :${detAfterInit.startTime.toNumber()} 
+              endTime :${detAfterInit.endTime.toNumber()} 
+              targetRefundRatio :${detAfterInit.targetRefundRatio.toNumber()}`);
+
+      expect(detAfterInit.active).to.be.true;
+      expect(detAfterInit.updating).to.be.true;
+      expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio / 2);
+      expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
+
+      const block = await ethers.provider.getBlock("latest");
+
+      console.log(
+        `block.timestamp :${
+          block.timestamp
+        } second to endtime ${detAfterInit.endTime.sub(
+          block.timestamp
+        )} second to endCooldown ${detAfterInit.endCooldown.sub(
+          block.timestamp
+        )}`
+      );
+      expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
+      await hub.initUpdate(
+        hubId,
+        bancorZeroCurve.address,
+        1000,
+        encodedCurveDetails
+      );
+
+      const detAfterUpdate = await hub.getDetails(hubId);
+
+      console.log(`
+              reconfigure :${detAfterUpdate.reconfigure} 
+              endCooldown :${detAfterUpdate.endCooldown.toNumber()} 
+              active :${detAfterUpdate.active}
+              updating :${detAfterUpdate.updating} 
+              refundRatio :${detAfterUpdate.refundRatio.toNumber()} 
+              startTime :${detAfterUpdate.startTime.toNumber()} 
+              endTime :${detAfterUpdate.endTime.toNumber()} 
+              targetRefundRatio :${detAfterUpdate.targetRefundRatio.toNumber()}`);
+
+      expect(detAfterUpdate.active).to.be.true;
+      expect(detAfterUpdate.updating).to.be.true;
+      expect(detAfterUpdate.refundRatio).to.equal(targetedRefundRatio);
+      expect(detAfterUpdate.targetRefundRatio).to.equal(1000);
+    });
 
     it("If no burns during cooldown, initUpdate() args are compared to new vals set from on finishUpdate()", async () => {});
   });

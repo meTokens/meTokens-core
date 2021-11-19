@@ -75,6 +75,17 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedCurveDetails
     ) external {
         Details.Hub storage hub_ = _hubs[_id];
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            Details.Hub memory hubUpdated = finishUpdate(_id);
+            hub_.refundRatio = hubUpdated.refundRatio;
+            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
+            hub_.curve = hubUpdated.curve;
+            hub_.targetCurve = hubUpdated.targetCurve;
+            hub_.reconfigure = hubUpdated.reconfigure;
+            hub_.updating = hubUpdated.updating;
+            hub_.startTime = hubUpdated.startTime;
+            hub_.endTime = hubUpdated.endTime;
+        }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         if (_targetRefundRatio != 0) {
@@ -113,7 +124,7 @@ contract Hub is Ownable, Initializable {
         hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
     }
 
-    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
+    function finishUpdate(uint256 id) public returns (Details.Hub memory) {
         Details.Hub storage hub_ = _hubs[id];
         require(block.timestamp > hub_.endTime, "Still updating");
 

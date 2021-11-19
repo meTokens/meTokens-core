@@ -12,7 +12,7 @@ import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
+import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
