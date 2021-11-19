@@ -22,95 +22,252 @@ import { hubSetup } from "../utils/hubSetup";
 
 describe("Foundry.sol", () => {
   let DAI: string;
-  let weightedAverage: WeightedAverage;
-  let meTokenRegistry: MeTokenRegistry;
-  let meTokenFactory: MeTokenFactory;
-  let bancorZeroCurve: BancorZeroCurve;
-  let curveRegistry: CurveRegistry;
-  let vaultRegistry: VaultRegistry;
-  let migrationRegistry: MigrationRegistry;
-  let singleAssetVault: SingleAssetVault;
-  let fees: Fees;
-  let foundry: Foundry;
-  let meToken: MeToken;
-  let hub: Hub;
+  let DAIWhale: string;
+  let daiHolder: Signer;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let daiHolder: Signer;
-  let DAIWhale: string;
+  let _curve: BancorZeroCurve;
+  let meTokenRegistry: MeTokenRegistry;
+  let foundry: Foundry;
+  let token: ERC20;
+  let meToken: MeToken;
+  let tokenHolder: Signer;
+  let hub: Hub;
+  let singleAssetVault: SingleAssetVault;
+
   const hubId = 1;
-  const name = "Carl0 meToken";
+  const name = "Carl meToken";
   const symbol = "CARL";
+  const refundRatio = 240000;
   const PRECISION = BigNumber.from(10).pow(6);
+  // const amount1 = ethers.utils.parseEther("10");
+  const amount1 = ethers.utils.parseEther("100");
+  const amount2 = ethers.utils.parseEther("6.9");
+
+  // TODO: pass in curve arguments to function
+  // TODO: then loop over array of set of curve arguments
   const MAX_WEIGHT = 1000000;
-  const amount = ethers.utils.parseEther("100");
-  const initRefundRatio = 500000;
+  const reserveWeight = MAX_WEIGHT / 2;
+  const baseY = PRECISION.div(1000).toString();
+
   // for 1 DAI we get 1000 metokens
   // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
   // weight at 50% linear curve
   // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
   before(async () => {
-    const baseY = PRECISION.div(1000).toString();
-    const reserveWeight = MAX_WEIGHT / 2;
-    let DAI;
-    ({ DAI } = await getNamedAccounts());
-
-    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint32"],
-      [baseY, reserveWeight]
-    );
+    ({ DAI, DAIWhale } = await getNamedAccounts());
     const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-    let token;
-    let tokenHolder;
+    // TODO: pass in name of curve to deploy, encodedCurveDetails to general func
+    const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint32"],
+      [baseY, reserveWeight]
+    );
+    _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+
     ({
       token,
       tokenHolder,
       hub,
-      curveRegistry,
-      migrationRegistry,
       foundry,
       account0,
       account1,
       account2,
       meTokenRegistry,
-    } = await hubSetup(
-      encodedCurveDetails,
-      encodedVaultArgs,
-      initRefundRatio,
-      bancorZeroCurve
-    ));
+      singleAssetVault,
+    } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
+
+    // Prefund owner/buyer w/ DAI
     dai = token;
-    dai
+    await dai
       .connect(tokenHolder)
-      .transfer(account0.address, ethers.utils.parseEther("100"));
-    dai
+      .transfer(account1.address, ethers.utils.parseEther("100"));
+    await dai
       .connect(tokenHolder)
-      .transfer(account1.address, ethers.utils.parseEther("1000"));
-    dai
-      .connect(tokenHolder)
-      .transfer(account2.address, ethers.utils.parseEther("1000"));
-    fees = await deploy<Fees>("Fees");
-
-    // register a metoken
-    const tx = await meTokenRegistry
-      .connect(account0)
-      .subscribe(name, symbol, hubId, 0);
-    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
-
-    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      .transfer(account2.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(foundry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account2)
+      .approve(foundry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
   });
-  it("mint() from owner should work", async () => {});
-  it("mint() from owner with a small amount should work", async () => {});
-  it("mint() from owner with a huge amount should work", async () => {});
-  it("burn() from owner should work", async () => {});
-  it("burn() from owner with a small amount should work", async () => {});
-  it("burn() from owner with a huge amount should work", async () => {});
+
+  describe("mint()", () => {
+    it.only("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
+        amount1,
+        hubId,
+        0,
+        0
+      );
+      console.log(
+        `expectedMeTokensMinted:${ethers.utils.formatEther(
+          expectedMeTokensMinted
+        )}`
+      );
+
+      // Get balances before mint
+      let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceBefore:${ethers.utils.formatEther(
+          minterDaiBalanceBefore
+        )}`
+      );
+      let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+      console.log(
+        `vaultDaiBalanceBefore:${ethers.utils.formatEther(
+          vaultDaiBalanceBefore
+        )}`
+      );
+
+      // Mint first meTokens to owner
+      let tx = await meTokenRegistry
+        .connect(account1)
+        .subscribe(name, symbol, hubId, amount1);
+      let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
+      console.log(
+        `expectedAssetsDeposited:${ethers.utils.formatEther(
+          expectedAssetsDeposited
+        )}`
+      );
+
+      // Compare expected meTokens minted to actual held
+      let meTokensMinted = await meToken.balanceOf(account1.address);
+      expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+      let totalSupply = await meToken.totalSupply();
+      expect(totalSupply).to.equal(meTokensMinted);
+
+      // Compare owner dai balance before/after
+      let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceAfter:${ethers.utils.formatEther(
+          minterDaiBalanceAfter
+        )}`
+      );
+      expect(
+        // TODO: how to verify difference of numbers to type of amount1?
+        minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
+      ).to.equal(amount1);
+
+      // Expect balance of vault to have increased by assets deposited
+      let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+      console.log(
+        `vaultDaiBalanceAfter:${ethers.utils.formatEther(vaultDaiBalanceAfter)}`
+      );
+      expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
+      expect(amount1).to.equal(expectedAssetsDeposited);
+    });
+
+    it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
+        amount1,
+        hubId,
+        0,
+        0
+      );
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
+
+      // Get balances before mint
+      let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
+      let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+
+      // Create meToken w/o issuing supply
+      const tx = await meTokenRegistry
+        .connect(account2)
+        .subscribe(name, symbol, hubId, 0);
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account2.address
+      );
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      // Mint meToken
+      await foundry
+        .connect(account2)
+        .mint(meToken.address, amount1, account2.address);
+
+      // Compare expected meTokens minted to actual held
+      const meTokensMinted = await meToken.balanceOf(account2.address);
+      expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+      const totalSupply = await meToken.totalSupply();
+      expect(totalSupply).to.equal(meTokensMinted);
+
+      // Compare buyer dai balance before/after
+      let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
+      expect(
+        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
+      ).to.equal(amount1);
+
+      // Expect balance of vault to have increased by assets deposited
+      let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+      expect(
+        Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
+      ).to.equal(amount1);
+      expect(amount1).to.equal(expectedAssetsDeposited);
+    });
+
+    it("balanceLocked = 0, balancePooled > 0", async () => {
+      // TODO
+    });
+
+    it("balanceLocked > 0, balancePooled = 0", async () => {
+      // TODO
+    });
+
+    it("balanceLocked > 0, balancePooled > 0", async () => {
+      // TODO
+    });
+  });
+
+  describe("burn()", () => {
+    it("balanceLocked = 0, ending supply = 0, buyer", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, ending supply = 0, owner", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, ending supply > 0, buyer", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, ending supply > 0, owner", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, ending supply = 0, buyer", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, ending supply = 0, owner", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, ending supply > 0, buyer", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, ending supply > 0, owner", async () => {
+      // TODO
+    });
+  });
+
+  /*
+
   it("mint() from buyer should work", async () => {
     // metoken should be registered
     expect(await meToken.name()).to.equal(name);
@@ -168,6 +325,7 @@ describe("Foundry.sol", () => {
       .div(PRECISION);
     expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
   });
+
   describe("during migration", () => {
     before(async () => {
       // migrate hub
@@ -197,10 +355,10 @@ describe("Foundry.sol", () => {
       const block = await ethers.provider.getBlock("latest");
       // earliestSwapTime 10 hour
       const earliestSwapTime = block.timestamp + 600 * 60;
-      /*   const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+         const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256"],
         [earliestSwapTime]
-      ); */
+      ); 
       // 10 hour
       await hub.setDuration(600 * 60);
       await hub.setWarmup(60 * 60);
@@ -301,4 +459,5 @@ describe("Foundry.sol", () => {
       );
     });
   });
+  */
 });
