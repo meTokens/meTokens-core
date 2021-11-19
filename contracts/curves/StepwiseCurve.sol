@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/ICurve.sol";
-import "../interfaces/ICurveRegistry.sol";
 
 import "../libs/WeightedAverage.sol";
 import "../libs/Details.sol";
