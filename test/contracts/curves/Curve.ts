@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { BigNumber, Signer } from "ethers";
 import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorBancor } from "../../../artifacts/types/BancorBancor";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
@@ -21,7 +21,7 @@ describe("Generic Curve", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let _curve: BancorZeroCurve;
+  let _curve: BancorBancor;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
   let token: ERC20;
@@ -43,7 +43,7 @@ describe("Generic Curve", () => {
   // TODO: then loop over array of set of curve arguments
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
-  const baseY = PRECISION.div(1000).toString();
+  const baseY = PRECISION.div(10).toString();
 
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
@@ -56,7 +56,7 @@ describe("Generic Curve", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    _curve = await deploy<BancorBancor>("BancorBancor");
 
     ({
       token,
@@ -87,6 +87,9 @@ describe("Generic Curve", () => {
     await dai
       .connect(account1)
       .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
   describe("register()", () => {
@@ -157,6 +160,7 @@ describe("Generic Curve", () => {
       let meTokensMinted = await meToken.balanceOf(account1.address);
       expect(meTokensMinted).to.equal(expectedMeTokensMinted);
       let totalSupply = await meToken.totalSupply();
+      console.log(`totalSupply: ${ethers.utils.formatEther(totalSupply)}`);
       expect(totalSupply).to.equal(meTokensMinted);
 
       // Compare owner dai balance before/after
@@ -174,8 +178,45 @@ describe("Generic Curve", () => {
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
       console.log(
-        `vaultDaiBalanceAfter:${ethers.utils.formatEther(vaultDaiBalanceAfter)}`
+        `vaultDaiBalanceAfterMint:${ethers.utils.formatEther(
+          vaultDaiBalanceAfter
+        )}`
       );
+
+      // Burn meTokens to owner
+      let assetsReturned = await _curve.viewAssetsReturned(
+        meTokensMinted.div(2),
+        hubId,
+        totalSupply,
+        amount1
+      );
+
+      console.log(
+        `viewAssetsReturned: ${ethers.utils.formatEther(assetsReturned)}`
+      );
+
+      await foundry
+        .connect(account1)
+        .burn(
+          meToken.address,
+          meTokensMinted.div(BigNumber.from(2)),
+          account1.address
+        );
+      console.log(
+        `meTokens burned: ${ethers.utils.formatEther(
+          meTokensMinted.div(BigNumber.from(2))
+        )}`
+      );
+
+      let newSupply = await meToken.totalSupply();
+      let newDaiBalance = await dai.balanceOf(account1.address);
+      console.log(`Supply after burn: ${ethers.utils.formatEther(newSupply)}`);
+      console.log(
+        `Owners' DAI balance after burn: ${ethers.utils.formatEther(
+          newDaiBalance
+        )}`
+      );
+
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
       expect(amount1).to.equal(expectedAssetsDeposited);
     });

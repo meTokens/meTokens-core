@@ -3,6 +3,7 @@ pragma solidity ^0.8;
 import "../utils/ABDKMathQuad.sol";
 import "./Power.sol";
 import "../libs/Details.sol";
+import "../interfaces/ICurve.sol";
 
 /**
  * @title Bancor formula by Bancor
@@ -12,7 +13,7 @@ import "../libs/Details.sol";
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
  * and to You under the Apache License, Version 2.0. "
  */
-contract BancorFormula is Power {
+contract BancorBancor is Power, ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -22,7 +23,10 @@ contract BancorFormula is Power {
     bytes16 private immutable _one = (uint256(1)).fromUInt();
     mapping(uint256 => Details.Bancor) private _bancors;
 
-    function register(uint256 _hubId, bytes calldata _encodedDetails) external {
+    function register(uint256 _hubId, bytes calldata _encodedDetails)
+        external
+        override
+    {
         // TODO: access control
         require(_encodedDetails.length > 0, "!_encodedDetails");
 
@@ -43,6 +47,7 @@ contract BancorFormula is Power {
 
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external
+        override
     {
         // TODO: access control
 
@@ -63,7 +68,7 @@ contract BancorFormula is Power {
         bancor_.targetReserveWeight = targetReserveWeight;
     }
 
-    function finishReconfigure(uint256 _hubId) external {
+    function finishReconfigure(uint256 _hubId) external override {
         // TODO; only foundry can call
         Details.Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
@@ -85,7 +90,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 meTokensMinted) {
+    ) external view override returns (uint256 meTokensMinted) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
@@ -108,7 +113,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 meTokensMinted) {
+    ) external view override returns (uint256 meTokensMinted) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
@@ -131,7 +136,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
@@ -146,7 +151,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Details.Bancor memory bancorDetails = _bancors[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
@@ -161,7 +166,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             assetsDeposited = _viewAssetsDeposited(
@@ -185,7 +190,7 @@ contract BancorFormula is Power {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Details.Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             assetsDeposited = _viewAssetsDeposited(
@@ -258,7 +263,8 @@ contract BancorFormula is Power {
         bytes16 res = (numerator.div(denominator))
             .ln()
             .mul(reserveWeight)
-            .exp();
+            .exp()
+            .mul(_maxWeight);
         return res.toUInt();
     }
 
