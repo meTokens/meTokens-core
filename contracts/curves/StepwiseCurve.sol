@@ -12,9 +12,11 @@ import "../utils/ABDKMathQuad.sol";
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
 contract StepwiseCurve {
-    uint256 public constant PRECISION = 10**18;
+    
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
+
+    uint256 public constant PRECISION = 10**18;
 
     // TODO: create Details.Stepwise
 
