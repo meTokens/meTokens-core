@@ -75,6 +75,17 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedCurveDetails
     ) external {
         Details.Hub storage hub_ = _hubs[_id];
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            Details.Hub memory hubUpdated = finishUpdate(_id);
+            hub_.refundRatio = hubUpdated.refundRatio;
+            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
+            hub_.curve = hubUpdated.curve;
+            hub_.targetCurve = hubUpdated.targetCurve;
+            hub_.reconfigure = hubUpdated.reconfigure;
+            hub_.updating = hubUpdated.updating;
+            hub_.startTime = hubUpdated.startTime;
+            hub_.endTime = hubUpdated.endTime;
+        }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         if (_targetRefundRatio != 0) {
@@ -111,31 +122,6 @@ contract Hub is Ownable, Initializable {
         hub_.startTime = block.timestamp + _warmup;
         hub_.endTime = block.timestamp + _warmup + _duration;
         hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
-    }
-
-    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
-        Details.Hub storage hub_ = _hubs[id];
-        require(block.timestamp > hub_.endTime, "Still updating");
-
-        if (hub_.targetRefundRatio != 0) {
-            hub_.refundRatio = hub_.targetRefundRatio;
-            hub_.targetRefundRatio = 0;
-        }
-
-        if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
-            hub_.reconfigure = false;
-        }
-
-        hub_.updating = false;
-        hub_.startTime = 0;
-        hub_.endTime = 0;
-        return hub_;
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
@@ -175,5 +161,30 @@ contract Hub is Ownable, Initializable {
 
     function getCooldown() external view returns (uint256) {
         return _cooldown;
+    }
+
+    function finishUpdate(uint256 id) public returns (Details.Hub memory) {
+        Details.Hub storage hub_ = _hubs[id];
+        require(block.timestamp > hub_.endTime, "Still updating");
+
+        if (hub_.targetRefundRatio != 0) {
+            hub_.refundRatio = hub_.targetRefundRatio;
+            hub_.targetRefundRatio = 0;
+        }
+
+        if (hub_.reconfigure) {
+            if (hub_.targetCurve == address(0)) {
+                ICurve(hub_.curve).finishReconfigure(id);
+            } else {
+                hub_.curve = hub_.targetCurve;
+                hub_.targetCurve = address(0);
+            }
+            hub_.reconfigure = false;
+        }
+
+        hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
+        return hub_;
     }
 }
