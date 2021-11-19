@@ -227,6 +227,7 @@ contract BancorBancor is Power, ICurve {
         }
         // special case if the weight = 100%
         if (_connectorWeight == MAX_WEIGHT) {
+            // TODO: will ABDK round correctly here?
             return (_supply * _depositAmount) / _connectorBalance;
         }
         uint256 result;
@@ -238,6 +239,7 @@ contract BancorBancor is Power, ICurve {
             _connectorWeight,
             MAX_WEIGHT
         );
+        // TODO: will ABDK shift correctly here?
         uint256 newTokenSupply = (_supply * result) >> precision;
         return newTokenSupply - _supply;
     }
