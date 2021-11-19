@@ -3,7 +3,6 @@ import { Hub } from "../../artifacts/types/Hub";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -17,48 +16,70 @@ const policyFactory = await ethers.getContractFactory("PolicyLib", {
 */
 
 describe("Hub.sol", () => {
-  let hub: Hub;
-  let foundry: Foundry;
-  let curveRegistry: CurveRegistry;
-  let vaultRegistry: VaultRegistry;
+  before(async () => {});
 
-  before(async () => {
-    const hubFactory = await ethers.getContractFactory("Hub");
-    hub = (await hubFactory.deploy()) as Hub;
-    await hub.deployed();
-
-    const weightedAverageLibFactory = await ethers.getContractFactory(
-      "WeightedAverage"
-    );
-    const weightedAverageLib = await weightedAverageLibFactory.deploy();
-    const foundryFactory = await ethers.getContractFactory("Foundry", {
-      libraries: { WeightedAverage: weightedAverageLib.address },
+  describe("register()", () => {
+    it("Should revert from invalid address arguments", async () => {
+      // TODO
     });
-    foundry = (await foundryFactory.deploy()) as Foundry;
-    await foundry.deployed();
-
-    const curveRegistryFactory = await ethers.getContractFactory(
-      "CurveRegistry"
-    );
-    curveRegistry = (await curveRegistryFactory.deploy()) as CurveRegistry;
-    await curveRegistry.deployed();
-
-    const vaultRegistryFactory = await ethers.getContractFactory(
-      "VaultRegistry"
-    );
-    vaultRegistry = (await vaultRegistryFactory.deploy()) as VaultRegistry;
-    await vaultRegistry.deployed();
+    it("Should revert from invalid encodedCurveDetails", async () => {
+      // TODO
+    });
+    it("Should revert from invalid encodedVaultArgs", async () => {
+      // TODO
+    });
   });
 
-  it("initialize()", async () => {
-    // Do something
+  describe("initUpdate()", () => {
+    it("Cannot be called if all values are the same", async () => {});
+    it("Can be called a first time", async () => {
+      // TODO: call initUpdate()
+    });
+
+    it("Cannot be called during warmup, duration, and cooldown", async () => {
+      // TODO: fast fwd to warmup, duration, cooldown and try expect
+      // calling initUpdate() to revert
+    });
+
+    it("Sets target values to values if finishUpdate() never after from first update", async () => {});
+
+    it("Can be called a second time after cooldown", async () => {
+      // TODO: fast fwd to after cooldown and call initUpdate()
+    });
   });
 
-  it("register()", async () => {
-    // Do something
-  });
+  describe("finishUpdate()", () => {
+    it("Should revert if all arguments are the same", async () => {
+      // TODO
+    });
+    it("Doesn't trigger during warmup or duration", async () => {
+      // TODO
+    });
 
-  it("deactivate()", async () => {
-    // Do something
+    it("Trigger once when mint() called during cooldown", async () => {
+      // TODO
+    });
+
+    it("Trigger once when burn() called during cooldown", async () => {
+      // TODO
+    });
+
+    it("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
+      // TODO
+    });
+
+    it("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
+      // TODO
+    });
+
+    it("Correctly set HubDetails when called during cooldown", async () => {
+      // TODO
+    });
+    it("Correctly set HubDetails when called after cooldown", async () => {
+      // TODO
+    });
+    it("Correctly set HubDetails when called during second initUpdate()", async () => {
+      // TODO
+    });
   });
 });

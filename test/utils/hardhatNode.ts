@@ -2,10 +2,31 @@ import { ContractTransaction, Signer } from "ethers";
 import { network, getNamedAccounts, ethers } from "hardhat";
 import { TransactionReceipt } from "@ethersproject/abstract-provider";
 
-export async function passOneHour(): Promise<void> {
+export async function passSeconds(sec: Number): Promise<void> {
   await network.provider.request({
     method: "evm_increaseTime",
-    params: [3600],
+    params: [sec],
+  });
+}
+
+export async function passHours(amount: number): Promise<void> {
+  await network.provider.request({
+    method: "evm_increaseTime",
+    params: [3600 * amount],
+  });
+}
+
+export async function passDays(amount: number): Promise<void> {
+  await network.provider.request({
+    method: "evm_increaseTime",
+    params: [86400 * amount],
+  });
+}
+
+export async function passWeeks(amount: number): Promise<void> {
+  await network.provider.request({
+    method: "evm_increaseTime",
+    params: [604800 * amount],
   });
 }
 

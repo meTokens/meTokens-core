@@ -14,7 +14,7 @@ import { BigNumber } from "ethers";
 import { MigrationRegistry } from "../artifacts/types/MigrationRegistry";
 import { Fees } from "../artifacts/types/Fees";
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
-const SUPPORTED_NETWORK = [1, 4, 100, 31337];
+const SUPPORTED_NETWORK = [1, 3, 4, 100, 31337];
 const deployDir = "deployment";
 const contracts: any[] = [];
 const REFUND_RATIO = 50000;
@@ -39,6 +39,10 @@ function currencySymbol(chainId: number) {
 }
 function currencyAddress(chainId: number) {
   switch (chainId.toString()) {
+    // Ropsten
+    case "3":
+      return "0x92d75D18C4A2aDF86365EcFd5219f13AfED5103C";
+
     // Rinkeby
     case "4":
       return "0x92d75D18C4A2aDF86365EcFd5219f13AfED5103C";
@@ -83,31 +87,31 @@ async function main() {
     currencySymbol(chainId)
   );
 
-  printLog("Deploying weightedAverage Contract...");
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  contracts.push(weightedAverage.address);
+  //   printLog("Deploying weightedAverage Contract...");
+  //   const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+  //   contracts.push(weightedAverage.address);
 
-  printLog("Deploying BancorZeroCurve Contract...");
-  const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-  contracts.push(bancorZeroCurve.address);
+  //   printLog("Deploying BancorZeroCurve Contract...");
+  //   const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  //   contracts.push(bancorZeroCurve.address);
 
-  printLog("Deploying CurveRegistry Contract...");
-  const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-  contracts.push(curveRegistry.address);
+  //   printLog("Deploying CurveRegistry Contract...");
+  //   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+  //   contracts.push(curveRegistry.address);
 
-  printLog("Deploying VaultRegistry Contract...");
-  const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-  contracts.push(vaultRegistry.address);
+  //   printLog("Deploying VaultRegistry Contract...");
+  //   const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+  //   contracts.push(vaultRegistry.address);
 
-  printLog("Deploing MigrationRegistry Contract...");
-  const migrationRegistry = await deploy<MigrationRegistry>(
-    "MigrationRegistry"
-  );
-  contracts.push(migrationRegistry.address);
+  //   printLog("Deploing MigrationRegistry Contract...");
+  //   const migrationRegistry = await deploy<MigrationRegistry>(
+  //     "MigrationRegistry"
+  //   );
+  // contracts.push(migrationRegistry.address);
 
   printLog("Deploying Foundry Contract...");
   const foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
+    WeightedAverage: "0x13e7bF4A65822fC846b07fbad3e806eD1D094b59",
   });
   contracts.push(foundry.address);
 
@@ -115,9 +119,9 @@ async function main() {
   const hub = await deploy<Hub>("Hub");
   contracts.push(hub.address);
 
-  printLog("Deploying MeTokenFactory Contract...");
-  const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-  contracts.push(meTokenFactory.address);
+  //   printLog("Deploying MeTokenFactory Contract...");
+  //   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+  //   contracts.push(meTokenFactory.address);
 
   printLog("Deploying MeTokenRegistry Contract...");
   const meTokenRegistry = await deploy<MeTokenRegistry>(
@@ -125,48 +129,48 @@ async function main() {
     undefined,
     foundry.address,
     hub.address,
-    meTokenFactory.address,
-    migrationRegistry.address
+    "0xf4a2AacCB5C9dCa49E6F65d497dED9616d127B92",
+    "0x14d61228e0648d43DC5f8c148A488c0Ae81ec2CC"
   );
 
-  printLog("Deploying SingleAssetVault Contract...");
-  const singleAssetVault = await deploy<SingleAssetVault>(
-    "SingleAssetVault",
-    undefined, //no libs
-    DAO.address, // DAO
-    foundry.address, // foundry
-    hub.address, // hub
-    meTokenRegistry.address, //IMeTokenRegistry
-    migrationRegistry.address //IMigrationRegistry
-  );
+  //   printLog("Deploying SingleAssetVault Contract...");
+  //   const singleAssetVault = await deploy<SingleAssetVault>(
+  //     "SingleAssetVault",
+  //     undefined, //no libs
+  //     DAO.address, // DAO
+  //     foundry.address, // foundry
+  //     hub.address, // hub
+  //     meTokenRegistry.address, //IMeTokenRegistry
+  //     migrationRegistry.address //IMigrationRegistry
+  //   );
 
-  printLog("Deploying fees Contract...");
-  const fees = await deploy<Fees>("Fees");
-  contracts.push(fees.address);
+  //   printLog("Deploying fees Contract...");
+  //   const fees = await deploy<Fees>("Fees");
+  //   contracts.push(fees.address);
 
-  printLog("Registering Bancor Curve to curve registry...");
-  let tx = await curveRegistry.approve(bancorZeroCurve.address);
-  await tx.wait();
-  printLog("Registering vault to vault registry...");
-  tx = await vaultRegistry.approve(singleAssetVault.address);
-  await tx.wait();
+  //   printLog("Registering Bancor Curve to curve registry...");
+  //   let tx = await curveRegistry.approve(bancorZeroCurve.address);
+  //   await tx.wait();
+  //   printLog("Registering vault to vault registry...");
+  //   tx = await vaultRegistry.approve(singleAssetVault.address);
+  //   await tx.wait();
 
-  printLog("Initializing fees...");
-  tx = await fees.initialize(
-    MINT_FEE,
-    BURN_BUYER_FEE,
-    BURN_OWNER_FEE,
-    TRANSFER_FEE,
-    INTEREST_FEE,
-    YIELD_FEE
-  );
-  await tx.wait();
+  //   printLog("Initializing fees...");
+  //   tx = await fees.initialize(
+  //     MINT_FEE,
+  //     BURN_BUYER_FEE,
+  //     BURN_OWNER_FEE,
+  //     TRANSFER_FEE,
+  //     INTEREST_FEE,
+  //     YIELD_FEE
+  //   );
+  //   await tx.wait();
 
   printLog("Initializing hub Contract...");
-  tx = await hub.initialize(
+  let tx = await hub.initialize(
     foundry.address,
-    vaultRegistry.address,
-    curveRegistry.address
+    "0xCA82C0B535aaD7b26FE6feFE0B3D243ACf180D93",
+    "0xB8b36dcF76bE040dB276f5353e7cb23C51798811"
   );
   await tx.wait();
 
@@ -182,8 +186,8 @@ async function main() {
   printLog("Registering hub ...");
   tx = await hub.register(
     DAI,
-    singleAssetVault.address,
-    bancorZeroCurve.address,
+    "0x1a96C7bB64070f6129a64F981CFCb544D78e7842",
+    "0x6551A593a18586baeF221355886697cb39410587",
     REFUND_RATIO, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
@@ -193,7 +197,7 @@ async function main() {
   printLog("Initializing foundry Contract...");
   tx = await foundry.initialize(
     hub.address,
-    fees.address,
+    "0x889356A0325cF68Ea7aAE3554baa003E0297f963",
     meTokenRegistry.address
   );
   await tx.wait();
@@ -208,13 +212,13 @@ async function main() {
 
     try {
       await run(TASK_VERIFY, {
-        address: singleAssetVault.address,
+        address: "0x1a96C7bB64070f6129a64F981CFCb544D78e7842",
         constructorArgsParams: [
-          DAO.address, // DAO
+          DAO, // DAO
           foundry.address, // foundry
           hub.address, // hub
           meTokenRegistry.address, //IMeTokenRegistry
-          migrationRegistry.address, //IMigrationRegistry
+          "0x14d61228e0648d43DC5f8c148A488c0Ae81ec2CC", //IMigrationRegistry
         ],
       });
       await run(TASK_VERIFY, {
@@ -222,12 +226,15 @@ async function main() {
         constructorArgsParams: [
           foundry.address,
           hub.address,
-          meTokenFactory.address,
-          migrationRegistry.address,
+          "0xf4a2AacCB5C9dCa49E6F65d497dED9616d127B92",
+          "0x14d61228e0648d43DC5f8c148A488c0Ae81ec2CC",
         ],
       });
     } catch (error) {
-      console.error(`Error verifying ${singleAssetVault.address}: `, error);
+      console.error(
+        `Error verifying ${"0x1a96C7bB64070f6129a64F981CFCb544D78e7842"}: `,
+        error
+      );
     }
 
     for (let i = 0; i < contracts.length; ++i) {
@@ -248,16 +255,16 @@ async function main() {
   const deploymentInfo = {
     network: network.name,
     "Hub Contract Address": hub.address,
-    "VaultRegistry Contract Address": vaultRegistry.address,
-    "Migration Registry Contract Address": migrationRegistry.address,
-    "SingleAsset Vault Contract Address": singleAssetVault.address,
-    "Fee Contract Address": fees.address,
-    "Curve Registry Contract Address": curveRegistry.address,
-    "Bancor Curve Contract Address": bancorZeroCurve.address,
+    // "VaultRegistry Contract Address": vaultRegistry.address,
+    // "SingleAssetVault Contract Address": singleAssetVault.address,
+    //  "SingleAsset Vault Contract Address": singleAssetVault.address,
+    // "Fee Contract Address": fees.address,
+    // "Curve Registry Contract Address": curveRegistry.address,
+    // "Bancor Curve Contract Address": bancorZeroCurve.address,
     "Foundry Contract Address": foundry.address,
-    "MeToken Factory Contract Address": meTokenFactory.address,
+    // "MeToken Factory Contract Address": meTokenFactory.address,
     "MeToken Registry Contract Address": meTokenRegistry.address,
-    "WeightedAverage Contract Address": weightedAverage.address,
+    // "WeightedAverage Contract Address": weightedAverage.address,
     "Block Number": receipt.blockNumber.toString(),
   };
 
@@ -266,11 +273,11 @@ async function main() {
   }
 
   fs.writeFileSync(
-    `${deployDir}/script-${network.name}.json`,
+    `${deployDir}/script-${network.name}-2.json`,
     JSON.stringify(deploymentInfo)
   );
   console.log(
-    `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
+    `Latest Contract Address written to: ${deployDir}/script-${network.name}-2.json`
   );
 }
 

@@ -3,45 +3,51 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
+import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract SingleAssetVault is Ownable, Vault {
-    address public hub;
+contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
+    using SafeERC20 for IERC20;
 
     constructor(
         address _dao,
         address _foundry,
-        address _hub
-    ) Vault(_dao, _foundry) {
-        hub = _hub;
+        IHub _hub,
+        IMeTokenRegistry _meTokenRegistry,
+        IMigrationRegistry _migrationRegistry
+    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
+
+    // After warmup period, if there's a migration vault,
+    // Send meTokens' collateral to the migration
+    function startMigration(address _meToken) external override {
+        require(msg.sender == address(hub), "!hub");
+        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
+
+        if (
+            meToken_.migration != address(0) &&
+            address(this) != meToken_.migration
+        ) {
+            IERC20(hub_.asset).safeTransfer(meToken_.migration, balance);
+        }
+        emit StartMigration(_meToken);
     }
 
-    function register(uint256 _hubId, bytes memory _encodedArgs)
+    // solhint-disable-next-line
+    function isValid(address _asset, bytes memory _encodedArgs)
         public
-        override
-    {
-        require(msg.sender == hub, "!Hub");
-        address asset = _validate(_encodedArgs);
-        assetOfHub[_hubId] = asset;
-    }
-
-    // function register(address _meToken, bytes memory _encodedArgs) public {
-    //     require(msg.sender == hub, "!Hub");
-    //     address asset = _validate(_encodedArgs);
-    //     assetOfMeToken[_meToken] = asset;
-    // }
-
-    function _validate(bytes memory _encodedArgs)
-        private
         pure
-        returns (address asset)
+        override
+        returns (bool)
     {
-        require(_encodedArgs.length > 0, "_encodedArgs empty");
-        asset = abi.decode(_encodedArgs, (address));
-        require(asset != address(0), "0 address");
+        if (_asset == address(0)) {
+            return false;
+        }
+        return true;
     }
 }

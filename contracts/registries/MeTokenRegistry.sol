@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../MeToken.sol";
-import "../Roles.sol";
 
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
@@ -20,12 +19,13 @@ import "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
+contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     uint256 public constant PRECISION = 10**18;
     uint256 private _warmup;
     uint256 private _duration;
     uint256 private _cooldown;
 
+    address public foundry;
     IHub public hub;
     IMeTokenFactory public meTokenFactory;
     IMigrationRegistry public migrationRegistry;
@@ -34,10 +34,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
 
     constructor(
+        address _foundry,
         IHub _hub,
         IMeTokenFactory _meTokenFactory,
         IMigrationRegistry _migrationRegistry
     ) {
+        foundry = _foundry;
         hub = _hub;
         meTokenFactory = _meTokenFactory;
         migrationRegistry = _migrationRegistry;
@@ -56,10 +58,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
-        address asset = IVault(hub_.vault).getAsset(_hubId);
         if (_assetsDeposited > 0) {
             require(
-                IERC20(asset).transferFrom(
+                IERC20(hub_.asset).transferFrom(
                     msg.sender,
                     hub_.vault,
                     _assetsDeposited
@@ -72,8 +73,9 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         address meTokenAddr = meTokenFactory.create(_name, _symbol);
 
         // Mint meToken to user
+        uint256 _meTokensMinted;
         if (_assetsDeposited > 0) {
-            uint256 _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
+            _meTokensMinted = ICurve(hub_.curve).calculateMintReturn(
                 _assetsDeposited, // _deposit_amount
                 _hubId, // _hubId
                 0, // _supply
@@ -91,13 +93,24 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
 
-        emit Register(meTokenAddr, msg.sender, _name, _symbol, _hubId);
+        emit Subscribe(
+            meTokenAddr,
+            msg.sender,
+            _meTokensMinted,
+            hub_.asset,
+            _assetsDeposited,
+            _name,
+            _symbol,
+            _hubId
+        );
     }
 
+    /// @inheritdoc IMeTokenRegistry
     function initResubscribe(
         address _meToken,
         uint256 _targetHubId,
-        address _migration // TODO: bytes memory _encodedMigrationArgs??
+        address _migration,
+        bytes memory _encodedMigrationArgs
     ) external override {
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
@@ -115,14 +128,24 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         require(!targetHub_.updating, "targetHub updating");
 
         // Ensure the migration we're using is approved
-        require(
-            migrationRegistry.isApproved(
-                hub_.vault,
-                targetHub_.vault,
-                _migration
-            ),
-            "!approved"
-        );
+        if (hub_.asset != targetHub_.asset || _migration != address(0)) {
+            require(
+                migrationRegistry.isApproved(
+                    hub_.vault,
+                    targetHub_.vault,
+                    _migration
+                ),
+                "!approved"
+            );
+            require(
+                IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
+                "Invalid _encodedMigrationArgs"
+            );
+            IMigration(_migration).initMigration(
+                _meToken,
+                _encodedMigrationArgs
+            );
+        }
 
         meToken_.startTime = block.timestamp + _warmup;
         meToken_.endTime = block.timestamp + _warmup + _duration;
@@ -133,8 +156,16 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             _cooldown;
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = _migration;
+
+        emit InitResubscribe(
+            _meToken,
+            _targetHubId,
+            _migration,
+            _encodedMigrationArgs
+        );
     }
 
+    /// @inheritdoc IMeTokenRegistry
     function finishResubscribe(address _meToken)
         external
         override
@@ -148,7 +179,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             "block.timestamp < endTime"
         );
         // Update balancePooled / balanceLocked
-
+        // solhint-disable-next-line
         uint256 newBalance = IMigration(meToken_.migration).finishMigration(
             _meToken
         );
@@ -159,9 +190,12 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         meToken_.hubId = meToken_.targetHubId;
         meToken_.targetHubId = 0;
         meToken_.migration = address(0);
+
+        emit FinishResubscribe(_meToken);
         return meToken_;
     }
 
+    /// @inheritdoc IMeTokenRegistry
     function updateBalances(address _meToken, uint256 _newBalance)
         external
         override
@@ -178,29 +212,17 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             (PRECISION * _newBalance) /
             oldBalance /
             PRECISION;
+
+        emit UpdateBalances(_meToken, _newBalance);
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function transferMeTokenOwnership(address _newOwner) external override {
-        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        address meToken = _owners[msg.sender];
-        Details.MeToken storage meToken_ = _meTokens[meToken];
-        require(msg.sender == meToken_.owner, "!owner");
-
-        meToken_.owner = _newOwner;
-        _owners[msg.sender] = address(0);
-        _owners[_newOwner] = meToken;
-
-        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken);
-    }
-
-    /// @inheritdoc IMeTokenRegistry
-    function incrementBalancePooled(
+    function updateBalancePooled(
         bool add,
         address _meToken,
         uint256 _amount
     ) external override {
-        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        require(msg.sender == foundry, "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
         if (add) {
             meToken_.balancePooled += _amount;
@@ -208,24 +230,41 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
             meToken_.balancePooled -= _amount;
         }
 
-        emit IncrementBalancePooled(add, _meToken, _amount);
+        emit UpdateBalancePooled(add, _meToken, _amount);
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function incrementBalanceLocked(
+    function updateBalanceLocked(
         bool add,
         address _meToken,
         uint256 _amount
     ) external override {
-        require(hasRole(FOUNDRY, msg.sender), "!foundry");
+        require(msg.sender == foundry, "!foundry");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
+
         if (add) {
             meToken_.balanceLocked += _amount;
         } else {
             meToken_.balanceLocked -= _amount;
         }
 
-        emit IncrementBalanceLocked(add, _meToken, _amount);
+        emit UpdateBalanceLocked(add, _meToken, _amount);
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function transferMeTokenOwnership(address _newOwner) external override {
+        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
+
+        // TODO: what happens if multiple people want to revoke ownership to 0 address?
+        address _meToken = _owners[msg.sender];
+
+        require(_meToken != address(0), "!meToken");
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        meToken_.owner = _newOwner;
+        _owners[msg.sender] = address(0);
+        _owners[_newOwner] = _meToken;
+
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
@@ -255,7 +294,7 @@ contract MeTokenRegistry is IMeTokenRegistry, Roles, Ownable {
         return _owners[_owner];
     }
 
-    // @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistry
     function getDetails(address _meToken)
         external
         view

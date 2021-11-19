@@ -85,8 +85,20 @@ const config: HardhatUserConfig = {
     timeout: 60000, // Here is 2min but can be whatever timeout is suitable for you.
   },
   namedAccounts: {
-    DAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+    DAI: {
+      default: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // here this will by default take the first account as deployer
+      1: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+      4: "0xc7ad46e0b8a400bb3c915120d284aafba8fc4735", // but for rinkeby it will be a specific address
+      goerli: "0x84b9514E013710b9dD0811c9Fe46b837a4A0d8E0", //it can also specify a specific netwotk name (specified in hardhat.config.js)
+    },
     DAIWhale: "0x0000006daea1723962647b7e189d311d757Fb793",
+    WETH: {
+      default: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      1: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    },
+    WETHWhale: "0x57757E3D981446D585Af0D9Ae4d7DF6D64647806",
+    USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   },
   networks: {
     hardhat: {

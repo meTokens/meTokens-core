@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 import "./interfaces/IHub.sol";
 import "./interfaces/IVault.sol";
-import "./interfaces/IVaultRegistry.sol";
-import "./interfaces/ICurveRegistry.sol";
+import "./interfaces/IRegistry.sol";
 import "./interfaces/ICurve.sol";
+import "./interfaces/IFoundry.sol";
 
 import "./libs/Details.sol";
 
@@ -17,32 +17,30 @@ import "./libs/Details.sol";
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens
 contract Hub is Ownable, Initializable {
-    uint256 private immutable _precision = 10**18;
+    uint256 public constant MAX_REFUND_RATIO = 10**6;
     uint256 private _warmup;
     uint256 private _duration;
     uint256 private _cooldown;
 
     uint256 private _count;
-    IVaultRegistry public vaultRegistry;
-    ICurveRegistry public curveRegistry;
+    IFoundry public foundry;
+    IRegistry public vaultRegistry;
+    IRegistry public curveRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
 
-    modifier exists(uint256 id) {
-        require(id <= _count, "id exceeds _count");
-        _;
-    }
-
-    function initialize(address _vaultRegistry, address _curveRegistry)
-        external
-        onlyOwner
-        initializer
-    {
-        vaultRegistry = IVaultRegistry(_vaultRegistry);
-        curveRegistry = ICurveRegistry(_curveRegistry);
+    function initialize(
+        address _foundry,
+        address _vaultRegistry,
+        address _curveRegistry
+    ) external onlyOwner initializer {
+        foundry = IFoundry(_foundry);
+        vaultRegistry = IRegistry(_vaultRegistry);
+        curveRegistry = IRegistry(_curveRegistry);
     }
 
     function register(
+        address _asset,
         IVault _vault,
         ICurve _curve,
         uint256 _refundRatio,
@@ -51,19 +49,20 @@ contract Hub is Ownable, Initializable {
     ) external {
         // TODO: access control
 
-        require(curveRegistry.isActive(address(_curve)), "_curve !approved");
+        require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
-        require(_refundRatio < _precision, "_refundRatio > _precision");
+        require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
+
+        // Ensure asset is valid based on encoded args and vault validation logic
+        require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(_count, _encodedCurveDetails);
-
-        // Store vault base parameters to `{VaultName}.sol`
-        _vault.register(_count, _encodedVaultArgs);
+        _curve.register(++_count, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = _hubs[_count++];
+        Details.Hub storage hub_ = _hubs[_count];
         hub_.active = true;
+        hub_.asset = _asset;
         hub_.vault = address(_vault);
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
@@ -76,12 +75,23 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedCurveDetails
     ) external {
         Details.Hub storage hub_ = _hubs[_id];
+        if (hub_.updating && block.timestamp > hub_.endTime) {
+            Details.Hub memory hubUpdated = finishUpdate(_id);
+            hub_.refundRatio = hubUpdated.refundRatio;
+            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
+            hub_.curve = hubUpdated.curve;
+            hub_.targetCurve = hubUpdated.targetCurve;
+            hub_.reconfigure = hubUpdated.reconfigure;
+            hub_.updating = hubUpdated.updating;
+            hub_.startTime = hubUpdated.startTime;
+            hub_.endTime = hubUpdated.endTime;
+        }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         if (_targetRefundRatio != 0) {
             require(
-                _targetRefundRatio < _precision,
-                "_targetRefundRatio >= _precision"
+                _targetRefundRatio < MAX_REFUND_RATIO,
+                "_targetRefundRatio >= MAX"
             );
             require(
                 _targetRefundRatio != hub_.refundRatio,
@@ -89,15 +99,14 @@ contract Hub is Ownable, Initializable {
             );
         }
         bool reconfigure;
-
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
                 reconfigure = true;
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
             } else {
                 require(
-                    curveRegistry.isActive(_targetCurve),
-                    "_targetCurve inactive"
+                    curveRegistry.isApproved(_targetCurve),
+                    "_targetCurve !approved"
                 );
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
@@ -113,31 +122,6 @@ contract Hub is Ownable, Initializable {
         hub_.startTime = block.timestamp + _warmup;
         hub_.endTime = block.timestamp + _warmup + _duration;
         hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
-    }
-
-    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
-        Details.Hub storage hub_ = _hubs[id];
-        require(block.timestamp > hub_.endTime, "Still updating");
-
-        if (hub_.targetRefundRatio != 0) {
-            hub_.refundRatio = hub_.targetRefundRatio;
-            hub_.targetRefundRatio = 0;
-        }
-
-        if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
-            hub_.reconfigure = false;
-        }
-
-        hub_.updating = false;
-        hub_.startTime = 0;
-        hub_.endTime = 0;
-        return hub_;
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
@@ -162,7 +146,6 @@ contract Hub is Ownable, Initializable {
     function getDetails(uint256 id)
         external
         view
-        exists(id)
         returns (Details.Hub memory hub_)
     {
         hub_ = _hubs[id];
@@ -178,5 +161,30 @@ contract Hub is Ownable, Initializable {
 
     function getCooldown() external view returns (uint256) {
         return _cooldown;
+    }
+
+    function finishUpdate(uint256 id) public returns (Details.Hub memory) {
+        Details.Hub storage hub_ = _hubs[id];
+        require(block.timestamp > hub_.endTime, "Still updating");
+
+        if (hub_.targetRefundRatio != 0) {
+            hub_.refundRatio = hub_.targetRefundRatio;
+            hub_.targetRefundRatio = 0;
+        }
+
+        if (hub_.reconfigure) {
+            if (hub_.targetCurve == address(0)) {
+                ICurve(hub_.curve).finishReconfigure(id);
+            } else {
+                hub_.curve = hub_.targetCurve;
+                hub_.targetCurve = address(0);
+            }
+            hub_.reconfigure = false;
+        }
+
+        hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
+        return hub_;
     }
 }

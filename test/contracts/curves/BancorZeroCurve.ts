@@ -8,14 +8,13 @@ import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { SingleAssetFactory } from "../../../artifacts/types/SingleAssetFactory";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { impersonate } from "../../utils/hardhatNode";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { deploy } from "../../utils/helpers";
 import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import { hubSetup } from "../../utils/hubSetup";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;
@@ -27,7 +26,6 @@ describe("BancorZeroCurve", () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let singleAssetFactory: SingleAssetFactory;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
@@ -37,62 +35,16 @@ describe("BancorZeroCurve", () => {
   let daiHolder: Signer;
   let DAIWhale: string;
   const decimals = 18;
-  const PRECISION = BigNumber.from(10).pow(18);
   const one = ethers.utils.parseEther("1");
-
+  let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
-  let hubId = 0;
+  let hubId = 1;
   before(async () => {
-    ({ DAI, DAIWhale } = await getNamedAccounts());
-    [account0, account1, account2] = await ethers.getSigners();
-    dai = await getContractAt<ERC20>("ERC20", DAI);
-    daiHolder = await impersonate(DAIWhale);
-    dai
-      .connect(daiHolder)
-      .transfer(account1.address, ethers.utils.parseEther("1000"));
-    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-    curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-    vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-    singleAssetVault = await deploy<SingleAssetVault>("SingleAssetVault");
-    foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
+    baseY = one.mul(1000);
+    const reserveWeight = MAX_WEIGHT / 2;
+    let DAI;
+    ({ DAI } = await getNamedAccounts());
 
-    hub = await deploy<Hub>("Hub");
-    singleAssetFactory = await deploy<SingleAssetFactory>(
-      "SingleAssetFactory",
-      undefined, //no libs
-      hub.address,
-      singleAssetVault.address, // implementation to clone
-      foundry.address, // foundry
-      vaultRegistry.address // vault registry
-    );
-
-    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-    meTokenRegistry = await deploy<MeTokenRegistry>(
-      "MeTokenRegistry",
-      undefined,
-      hub.address,
-      meTokenFactory.address,
-      migrationRegistry.address
-    );
-    await curveRegistry.register(bancorZeroCurve.address);
-
-    await vaultRegistry.approve(singleAssetFactory.address);
-
-    await hub.initialize(
-      foundry.address,
-      vaultRegistry.address,
-      curveRegistry.address,
-      migrationRegistry.address
-    );
-    // baseY = 1 == PRECISION/1000  and  baseX = 1000 == PRECISION
-    // Max weight = 1000000 if reserveWeight = 0.5 ==  Max weight  / 2
-    // this gives us m = 1/1000
-    const baseY = PRECISION.div(1000).toString();
-    const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [baseY, reserveWeight]
@@ -101,17 +53,29 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    let token;
 
-    await hub.register(
-      singleAssetFactory.address,
-      bancorZeroCurve.address,
-      5000, //refund ratio
+    ({
+      token,
+      hub,
+      curveRegistry,
+      migrationRegistry,
+      foundry,
+      account0,
+      account1,
+      account2,
+      meTokenRegistry,
+    } = await hubSetup(
       encodedCurveDetails,
-      encodedVaultArgs
-    );
+      encodedVaultArgs,
+      5000,
+      bancorZeroCurve
+    ));
+    dai = token;
   });
   it("calculateMintReturn() from zero should work", async () => {
-    let amount = one.mul(2);
+    let amount = one.mul(20);
 
     let estimate = await bancorZeroCurve.calculateMintReturn(
       amount,
@@ -119,7 +83,9 @@ describe("BancorZeroCurve", () => {
       0,
       0
     );
-    expect(estimate).to.equal(one.mul(2000));
+    expect(estimate).to.equal(
+      ethers.utils.parseEther("199.999999999999999999")
+    );
   });
   it("calculateMintReturn() should work", async () => {
     let amount = one.mul(2);
@@ -144,7 +110,7 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("635.674490391564489451")
     );
   });
-  it("calculateMintReturn should work with a max of 999999999999999000000000000000000 supply should work", async () => {
+  it("calculateMintReturn should work with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await bancorZeroCurve.calculateMintReturn(
       amount,
@@ -153,20 +119,20 @@ describe("BancorZeroCurve", () => {
       0
     );
     expect(estimate).to.equal(
-      ethers.utils.parseEther("999999999999998999.99999999999999744")
+      ethers.utils.parseEther("1414213562.373094341694907537")
     );
   });
   it("calculateBurnReturn() to zero supply should work", async () => {
-    let amount = ethers.utils.parseEther("2000");
+    let amount = ethers.utils.parseEther("200");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
     let estimate = await bancorZeroCurve.calculateBurnReturn(
       amount,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      one.mul(200),
+      one.mul(20)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("2"));
+    expect(estimate).to.equal(ethers.utils.parseEther("20"));
   });
   it("calculateBurnReturn() should work", async () => {
     let amount = ethers.utils.parseEther("585.786437626904952");
@@ -203,8 +169,6 @@ describe("BancorZeroCurve", () => {
     expect(estimate).to.equal(ethers.utils.parseEther("0.002"));
   });
   it("initReconfigure() should work", async () => {
-    const baseY = PRECISION.div(1000);
-
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2);
     const targetReserveWeight = BigNumber.from(MAX_WEIGHT).sub(20000);
     const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
@@ -230,7 +194,7 @@ describe("BancorZeroCurve", () => {
       0,
       0
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("1.183947292541540723"));
+    expect(estimate).to.equal(ethers.utils.parseEther("2.279096531302603397"));
   });
 
   it("calculateTargetMintReturn() should work", async () => {
