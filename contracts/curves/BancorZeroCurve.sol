@@ -2,25 +2,30 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/ICurve.sol";
-import "../interfaces/IRegistry.sol";
 
 import "../libs/WeightedAverage.sol";
-import "../libs/Details.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Bancor curve registry and calculator
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
 contract BancorZeroCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
+
+    struct Bancor {
+        uint256 baseY;
+        uint32 reserveWeight;
+        uint256 targetBaseY;
+        uint32 targetReserveWeight;
+    }
 
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
     uint32 public maxWeight = 1000000;
     bytes16 private immutable _one = (uint256(1)).fromUInt();
 
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Details.Bancor) private _bancors;
+    mapping(uint256 => Bancor) private _bancors;
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
@@ -39,7 +44,7 @@ contract BancorZeroCurve is ICurve {
             "!reserveWeight"
         );
 
-        Details.Bancor storage bancor_ = _bancors[_hubId];
+        Bancor storage bancor_ = _bancors[_hubId];
         bancor_.baseY = baseY;
         bancor_.reserveWeight = reserveWeight;
     }
@@ -51,7 +56,7 @@ contract BancorZeroCurve is ICurve {
         // TODO: access control
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
-        Details.Bancor storage bancor_ = _bancors[_hubId];
+        Bancor storage bancor_ = _bancors[_hubId];
 
         require(targetReserveWeight > 0, "!reserveWeight");
         require(
@@ -69,18 +74,14 @@ contract BancorZeroCurve is ICurve {
 
     function finishReconfigure(uint256 _hubId) external override {
         // TODO; only foundry can call
-        Details.Bancor storage bancor_ = _bancors[_hubId];
+        Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
         bancor_.baseY = bancor_.targetBaseY;
         bancor_.targetReserveWeight = 0;
         bancor_.targetBaseY = 0;
     }
 
-    function getDetails(uint256 bancor)
-        external
-        view
-        returns (Details.Bancor memory)
-    {
+    function getDetails(uint256 bancor) external view returns (Bancor memory) {
         return _bancors[bancor];
     }
 
@@ -91,7 +92,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
@@ -115,7 +116,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensReturned = _calculateMintReturn(
                 _tokensDeposited,
@@ -139,7 +140,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
             bancorDetails.reserveWeight,
@@ -154,7 +155,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         tokensReturned = _calculateBurnReturn(
             _meTokensBurned,
             bancorDetails.targetReserveWeight,
@@ -169,7 +170,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensDeposited) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             tokensDeposited = _calculateTokensDeposited(
                 _desiredMeTokens,
@@ -192,7 +193,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 tokensDeposited) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             tokensDeposited = _calculateTokensDeposited(
                 _desiredMeTokens,

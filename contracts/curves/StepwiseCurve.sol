@@ -4,26 +4,25 @@ pragma solidity ^0.8.0;
 import "../interfaces/ICurve.sol";
 
 import "../libs/WeightedAverage.sol";
-import "../libs/Details.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
 contract StepwiseCurve {
-    
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
+    struct Stepwise {
+        uint256 stepX;
+        uint256 stepY;
+        uint256 targetStepX;
+        uint256 targetStepY;
+    }
 
     uint256 public constant PRECISION = 10**18;
 
-    // TODO: create Details.Stepwise
-
-    // TODO: convert functions to use ABDK; then use _one
-    // bytes16 private immutable _one = (uint256(1)).fromUInt();
-
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Details.Stepwise) private _stepwises;
+    mapping(uint256 => Stepwise) private _stepwises;
 
     function register(uint256 _hubId, bytes calldata _encodedDetails) external {
         // TODO: access control
@@ -36,7 +35,7 @@ contract StepwiseCurve {
         require(stepX > 0 && stepX < PRECISION, "stepX not in range");
         require(stepY > 0 && stepY < PRECISION, "stepY not in range");
 
-        Details.Stepwise storage stepwise_ = _stepwises[_hubId];
+        Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepX;
         stepwise_.stepY = stepY;
     }
@@ -53,7 +52,7 @@ contract StepwiseCurve {
             _encodedDetails,
             (uint256, uint256)
         );
-        Details.Stepwise storage stepwiseDetails = _stepwises[_hubId];
+        Stepwise storage stepwiseDetails = _stepwises[_hubId];
 
         require(
             targetStepX > 0 && targetStepX < PRECISION,
@@ -73,7 +72,7 @@ contract StepwiseCurve {
 
     function finishReconfigure(uint256 _hubId) external {
         // TODO; only foundry can call
-        Details.Stepwise storage stepwise_ = _stepwises[_hubId];
+        Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepwise_.targetStepX;
         stepwise_.stepY = stepwise_.targetStepY;
         stepwise_.targetStepX = 0;
@@ -83,7 +82,7 @@ contract StepwiseCurve {
     function getDetails(uint256 stepwise)
         external
         view
-        returns (Details.Stepwise memory)
+        returns (Stepwise memory)
     {
         return _stepwises[stepwise];
     }
@@ -94,7 +93,7 @@ contract StepwiseCurve {
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view returns (uint256 meTokensMinted) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
             _assetsDeposited,
             stepwiseDetails.stepX,
@@ -110,7 +109,7 @@ contract StepwiseCurve {
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) external view returns (uint256 meTokensMinted) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
             _assetsDeposited,
             stepwiseDetails.targetStepX,
@@ -126,7 +125,7 @@ contract StepwiseCurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view returns (uint256 assetsReturned) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             stepwiseDetails.stepX,
@@ -142,9 +141,41 @@ contract StepwiseCurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view returns (uint256 assetsReturned) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
+            stepwiseDetails.targetStepX,
+            stepwiseDetails.targetStepY,
+            _supply,
+            _balancePooled
+        );
+    }
+
+    function viewAssetsDeposited(
+        uint256 _desiredMeTokensMinted,
+        uint256 _hubId, // hubId
+        uint256 _supply, // current supply
+        uint256 _balancePooled
+    ) external view returns (uint256 assetsDeposited) {
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        assetsDeposited = _viewAssetsDeposited(
+            _desiredMeTokensMinted,
+            stepwiseDetails.stepX,
+            stepwiseDetails.stepY,
+            _supply,
+            _balancePooled
+        );
+    }
+
+    function viewTargetAssetsDeposited(
+        uint256 _desiredMeTokensMinted,
+        uint256 _hubId, // hubId
+        uint256 _supply, // current supply
+        uint256 _balancePooled
+    ) external view returns (uint256 assetsDeposited) {
+        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        assetsDeposited = _viewAssetsDeposited(
+            _desiredMeTokensMinted,
             stepwiseDetails.targetStepX,
             stepwiseDetails.targetStepY,
             _supply,
@@ -245,38 +276,6 @@ contract StepwiseCurve {
             balancePooledAtStepsAfterBurn -
             supplyAtStepAfterBurn *
             _stepY;
-    }
-
-    function viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
-            _supply,
-            _balancePooled
-        );
-    }
-
-    function viewTargetAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
-        Details.Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
-            _supply,
-            _balancePooled
-        );
     }
 
     function _viewAssetsDeposited(
