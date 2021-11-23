@@ -21,47 +21,47 @@ interface ICurve {
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external;
 
-    function calculateMintReturn(
-        uint256 _tokensDeposited,
+    function viewMeTokensMinted(
+        uint256 _assetsDeposited,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 meTokensReturned);
+    ) external view returns (uint256 meTokensMinted);
 
-    function calculateBurnReturn(
+    function viewAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 tokensReturned);
+    ) external view returns (uint256 assetsReturned);
 
-    function calculateTargetMintReturn(
-        uint256 _tokensDeposited,
+    function viewTargetMeTokensMinted(
+        uint256 _assetsDeposited,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 meTokensReturned);
+    ) external view returns (uint256 meTokensMinted);
 
-    function calculateTargetBurnReturn(
+    function viewTargetAssetsReturned(
         uint256 _meTokensBurned,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 tokensReturned);
+    ) external view returns (uint256 assetsReturned);
 
-    function calculateTokensDeposited(
-        uint256 _desiredMeTokensReturned,
+    function viewAssetsDeposited(
+        uint256 _desiredMeTokensMinted,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 tokensDeposited);
+    ) external view returns (uint256 assetsDeposited);
 
-    function calculateTargetTokensDeposited(
-        uint256 _desiredMeTokensReturned,
+    function viewTargetAssetsDeposited(
+        uint256 _desiredMeTokensMinted,
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 tokensDeposited);
+    ) external view returns (uint256 assetsDeposited);
 
     function finishReconfigure(uint256 id) external;
 }
