@@ -28,31 +28,4 @@ library Details {
         address targetCurve;
         uint256 targetRefundRatio;
     }
-
-    struct Bancor {
-        uint256 baseY;
-        uint32 reserveWeight;
-        uint256 targetBaseY;
-        uint32 targetReserveWeight;
-    }
-
-    struct Stepwise {
-        uint256 stepX;
-        uint256 stepY;
-        uint256 targetStepX;
-        uint256 targetStepY;
-    }
-    
-    struct UniswapSingleTransfer {
-        // The earliest time that the swap can occur
-        uint256 soonest;
-        // Fee configured to pay on swap
-        uint24 fee;
-        // if migration is active and startMigration() has not been triggered
-        bool started;
-        // meToken has executed the swap and can finish migrating
-        bool swapped;
-        // finishMigration() has been called so it's not recallable
-        bool finished;
-    }
 }

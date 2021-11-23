@@ -20,6 +20,8 @@ contract StepwiseCurve {
     }
 
     uint256 public constant PRECISION = 10**18;
+    bytes16 private immutable _one = uint256(1).fromUInt();
+    bytes16 private immutable _two = uint256(2).fromUInt();
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
@@ -197,38 +199,54 @@ contract StepwiseCurve {
         uint256 _stepY, // height of step (aka price delta)
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         // special case for 0 deposit amount
         if (_assetsDeposited == 0) {
             return 0;
         }
 
+        bytes16 assetsDeposited_ = _assetsDeposited.fromUInt();
+        bytes16 stepX_ = _stepX.fromUInt();
+        bytes16 stepY_ = _stepY.fromUInt();
+        bytes16 supply_ = _supply.fromUInt();
+        bytes16 balancePooled_ = _balancePooled.fromUInt();
+
         // Note: _calculateSupply() without the method (use if we don't need a dedicated _viewMeTokensMintedFromZero() function)
-        uint256 stepsAfterMint = (((_balancePooled + _assetsDeposited) *
-            _stepX *
-            _stepX) / ((_stepX * _stepY) / 2)); // ^ (1 / 2);
-        uint256 balancePooledAtCurrentSteps = ((stepsAfterMint *
-            stepsAfterMint +
-            stepsAfterMint) / 2) *
-            _stepX *
-            _stepY;
-        uint256 supplyAfterMint;
-        if (balancePooledAtCurrentSteps > (_balancePooled + _assetsDeposited)) {
-            supplyAfterMint =
-                _stepX *
-                stepsAfterMint -
-                (balancePooledAtCurrentSteps -
-                    (_balancePooled + _assetsDeposited)) /
-                (_stepY * stepsAfterMint);
+        bytes16 stepsAfterMint = (
+            (
+                (balancePooled_.add(assetsDeposited_).mul(stepX_).mul(stepX_))
+                    .div((stepX_).mul(stepY_).div(_two))
+            )
+        ).sqrt();
+
+        bytes16 balancePooledAtCurrentSteps = (
+            (stepsAfterMint.mul(stepsAfterMint).add(stepsAfterMint)).div(_two)
+        ).mul(stepX_).mul(stepY_);
+
+        bytes16 supplyAfterMint;
+        if (
+            balancePooledAtCurrentSteps > balancePooled_.add(assetsDeposited_)
+        ) {
+            supplyAfterMint = stepX_
+                .mul(stepsAfterMint)
+                .sub(
+                    balancePooledAtCurrentSteps.sub(
+                        balancePooled_.add(assetsDeposited_)
+                    )
+                )
+                .div(stepY_.mul(stepsAfterMint));
         } else {
-            supplyAfterMint =
-                _stepX *
-                stepsAfterMint +
-                ((_balancePooled + _assetsDeposited) -
-                    balancePooledAtCurrentSteps) /
-                (_stepY * (stepsAfterMint + 1));
+            supplyAfterMint = stepX_
+                .mul(stepsAfterMint)
+                .add(
+                    (balancePooled_.add(assetsDeposited_)).sub(
+                        balancePooledAtCurrentSteps
+                    )
+                )
+                .div(stepY_.mul(stepsAfterMint.add(_one)));
         }
-        return supplyAfterMint - _supply;
+
+        return supplyAfterMint.sub(supply_).toUInt();
     }
 
     /// @notice Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
@@ -245,7 +263,7 @@ contract StepwiseCurve {
         uint256 _stepY, // height of step (aka price delta)
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         // validate input
         require(
             _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply
@@ -255,27 +273,31 @@ contract StepwiseCurve {
             return 0;
         }
 
-        uint256 steps = _supply / _stepX;
-        uint256 supplyAtCurrentStep = _supply - (steps * _stepX);
-        uint256 stepsAfterBurn = (_supply - _meTokensBurned) / _stepX;
-        uint256 supplyAtStepAfterBurn = _supply - (stepsAfterBurn * _stepX);
+        bytes16 meTokensBurned_ = _meTokensBurned.fromUInt();
+        bytes16 stepX_ = _stepX.fromUInt();
+        bytes16 stepY_ = _stepY.fromUInt();
+        bytes16 supply_ = _supply.fromUInt();
 
-        uint256 balancePooledAtCurrentSteps = ((steps * steps + steps) / 2) *
-            _stepX *
-            _stepY;
-        uint256 balancePooledAtStepsAfterBurn = ((stepsAfterBurn *
-            stepsAfterBurn +
-            stepsAfterBurn) / 2) *
-            _stepX *
-            _stepY;
+        bytes16 steps = supply_.div(stepX_);
+        bytes16 supplyAtCurrentStep = supply_.sub(steps.mul(stepX_));
+        bytes16 stepsAfterBurn = (supply_.sub(meTokensBurned_)).div(stepX_);
+        bytes16 supplyAtStepAfterBurn = supply_.sub(stepsAfterBurn.mul(stepX_));
 
-        return
-            balancePooledAtCurrentSteps +
-            supplyAtCurrentStep *
-            _stepY -
-            balancePooledAtStepsAfterBurn -
-            supplyAtStepAfterBurn *
-            _stepY;
+        bytes16 balancePooledAtCurrentSteps = (
+            (steps.mul(steps).add(steps)).div(_two)
+        ).mul(stepX_).mul(stepY_);
+
+        bytes16 balancePooledAtStepsAfterBurn = (
+            (stepsAfterBurn.mul(stepsAfterBurn).add(stepsAfterBurn)).div(_two)
+        ).mul(stepX_).mul(stepY_);
+
+        bytes16 res = balancePooledAtCurrentSteps
+            .add(supplyAtCurrentStep)
+            .mul(stepY_)
+            .sub(balancePooledAtStepsAfterBurn)
+            .sub(supplyAtStepAfterBurn)
+            .mul(stepY_);
+        return res.toUInt();
     }
 
     function _viewAssetsDeposited(
@@ -284,19 +306,25 @@ contract StepwiseCurve {
         uint256 _stepY, // height of step (aka price delta)
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) private pure returns (uint256) {
-        uint256 stepsAfterMint = (_supply + _desiredMeTokensMinted) / _stepX;
-        uint256 stepSupplyAfterMint = _supply - (stepsAfterMint * _stepX);
-        uint256 stepBalanceAfterMint = ((stepsAfterMint *
-            stepsAfterMint +
-            stepsAfterMint) / 2) *
-            _stepX *
-            _stepY;
+    ) private view returns (uint256) {
+        bytes16 desiredMeTokensMinted_ = _desiredMeTokensMinted.fromUInt();
+        bytes16 stepX_ = _stepX.fromUInt();
+        bytes16 stepY_ = _stepY.fromUInt();
+        bytes16 supply_ = _supply.fromUInt();
+        bytes16 balancePooled_ = _balancePooled.fromUInt();
 
-        return
-            stepBalanceAfterMint +
-            stepSupplyAfterMint *
-            _stepY -
-            _balancePooled;
+        bytes16 stepsAfterMint = (supply_.add(desiredMeTokensMinted_)).div(
+            stepX_
+        );
+        bytes16 stepSupplyAfterMint = supply_.sub(stepsAfterMint.mul(stepX_));
+        bytes16 stepBalanceAfterMint = (
+            (stepsAfterMint.mul(stepsAfterMint).add(stepsAfterMint)).div(_two)
+        ).mul(stepX_).mul(stepY_);
+
+        bytes16 res = stepBalanceAfterMint
+            .add(stepSupplyAfterMint)
+            .mul(stepY_)
+            .sub(balancePooled_);
+        return res.toUInt();
     }
 }
