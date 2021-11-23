@@ -15,9 +15,9 @@ contract BancorZeroCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
-    uint32 public constant maxWeight = 1000000;
+    uint32 public constant MAX_WEIGHT = 1000000;
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
-    bytes16 private immutable _maxWeight = uint256(maxWeight).fromUInt(); // gas savings
+    bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
 
     // NOTE: keys are their respective hubId
@@ -36,7 +36,7 @@ contract BancorZeroCurve is ICurve {
         );
         require(baseY > 0, "!baseY");
         require(
-            reserveWeight > 0 && reserveWeight <= maxWeight,
+            reserveWeight > 0 && reserveWeight <= MAX_WEIGHT,
             "!reserveWeight"
         );
 
@@ -244,14 +244,14 @@ contract BancorZeroCurve is ICurve {
         require(
             _balancePooled > 0 &&
                 _reserveWeight > 0 &&
-                _reserveWeight <= maxWeight
+                _reserveWeight <= MAX_WEIGHT
         );
         // special case for 0 deposit amount
         if (_assetsDeposited == 0) {
             return 0;
         }
         // special case if the weight = 100%
-        if (_reserveWeight == maxWeight) {
+        if (_reserveWeight == MAX_WEIGHT) {
             return (_supply * _assetsDeposited) / _balancePooled;
         }
 
@@ -341,7 +341,7 @@ contract BancorZeroCurve is ICurve {
             _supply > 0 &&
                 _balancePooled > 0 &&
                 _reserveWeight > 0 &&
-                _reserveWeight <= maxWeight &&
+                _reserveWeight <= MAX_WEIGHT &&
                 _meTokensBurned <= _supply
         );
         // special case for 0 sell amount
@@ -353,7 +353,7 @@ contract BancorZeroCurve is ICurve {
             return _balancePooled;
         }
         // special case if the weight = 100%
-        if (_reserveWeight == maxWeight) {
+        if (_reserveWeight == MAX_WEIGHT) {
             return (_balancePooled * _meTokensBurned) / _supply;
         }
         // 1 / (reserveWeight/MAX_WEIGHT)

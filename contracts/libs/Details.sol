@@ -36,6 +36,13 @@ library Details {
         uint32 targetReserveWeight;
     }
 
+    struct Stepwise {
+        uint256 stepX;
+        uint256 stepY;
+        uint256 targetStepX;
+        uint256 targetStepY;
+    }
+    
     struct UniswapSingleTransfer {
         // The earliest time that the swap can occur
         uint256 soonest;

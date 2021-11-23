@@ -176,7 +176,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
-
         // Calculate how many tokens tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
             _meToken,
