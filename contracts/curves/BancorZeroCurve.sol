@@ -93,7 +93,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 _assetsDeposited,
@@ -117,7 +117,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         if (_supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 _assetsDeposited,
@@ -141,7 +141,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             bancorDetails.reserveWeight,
@@ -156,7 +156,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Details.Bancor memory bancorDetails = _bancors[_hubId];
+        Bancor memory bancorDetails = _bancors[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
             bancorDetails.targetReserveWeight,
@@ -171,7 +171,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 assetsDeposited) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
@@ -195,7 +195,7 @@ contract BancorZeroCurve is ICurve {
         uint256 _supply,
         uint256 _balancePooled
     ) external view override returns (uint256 assetsDeposited) {
-        Details.Bancor memory bancor_ = _bancors[_hubId];
+        Bancor memory bancor_ = _bancors[_hubId];
         if (_supply > 0) {
             assetsDeposited = _viewAssetsDeposited(
                 _desiredMeTokens,
