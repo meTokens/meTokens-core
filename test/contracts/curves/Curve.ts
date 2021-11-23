@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { BigNumber, Signer } from "ethers";
 import { impersonate, mineBlock, passOneHour } from "../../utils/hardhatNode";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorBancor } from "../../../artifacts/types/BancorBancor";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
@@ -21,7 +21,7 @@ describe("Generic Curve", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let _curve: BancorZeroCurve;
+  let _curve: BancorBancor;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
   let token: ERC20;
@@ -43,7 +43,7 @@ describe("Generic Curve", () => {
   // TODO: then loop over array of set of curve arguments
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
-  const baseY = PRECISION.div(1000).toString();
+  const baseY = PRECISION.div(10).toString();
 
   before(async () => {
     ({ DAI, DAIWhale } = await getNamedAccounts());
@@ -56,7 +56,7 @@ describe("Generic Curve", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    _curve = await deploy<BancorBancor>("BancorBancor");
 
     ({
       token,
@@ -87,6 +87,9 @@ describe("Generic Curve", () => {
     await dai
       .connect(account1)
       .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
+    await dai
+      .connect(account1)
+      .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
   describe("register()", () => {
@@ -104,6 +107,210 @@ describe("Generic Curve", () => {
   describe("getDetails()", () => {
     it("Returns correct struct type", async () => {});
     it("Returns correct registered details", async () => {});
+  });
+
+  describe("viewMeTokensMinted()", () => {
+    it.only("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
+        amount1,
+        hubId,
+        0,
+        0
+      );
+      console.log(
+        `expectedMeTokensMinted:${ethers.utils.formatEther(
+          expectedMeTokensMinted
+        )}`
+      );
+
+      // Get balances before mint
+      let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceBefore:${ethers.utils.formatEther(
+          minterDaiBalanceBefore
+        )}`
+      );
+      let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+      console.log(
+        `vaultDaiBalanceBefore:${ethers.utils.formatEther(
+          vaultDaiBalanceBefore
+        )}`
+      );
+
+      // Mint first meTokens to owner
+      let tx = await meTokenRegistry
+        .connect(account1)
+        .subscribe(name, symbol, hubId, amount1);
+      let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
+      console.log(
+        `expectedAssetsDeposited:${ethers.utils.formatEther(
+          expectedAssetsDeposited
+        )}`
+      );
+
+      // Compare expected meTokens minted to actual held
+      let meTokensMinted = await meToken.balanceOf(account1.address);
+      expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+      let totalSupply = await meToken.totalSupply();
+      console.log(`totalSupply: ${ethers.utils.formatEther(totalSupply)}`);
+      expect(totalSupply).to.equal(meTokensMinted);
+
+      // Compare owner dai balance before/after
+      let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
+      console.log(
+        `minterDaiBalanceAfter:${ethers.utils.formatEther(
+          minterDaiBalanceAfter
+        )}`
+      );
+      expect(
+        // TODO: how to verify difference of numbers to type of amount1?
+        minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
+      ).to.equal(amount1);
+
+      // Expect balance of vault to have increased by assets deposited
+      let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+      console.log(
+        `vaultDaiBalanceAfterMint:${ethers.utils.formatEther(
+          vaultDaiBalanceAfter
+        )}`
+      );
+
+      // Burn meTokens to owner
+      let assetsReturned = await _curve.viewAssetsReturned(
+        meTokensMinted.div(2),
+        hubId,
+        totalSupply,
+        amount1
+      );
+
+      console.log(
+        `viewAssetsReturned: ${ethers.utils.formatEther(assetsReturned)}`
+      );
+
+      await foundry
+        .connect(account1)
+        .burn(
+          meToken.address,
+          meTokensMinted.div(BigNumber.from(2)),
+          account1.address
+        );
+      console.log(
+        `meTokens burned: ${ethers.utils.formatEther(
+          meTokensMinted.div(BigNumber.from(2))
+        )}`
+      );
+
+      let newSupply = await meToken.totalSupply();
+      let newDaiBalance = await dai.balanceOf(account1.address);
+      console.log(`Supply after burn: ${ethers.utils.formatEther(newSupply)}`);
+      console.log(
+        `Owners' DAI balance after burn: ${ethers.utils.formatEther(
+          newDaiBalance
+        )}`
+      );
+
+      expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
+      expect(amount1).to.equal(expectedAssetsDeposited);
+    });
+
+    it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
+      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
+        amount1,
+        hubId,
+        0,
+        0
+      );
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
+
+      // Get balances before mint
+      let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
+      let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+
+      // Create meToken w/o issuing supply
+      const tx = await meTokenRegistry
+        .connect(account2)
+        .subscribe(name, symbol, hubId, 0);
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account2.address
+      );
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      // Mint meToken
+      await foundry
+        .connect(account2)
+        .mint(meToken.address, amount1, account2.address);
+
+      // Compare expected meTokens minted to actual held
+      const meTokensMinted = await meToken.balanceOf(account2.address);
+      expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+      const totalSupply = await meToken.totalSupply();
+      expect(totalSupply).to.equal(meTokensMinted);
+
+      // Compare buyer dai balance before/after
+      let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
+      expect(
+        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
+      ).to.equal(amount1);
+
+      // Expect balance of vault to have increased by assets deposited
+      let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+      expect(
+        Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
+      ).to.equal(amount1);
+      expect(amount1).to.equal(expectedAssetsDeposited);
+    });
+
+    it("balanceLocked = 0, balancePooled > 0", async () => {
+      // TODO
+    });
+
+    it("balanceLocked > 0, balancePooled = 0", async () => {
+      // TODO
+    });
+
+    it("balanceLocked > 0, balancePooled > 0", async () => {
+      // TODO
+    });
+  });
+
+  describe("calculateBurnReturn()", () => {
+    it("balanceLocked = 0, buyer, ending supply = 0", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, owner, ending supply = 0", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, buyer, ending supply > 0", async () => {
+      // TODO
+    });
+    it("balanceLocked = 0, owner, ending supply > 0", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, buyer, ending supply = 0", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, owner, ending supply = 0", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, buyer, ending supply > 0", async () => {
+      // TODO
+    });
+    it("balanceLocked > 0, owner, ending supply > 0", async () => {
+      // TODO
+    });
   });
 
   describe("initReconfigure()", () => {

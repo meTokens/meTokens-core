@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorBancor } from "../../../artifacts/types/BancorBancor";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
@@ -21,7 +21,7 @@ describe("BancorZeroCurve", () => {
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorZeroCurve: BancorBancor;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
@@ -53,7 +53,7 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    bancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
     let token;
 
     ({
