@@ -11,10 +11,16 @@ import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { deploy } from "../../utils/helpers";
+import {
+  calculateCollateralReturned,
+  calculateTokenReturned,
+  calculateTokenReturnedFromZero,
+  deploy,
+} from "../../utils/helpers";
 import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
+import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;
@@ -38,10 +44,12 @@ describe("BancorZeroCurve", () => {
   const one = ethers.utils.parseEther("1");
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
+  const reserveWeight = MAX_WEIGHT / 2;
   let hubId = 1;
+  let token;
   before(async () => {
     baseY = one.mul(1000);
-    const reserveWeight = MAX_WEIGHT / 2;
+
     let DAI;
     ({ DAI } = await getNamedAccounts());
 
@@ -53,8 +61,9 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
+    // bancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
     let token;
+    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
     ({
       token,
@@ -74,6 +83,7 @@ describe("BancorZeroCurve", () => {
     ));
     dai = token;
   });
+
   it("viewMeTokensMinted() from zero should work", async () => {
     let amount = one.mul(20);
 
@@ -83,32 +93,50 @@ describe("BancorZeroCurve", () => {
       0,
       0
     );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("199.999999999999999999")
+    const calculatedRes = calculateTokenReturnedFromZero(
+      20,
+      1000,
+      reserveWeight / MAX_WEIGHT
     );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000001);
   });
   it("viewMeTokensMinted() should work", async () => {
-    let amount = one.mul(2);
+    const amount = one.mul(2);
     let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
       one.mul(2)
     );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("828.427124746190097603")
+    let calculatedRes = calculateTokenReturned(
+      2,
+      2000,
+      2,
+      reserveWeight / MAX_WEIGHT
     );
-    amount = one.mul(2);
 
+    // estimate = 828.427124746190097603
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.0000000000003);
     estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       ethers.utils.parseEther("2828.427124746190097603"),
       one.mul(4)
     );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("635.674490391564489451")
+    calculatedRes = calculateTokenReturned(
+      2,
+      2828.427124746190097603,
+      4,
+      reserveWeight / MAX_WEIGHT
     );
+    // estimate = 635.674490391564489451
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.0000000000004);
   });
   it("viewMeTokensMinted should work with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
@@ -118,9 +146,15 @@ describe("BancorZeroCurve", () => {
       0,
       0
     );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("1414213562.373094341694907537")
+    const calculatedRes = calculateTokenReturnedFromZero(
+      999999999999999,
+      1000,
+      reserveWeight / MAX_WEIGHT
     );
+    // estimate = 1414213562.373094341694907537
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000004);
   });
   it("viewAssetsReturned() to zero supply should work", async () => {
     let amount = ethers.utils.parseEther("200");
@@ -132,7 +166,16 @@ describe("BancorZeroCurve", () => {
       one.mul(200),
       one.mul(20)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("20"));
+    const calculatedRes = calculateCollateralReturned(
+      200,
+      200,
+      20,
+      reserveWeight / MAX_WEIGHT
+    );
+    // estimate = 20
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000000001);
   });
   it("viewAssetsReturned() should work", async () => {
     let amount = ethers.utils.parseEther("585.786437626904952");
@@ -144,7 +187,16 @@ describe("BancorZeroCurve", () => {
       one.mul(2000),
       one.mul(2)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("1.000000000000000001"));
+    let calculatedRes = calculateCollateralReturned(
+      585.786437626904952,
+      2000,
+      2,
+      reserveWeight / MAX_WEIGHT
+    );
+    // estimate = 1.000000000000000001
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.0000000000000003);
 
     amount = ethers.utils.parseEther("1171.572875253809903");
 
@@ -154,7 +206,16 @@ describe("BancorZeroCurve", () => {
       one.mul(4000),
       one.mul(8)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("4.000000000000000001"));
+    calculatedRes = calculateCollateralReturned(
+      1171.572875253809903,
+      4000,
+      8,
+      reserveWeight / MAX_WEIGHT
+    );
+    // estimate = 4.000000000000000001
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.000000000000001);
   });
   it("viewAssetsReturned should work with a max of 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
@@ -165,8 +226,16 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("999999999999998999.99999999999999744"),
       one.mul(999999999999999)
     );
-
-    expect(estimate).to.equal(ethers.utils.parseEther("0.002"));
+    const calculatedRes = calculateCollateralReturned(
+      1,
+      999999999999998999.999999,
+      999999999999999,
+      reserveWeight / MAX_WEIGHT
+    );
+    // estimate = 0.002
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.000000000000001);
   });
   it("initReconfigure() should work", async () => {
     const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2);
@@ -181,7 +250,6 @@ describe("BancorZeroCurve", () => {
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
-
   it("viewTargetMeTokensMinted() from zero should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     let amount = one.mul(2);
@@ -194,9 +262,17 @@ describe("BancorZeroCurve", () => {
       0,
       0
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("2.279096531302603397"));
-  });
 
+    // 2.279096531302603397
+    const calculatedRes = calculateTokenReturnedFromZero(
+      2,
+      (1000 * 500000) / (1000000 - 20000),
+      (MAX_WEIGHT - 20000) / MAX_WEIGHT
+    );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.000000000000000001);
+  });
   it("viewTargetMeTokensMinted() should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetReserveWeight = detail.targetReserveWeight;
@@ -209,11 +285,17 @@ describe("BancorZeroCurve", () => {
       one.mul(2000),
       one.mul(2)
     );
-    expect(estimate).to.equal(
-      ethers.utils.parseEther("1944.930817973436691629")
+    // 1944.930817973436691629
+    const calculatedRes = calculateTokenReturned(
+      2,
+      2000,
+      2,
+      (MAX_WEIGHT - 20000) / MAX_WEIGHT
     );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000001);
   });
-
   it("viewTargetAssetsReturned()  to zero supply should work", async () => {
     let amount = ethers.utils.parseEther("2000");
     // 586 burned token should release 1 DAI
@@ -224,9 +306,17 @@ describe("BancorZeroCurve", () => {
       one.mul(2000),
       one.mul(2)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("2"));
+    // 2
+    const calculatedRes = calculateCollateralReturned(
+      2000,
+      2000,
+      2,
+      (MAX_WEIGHT - 20000) / MAX_WEIGHT
+    );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000001);
   });
-
   it("viewAssetsReturned() should work", async () => {
     let amount = ethers.utils.parseEther("1944.930817973436691629");
     // 586 burned token should release 1 DAI
@@ -237,6 +327,17 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("3944.930817973436691629"),
       one.mul(4)
     );
+    // 1.999999999999999999
+    let calculatedRes = calculateCollateralReturned(
+      1944.930817973436691629,
+      3944.930817973436691629,
+      4,
+      (MAX_WEIGHT - 20000) / MAX_WEIGHT
+    );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000001);
+
     expect(estimate).to.equal(ethers.utils.parseEther("1.999999999999999999"));
 
     amount = one.mul(1000);
@@ -247,9 +348,72 @@ describe("BancorZeroCurve", () => {
       one.mul(2000),
       one.mul(2)
     );
-    expect(estimate).to.equal(ethers.utils.parseEther("1.014046278251899934"));
+    // 1.014046278251899934
+    calculatedRes = calculateCollateralReturned(
+      1000,
+      2000,
+      2,
+      (MAX_WEIGHT - 20000) / MAX_WEIGHT
+    );
+    expect(
+      Number.parseFloat(ethers.utils.formatEther(estimate))
+    ).to.be.approximately(calculatedRes, 0.00000000000000000001);
   });
+  describe("with baseY less than 1 ", () => {
+    let newBancorZeroCurve: BancorZeroCurve;
+    before(async () => {
+      baseY = one.mul(1000);
 
+      let DAI;
+      ({ DAI } = await getNamedAccounts());
+
+      const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "uint32"],
+        [one.div(1000), reserveWeight]
+      );
+      const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+        ["address"],
+        [DAI]
+      );
+      newBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+
+      ({
+        token,
+        hub,
+        curveRegistry,
+        migrationRegistry,
+        foundry,
+        account0,
+        account1,
+        account2,
+        meTokenRegistry,
+      } = await hubSetup(
+        newEncodedCurveDetails,
+        encodedVaultArgs,
+        5000,
+        newBancorZeroCurve
+      ));
+      dai = token;
+    });
+    it("viewMeTokensMinted() from zero should work", async () => {
+      let amount = one.mul(100);
+      console.log("newBancorZeroCurve", newBancorZeroCurve.address);
+      let estimate = await newBancorZeroCurve.viewMeTokensMinted(
+        amount,
+        hubId,
+        0,
+        0
+      );
+      const calculatedRes = calculateTokenReturnedFromZero(
+        100,
+        0.001,
+        reserveWeight / MAX_WEIGHT
+      );
+      expect(
+        Number.parseFloat(ethers.utils.formatEther(estimate))
+      ).to.be.approximately(calculatedRes, 0.00000000000000000001);
+    });
+  });
   it("finishUpdate should work", async () => {
     // TODO
   });

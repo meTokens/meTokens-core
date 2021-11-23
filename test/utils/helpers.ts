@@ -1,4 +1,5 @@
 import { BigNumber } from "@ethersproject/bignumber";
+import { Decimal } from "decimal.js";
 import { BaseContract, Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
@@ -319,3 +320,67 @@ export const maxValArray = [
   /* 126 */ "0xbde80a98943810876a7852209de22be2",
   /* 127 */ "0x16b3160a3c604c6667ff40ff1882b0fcf",
 ];
+
+const one = new Decimal(1);
+// ( assetsDeposited * _baseX ^(1/reserveWeight ) / _baseX  * _baseY *  reserveWeight ) ^reserveWeight
+export const calculateTokenReturnedFromZero = (
+  depositAmount: number,
+  baseY: number,
+  reserveWeight: number
+) => {
+  const _depositAmount = new Decimal(depositAmount);
+  const _baseY = new Decimal(baseY);
+  const _reserveWeight = new Decimal(reserveWeight);
+  const num = _depositAmount.mul(one.pow(one.div(reserveWeight)));
+  const denom = _reserveWeight.mul(_baseY);
+  const res = num.div(denom).pow(_reserveWeight);
+  return res.toNumber();
+};
+
+// Return = _supply * ((1 + _depositAmount / _connectorBalance) ^ (_connectorWeight / 1000000) - 1)
+export const calculateTokenReturned = (
+  collateralAmount: number,
+  meTokenSupply: number,
+  balancePooled: number,
+  reserveWeight: number
+) => {
+  const _collateralAmount = new Decimal(collateralAmount);
+  const _meTokenSupply = new Decimal(meTokenSupply);
+  const _balancePooled = new Decimal(balancePooled);
+  const _reserveWeight = new Decimal(reserveWeight);
+  const num = one.plus(_collateralAmount.div(_balancePooled));
+  const res = _meTokenSupply.mul(num.pow(_reserveWeight).minus(one));
+  return res.toNumber();
+};
+
+//  Return =  _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / 1000000)))
+export const calculateCollateralReturned = (
+  meTokenBurned: number,
+  meTokenSupply: number,
+  balancePooled: number,
+  reserveWeight: number
+) => {
+  const _meTokenBurned = new Decimal(meTokenBurned);
+  const _meTokenSupply = new Decimal(meTokenSupply);
+  const _balancePooled = new Decimal(balancePooled);
+  const _reserveWeight = new Decimal(reserveWeight);
+  const num = one.minus(_meTokenBurned.div(_meTokenSupply));
+  const res = _balancePooled.mul(one.minus(num.pow(one.div(_reserveWeight))));
+  return res.toNumber();
+};
+
+// return = (baseY * desiredMeTokens^2 * reserveWeight) / baseX
+// Or (baseY * reserveWeight) / baseX * desiredMeTokens^2
+export const calculateCollateralToDepositFromZero = (
+  desiredMeToken: number,
+  baseY: number,
+  reserveWeight: number
+) => {
+  const _meToken = new Decimal(desiredMeToken);
+  const _baseY = new Decimal(baseY);
+  const _reserveWeight = new Decimal(reserveWeight);
+
+  const res = _baseY.mul(_meToken).mul(_meToken).mul(_reserveWeight);
+  console.log(`res:${res} _reserveWeight:${_reserveWeight}`);
+  return res.toNumber();
+};

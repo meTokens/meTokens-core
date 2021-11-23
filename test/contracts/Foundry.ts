@@ -4,7 +4,11 @@ import { Foundry } from "../../artifacts/types/Foundry";
 import { Hub } from "../../artifacts/types/Hub";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
-import { deploy, getContractAt } from "../utils/helpers";
+import {
+  calculateCollateralToDepositFromZero,
+  deploy,
+  getContractAt,
+} from "../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { BancorZeroCurve } from "../../artifacts/types/BancorZeroCurve";
@@ -41,7 +45,7 @@ describe("Foundry.sol", () => {
   const name = "Carl meToken";
   const symbol = "CARL";
   const refundRatio = 240000;
-  const PRECISION = BigNumber.from(10).pow(6);
+  const PRECISION = ethers.utils.parseEther("1");
   // const amount1 = ethers.utils.parseEther("10");
   const amount1 = ethers.utils.parseEther("100");
   const amount2 = ethers.utils.parseEther("6.9");
@@ -127,7 +131,20 @@ describe("Foundry.sol", () => {
           vaultDaiBalanceBefore
         )}`
       );
+      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+        expectedMeTokensMinted,
+        hubId,
+        0,
+        0
+      );
 
+      const calculated = calculateCollateralToDepositFromZero(
+        447.213595499,
+        0.001,
+        reserveWeight / MAX_WEIGHT
+      );
+
+      console.log(`*-*-*--**-*-calculated:${calculated}`);
       // Mint first meTokens to owner
       let tx = await meTokenRegistry
         .connect(account1)
@@ -135,24 +152,23 @@ describe("Foundry.sol", () => {
       let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
-        expectedMeTokensMinted,
-        hubId,
-        0,
-        0
-      );
-      console.log(
-        `expectedAssetsDeposited:${ethers.utils.formatEther(
-          expectedAssetsDeposited
-        )}`
-      );
-
       // Compare expected meTokens minted to actual held
       let meTokensMinted = await meToken.balanceOf(account1.address);
       expect(meTokensMinted).to.equal(expectedMeTokensMinted);
       let totalSupply = await meToken.totalSupply();
       expect(totalSupply).to.equal(meTokensMinted);
-
+      console.log(
+        `expectedAssetsDeposited ,  we expected to spend :${ethers.utils.formatEther(
+          expectedAssetsDeposited
+        )} collateral to get :${ethers.utils.formatEther(
+          expectedMeTokensMinted
+        )} metokens
+        but we spent :${ethers.utils.formatEther(
+          amount1
+        )} collateral to get :${ethers.utils.formatEther(meTokensMinted)}
+        
+        `
+      );
       // Compare owner dai balance before/after
       let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
       console.log(
@@ -171,7 +187,19 @@ describe("Foundry.sol", () => {
         `vaultDaiBalanceAfter:${ethers.utils.formatEther(vaultDaiBalanceAfter)}`
       );
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
-      expect(amount1).to.equal(expectedAssetsDeposited);
+      console.log(
+        `amopunt1:${Number.parseFloat(ethers.utils.formatEther(amount1))}`
+      );
+      console.log(
+        `expectedAssetsDeposited:${ethers.utils.formatEther(
+          expectedAssetsDeposited
+        )}`
+      );
+
+      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
+        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
+        0.000000000000000000000001
+      );
     });
 
     it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
