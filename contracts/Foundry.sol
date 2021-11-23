@@ -152,7 +152,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
     //                            TIME-WEIGHTED    BALANCE LOCKED     REFUND   //
     //                            REFUND RATIO        RETURNED        RATIO    //
     //                                  |                |              |      //
-    //                              .add(wRR)        .mul(BLR)      .mul(RR)   //
+    //                              .mul(wRR)        .add(BLR)      .mul(RR)   //
     //                                   \_______________|_____________/       //
     //                                                   |                     //
     //                                     ACTUAL (WEIGHTED) BURN RETURN       //
