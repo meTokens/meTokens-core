@@ -212,6 +212,20 @@ contract BancorZeroCurve is ICurve {
         }
     }
 
+    ///************************* CALCULATE FUNCTIONS **************************/
+    ///**************** - USED BY MINT & BURN IN FOUNDRY.SOL - ****************/
+
+    // CALCULATE MINT
+    /***************************************************************************
+    //                                    __            __                    //
+    // T = meTokensReturned              /                \   (rW)            //
+    // D = depositAmount                 |      1 + D     | ^                 //
+    // rW = reserveWeight        T = S * |   ----------   |        - 1        //
+    // bP = balancePooled                |       bP       |                   //
+    // S = supply                        \__            __/                   //
+    //                                                                        //
+    ***************************************************************************/
+
     /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @dev _supply * ((1 + _assetsDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
@@ -254,6 +268,17 @@ contract BancorZeroCurve is ICurve {
         return res.toUInt();
     }
 
+    // CALCULATE MINT (FROM ZERO)
+    /***************************************************************************
+    //                                __                  __                  //
+    // T = meTokensReturned          /             (1/rW)   \   (rW)          //
+    // D = depositAmouont            |      D * y ^         | ^               //
+    // rW = reserveWeight        T = |   ----------------   |                 //
+    // x = baseX                     |     rW * x * y       |                 //
+    // y = baseY                     \__                  __/                 //
+    //                                                                        //
+    ***************************************************************************/
+
     /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
     ///         constant y, calculates the return for a given conversion (in the meToken)
     /// @dev  _baseX / (_baseY ^ (MAX_WEIGHT/reserveWeight -1)) * assetsDeposited ^(MAX_WEIGHT/reserveWeight -1)
@@ -285,6 +310,17 @@ contract BancorZeroCurve is ICurve {
             .exp();
         return res.toUInt();
     }
+
+    // CALCULATE BURN
+    /****************************************************************************
+    //                                     __            __                    //
+    // T = tokensReturned                 /                \   (1/rW)          //
+    // B = meTokensBurned                 |      1 + B     | ^                 //
+    // rW = reserveWeight        T = rB * |   ----------   |          - 1      //
+    // bP = balancePooled                 |        s       |                   //
+    // S = supply                         \__            __/                   //
+    //                                                                         //
+    ****************************************************************************/
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
@@ -336,24 +372,21 @@ contract BancorZeroCurve is ICurve {
         return res.toUInt();
     }
 
-    // (baseY * desiredMeTokens^2 * reserveWeight) / baseX
-    // Or (baseY * reserveWeight) / baseX * desiredMeTokens^2
-    function _viewAssetsDepositedFromZero(
-        uint256 _desiredMeTokens,
-        uint256 _reserveWeight,
-        uint256 _baseY
-    ) private view returns (uint256) {
-        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
-        bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
-        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
-        bytes16 squared = _desiredMeTokens
-            .fromUInt()
-            .ln()
-            .mul(uint256(2).fromUInt())
-            .exp();
-        bytes16 res = numerator.mul(squared).div(_baseX);
-        return res.toUInt();
-    }
+    ///*************************** VIEW FUNCTIONS *****************************/
+    ///******* - USED FOR ORACLES & THE FRONT END VIA FOUNDRY.SOL - ***********/
+
+    // VIEW COLLATERAL FOR DESIRED MINT
+    /***************************************************************************
+    //                                   __             __                    //
+    // T = tokensToDeposit              /                 \                   //
+    // d = desiredMeTokensMinted        |     y * rW      |                   //
+    // rW = reserveWeight           T = | --------------  | - bP              //
+    // bP = balancePooled               |  x * (S + d)^2  |                   //
+    // S = supply                       \__             __/                   //
+    // x = baseX                                                              //
+    // y = baseY                                                              //
+    //                                                                        //
+    ***************************************************************************/
 
     // baseY * (supply + desiredMeTokens)^2 * reserveWeight / baseX - balancePooled
     // or (baseY * reserveWeight) / baseX * (supply + desiredMeTokens)^2 - balancePooled
@@ -375,4 +408,47 @@ contract BancorZeroCurve is ICurve {
         bytes16 res = k.mul(squared).sub(_balancePooled.fromUInt());
         return res.toUInt();
     }
+
+    // VIEW COLLATERAL FOR DESIRED MINT (FROM ZERO)
+    /***************************************************************************
+    //                                                                        //
+    // T = tokensToDeposit                                                    //
+    // d = desiredMeTokensMinted             y * rW                           //
+    // rW = reserveWeight              T =  ---------                         //
+    // x = baseX                             x * d^2                          //
+    // y = baseY                                                              //
+    //                                                                        //
+    ***************************************************************************/
+
+    // (baseY * desiredMeTokens^2 * reserveWeight) / baseX
+    // Or (baseY * reserveWeight) / baseX * desiredMeTokens^2
+    function _viewAssetsDepositedFromZero(
+        uint256 _desiredMeTokens,
+        uint256 _reserveWeight,
+        uint256 _baseY
+    ) private view returns (uint256) {
+        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
+        bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
+        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
+        bytes16 squared = _desiredMeTokens
+            .fromUInt()
+            .ln()
+            .mul(uint256(2).fromUInt())
+            .exp();
+        bytes16 res = numerator.mul(squared).div(_baseX);
+        return res.toUInt();
+    }
+
+    // VIEW BURN FOR DESIRED COLLATERAL RETURNED
+    /***************************************************************************
+    //                                         __            __               //
+    // T = meTokensToBurn                     /                \              //
+    // d = desiredCollateraReturned           |                |              //
+    // rW = reserveWeight             T =     |   ----------   |              //
+    // bP = balancePooled                     |                |              //
+    // S = supply                             \__            __/              //
+    //                                                                        //
+    ***************************************************************************/
+
+    // TODO: Create function
 }
