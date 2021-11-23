@@ -74,10 +74,10 @@ describe("BancorZeroCurve", () => {
     ));
     dai = token;
   });
-  it("calculateMintReturn() from zero should work", async () => {
+  it("viewMeTokensMinted() from zero should work", async () => {
     let amount = one.mul(20);
 
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       0,
@@ -87,9 +87,9 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("199.999999999999999999")
     );
   });
-  it("calculateMintReturn() should work", async () => {
+  it("viewMeTokensMinted() should work", async () => {
     let amount = one.mul(2);
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
@@ -100,7 +100,7 @@ describe("BancorZeroCurve", () => {
     );
     amount = one.mul(2);
 
-    estimate = await bancorZeroCurve.calculateMintReturn(
+    estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       ethers.utils.parseEther("2828.427124746190097603"),
@@ -110,9 +110,9 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("635.674490391564489451")
     );
   });
-  it("calculateMintReturn should work with a max of 1414213562 supply should work", async () => {
+  it("viewMeTokensMinted should work with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
-    let estimate = await bancorZeroCurve.calculateMintReturn(
+    let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
       0,
@@ -122,11 +122,11 @@ describe("BancorZeroCurve", () => {
       ethers.utils.parseEther("1414213562.373094341694907537")
     );
   });
-  it("calculateBurnReturn() to zero supply should work", async () => {
+  it("viewAssetsReturned() to zero supply should work", async () => {
     let amount = ethers.utils.parseEther("200");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.calculateBurnReturn(
+    let estimate = await bancorZeroCurve.viewAssetsReturned(
       amount,
       hubId,
       one.mul(200),
@@ -134,11 +134,11 @@ describe("BancorZeroCurve", () => {
     );
     expect(estimate).to.equal(ethers.utils.parseEther("20"));
   });
-  it("calculateBurnReturn() should work", async () => {
+  it("viewAssetsReturned() should work", async () => {
     let amount = ethers.utils.parseEther("585.786437626904952");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.calculateBurnReturn(
+    let estimate = await bancorZeroCurve.viewAssetsReturned(
       amount,
       hubId,
       one.mul(2000),
@@ -148,7 +148,7 @@ describe("BancorZeroCurve", () => {
 
     amount = ethers.utils.parseEther("1171.572875253809903");
 
-    estimate = await bancorZeroCurve.calculateBurnReturn(
+    estimate = await bancorZeroCurve.viewAssetsReturned(
       amount,
       hubId,
       one.mul(4000),
@@ -156,10 +156,10 @@ describe("BancorZeroCurve", () => {
     );
     expect(estimate).to.equal(ethers.utils.parseEther("4.000000000000000001"));
   });
-  it("calculateBurnReturn should work with a max of 999999999999999000000000000000000 supply should work", async () => {
+  it("viewAssetsReturned should work with a max of 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
 
-    let estimate = await bancorZeroCurve.calculateBurnReturn(
+    let estimate = await bancorZeroCurve.viewAssetsReturned(
       amount,
       hubId,
       ethers.utils.parseEther("999999999999998999.99999999999999744"),
@@ -182,13 +182,13 @@ describe("BancorZeroCurve", () => {
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
 
-  it("calculateTargetMintReturn() from zero should work", async () => {
+  it("viewTargetMeTokensMinted() from zero should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     let amount = one.mul(2);
 
     // (2^((1/0.98)−1))/(0.000510204081632653^((1/0.98)−1)) ==1.183947292541541
 
-    let estimate = await bancorZeroCurve.calculateTargetMintReturn(
+    let estimate = await bancorZeroCurve.viewTargetMeTokensMinted(
       amount,
       hubId,
       0,
@@ -197,13 +197,13 @@ describe("BancorZeroCurve", () => {
     expect(estimate).to.equal(ethers.utils.parseEther("2.279096531302603397"));
   });
 
-  it("calculateTargetMintReturn() should work", async () => {
+  it("viewTargetMeTokensMinted() should work", async () => {
     const detail = await bancorZeroCurve.getDetails(hubId);
     const targetReserveWeight = detail.targetReserveWeight;
     let amount = one.mul(2);
 
     //   2/(2000^((1/0.98)−1))* 1944.930817973436691629^((1/0.98)−1)) == 1,998860701224224
-    let estimate = await bancorZeroCurve.calculateTargetMintReturn(
+    let estimate = await bancorZeroCurve.viewTargetMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
@@ -214,11 +214,11 @@ describe("BancorZeroCurve", () => {
     );
   });
 
-  it("calculateTargetBurnReturn()  to zero supply should work", async () => {
+  it("viewTargetAssetsReturned()  to zero supply should work", async () => {
     let amount = ethers.utils.parseEther("2000");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.calculateTargetBurnReturn(
+    let estimate = await bancorZeroCurve.viewTargetAssetsReturned(
       amount,
       hubId,
       one.mul(2000),
@@ -227,11 +227,11 @@ describe("BancorZeroCurve", () => {
     expect(estimate).to.equal(ethers.utils.parseEther("2"));
   });
 
-  it("calculateBurnReturn() should work", async () => {
+  it("viewAssetsReturned() should work", async () => {
     let amount = ethers.utils.parseEther("1944.930817973436691629");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.calculateTargetBurnReturn(
+    let estimate = await bancorZeroCurve.viewTargetAssetsReturned(
       amount,
       hubId,
       ethers.utils.parseEther("3944.930817973436691629"),
@@ -241,7 +241,7 @@ describe("BancorZeroCurve", () => {
 
     amount = one.mul(1000);
 
-    estimate = await bancorZeroCurve.calculateTargetBurnReturn(
+    estimate = await bancorZeroCurve.viewTargetAssetsReturned(
       amount,
       hubId,
       one.mul(2000),

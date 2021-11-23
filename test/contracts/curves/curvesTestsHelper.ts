@@ -22,7 +22,7 @@ export const curvesTestsHelper = async ({
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
 
-    let estimate = await curve.calculateMintReturn(amount, hubId, 0, 0);
+    let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
     const calculatedReturn = approximationFunc(etherAmount);
     expect(estimate).to.be.approximately(calculatedReturn, precision);
   });
