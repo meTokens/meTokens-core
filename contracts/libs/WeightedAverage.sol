@@ -4,34 +4,17 @@ pragma solidity ^0.8.0;
 library WeightedAverage {
     uint256 private constant _PRECISION = 10**18;
 
-    /*
-    EXAMPLE:
-    _PRECISION = 500
-    block.timestamp - startTime = 70
-    endTime - startTime = 100
-
-    // scenario 1 :  targetAmount > amount
-    amount = 87
-    targetAmount = 137
-
-    ### pt 1
-    ( _PRECISION*amount + _PRECISION * (targetAmount - amount) * 0.7 ) / _PRECISION;
-    ( 500*87 + 500 * (137 - 87) * 0.7 ) / 500  =  122
-    ### pt 2
-    ( _PRECISION*amount - _PRECISION * (amount - targetAmount) * 0.7 ) / _PRECISION;
-    ( 500*87 - 500 * (87 - 137) * 0.7 ) / 500  =  122
-
-    // scenario 2 :  targetAmount < amount
-    amount = 201
-    targetAmount = 172
-
-    ### pt 1
-    ( _PRECISION*amount + _PRECISION * (targetAmount - amount) * 0.7 ) / _PRECISION;
-    ( 500*201 + 500 * (172 - 201) * 0.7 ) / 500  =  180.7
-    ### pt 2
-    ( _PRECISION*amount - _PRECISION * (amount - targetAmount) * 0.7 ) / _PRECISION;
-    ( 500*201 - 500 * (201 - 172) * 0.7 ) / 500  =  180.7
-    */
+    // CALCULATE TIME-WEIGHTED AVERAGE
+    /****************************************************************************
+    //                                     __                      __          //
+    // wA = weightedAmount                /                          \         //
+    // a = amout                          |   (a - tA) * (bT - sT)   |         //
+    // tA = targetAmount         wA = a + |   --------------------   |         //
+    // sT = startTime                     |        (eT - sT)         |         //
+    // eT = endTime                       \__                      __/         //
+    // bT = block.timestame                                                    //
+    //                                                                         //
+    ****************************************************************************/
 
     function calculate(
         uint256 amount,
@@ -48,6 +31,7 @@ library WeightedAverage {
         } else {
             // Currently in an update, return weighted average
             if (targetAmount > amount) {
+                // re-orders above visualized formula to handle negative numbers
                 return
                     (_PRECISION *
                         amount +
@@ -56,6 +40,7 @@ library WeightedAverage {
                             (block.timestamp - startTime)) /
                         (endTime - startTime)) / _PRECISION;
             } else {
+                // follows order of visualized formula above
                 return
                     (_PRECISION *
                         amount -

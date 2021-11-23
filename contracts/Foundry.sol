@@ -34,6 +34,27 @@ contract Foundry is IFoundry, Ownable, Initializable {
         meTokenRegistry = IMeTokenRegistry(_meTokenRegistry);
     }
 
+    // MINT FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 mint()                  //
+    //                                                   |                     //
+    //                                             CALCULATE MINT              //
+    //                                                 /    \                  //
+    // is hub updating or meToken migrating? -{      (Y)     (N)               //
+    //                                               /         \               //
+    //                                          CALCULATE       |              //
+    //                                         TARGET MINT      |              //
+    //                                             |            |              //
+    //                                        TIME-WEIGHTED     |              //
+    //                                           AVERAGE        |              //
+    //                                               \         /               //
+    //                                               MINT RETURN               //
+    //                                                   |                     //
+    //                                              .sub(fees)                 //
+    //                                                                         //
+    ****************************************************************************/
+
     function mint(
         address _meToken,
         uint256 _assetsDeposited,
@@ -107,6 +128,38 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meTokensMinted
         );
     }
+
+    // BURN FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 burn()                  //
+    //                                                   |                     //
+    //                                             CALCULATE BURN              //
+    //                                                /     \                  //
+    // is hub updating or meToken migrating? -{     (Y)     (N)                //
+    //                                              /         \                //
+    //                                         CALCULATE       \               //
+    //                                        TARGET BURN       \              //
+    //                                           /               \             //
+    //                                  TIME-WEIGHTED             \            //
+    //                                     AVERAGE                 \           //
+    //                                        |                     |          //
+    //                              WEIGHTED BURN RETURN       BURN RETURN     //
+    //                                     /     \               /    \        //
+    // is msg.sender the -{              (N)     (Y)           (Y)    (N)      //
+    // owner? (vs buyer)                 /         \           /        \      //
+    //                                 GET           CALCULATE         GET     //
+    //                            TIME-WEIGHTED    BALANCE LOCKED     REFUND   //
+    //                            REFUND RATIO        RETURNED        RATIO    //
+    //                                  |                |              |      //
+    //                              .add(wRR)        .mul(BLR)      .mul(RR)   //
+    //                                   \_______________|_____________/       //
+    //                                                   |                     //
+    //                                     ACTUAL (WEIGHTED) BURN RETURN       //
+    //                                                   |                     //
+    //                                               .sub(fees)                //
+    //                                                                         //
+    ****************************************************************************/
 
     /// @inheritdoc IFoundry
     function burn(
