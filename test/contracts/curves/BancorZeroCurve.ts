@@ -395,7 +395,6 @@ describe("BancorZeroCurve", () => {
     });
     it("viewMeTokensMinted() from zero should work", async () => {
       let amount = one.mul(100);
-      console.log("newBancorZeroCurve", newBancorZeroCurve.address);
       let estimate = await newBancorZeroCurve.viewMeTokensMinted(
         amount,
         hubId,
