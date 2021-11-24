@@ -40,7 +40,10 @@ abstract contract Vault is Ownable, IVault {
     }
 
     function approveAsset(address _asset, uint256 _amount) external override {
-        require(msg.sender == foundry, "!foundry");
+        require(
+            msg.sender == foundry || msg.sender == address(meTokenRegistry),
+            "!foundry||!meTokenRegistry"
+        );
         // increase the allowance to be able to burn tokens and retrieve the collateral
         IERC20(_asset).safeIncreaseAllowance(foundry, _amount);
     }
