@@ -177,11 +177,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
         // Calculate how many tokens tokens are returned
-        uint256 rawAssetsReturned = _calculateRawAssetsReturned(
+        uint256 rawAssetsReturned = calculateRawAssetsReturned(
             _meToken,
             _meTokensBurned
         );
-        uint256 assetsReturned = _calculateActualAssetsReturned(
+        uint256 assetsReturned = calculateActualAssetsReturned(
             msg.sender,
             _meToken,
             _meTokensBurned,
@@ -244,11 +244,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _meToken,
         uint256 _meTokensBurned
     ) external view returns (uint256 assetsReturned) {
-        uint256 rawAssetsReturned = _calculateRawAssetsReturned(
+        uint256 rawAssetsReturned = calculateRawAssetsReturned(
             _meToken,
             _meTokensBurned
         );
-        assetsReturned = _calculateActualAssetsReturned(
+        assetsReturned = calculateActualAssetsReturned(
             _sender,
             _meToken,
             _meTokensBurned,
@@ -375,10 +375,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
     }
 
-    function _calculateRawAssetsReturned(
+    function calculateRawAssetsReturned(
         address _meToken,
         uint256 _meTokensBurned
-    ) private view returns (uint256 rawAssetsReturned) {
+    ) public view returns (uint256 rawAssetsReturned) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
@@ -427,12 +427,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
     }
 
     /// @dev applies refundRatio
-    function _calculateActualAssetsReturned(
+    function calculateActualAssetsReturned(
         address _sender,
         address _meToken,
         uint256 _meTokensBurned,
         uint256 rawAssetsReturned
-    ) private view returns (uint256 actualAssetsReturned) {
+    ) public view returns (uint256 actualAssetsReturned) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %

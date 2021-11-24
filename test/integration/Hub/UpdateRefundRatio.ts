@@ -21,8 +21,6 @@ import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
 import { passDays, passHours, passSeconds } from "../../utils/hardhatNode";
-import { beforeEach } from "mocha";
-import { BlockList } from "net";
 
 describe("Hub - update RefundRatio", () => {
   let meTokenRegistry: MeTokenRegistry;
@@ -278,7 +276,7 @@ describe("Hub - update RefundRatio", () => {
 
       const meDetails = await meTokenRegistry.getDetails(meToken.address);
 
-      const tokensReturned = await foundry.calculateBurnReturn(
+      const tokensReturned = await foundry.calculateRawAssetsReturned(
         meToken.address,
         balAfter
       );
@@ -328,7 +326,7 @@ describe("Hub - update RefundRatio", () => {
       //  burnt by owner
       await meToken.connect(account2).approve(foundry.address, balAfter);
 
-      const tokensReturned = await foundry.calculateBurnReturn(
+      const tokensReturned = await foundry.calculateRawAssetsReturned(
         meToken.address,
         balAfter
       );
@@ -431,7 +429,7 @@ describe("Hub - update RefundRatio", () => {
 
       const meDetails = await meTokenRegistry.getDetails(meToken.address);
 
-      const tokensReturned = await foundry.calculateBurnReturn(
+      const tokensReturned = await foundry.calculateRawAssetsReturned(
         meToken.address,
         balAfter
       );
@@ -483,7 +481,7 @@ describe("Hub - update RefundRatio", () => {
       //  burnt by owner
       await meToken.connect(account2).approve(foundry.address, balAfter);
 
-      const tokensReturned = await foundry.calculateBurnReturn(
+      const tokensReturned = await foundry.calculateRawAssetsReturned(
         meToken.address,
         balAfter
       );

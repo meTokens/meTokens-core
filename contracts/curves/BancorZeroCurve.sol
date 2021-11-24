@@ -6,7 +6,6 @@ import "../interfaces/ICurve.sol";
 import "../libs/WeightedAverage.sol";
 
 import "../utils/ABDKMathQuad.sol";
-import "hardhat/console.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
@@ -182,7 +181,6 @@ contract BancorZeroCurve is ICurve {
                 _balancePooled
             );
         } else {
-            console.log("##### _viewAssetsDepositedFromZero");
             assetsDeposited = _viewAssetsDepositedFromZero(
                 _desiredMeTokens,
                 bancor_.reserveWeight,
@@ -294,11 +292,6 @@ contract BancorZeroCurve is ICurve {
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
-        console.log(
-            "## _viewMeTokensMintedFromZero _reserveWeight:%s _baseY:%s  ",
-            _reserveWeight,
-            _baseY
-        );
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
         // _assetsDeposited * baseX ^ (1/connectorWeight)
         bytes16 numerator = _assetsDeposited.fromUInt().mul(
@@ -316,11 +309,6 @@ contract BancorZeroCurve is ICurve {
             .ln()
             .mul(reserveWeight)
             .exp();
-        console.log(
-            "## _viewMeTokensMintedFromZero _assetsDeposited:%s res.toUInt():%s",
-            _assetsDeposited,
-            res.toUInt()
-        );
         return res.toUInt();
     }
 
@@ -440,30 +428,15 @@ contract BancorZeroCurve is ICurve {
         uint256 _reserveWeight,
         uint256 _baseY
     ) private view returns (uint256) {
-        console.log(
-            "## _desiredMeTokens:%s _reserveWeight:%s _baseY:%s",
-            _desiredMeTokens,
-            _reserveWeight,
-            _baseY
-        );
-        console.log("##  _baseX:%s", _baseX.toUInt());
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
         bytes16 desiredMeTokens = _desiredMeTokens.fromUInt();
-        bytes16 numerator = _baseY
+        bytes16 res = _baseY
             .fromUInt()
             .div(_baseX)
             .mul(reserveWeight)
             .mul(desiredMeTokens.div(_baseX))
             .mul(desiredMeTokens.div(_baseX));
-        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
-        /*    bytes16 squared = _desiredMeTokens
-            .fromUInt()
-            .ln()
-            .mul(uint256(2).fromUInt())
-            .exp(); */
-        // bytes16 res = numerator.mul(squared).div(_baseX);
-        console.log("##  numerator:%s", numerator.mul(_baseX).toUInt());
-        bytes16 res = numerator;
+
         return res.toUInt();
     }
 

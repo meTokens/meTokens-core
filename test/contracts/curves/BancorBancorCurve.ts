@@ -1,6 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
+import { BancorBancor } from "../../../artifacts/types/BancorBancor";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
@@ -20,14 +21,13 @@ import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
 
 describe("BancorZeroCurve", () => {
   let DAI: string;
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorZeroCurve: BancorBancor;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
@@ -61,8 +61,9 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    // bancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
     let token;
+    bancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
 
     ({
       token,
@@ -85,6 +86,7 @@ describe("BancorZeroCurve", () => {
 
   it("viewMeTokensMinted() from zero should work", async () => {
     let amount = one.mul(20);
+
     let estimate = await bancorZeroCurve.viewMeTokensMinted(
       amount,
       hubId,
@@ -358,7 +360,7 @@ describe("BancorZeroCurve", () => {
     ).to.be.approximately(calculatedRes, 0.00000000000000000001);
   });
   describe("with baseY less than 1 ", () => {
-    let newBancorZeroCurve: BancorZeroCurve;
+    let newBancorZeroCurve: BancorBancor;
     before(async () => {
       baseY = one.mul(1000);
 
@@ -373,7 +375,7 @@ describe("BancorZeroCurve", () => {
         ["address"],
         [DAI]
       );
-      newBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+      newBancorZeroCurve = await deploy<BancorBancor>("BancorBancor");
 
       ({
         token,
