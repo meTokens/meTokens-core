@@ -282,7 +282,7 @@ contract BancorZeroCurve is ICurve {
 
     /// @notice Given a deposit (in the collateral token) meToken supply of 0, constant x and
     ///         constant y, calculates the return for a given conversion (in the meToken)
-    /// @dev  _baseX / (_baseY ^ (MAX_WEIGHT/reserveWeight -1)) * assetsDeposited ^(MAX_WEIGHT/reserveWeight -1)
+    /// @dev   ( assetsDeposited * _baseX ^(1/reserveWeight ) / _baseX  * _baseY *  reserveWeight ) ^reserveWeight
     /// @dev  _baseX and _baseY are needed as Bancor formula breaks from a divide-by-0 when supply=0
     /// @param _assetsDeposited   amount of collateral tokens to deposit
     /// @param _baseY          constant x
@@ -293,9 +293,9 @@ contract BancorZeroCurve is ICurve {
         uint256 _baseY
     ) private view returns (uint256) {
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
-        // _assetsDeposited * baseY ^ (1/connectorWeight)
+        // _assetsDeposited * baseX ^ (1/connectorWeight)
         bytes16 numerator = _assetsDeposited.fromUInt().mul(
-            _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
+            _baseX.ln().mul(_one.div(reserveWeight)).exp()
         );
         // as baseX == 1 ether and we want to result to be in ether too we simply remove
         // the multiplication by baseY
@@ -429,14 +429,14 @@ contract BancorZeroCurve is ICurve {
         uint256 _baseY
     ) private view returns (uint256) {
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
-        bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
-        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
-        bytes16 squared = _desiredMeTokens
+        bytes16 desiredMeTokens = _desiredMeTokens.fromUInt();
+        bytes16 res = _baseY
             .fromUInt()
-            .ln()
-            .mul(uint256(2).fromUInt())
-            .exp();
-        bytes16 res = numerator.mul(squared).div(_baseX);
+            .div(_baseX)
+            .mul(reserveWeight)
+            .mul(desiredMeTokens.div(_baseX))
+            .mul(desiredMeTokens.div(_baseX));
+
         return res.toUInt();
     }
 

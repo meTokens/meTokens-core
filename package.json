@@ -51,6 +51,7 @@
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.9.1",
     "chai": "^4.3.4",
+    "decimal.js": "^10.3.1",
     "dotenv": "^10.0.0",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.0.31",
