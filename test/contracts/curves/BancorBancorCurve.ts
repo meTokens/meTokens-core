@@ -22,7 +22,7 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
 
-describe("BancorZeroCurve", () => {
+describe("BancorBancorCurve", () => {
   let DAI: string;
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
@@ -397,7 +397,6 @@ describe("BancorZeroCurve", () => {
     });
     it("viewMeTokensMinted() from zero should work", async () => {
       let amount = one.mul(100);
-      console.log("newBancorZeroCurve", newBancorZeroCurve.address);
       let estimate = await newBancorZeroCurve.viewMeTokensMinted(
         amount,
         hubId,

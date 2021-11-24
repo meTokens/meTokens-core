@@ -21,7 +21,7 @@ import { mineBlock } from "../utils/hardhatNode";
 import { Fees } from "../../artifacts/types/Fees";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
-import { UniswapSingleTransfer } from "../../artifacts/types/UniswapSingleTransfer";
+import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
 
 describe("Foundry.sol", () => {
@@ -40,13 +40,16 @@ describe("Foundry.sol", () => {
   let tokenHolder: Signer;
   let hub: Hub;
   let singleAssetVault: SingleAssetVault;
+  let migrationRegistry: MigrationRegistry;
+  let curveRegistry: CurveRegistry;
 
   const hubId = 1;
   const name = "Carl meToken";
   const symbol = "CARL";
   const refundRatio = 240000;
+  const initRefundRatio = 50000;
   const PRECISION = ethers.utils.parseEther("1");
-  // const amount1 = ethers.utils.parseEther("10");
+  const amount = ethers.utils.parseEther("10");
   const amount1 = ethers.utils.parseEther("100");
   const amount2 = ethers.utils.parseEther("6.9");
 
@@ -82,74 +85,72 @@ describe("Foundry.sol", () => {
       account1,
       account2,
       meTokenRegistry,
+      curveRegistry,
+      migrationRegistry,
       singleAssetVault,
-    } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
+    } = await hubSetup(
+      encodedCurveDetails,
+      encodedVaultArgs,
+      initRefundRatio,
+      _curve
+    ));
 
     // Prefund owner/buyer w/ DAI
     dai = token;
-    await dai
-      .connect(tokenHolder)
-      .transfer(account1.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(tokenHolder)
-      .transfer(account2.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(foundry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account2)
-      .approve(foundry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
+    await dai.connect(tokenHolder).transfer(account0.address, amount1);
+    await dai.connect(tokenHolder).transfer(account1.address, amount1);
+    await dai.connect(tokenHolder).transfer(account2.address, amount1);
+    await dai.connect(account1).approve(foundry.address, amount1);
+    await dai.connect(account2).approve(foundry.address, amount1);
+    await dai.connect(account1).approve(meTokenRegistry.address, amount1);
+    // account0 is registering a metoken
+    const tx = await meTokenRegistry
+      .connect(account0)
+      .subscribe(name, symbol, hubId, 0);
+    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
+
+    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
 
   describe("mint()", () => {
-    it.only("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
+    it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
       let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
         amount1,
         hubId,
         0,
         0
       );
-      console.log(
-        `expectedMeTokensMinted:${ethers.utils.formatEther(
-          expectedMeTokensMinted
-        )}`
-      );
 
       // Get balances before mint
       let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
-      console.log(
-        `minterDaiBalanceBefore:${ethers.utils.formatEther(
-          minterDaiBalanceBefore
-        )}`
-      );
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
-      console.log(
-        `vaultDaiBalanceBefore:${ethers.utils.formatEther(
-          vaultDaiBalanceBefore
-        )}`
-      );
       let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
         expectedMeTokensMinted,
         hubId,
         0,
         0
       );
-
       const calculated = calculateCollateralToDepositFromZero(
-        447.213595499,
-        0.001,
+        Number(ethers.utils.formatEther(expectedMeTokensMinted)),
+        Number(ethers.utils.formatEther(baseY)),
         reserveWeight / MAX_WEIGHT
       );
+      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
+        calculated,
+        0.000000000000000000000001
+      );
 
-      console.log(`*-*-*--**-*-calculated:${calculated}`);
-      // Mint first meTokens to owner
+      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
+        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
+        0.000000000000000000000001
+      );
+
+      // Mint first meTokens to owner account1
       let tx = await meTokenRegistry
         .connect(account1)
         .subscribe(name, symbol, hubId, amount1);
       let meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
+
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       // Compare expected meTokens minted to actual held
@@ -157,25 +158,10 @@ describe("Foundry.sol", () => {
       expect(meTokensMinted).to.equal(expectedMeTokensMinted);
       let totalSupply = await meToken.totalSupply();
       expect(totalSupply).to.equal(meTokensMinted);
-      console.log(
-        `expectedAssetsDeposited ,  we expected to spend :${ethers.utils.formatEther(
-          expectedAssetsDeposited
-        )} collateral to get :${ethers.utils.formatEther(
-          expectedMeTokensMinted
-        )} metokens
-        but we spent :${ethers.utils.formatEther(
-          amount1
-        )} collateral to get :${ethers.utils.formatEther(meTokensMinted)}
-        
-        `
-      );
+
       // Compare owner dai balance before/after
       let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
-      console.log(
-        `minterDaiBalanceAfter:${ethers.utils.formatEther(
-          minterDaiBalanceAfter
-        )}`
-      );
+
       expect(
         // TODO: how to verify difference of numbers to type of amount1?
         minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
@@ -183,23 +169,7 @@ describe("Foundry.sol", () => {
 
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
-      console.log(
-        `vaultDaiBalanceAfter:${ethers.utils.formatEther(vaultDaiBalanceAfter)}`
-      );
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
-      console.log(
-        `amopunt1:${Number.parseFloat(ethers.utils.formatEther(amount1))}`
-      );
-      console.log(
-        `expectedAssetsDeposited:${ethers.utils.formatEther(
-          expectedAssetsDeposited
-        )}`
-      );
-
-      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
-        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
-        0.000000000000000000000001
-      );
     });
 
     it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
@@ -215,43 +185,42 @@ describe("Foundry.sol", () => {
         0,
         0
       );
-
       // Get balances before mint
       let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
 
-      // Create meToken w/o issuing supply
+      // Create meToken w/o issuing supply and account2 as the owner
       const tx = await meTokenRegistry
         .connect(account2)
         .subscribe(name, symbol, hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account2.address
       );
+
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       // Mint meToken
       await foundry
         .connect(account2)
         .mint(meToken.address, amount1, account2.address);
-
       // Compare expected meTokens minted to actual held
       const meTokensMinted = await meToken.balanceOf(account2.address);
       expect(meTokensMinted).to.equal(expectedMeTokensMinted);
       const totalSupply = await meToken.totalSupply();
       expect(totalSupply).to.equal(meTokensMinted);
-
       // Compare buyer dai balance before/after
       let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
-      expect(
-        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
-      ).to.equal(amount1);
+      expect(minterDaiBalanceBefore.sub(minterDaiBalanceAfter)).to.equal(
+        amount1
+      );
 
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
-      expect(
-        Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
-      ).to.equal(amount1);
-      expect(amount1).to.equal(expectedAssetsDeposited);
+      expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
+      expect(Number(ethers.utils.formatEther(amount1))).to.be.approximately(
+        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
+        0.000000000000000001
+      );
     });
 
     it("balanceLocked = 0, balancePooled > 0", async () => {
@@ -294,8 +263,6 @@ describe("Foundry.sol", () => {
     });
   });
 
-  /*
-
   it("mint() from buyer should work", async () => {
     // metoken should be registered
     expect(await meToken.name()).to.equal(name);
@@ -315,7 +282,7 @@ describe("Foundry.sol", () => {
     // gas savings
     const totalSupply = await meToken.totalSupply();
 
-    const meTokensMinted = await bancorZeroCurve.viewMeTokensMinted(
+    const meTokensMinted = await _curve.viewMeTokensMinted(
       amount,
       hubId,
       totalSupply,
@@ -350,7 +317,8 @@ describe("Foundry.sol", () => {
 
     const calculatedCollateralReturned = amount
       .mul(initRefundRatio)
-      .div(PRECISION);
+      .div(MAX_WEIGHT);
+
     expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
   });
 
@@ -371,8 +339,8 @@ describe("Foundry.sol", () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      const migrationFactory = await deploy<UniswapSingleTransfer>(
-        "UniswapSingleTransfer",
+      const migrationFactory = await deploy<UniswapSingleTransferMigration>(
+        "UniswapSingleTransferMigration",
         undefined, //no libs
         account1.address, // DAO
         foundry.address, // foundry
@@ -383,10 +351,10 @@ describe("Foundry.sol", () => {
       const block = await ethers.provider.getBlock("latest");
       // earliestSwapTime 10 hour
       const earliestSwapTime = block.timestamp + 600 * 60;
-         const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+      const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256"],
         [earliestSwapTime]
-      ); 
+      );
       // 10 hour
       await hub.setDuration(600 * 60);
       await hub.setWarmup(60 * 60);
@@ -407,12 +375,14 @@ describe("Foundry.sol", () => {
 
       const amount = ethers.utils.parseEther("100");
       const balTokenBefore = await meToken.balanceOf(account2.address);
+      await dai.connect(tokenHolder).transfer(account2.address, amount);
       const balBefore = await dai.balanceOf(account2.address);
       // need an approve of metoken registry first
       await dai.connect(account2).approve(foundry.address, amount);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const totSupplyBefore = await meToken.totalSupply();
       const tokenBalBefore = await meToken.balanceOf(account2.address);
+
       await foundry
         .connect(account2)
         .mint(meToken.address, amount, account2.address);
@@ -425,8 +395,9 @@ describe("Foundry.sol", () => {
       expect(balVaultAfter.sub(balVaultBefore)).equal(amount);
       // assert token infos
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
+        account2.address
       );
+
       expect(meTokenAddr).to.equal(meToken.address);
       // should be greater than 0
       const totSupplyAfter = await meToken.totalSupply();
@@ -478,7 +449,7 @@ describe("Foundry.sol", () => {
       expect(balVaultAfter).equal(balVaultBefore.add(amount));
       // assert token infos
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
+        account2.address
       );
       expect(meTokenAddr).to.equal(meToken.address);
       // should be greater than 0
@@ -487,5 +458,4 @@ describe("Foundry.sol", () => {
       );
     });
   });
-  */
 });

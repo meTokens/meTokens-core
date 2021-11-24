@@ -219,7 +219,7 @@ describe("Generic Curve", () => {
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
       expect(amount1).to.equal(expectedAssetsDeposited);
     });
-
+    /* 
     it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
       let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
         amount1,
@@ -282,9 +282,9 @@ describe("Generic Curve", () => {
 
     it("balanceLocked > 0, balancePooled > 0", async () => {
       // TODO
-    });
+    }); */
   });
-
+  /* 
   describe("calculateBurnReturn()", () => {
     it("balanceLocked = 0, buyer, ending supply = 0", async () => {
       // TODO
@@ -338,7 +338,7 @@ describe("Generic Curve", () => {
       // TODO
     });
   });
-
+ */
   // it("viewMeTokensMinted() should work", async () => {
   //   let amount = one.mul(2);
   //   let estimate = await _curve.viewMeTokensMinted(

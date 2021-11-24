@@ -19,8 +19,8 @@ import { MeToken } from "../../../artifacts/types/MeToken";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
 import { passDays, passHours, passSeconds } from "../../utils/hardhatNode";
+import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 
 describe("Hub - update RefundRatio", () => {
   let meTokenRegistry: MeTokenRegistry;
@@ -81,8 +81,8 @@ describe("Hub - update RefundRatio", () => {
     ));
 
     // Deploy uniswap migration and approve it to the registry
-    const migration = await deploy<UniswapSingleTransfer>(
-      "UniswapSingleTransfer",
+    const migration = await deploy<UniswapSingleTransferMigration>(
+      "UniswapSingleTransferMigration",
       undefined,
       account0.address,
       foundry.address,
