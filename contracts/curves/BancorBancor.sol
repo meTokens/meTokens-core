@@ -24,7 +24,7 @@ contract BancorBancor is Power, ICurve {
         uint32 targetReserveWeight;
     }
 
-    uint32 public MAX_WEIGHT = 1000000;
+    uint32 public constant MAX_WEIGHT = 1000000;
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
     bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();

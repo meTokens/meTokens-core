@@ -2,7 +2,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import {
   deploy,
   getContractAt,
-  toETHNum,
+  toETHNumber,
   weightedAverageSimulation,
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -298,8 +298,8 @@ describe("Hub - update RefundRatio", () => {
       expect(active).to.be.true;
       expect(updating).to.be.true;
 
-      expect(toETHNum(balDaiAfter.sub(balDaiBefore))).to.equal(
-        toETHNum(tokensReturned.add(rewardFromLockedPool))
+      expect(toETHNumber(balDaiAfter.sub(balDaiBefore))).to.equal(
+        toETHNumber(tokensReturned.add(rewardFromLockedPool))
       );
     });
 
@@ -454,8 +454,8 @@ describe("Hub - update RefundRatio", () => {
       expect(active).to.be.true;
       expect(updating).to.be.false;
 
-      expect(toETHNum(balDaiAfter.sub(balDaiBefore))).to.equal(
-        toETHNum(tokensReturned.add(rewardFromLockedPool))
+      expect(toETHNumber(balDaiAfter.sub(balDaiBefore))).to.equal(
+        toETHNumber(tokensReturned.add(rewardFromLockedPool))
       );
     });
 

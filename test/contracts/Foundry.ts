@@ -8,6 +8,7 @@ import {
   calculateCollateralToDepositFromZero,
   deploy,
   getContractAt,
+  toETHNumber,
 } from "../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
@@ -57,7 +58,7 @@ describe("Foundry.sol", () => {
   // TODO: then loop over array of set of curve arguments
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
-  const baseY = PRECISION.div(1000).toString();
+  const baseY = PRECISION.div(1000);
 
   // for 1 DAI we get 1000 metokens
   // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
@@ -131,17 +132,19 @@ describe("Foundry.sol", () => {
         0
       );
       const calculated = calculateCollateralToDepositFromZero(
-        Number(ethers.utils.formatEther(expectedMeTokensMinted)),
-        Number(ethers.utils.formatEther(baseY)),
+        toETHNumber(expectedMeTokensMinted),
+        toETHNumber(baseY),
         reserveWeight / MAX_WEIGHT
       );
-      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
+      let res = toETHNumber(expectedMeTokensMinted);
+      res = toETHNumber(baseY);
+      expect(toETHNumber(amount1)).to.approximately(
         calculated,
         0.000000000000000000000001
       );
 
-      expect(Number(ethers.utils.formatEther(amount1))).to.approximately(
-        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
+      expect(toETHNumber(amount1)).to.approximately(
+        toETHNumber(expectedAssetsDeposited),
         0.000000000000000000000001
       );
 
@@ -217,8 +220,8 @@ describe("Foundry.sol", () => {
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
-      expect(Number(ethers.utils.formatEther(amount1))).to.be.approximately(
-        Number(ethers.utils.formatEther(expectedAssetsDeposited)),
+      expect(toETHNumber(amount1)).to.be.approximately(
+        toETHNumber(expectedAssetsDeposited),
         0.000000000000000001
       );
     });
