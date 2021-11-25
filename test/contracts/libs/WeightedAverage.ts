@@ -3,7 +3,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import { deploy, weightedAverageSimulation } from "../../utils/helpers";
+import {
+  deploy,
+  toETHNumber,
+  weightedAverageSimulation,
+} from "../../utils/helpers";
 
 describe("WeightedAverage.sol", () => {
   let wa: WeightedAverage;
@@ -53,7 +57,7 @@ describe("WeightedAverage.sol", () => {
         block.timestamp
       );
       expect(calcRes).to.equal(550);
-      expect(Number(ethers.utils.formatEther(cur))).to.equal(calcRes);
+      expect(toETHNumber(cur)).to.equal(calcRes);
     });
     it("works at the begining of migration", async () => {
       const block = await ethers.provider.getBlock("latest");
@@ -75,7 +79,7 @@ describe("WeightedAverage.sol", () => {
         block.timestamp
       );
       expect(calcRes).to.equal(1);
-      expect(Number(ethers.utils.formatEther(cur))).to.equal(calcRes);
+      expect(toETHNumber(cur)).to.equal(calcRes);
     });
     it("works in the middle of migration", async () => {
       const block = await ethers.provider.getBlock("latest");
@@ -97,7 +101,7 @@ describe("WeightedAverage.sol", () => {
         block.timestamp
       );
       expect(calcRes).to.equal(5);
-      expect(Number(ethers.utils.formatEther(cur))).to.equal(calcRes);
+      expect(toETHNumber(cur)).to.equal(calcRes);
     });
     it("works at the end of migration", async () => {
       const block = await ethers.provider.getBlock("latest");
@@ -119,7 +123,7 @@ describe("WeightedAverage.sol", () => {
         block.timestamp
       );
       expect(calcRes).to.equal(9);
-      expect(Number(ethers.utils.formatEther(cur))).to.equal(calcRes);
+      expect(toETHNumber(cur)).to.equal(calcRes);
     });
   });
 });

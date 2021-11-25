@@ -130,16 +130,23 @@ contract UniswapSingleTransferMigration is
         override
         returns (bool)
     {
-        require(_encodedArgs.length > 0, "_encodedArgs empty");
+        // _encodedArgs empty
+        if (_encodedArgs.length == 0) return false;
         (uint256 soon, uint24 fee) = abi.decode(
             _encodedArgs,
             (uint256, uint24)
         );
-        require(soon >= block.timestamp, "Too soon");
+        // Too soon
+        if (soon < block.timestamp) return false;
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        require(meToken_.hubId != 0, "MeToken not subscribed to a hub");
-        require(fee == MINFEE || fee == MIDFEE || fee == MAXFEE, "Invalid fee");
-        return true;
+        // MeToken not subscribed to a hub
+        if (meToken_.hubId == 0) return false;
+        // Invalid fee
+        if (fee == MINFEE || fee == MIDFEE || fee == MAXFEE) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function _swap(address _meToken) private returns (uint256 amountOut) {

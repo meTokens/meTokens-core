@@ -437,7 +437,7 @@ contract BancorZeroCurve is ICurve {
             .mul(desiredMeTokens.div(_baseX))
             .mul(desiredMeTokens.div(_baseX));
 
-        return res.toUInt();
+        return res.mul(_baseX).toUInt();
     }
 
     // VIEW BURN FOR DESIRED COLLATERAL RETURNED

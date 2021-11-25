@@ -26,9 +26,6 @@ export async function getContractAt<Type>(
   )) as unknown as Type;
   return ctr;
 }
-export const toETHNum = (amount: BigNumber): number => {
-  return Number(ethers.utils.formatEther(amount));
-};
 
 export const weightedAverageSimulation = (
   amount: number,
@@ -381,6 +378,15 @@ export const calculateCollateralToDepositFromZero = (
   const _reserveWeight = new Decimal(reserveWeight);
 
   const res = _baseY.mul(_meToken).mul(_meToken).mul(_reserveWeight);
-  console.log(`res:${res} _reserveWeight:${_reserveWeight}`);
   return res.toNumber();
+};
+
+export const toETHNumber = (num: BigNumber | string): number => {
+  return typeof num == "string"
+    ? Number.parseFloat(num as string)
+    : Number.parseFloat(ethers.utils.formatEther(num));
+};
+
+export const fromETHNumber = (num: number): BigNumber => {
+  return ethers.utils.parseEther(num.toString());
 };

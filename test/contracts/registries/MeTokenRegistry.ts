@@ -4,7 +4,12 @@ import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { deploy, getContractAt } from "../../utils/helpers";
+import {
+  calculateTokenReturnedFromZero,
+  deploy,
+  getContractAt,
+  toETHNumber,
+} from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import { BigNumber } from "ethers";
@@ -23,10 +28,9 @@ describe("MeTokenRegistry.sol", () => {
   const hubId = 1;
   const MAX_WEIGHT = 1000000;
   const PRECISION = BigNumber.from(10).pow(18);
-
+  const reserveWeight = MAX_WEIGHT / 2;
+  const baseY = PRECISION.div(1000);
   before(async () => {
-    const baseY = PRECISION.div(1000).toString();
-    const reserveWeight = MAX_WEIGHT / 2;
     let DAI;
     ({ DAI } = await getNamedAccounts());
 
@@ -97,9 +101,14 @@ describe("MeTokenRegistry.sol", () => {
       );
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(
-        ethers.utils.parseEther("0.199999999999999999")
+
+      const calculatedRes = calculateTokenReturnedFromZero(
+        20,
+        toETHNumber(baseY),
+        reserveWeight / MAX_WEIGHT
       );
+      console.log(`    calculatedRes:${calculatedRes}`);
+      expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
     });
   });
 

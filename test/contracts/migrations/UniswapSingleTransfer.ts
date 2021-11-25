@@ -13,12 +13,12 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
-import { UniswapSingleTransfer } from "../../../artifacts/types/UniswapSingleTransfer";
+import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 
-describe("UniswapSingleTransfer.sol", () => {
+describe("UniswapSingleTransferMigration.sol", () => {
   let earliestSwapTime: number;
   let DAI: string;
   let WETH: string;
@@ -32,21 +32,21 @@ describe("UniswapSingleTransfer.sol", () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let migrationRegistry: MigrationRegistry;
-  let migration: UniswapSingleTransfer;
+  let migration: UniswapSingleTransferMigration;
   let curve: BancorZeroCurve;
   let meTokenRegistry: MeTokenRegistry;
   let singleAssetVault: SingleAssetVault;
   let foundry: Foundry;
   let meToken: MeToken;
   let hub: Hub;
-  let fees: Fees;
+  let fee: Fees;
 
   const hubId1 = 1;
   const hubId2 = 2;
   const name = "Carl meToken";
   const symbol = "CARL";
   const amount = ethers.utils.parseEther("100");
-  const fee = 3000;
+  const fees = 3000;
   const refundRatio = 500000;
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
@@ -73,11 +73,13 @@ describe("UniswapSingleTransfer.sol", () => {
       ["address"],
       [WETH]
     );
+
     const block = await ethers.provider.getBlock("latest");
     earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+
     encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint24"],
-      [earliestSwapTime, fee]
+      [earliestSwapTime, fees]
     );
 
     curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
@@ -90,20 +92,13 @@ describe("UniswapSingleTransfer.sol", () => {
       account1,
       account2,
       meTokenRegistry,
+      fee,
     } = await hubSetup(
       encodedCurveDetails,
       encodedVaultDAIArgs,
       refundRatio,
       curve
     ));
-    fees = await deploy<Fees>("Fees");
-    await fees.initialize(0, 0, 0, 0, 0, 0);
-    await foundry.initialize(
-      hub.address,
-      fees.address,
-      meTokenRegistry.address
-    );
-
     // Register 2nd hub to which we'll migrate to
     await hub.register(
       WETH,
@@ -114,8 +109,8 @@ describe("UniswapSingleTransfer.sol", () => {
       encodedVaultWETHArgs
     );
     // Deploy uniswap migration and approve it to the registry
-    migration = await deploy<UniswapSingleTransfer>(
-      "UniswapSingleTransfer",
+    migration = await deploy<UniswapSingleTransferMigration>(
+      "UniswapSingleTransferMigration",
       undefined,
       account0.address,
       foundry.address,
@@ -147,7 +142,7 @@ describe("UniswapSingleTransfer.sol", () => {
       .transfer(account2.address, ethers.utils.parseEther("100"));
     await dai.connect(account1).approve(meTokenRegistry.address, amount);
     // Create meToken
-    const tx = await meTokenRegistry
+    await meTokenRegistry
       .connect(account1)
       .subscribe(name, symbol, hubId1, amount);
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
@@ -165,7 +160,7 @@ describe("UniswapSingleTransfer.sol", () => {
     it("Returns false for start time before current time", async () => {
       badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint24"],
-        [earliestSwapTime - 720 * 60, fee] // 2 hours beforehand
+        [earliestSwapTime - 720 * 60, fees] // 2 hours beforehand
       );
       const isValid = await migration.isValid(
         meToken.address,
@@ -196,23 +191,27 @@ describe("UniswapSingleTransfer.sol", () => {
   describe("initMigration()", () => {
     it("Fails from bad encodings", async () => {
       await expect(
-        meTokenRegistry.initResubscribe(
-          meToken.address,
-          hubId2,
-          migration.address,
-          badEncodedMigrationArgs
-        )
+        meTokenRegistry
+          .connect(account1)
+          .initResubscribe(
+            meToken.address,
+            hubId2,
+            migration.address,
+            badEncodedMigrationArgs
+          )
       ).to.be.revertedWith("Invalid _encodedMigrationArgs");
     });
     it("Set correct _ust values", async () => {
-      await meTokenRegistry.initResubscribe(
-        meToken.address,
-        hubId2,
-        migration.address,
-        encodedMigrationArgs
-      );
+      await meTokenRegistry
+        .connect(account1)
+        .initResubscribe(
+          meToken.address,
+          hubId2,
+          migration.address,
+          encodedMigrationArgs
+        );
       const migrationDetails = await migration.getDetails(meToken.address);
-      expect(migrationDetails.fee).to.equal(fee);
+      expect(migrationDetails.fee).to.equal(fees);
       expect(migrationDetails.soonest).to.equal(earliestSwapTime);
     });
   });
