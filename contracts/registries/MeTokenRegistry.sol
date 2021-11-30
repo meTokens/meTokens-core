@@ -31,7 +31,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     IMigrationRegistry public migrationRegistry;
 
     mapping(address => Details.MeToken) private _meTokens; // key pair: ERC20 address
+    // TODO: this mapping will break when multiple addresses revoke ownership to 0 address
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
+    mapping(address => address) private _pendingOwners; // key: address of owner, value: address of pending owner
 
     constructor(
         address _foundry,
@@ -272,18 +274,42 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _newOwner) external override {
-        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
+        require(
+            !isOwner(_newOwner) || _newOwner == address(0),
+            "_newOwner already owns a meToken"
+        );
 
-        // TODO: what happens if multiple people want to revoke ownership to 0 address?
         address _meToken = _owners[msg.sender];
 
         require(_meToken != address(0), "!meToken");
         Details.MeToken storage meToken_ = _meTokens[_meToken];
-        meToken_.owner = _newOwner;
-        _owners[msg.sender] = address(0);
-        _owners[_newOwner] = _meToken;
+
+        if (_newOwner == address(0)) {
+            meToken_.owner = address(0);
+            // TODO: this will break with multiple people revoking ownership to 0
+            _owners[address(0)] = _meToken;
+            delete _owners[msg.sender];
+        } else {
+            _pendingOwners[msg.sender] = _newOwner;
+        }
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function claimMeTokenOwnership(address _oldOwner) external override {
+        require(!isOwner(msg.sender), "Already owns a meToken");
+        require(msg.sender == _pendingOwners[_oldOwner], "!_pendingOwner");
+
+        address _meToken = _owners[msg.sender];
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+
+        meToken_.owner = msg.sender;
+        _owners[msg.sender] = _meToken;
+
+        delete _pendingOwners[_oldOwner];
+
+        emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {
