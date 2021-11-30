@@ -167,6 +167,23 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         );
     }
 
+    function cancelResubscribe(address _meToken) external override {
+        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        require(msg.sender == meToken_.owner, "!owner");
+        require(meToken_.targetHubId != 0, "!resubscribing");
+        require(
+            block.timestamp < meToken_.startTime,
+            "Resubscription has started"
+        );
+
+        meToken_.startTime = 0;
+        meToken_.endTime = 0;
+        meToken_.targetHubId = 0;
+        meToken_.migration = address(0);
+
+        emit CancelResubscribe(_meToken);
+    }
+
     /// @inheritdoc IMeTokenRegistry
     function finishResubscribe(address _meToken)
         external
