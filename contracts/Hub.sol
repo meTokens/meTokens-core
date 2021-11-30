@@ -41,6 +41,7 @@ contract Hub is IHub, Ownable, Initializable {
 
     /// @inheritdoc IHub
     function register(
+        address _owner,
         address _asset,
         IVault _vault,
         ICurve _curve,
@@ -63,11 +64,13 @@ contract Hub is IHub, Ownable, Initializable {
         // Save the hub to the registry
         Details.Hub storage hub_ = _hubs[_count];
         hub_.active = true;
+        hub_.owner = _owner;
         hub_.asset = _asset;
         hub_.vault = address(_vault);
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
         emit Register(
+            _owner,
             _asset,
             address(_vault),
             address(_curve),

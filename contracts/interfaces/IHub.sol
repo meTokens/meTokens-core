@@ -7,6 +7,7 @@ import "./ICurve.sol";
 
 interface IHub {
     event Register(
+        address _owner,
         address _asset,
         address _vault,
         address _curve,
@@ -30,6 +31,7 @@ interface IHub {
     event FinishUpdate(uint256 _id);
 
     function register(
+        address _owner,
         address _asset,
         IVault _vault,
         ICurve _curve,
