@@ -146,6 +146,23 @@ contract Hub is IHub, Ownable, Initializable {
         );
     }
 
+    /// @inheritdoc IHub
+    function cancelUpdate(uint256 _id) external override {
+        Details.Hub storage hub_ = _hubs[_id];
+        require(msg.sender == hub_.owner, "!owner");
+        require(hub_.updating, "!updating");
+        require(block.timestamp < hub_.startTime, "Update has started");
+
+        hub_.targetRefundRatio = 0;
+        hub_.reconfigure = false;
+        hub_.updating = false;
+        hub_.startTime = 0;
+        hub_.endTime = 0;
+        hub_.endCooldown = 0;
+
+        emit CancelUpdate(_id);
+    }
+
     function transferHubOwnership(uint256 _id, address _newOwner) external {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");

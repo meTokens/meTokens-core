@@ -24,6 +24,7 @@ interface IHub {
         uint256 endTime,
         uint256 endCooldown
     );
+    event CancelUpdate(uint256 _id);
 
     event TransferHubOwnership(uint256 _id, address _newOwner);
     event FinishUpdate(uint256 _id);
@@ -43,6 +44,8 @@ interface IHub {
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
     ) external;
+
+    function cancelUpdate(uint256 _id) external;
 
     /// @notice Function to end the update, setting the target values of the hub,
     ///         as well as modifying a hubs' status to ACTIVE
