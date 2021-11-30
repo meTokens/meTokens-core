@@ -75,6 +75,7 @@ contract Hub is Ownable, Initializable {
         bytes memory _encodedCurveDetails
     ) external {
         Details.Hub storage hub_ = _hubs[_id];
+        require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             Details.Hub memory hubUpdated = finishUpdate(_id);
             hub_.refundRatio = hubUpdated.refundRatio;
@@ -122,6 +123,15 @@ contract Hub is Ownable, Initializable {
         hub_.startTime = block.timestamp + _warmup;
         hub_.endTime = block.timestamp + _warmup + _duration;
         hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
+    }
+
+    function transferHubOwnership(uint256 _id, address _newOwner) external {
+        Details.Hub storage hub_ = _hubs[_id];
+        require(msg.sender == hub_.owner, "!owner");
+        require(msg.sender != hub_.owner, "Same owner");
+        hub_.owner = _newOwner;
+
+        // emit TransferHubOwnership(_id, _newOwner);
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {

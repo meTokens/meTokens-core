@@ -16,6 +16,7 @@ library Details {
 
     struct Hub {
         bool active;
+        address owner;
         address vault;
         address asset;
         address curve;
