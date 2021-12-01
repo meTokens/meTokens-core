@@ -31,7 +31,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     IMigrationRegistry public migrationRegistry;
 
     mapping(address => Details.MeToken) private _meTokens; // key pair: ERC20 address
+    // TODO: this mapping will break when multiple addresses revoke ownership to 0 address
     mapping(address => address) private _owners; // key: address of owner, value: address of meToken
+    mapping(address => address) private _pendingOwners; // key: address of owner, value: address of pending owner
 
     constructor(
         address _foundry,
@@ -272,18 +274,48 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _newOwner) external override {
+        require(
+            _pendingOwners[msg.sender] == address(0),
+            "transfer ownership already pending"
+        );
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
+        require(_newOwner != address(0), "Cannot transfer to 0 address");
+        address meToken_ = _owners[msg.sender];
+        require(meToken_ != address(0), "meToken does not exist");
+        _pendingOwners[msg.sender] = _newOwner;
 
-        // TODO: what happens if multiple people want to revoke ownership to 0 address?
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken_);
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function cancelTransferMeTokenOwnership() external override {
+        require(
+            _pendingOwners[msg.sender] != address(0),
+            "transferMeTokenOwnership() not initiated"
+        );
+
         address _meToken = _owners[msg.sender];
+        require(_meToken != address(0), "meToken does not exist");
 
-        require(_meToken != address(0), "!meToken");
+        delete _pendingOwners[msg.sender];
+        emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function claimMeTokenOwnership(address _oldOwner) external override {
+        require(!isOwner(msg.sender), "Already owns a meToken");
+        require(msg.sender == _pendingOwners[_oldOwner], "!_pendingOwner");
+
+        address _meToken = _owners[_oldOwner];
         Details.MeToken storage meToken_ = _meTokens[_meToken];
-        meToken_.owner = _newOwner;
-        _owners[msg.sender] = address(0);
-        _owners[_newOwner] = _meToken;
 
-        emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
+        meToken_.owner = msg.sender;
+        _owners[msg.sender] = _meToken;
+
+        delete _owners[_oldOwner];
+        delete _pendingOwners[_oldOwner];
+
+        emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
     function setWarmup(uint256 warmup_) external onlyOwner {

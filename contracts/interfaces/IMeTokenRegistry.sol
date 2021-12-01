@@ -28,6 +28,9 @@ interface IMeTokenRegistry {
         address _to,
         address _meToken
     );
+    event CancelTransferMeTokenOwnership(address _from, address _meToken);
+    event ClaimMeTokenOwnership(address _from, address _to, address _meToken);
+
     event UpdateBalancePooled(bool add, address _meToken, uint256 _amount);
     event UpdateBalanceLocked(bool add, address _meToken, uint256 _amount);
 
@@ -94,6 +97,13 @@ interface IMeTokenRegistry {
     /// @notice TODO
     /// @param _newOwner TODO
     function transferMeTokenOwnership(address _newOwner) external;
+
+    /// @notice TODO
+    function cancelTransferMeTokenOwnership() external;
+
+    /// @notice TODO
+    /// @param _oldOwner TODO
+    function claimMeTokenOwnership(address _oldOwner) external;
 
     /// @notice TODO
     /// @param _owner TODO

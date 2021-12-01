@@ -107,7 +107,6 @@ describe("MeTokenRegistry.sol", () => {
         toETHNumber(baseY),
         reserveWeight / MAX_WEIGHT
       );
-      console.log(`    calculatedRes:${calculatedRes}`);
       expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
     });
   });
@@ -121,7 +120,7 @@ describe("MeTokenRegistry.sol", () => {
         meTokenRegistry
           .connect(account3)
           .transferMeTokenOwnership(account2.address)
-      ).to.revertedWith("!meToken");
+      ).to.revertedWith("meToken does not exist");
 
       await expect(
         meTokenRegistry.transferMeTokenOwnership(account1.address)
@@ -131,14 +130,15 @@ describe("MeTokenRegistry.sol", () => {
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account1.address
       );
-
       const tx = await meTokenRegistry
         .connect(account1)
         .transferMeTokenOwnership(account2.address);
-
-      /*    await expect(tx)
-        .to.emit(meTokenRegistry, "TransferOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr); */
+      const meTokenAddrAfter = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      await expect(tx)
+        .to.emit(meTokenRegistry, "TransferMeTokenOwnership")
+        .withArgs(account1.address, account2.address, meTokenAddr);
     });
   });
 
@@ -146,6 +146,24 @@ describe("MeTokenRegistry.sol", () => {
     it("Returns false for address(0)", async () => {
       expect(await meTokenRegistry.isOwner(ethers.constants.AddressZero)).to.be
         .false;
+    });
+    it("Revert if ownership is not claimed", async () => {
+      expect(await meTokenRegistry.isOwner(account2.address)).to.be.false;
+    });
+    it("Claim ownership should work", async () => {
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      const tx = await meTokenRegistry
+        .connect(account2)
+        .claimMeTokenOwnership(account1.address);
+      const meTokenAddrAfter = await meTokenRegistry.getOwnerMeToken(
+        account2.address
+      );
+      expect(meTokenAddr).to.equal(meTokenAddrAfter);
+      await expect(tx)
+        .to.emit(meTokenRegistry, "ClaimMeTokenOwnership")
+        .withArgs(account1.address, account2.address, meTokenAddr);
     });
     it("Returns true for a meToken issuer", async () => {
       expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
