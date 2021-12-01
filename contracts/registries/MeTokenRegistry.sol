@@ -275,13 +275,17 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _newOwner) external override {
         require(
+            _pendingOwners[msg.sender] == address(0),
+            "transfer ownership already pending"
+        );
+        require(
             !isOwner(_newOwner) || _newOwner == address(0),
             "_newOwner already owns a meToken"
         );
 
         address _meToken = _owners[msg.sender];
-
         require(_meToken != address(0), "!meToken");
+
         Details.MeToken storage meToken_ = _meTokens[_meToken];
 
         if (_newOwner == address(0)) {
@@ -294,6 +298,20 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         }
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
+    }
+
+    /// @inheritdoc IMeTokenRegistry
+    function cancelTransferMeTokenOwnership() external override {
+        require(
+            _pendingOwners[msg.sender] != address(0),
+            "transferMeTokenOwnership() not initiated"
+        );
+
+        address _meToken = _owners[msg.sender];
+        require(_meToken != address(0), "!meToken");
+
+        delete _pendingOwners[msg.sender];
+        emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
     }
 
     /// @inheritdoc IMeTokenRegistry
