@@ -307,6 +307,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         meToken_.owner = msg.sender;
         _owners[msg.sender] = _meToken;
 
+        delete _owners[_oldOwner];
         delete _pendingOwners[_oldOwner];
 
         emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
