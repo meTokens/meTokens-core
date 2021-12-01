@@ -319,7 +319,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         require(!isOwner(msg.sender), "Already owns a meToken");
         require(msg.sender == _pendingOwners[_oldOwner], "!_pendingOwner");
 
-        address _meToken = _owners[msg.sender];
+        address _meToken = _owners[_oldOwner];
         Details.MeToken storage meToken_ = _meTokens[_meToken];
 
         meToken_.owner = msg.sender;
