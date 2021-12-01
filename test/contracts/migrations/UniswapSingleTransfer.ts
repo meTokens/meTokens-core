@@ -101,6 +101,7 @@ describe("UniswapSingleTransferMigration.sol", () => {
     ));
     // Register 2nd hub to which we'll migrate to
     await hub.register(
+      account0.address,
       WETH,
       singleAssetVault.address,
       curve.address,
