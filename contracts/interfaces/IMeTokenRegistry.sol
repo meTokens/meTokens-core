@@ -20,6 +20,7 @@ interface IMeTokenRegistry {
         address _migration,
         bytes _encodedMigrationArgs
     );
+    event CancelResubscribe(address indexed _meToken);
     event FinishResubscribe(address indexed _meToken);
     event UpdateBalances(address _meToken, uint256 _newBalance);
     event TransferMeTokenOwnership(
@@ -53,6 +54,10 @@ interface IMeTokenRegistry {
         address _migration,
         bytes memory _encodedMigrationArgs
     ) external;
+
+    /// @notice TODO
+    /// @param _meToken TODO
+    function cancelResubscribe(address _meToken) external;
 
     /// @notice TODO
     /// @param _meToken TODO

@@ -134,6 +134,7 @@ export async function hubSetup(
   );
 
   await hub.register(
+    account0.address,
     tokenAddr,
     singleAssetVault.address,
     curve.address,
@@ -200,6 +201,7 @@ export async function addHubSetup(
   await vaultRegistry.approve(singleAssetVault.address);
 
   await hub.register(
+    account0.address,
     tokenAddr,
     singleAssetVault.address,
     curve.address,

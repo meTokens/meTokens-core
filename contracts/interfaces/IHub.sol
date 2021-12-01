@@ -2,46 +2,57 @@
 pragma solidity ^0.8.0;
 
 import "../libs/Details.sol";
+import "./IVault.sol";
+import "./ICurve.sol";
 
 interface IHub {
-    event Register(string name, address indexed vault); // TODO: decide on arguments
-    event Deactivate(uint256 id);
+    event Register(
+        address _owner,
+        address _asset,
+        address _vault,
+        address _curve,
+        uint256 _refundRatio,
+        bytes _encodedCurveDetails,
+        bytes _encodedVaultArgs
+    );
+    event InitUpdate(
+        uint256 _id,
+        address _targetCurve,
+        uint256 _targetRefundRatio,
+        bytes _encodedCurveDetails,
+        bool reconfigure,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 endCooldown
+    );
+    event CancelUpdate(uint256 _id);
 
-    function subscribeMeToken(uint256 _id, address _meToken) external;
+    event TransferHubOwnership(uint256 _id, address _newOwner);
+    event FinishUpdate(uint256 _id);
 
-    function getSubscribedMeTokenCount(uint256 _id)
-        external
-        view
-        returns (uint256);
+    function register(
+        address _owner,
+        address _asset,
+        IVault _vault,
+        ICurve _curve,
+        uint256 _refundRatio,
+        bytes memory _encodedCurveDetails,
+        bytes memory _encodedVaultArgs
+    ) external;
 
-    function getSubscribedMeTokens(uint256 _id)
-        external
-        view
-        returns (address[] memory);
+    function initUpdate(
+        uint256 _id,
+        address _targetCurve,
+        uint256 _targetRefundRatio,
+        bytes memory _encodedCurveDetails
+    ) external;
 
-    /// @notice Function to modify a hubs' status to INACTIVE
-    /// @param id Unique hub identifier
-    function deactivate(uint256 id) external;
-
-    /// @notice Function to modify a hubs' status to QUEUED
-    /// @param id Unique hub identifier
-    function startUpdate(uint256 id) external;
+    function cancelUpdate(uint256 _id) external;
 
     /// @notice Function to end the update, setting the target values of the hub,
     ///         as well as modifying a hubs' status to ACTIVE
     /// @param id Unique hub identifier
     function finishUpdate(uint256 id) external returns (Details.Hub memory);
-
-    function initUpdate(
-        uint256 _id,
-        address _migration,
-        address _targetVault,
-        address _targetCurve,
-        bool _reconfigure,
-        uint256 _targetRefundRatio,
-        uint256 _startTime,
-        uint256 _duration
-    ) external;
 
     /// @notice TODO
     /// @param id Unique hub identifier

@@ -520,6 +520,7 @@ describe("Hub - update RefundRatio", () => {
 
     it("Call finishUpdate() and update refundRatio to targetRefundRatio", async () => {
       await hub.register(
+        account0.address,
         token.address,
         singleAssetVault.address,
         bancorZeroCurve.address,
@@ -609,6 +610,7 @@ describe("Hub - update RefundRatio", () => {
 
     it("If no burns during cooldown, initUpdate() first calls finishUpdate()", async () => {
       await hub.register(
+        account0.address,
         token.address,
         singleAssetVault.address,
         bancorZeroCurve.address,

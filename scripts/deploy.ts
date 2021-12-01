@@ -179,8 +179,9 @@ async function main() {
     [DAI]
   );
 
-  printLog("Registering hub ...");
+  printLog(`Registering hub with ${deployer.address} as the owner...`);
   tx = await hub.register(
+    deployer.address,
     DAI,
     singleAssetVault.address,
     bancorZeroCurve.address,
