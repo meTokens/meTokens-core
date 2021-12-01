@@ -120,7 +120,7 @@ describe("MeTokenRegistry.sol", () => {
         meTokenRegistry
           .connect(account3)
           .transferMeTokenOwnership(account2.address)
-      ).to.revertedWith("!meToken");
+      ).to.revertedWith("meToken does not exist");
 
       await expect(
         meTokenRegistry.transferMeTokenOwnership(account1.address)
