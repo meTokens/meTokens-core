@@ -278,26 +278,13 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             _pendingOwners[msg.sender] == address(0),
             "transfer ownership already pending"
         );
-        require(
-            !isOwner(_newOwner) || _newOwner == address(0),
-            "_newOwner already owns a meToken"
-        );
+        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
+        require(_newOwner != address(0), "Cannot transfer to 0 address");
+        address meToken_ = _owners[msg.sender];
+        require(meToken_ != address(0), "meToken does not exist");
+        _pendingOwners[msg.sender] = _newOwner;
 
-        address _meToken = _owners[msg.sender];
-        require(_meToken != address(0), "!meToken");
-
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-
-        if (_newOwner == address(0)) {
-            meToken_.owner = address(0);
-            // TODO: this will break with multiple people revoking ownership to 0
-            _owners[address(0)] = _meToken;
-            delete _owners[msg.sender];
-        } else {
-            _pendingOwners[msg.sender] = _newOwner;
-        }
-
-        emit TransferMeTokenOwnership(msg.sender, _newOwner, _meToken);
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken_);
     }
 
     /// @inheritdoc IMeTokenRegistry
@@ -308,7 +295,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         );
 
         address _meToken = _owners[msg.sender];
-        require(_meToken != address(0), "!meToken");
+        require(_meToken != address(0), "meToken does not exist");
 
         delete _pendingOwners[msg.sender];
         emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
