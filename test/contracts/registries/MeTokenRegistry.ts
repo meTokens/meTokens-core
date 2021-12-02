@@ -12,10 +12,12 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
-import { BigNumber } from "ethers";
+import { BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
 
 describe("MeTokenRegistry.sol", () => {
+  let meTokenAddr: string;
+  let tx: ContractTransaction;
   let meTokenRegistry: MeTokenRegistry;
 
   let hub: Hub;
@@ -60,9 +62,7 @@ describe("MeTokenRegistry.sol", () => {
       const tx = await meTokenRegistry
         .connect(account0)
         .subscribe(name, "CARL", hubId, 0);
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
+      meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
       /*  expect(tx)
         .to.emit(meTokenRegistry, "Register")
         .withArgs(meTokenAddr, account0.address, name, symbol, hubId); */
@@ -114,9 +114,7 @@ describe("MeTokenRegistry.sol", () => {
 
   describe("transferMeTokenOwnership()", () => {
     it("Fails if not a meToken owner", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
+      meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
       await expect(
         meTokenRegistry
           .connect(account3)
@@ -135,16 +133,13 @@ describe("MeTokenRegistry.sol", () => {
       // TODO
     });
     it("Emits TransferOwnership()", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
-      const tx = await meTokenRegistry
+      tx = await meTokenRegistry
         .connect(account1)
         .transferMeTokenOwnership(account2.address);
 
-      /*    await expect(tx)
-        .to.emit(meTokenRegistry, "TransferOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr); */
+      await expect(tx)
+        .to.emit(meTokenRegistry, "TransferMeTokenOwnership")
+        .withArgs(account1.address, account2.address, meTokenAddr);
     });
   });
 
@@ -156,6 +151,11 @@ describe("MeTokenRegistry.sol", () => {
       // TODO
     });
     it("Succesfully cancels transfer and removes from _pendingOwners", async () => {
+      tx = await meTokenRegistry
+        .connect(account1)
+        .cancelTransferMeTokenOwnership();
+    });
+    it("Emits CancelTransferMeTokenOwnership()", async () => {
       // TODO
     });
   });
@@ -167,11 +167,22 @@ describe("MeTokenRegistry.sol", () => {
     it("Fails if not claimer not pending owner from oldOwner", async () => {
       // TODO
     });
-    it("Successfully completes transfer, updates meToken struct, and deletes old mappings", async () => {
-      // TODO
+    it("Successfully completes claim and updates meToken struct, deletes old mappings", async () => {
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      await meTokenRegistry
+        .connect(account1)
+        .transferMeTokenOwnership(account2.address);
+      tx = await meTokenRegistry
+        .connect(account2)
+        .claimMeTokenOwnership(account1.address);
+      // TODO: check meToken struct, mappings
     });
     it("Emits ClaimMeTokenOwnership()", async () => {
-      // TODO
+      expect(tx)
+        .to.emit(meTokenRegistry, "ClaimMeTokenOwnership")
+        .withArgs(account1.address, account2.address, meTokenAddr);
     });
   });
 
@@ -180,8 +191,11 @@ describe("MeTokenRegistry.sol", () => {
       expect(await meTokenRegistry.isOwner(ethers.constants.AddressZero)).to.be
         .false;
     });
+    it("Returns false for if address not an owner", async () => {
+      expect(await meTokenRegistry.isOwner(account3.address)).to.be.false;
+    });
     it("Returns true for a meToken issuer", async () => {
-      expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
+      expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
     });
   });
   describe("balancePool", () => {
