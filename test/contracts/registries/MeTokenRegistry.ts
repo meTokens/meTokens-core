@@ -16,7 +16,8 @@ import { BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
 
 describe("MeTokenRegistry.sol", () => {
-  let meTokenAddr: string;
+  let meTokenAddr0: string;
+  let meTokenAddr1: string;
   let tx: ContractTransaction;
   let meTokenRegistry: MeTokenRegistry;
 
@@ -62,13 +63,13 @@ describe("MeTokenRegistry.sol", () => {
       const tx = await meTokenRegistry
         .connect(account0)
         .subscribe(name, "CARL", hubId, 0);
-      meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
+      meTokenAddr0 = await meTokenRegistry.getOwnerMeToken(account0.address);
       /*  expect(tx)
         .to.emit(meTokenRegistry, "Register")
         .withArgs(meTokenAddr, account0.address, name, symbol, hubId); */
 
       // assert token infos
-      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr0);
       expect(await meToken.name()).to.equal(name);
       expect(await meToken.symbol()).to.equal(symbol);
       expect(await meToken.decimals()).to.equal(18);
@@ -96,10 +97,8 @@ describe("MeTokenRegistry.sol", () => {
       const balVault = await token.balanceOf(hubDetail.vault);
       expect(balVault).equal(amount);
       // assert token infos
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
-      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      meTokenAddr1 = await meTokenRegistry.getOwnerMeToken(account1.address);
+      const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
       // should be greater than 0
 
       const calculatedRes = calculateTokenReturnedFromZero(
@@ -114,7 +113,6 @@ describe("MeTokenRegistry.sol", () => {
 
   describe("transferMeTokenOwnership()", () => {
     it("Fails if not a meToken owner", async () => {
-      meTokenAddr = await meTokenRegistry.getOwnerMeToken(account1.address);
       await expect(
         meTokenRegistry
           .connect(account3)
@@ -127,62 +125,103 @@ describe("MeTokenRegistry.sol", () => {
       ).to.revertedWith("_newOwner already owns a meToken");
     });
     it("Fails if _newOwner is address(0)", async () => {
-      // TODO
+      await expect(
+        meTokenRegistry.transferMeTokenOwnership(ethers.constants.AddressZero)
+      ).to.be.revertedWith("Cannot transfer to 0 address");
     });
     it("Successfully queues a recipient to claim ownership", async () => {
-      // TODO
-    });
-    it("Emits TransferOwnership()", async () => {
+      expect(await meTokenRegistry.getPendingOwner(account1.address)).to.equal(
+        ethers.constants.AddressZero
+      );
       tx = await meTokenRegistry
         .connect(account1)
         .transferMeTokenOwnership(account2.address);
-
-      await expect(tx)
+      expect(await meTokenRegistry.getPendingOwner(account1.address)).to.equal(
+        account2.address
+      );
+    });
+    it("Emits TransferOwnership()", async () => {
+      expect(tx)
         .to.emit(meTokenRegistry, "TransferMeTokenOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr);
+        .withArgs(account1.address, account2.address, meTokenAddr1);
     });
   });
 
   describe("cancelTransferMeTokenOwnership()", () => {
     it("Fails if owner has never called transferMeTokenOwnership()", async () => {
-      // TODO
+      await expect(
+        meTokenRegistry.connect(account0).cancelTransferMeTokenOwnership()
+      ).to.be.revertedWith("transferMeTokenOwnership() not initiated");
     });
     it("Fails if owner does not own a meToken", async () => {
-      // TODO
+      await expect(
+        meTokenRegistry.connect(account2).cancelTransferMeTokenOwnership()
+      ).to.be.revertedWith("meToken does not exist");
     });
     it("Succesfully cancels transfer and removes from _pendingOwners", async () => {
       tx = await meTokenRegistry
         .connect(account1)
         .cancelTransferMeTokenOwnership();
+      expect(await meTokenRegistry.getPendingOwner(account1.address)).to.equal(
+        ethers.constants.AddressZero
+      );
     });
     it("Emits CancelTransferMeTokenOwnership()", async () => {
-      // TODO
+      expect(tx)
+        .to.emit(meTokenRegistry, "CancelTransferMeTokenOwnership")
+        .withArgs(account1.address, meTokenAddr1);
     });
   });
 
   describe("claimMeTokenOwnership()", () => {
     it("Fails if claimer already owns a meToken", async () => {
-      // TODO
-    });
-    it("Fails if not claimer not pending owner from oldOwner", async () => {
-      // TODO
-    });
-    it("Successfully completes claim and updates meToken struct, deletes old mappings", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
+      // scenario 1: already owns a meToken, not a pending owner
+      await expect(
+        meTokenRegistry
+          .connect(account0)
+          .claimMeTokenOwnership(ethers.constants.AddressZero)
+      ).to.be.revertedWith("Already owns a meToken");
+      // Scenario 2: doesn't own a meToken and becomes pending owner for 2 meTokens,
+      // claims ownership to the first, then tries claiming ownership to the second
+      await meTokenRegistry
+        .connect(account0)
+        .transferMeTokenOwnership(account2.address);
       await meTokenRegistry
         .connect(account1)
         .transferMeTokenOwnership(account2.address);
       tx = await meTokenRegistry
         .connect(account2)
-        .claimMeTokenOwnership(account1.address);
-      // TODO: check meToken struct, mappings
+        .claimMeTokenOwnership(account0.address);
+      await expect(
+        meTokenRegistry
+          .connect(account2)
+          .claimMeTokenOwnership(account1.address)
+      ).to.be.revertedWith("Already owns a meToken");
+    });
+    it("Fails if not claimer not pending owner from oldOwner", async () => {
+      await expect(
+        meTokenRegistry
+          .connect(account3)
+          .claimMeTokenOwnership(account1.address)
+      ).to.be.revertedWith("!_pendingOwner");
+    });
+    it("Successfully completes claim and updates meToken struct, deletes old mappings", async () => {
+      expect(await meTokenRegistry.getOwnerMeToken(account2.address)).to.equal(
+        meTokenAddr0
+      );
+      const details = await meTokenRegistry.getDetails(meTokenAddr0);
+      expect(details.owner).to.equal(account2.address);
+      expect(await meTokenRegistry.getPendingOwner(account0.address)).to.equal(
+        ethers.constants.AddressZero
+      );
+      expect(await meTokenRegistry.getOwnerMeToken(account0.address)).to.equal(
+        ethers.constants.AddressZero
+      );
     });
     it("Emits ClaimMeTokenOwnership()", async () => {
       expect(tx)
         .to.emit(meTokenRegistry, "ClaimMeTokenOwnership")
-        .withArgs(account1.address, account2.address, meTokenAddr);
+        .withArgs(account0.address, account2.address, meTokenAddr0);
     });
   });
 
@@ -195,16 +234,17 @@ describe("MeTokenRegistry.sol", () => {
       expect(await meTokenRegistry.isOwner(account3.address)).to.be.false;
     });
     it("Returns true for a meToken issuer", async () => {
-      expect(await meTokenRegistry.isOwner(account2.address)).to.be.true;
+      expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
     });
   });
   describe("balancePool", () => {
     it("Fails if not foundry", async () => {
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
-      );
       await expect(
-        meTokenRegistry.updateBalancePooled(true, meTokenAddr, account2.address)
+        meTokenRegistry.updateBalancePooled(
+          true,
+          meTokenAddr1,
+          account2.address
+        )
       ).to.revertedWith("!foundry");
     });
     it("updateBalancePooled()", async () => {
