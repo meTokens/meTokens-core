@@ -54,6 +54,7 @@ contract Hub is IHub, Ownable, Initializable {
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
+        require(_refundRatio > 0, "_refundRatio == 0");
 
         // Ensure asset is valid based on encoded args and vault validation logic
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
@@ -104,12 +105,12 @@ contract Hub is IHub, Ownable, Initializable {
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (_targetRefundRatio != 0 ||
-                _targetRefundRatio != hub_.refundRatio) ||
-                (_targetCurve != address(0) || _targetCurve != hub_.curve) ||
+            (_targetRefundRatio != 0) ||
+                (_targetCurve != hub_.curve) ||
                 (_encodedCurveDetails.length > 0),
             "Nothing to update"
         );
+
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < MAX_REFUND_RATIO,
