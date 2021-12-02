@@ -31,8 +31,15 @@ describe("Hub.sol", () => {
   });
 
   describe("initUpdate()", () => {
-    it("Cannot be called if all values are the same", async () => {});
-    it("Can be called a first time", async () => {
+    it("Fails when nothing to update", async () => {
+      // TODO: Hub to check
+    });
+
+    it("fails on ICurve.initReconfigure() from invalid encodedCurveDetails", async () => {});
+
+    it("fails on ICurve.register() from invalid encodedCurveDetails", async () => {});
+
+    it("", async () => {
       // TODO: call initUpdate()
     });
 
@@ -45,6 +52,18 @@ describe("Hub.sol", () => {
 
     it("Can be called a second time after cooldown", async () => {
       // TODO: fast fwd to after cooldown and call initUpdate()
+    });
+  });
+
+  describe("cancelUpdate()", () => {
+    it("Cannot be called by non-owner", async () => {
+      // TODO
+    });
+    it("Can only be called when updating and during the warmup period", async () => {
+      // TODO
+    });
+    it("Correctly cancels a hub update and resets hub struct update values", async () => {
+      // TODO
     });
   });
 
@@ -79,6 +98,18 @@ describe("Hub.sol", () => {
       // TODO
     });
     it("Correctly set HubDetails when called during second initUpdate()", async () => {
+      // TODO
+    });
+  });
+
+  describe("transferHubOwnership()", () => {
+    it("Cannot be called by non-owner", async () => {
+      // TODO
+    });
+    it("Cannot be set to the current owner", async () => {
+      // TODO
+    });
+    it("Successfully transfers hub ownership", async () => {
       // TODO
     });
   });
