@@ -346,6 +346,16 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     }
 
     /// @inheritdoc IMeTokenRegistry
+    function getPendingOwner(address _oldOwner)
+        external
+        view
+        override
+        returns (address)
+    {
+        return _pendingOwners[_oldOwner];
+    }
+
+    /// @inheritdoc IMeTokenRegistry
     function getDetails(address _meToken)
         external
         view
