@@ -102,6 +102,14 @@ contract Hub is IHub, Ownable, Initializable {
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
+        // Make sure at least one of the values is different
+        require(
+            (_targetRefundRatio != 0 ||
+                _targetRefundRatio != hub_.refundRatio) ||
+                (_targetCurve != address(0) || _targetCurve != hub_.curve) ||
+                (_encodedCurveDetails.length > 0),
+            "Nothing to update"
+        );
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < MAX_REFUND_RATIO,
@@ -115,8 +123,8 @@ contract Hub is IHub, Ownable, Initializable {
         bool reconfigure;
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                reconfigure = true;
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
+                reconfigure = true;
             } else {
                 require(
                     curveRegistry.isApproved(_targetCurve),
