@@ -289,13 +289,13 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
 
     /// @inheritdoc IMeTokenRegistry
     function cancelTransferMeTokenOwnership() external override {
+        address _meToken = _owners[msg.sender];
+        require(_meToken != address(0), "meToken does not exist");
+
         require(
             _pendingOwners[msg.sender] != address(0),
             "transferMeTokenOwnership() not initiated"
         );
-
-        address _meToken = _owners[msg.sender];
-        require(_meToken != address(0), "meToken does not exist");
 
         delete _pendingOwners[msg.sender];
         emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
