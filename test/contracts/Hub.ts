@@ -37,7 +37,7 @@ describe("Hub.sol", () => {
     });
 
     it("Cannot be called during warmup, duration, and cooldown", async () => {
-      // TODO: fast fwd to warmup, duration, cooldown and try expect
+      // TODO: fast fwd to warmup, duration, cooldown and use expect() for each
       // calling initUpdate() to revert
     });
 
