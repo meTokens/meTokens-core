@@ -86,7 +86,7 @@ const setup = async () => {
   ));
   dai = token;
   let targetReserveWeight = MAX_WEIGHT - 20000;
-  const firstCurve = {
+  const curve1 = {
     signers: [account0, account1, account2],
     curve: bancorZeroCurve,
     baseY: toETHNumber(baseY),
@@ -102,9 +102,7 @@ const setup = async () => {
 
   // Second Curve
 
-  const secondBancorZeroCurve = await deploy<BancorZeroCurve>(
-    "BancorZeroCurve"
-  );
+  const bancorZeroCurve2 = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
   baseY = one.mul(100);
   reserveWeight = MAX_WEIGHT / 10;
@@ -113,7 +111,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY, reserveWeight]
   );
-  const sndHub = await addHubSetup(
+  const hub2 = await addHubSetup(
     hub,
     foundry,
     meTokenRegistry,
@@ -122,25 +120,26 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    secondBancorZeroCurve,
+    bancorZeroCurve2,
     account0.address
   );
 
-  const sndCurve = {
+  const curve2 = {
     signers: [account0, account1, account2],
-    curve: secondBancorZeroCurve,
+    curve: bancorZeroCurve2,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
     targetReserveWeight,
-    hubId: sndHub.hubId,
+    hubId: hub2.hubId,
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
     precision: 0.00000000000000000001,
   };
+
   // third curve
-  const thirdBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorZeroCurve3 = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
   baseY = one.mul(1);
   reserveWeight = 150000;
@@ -149,7 +148,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY, reserveWeight]
   );
-  const thirdHub = await addHubSetup(
+  const hub3 = await addHubSetup(
     hub,
     foundry,
     meTokenRegistry,
@@ -158,18 +157,18 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    thirdBancorZeroCurve,
+    bancorZeroCurve3,
     account0.address
   );
 
-  const thirdCurve = {
+  const curve3 = {
     signers: [account0, account1, account2],
-    curve: thirdBancorZeroCurve,
+    curve: bancorZeroCurve3,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
     targetReserveWeight,
-    hubId: thirdHub.hubId,
+    hubId: hub3.hubId,
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
@@ -177,9 +176,7 @@ const setup = async () => {
   };
 
   // fourth curve
-  const fourthBancorZeroCurve = await deploy<BancorZeroCurve>(
-    "BancorZeroCurve"
-  );
+  const bancorZeroCurve4 = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
   baseY = one.mul(1);
   reserveWeight = 150000;
@@ -188,7 +185,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY, reserveWeight]
   );
-  const fourthHub = await addHubSetup(
+  const hub4 = await addHubSetup(
     hub,
     foundry,
     meTokenRegistry,
@@ -197,18 +194,18 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    fourthBancorZeroCurve,
+    bancorZeroCurve4,
     account0.address
   );
 
-  const fourthCurve = {
+  const curve4 = {
     signers: [account0, account1, account2],
-    curve: fourthBancorZeroCurve,
+    curve: bancorZeroCurve4,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
     targetReserveWeight,
-    hubId: fourthHub.hubId,
+    hubId: hub4.hubId,
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
@@ -216,7 +213,7 @@ const setup = async () => {
   };
 
   // fifth curve
-  const fifthBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorZeroCurve5 = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
   baseY = one.mul(1);
   reserveWeight = 500000;
@@ -225,7 +222,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY, reserveWeight]
   );
-  const fifthHub = await addHubSetup(
+  const hub5 = await addHubSetup(
     hub,
     foundry,
     meTokenRegistry,
@@ -234,18 +231,18 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    fifthBancorZeroCurve,
+    bancorZeroCurve5,
     account0.address
   );
 
-  const fifthCurve = {
+  const curve5 = {
     signers: [account0, account1, account2],
-    curve: fifthBancorZeroCurve,
+    curve: bancorZeroCurve5,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
     targetReserveWeight,
-    hubId: fifthHub.hubId,
+    hubId: hub5.hubId,
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
@@ -253,7 +250,7 @@ const setup = async () => {
   };
 
   // sixth curve
-  const sixthBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorZeroCurve6 = await deploy<BancorZeroCurve>("BancorZeroCurve");
 
   baseY = one.mul(1);
   reserveWeight = 500000;
@@ -262,7 +259,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY, reserveWeight]
   );
-  const sixthHub = await addHubSetup(
+  const hub6 = await addHubSetup(
     hub,
     foundry,
     meTokenRegistry,
@@ -271,32 +268,25 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    sixthBancorZeroCurve,
+    bancorZeroCurve6,
     account0.address
   );
 
-  const sixthCurve = {
+  const curve6 = {
     signers: [account0, account1, account2],
-    curve: sixthBancorZeroCurve,
+    curve: bancorZeroCurve6,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
     targetReserveWeight,
-    hubId: sixthHub.hubId,
+    hubId: hub6.hubId,
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
     precision: 0.00000000000000000001,
   };
 
-  return [
-    firstCurve,
-    sndCurve,
-    thirdCurve,
-    fourthCurve,
-    fifthCurve,
-    sixthCurve,
-  ];
+  return [curve1, curve2, curve3, curve4, curve5, curve6];
 };
 setup().then((tests) => {
   describe(`${tests.length} Curves should work`, async () => {
