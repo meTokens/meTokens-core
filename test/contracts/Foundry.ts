@@ -12,7 +12,7 @@ import {
 } from "../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
-import { BancorZeroCurve } from "../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../artifacts/types/ERC20";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
@@ -33,7 +33,7 @@ describe("Foundry.sol", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let _curve: BancorZeroCurve;
+  let _curve: BancorABDK;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
   let token: ERC20;
@@ -75,7 +75,7 @@ describe("Foundry.sol", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    _curve = await deploy<BancorABDK>("BancorABDK");
 
     ({
       token,
@@ -330,7 +330,7 @@ describe("Foundry.sol", () => {
       // migrate hub
       // refund ratio stays the same
       const targetRefundRatio = 200000;
-      const newCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+      const newCurve = await deploy<BancorABDK>("BancorABDK");
 
       await curveRegistry.approve(newCurve.address);
       // for 1 DAI we get 1 metokens

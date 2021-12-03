@@ -5,7 +5,7 @@ import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
@@ -33,7 +33,7 @@ describe("UniswapSingleTransferMigration.sol", () => {
   let account2: SignerWithAddress;
   let migrationRegistry: MigrationRegistry;
   let migration: UniswapSingleTransferMigration;
-  let curve: BancorZeroCurve;
+  let curve: BancorABDK;
   let meTokenRegistry: MeTokenRegistry;
   let singleAssetVault: SingleAssetVault;
   let foundry: Foundry;
@@ -82,7 +82,7 @@ describe("UniswapSingleTransferMigration.sol", () => {
       [earliestSwapTime, fees]
     );
 
-    curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    curve = await deploy<BancorABDK>("BancorABDK");
     ({
       hub,
       migrationRegistry,

@@ -8,7 +8,7 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
@@ -24,7 +24,7 @@ import { UniswapSingleTransferMigration } from "../../../artifacts/types/Uniswap
 
 describe("Hub - update RefundRatio", () => {
   let meTokenRegistry: MeTokenRegistry;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
@@ -58,7 +58,7 @@ describe("Hub - update RefundRatio", () => {
       [baseY, reserveWeight]
     );
     encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(["address"], [DAI]);
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    bancorABDK = await deploy<BancorABDK>("BancorABDK");
 
     ({
       token,
@@ -77,7 +77,7 @@ describe("Hub - update RefundRatio", () => {
       encodedCurveDetails,
       encodedVaultArgs,
       firstRefundRatio,
-      bancorZeroCurve
+      bancorABDK
     ));
 
     // Deploy uniswap migration and approve it to the registry
@@ -147,7 +147,7 @@ describe("Hub - update RefundRatio", () => {
     before(async () => {
       await hub.initUpdate(
         firstHubId,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         targetedRefundRatio,
         encodedCurveDetails
       );
@@ -160,7 +160,7 @@ describe("Hub - update RefundRatio", () => {
       //await hub.setWarmup(172801);
       lastBlock = await ethers.provider.getBlock("latest");
       await expect(
-        hub.initUpdate(1, bancorZeroCurve.address, 1000, encodedCurveDetails)
+        hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails)
       ).to.be.revertedWith("already updating");
     });
 
@@ -243,7 +243,7 @@ describe("Hub - update RefundRatio", () => {
     it("initUpdate() cannot be called", async () => {
       // TODO: fast to active duration
       await expect(
-        hub.initUpdate(1, bancorZeroCurve.address, 1000, encodedCurveDetails)
+        hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails)
       ).to.be.revertedWith("already updating");
     });
 
@@ -385,7 +385,7 @@ describe("Hub - update RefundRatio", () => {
       // move forward to cooldown
       await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
       await expect(
-        hub.initUpdate(1, bancorZeroCurve.address, 1000, encodedCurveDetails)
+        hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails)
       ).to.be.revertedWith("Still cooling down");
     });
 
@@ -523,7 +523,7 @@ describe("Hub - update RefundRatio", () => {
         account0.address,
         token.address,
         singleAssetVault.address,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         targetedRefundRatio / 2, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -549,7 +549,7 @@ describe("Hub - update RefundRatio", () => {
       expect(detBefore.targetRefundRatio).to.equal(0);
       await hub.initUpdate(
         hubId,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         targetedRefundRatio,
         encodedCurveDetails
       );
@@ -594,12 +594,7 @@ describe("Hub - update RefundRatio", () => {
       expect(block.timestamp).to.be.lt(endCooldown);
 
       await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
-      await hub.initUpdate(
-        1,
-        bancorZeroCurve.address,
-        1000,
-        encodedCurveDetails
-      );
+      await hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails);
 
       const detAfterInit = await hub.getDetails(1);
       expect(detAfterInit.active).to.be.true;
@@ -613,7 +608,7 @@ describe("Hub - update RefundRatio", () => {
         account0.address,
         token.address,
         singleAssetVault.address,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         targetedRefundRatio / 2, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -635,7 +630,7 @@ describe("Hub - update RefundRatio", () => {
       expect(detBefore.targetRefundRatio).to.equal(0);
       await hub.initUpdate(
         hubId,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         targetedRefundRatio,
         encodedCurveDetails
       );
@@ -650,7 +645,7 @@ describe("Hub - update RefundRatio", () => {
       expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
       await hub.initUpdate(
         hubId,
-        bancorZeroCurve.address,
+        bancorABDK.address,
         1000,
         encodedCurveDetails
       );

@@ -2,7 +2,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
 import { BigNumber, Signer } from "ethers";
-import { BancorBancor } from "../../../artifacts/types/BancorBancor";
+import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
@@ -11,7 +11,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { hubSetup } from "../../utils/hubSetup";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 
 describe("Generic Curve", () => {
   let DAI: string;
@@ -21,7 +21,7 @@ describe("Generic Curve", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let _curve: BancorZeroCurve;
+  let _curve: BancorABDK;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
   let token: ERC20;
@@ -56,7 +56,7 @@ describe("Generic Curve", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    _curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    _curve = await deploy<BancorABDK>("BancorABDK");
 
     ({
       token,

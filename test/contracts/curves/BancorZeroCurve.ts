@@ -21,14 +21,14 @@ import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 
-describe("BancorZeroCurve", () => {
+describe("BancorABDK", () => {
   let DAI: string;
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
@@ -62,7 +62,7 @@ describe("BancorZeroCurve", () => {
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    bancorABDK = await deploy<BancorABDK>("BancorABDK");
     let token;
 
     ({
@@ -79,19 +79,14 @@ describe("BancorZeroCurve", () => {
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
-      bancorZeroCurve
+      bancorABDK
     ));
     dai = token;
   });
 
   it("viewMeTokensMinted() from zero should work", async () => {
     let amount = one.mul(20);
-    let estimate = await bancorZeroCurve.viewMeTokensMinted(
-      amount,
-      hubId,
-      0,
-      0
-    );
+    let estimate = await bancorABDK.viewMeTokensMinted(amount, hubId, 0, 0);
     const calculatedRes = calculateTokenReturnedFromZero(
       20,
       1000,
@@ -104,7 +99,7 @@ describe("BancorZeroCurve", () => {
   });
   it("viewMeTokensMinted() should work", async () => {
     const amount = one.mul(2);
-    let estimate = await bancorZeroCurve.viewMeTokensMinted(
+    let estimate = await bancorABDK.viewMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
@@ -122,7 +117,7 @@ describe("BancorZeroCurve", () => {
       calculatedRes,
       0.0000000000003
     );
-    estimate = await bancorZeroCurve.viewMeTokensMinted(
+    estimate = await bancorABDK.viewMeTokensMinted(
       amount,
       hubId,
       ethers.utils.parseEther("2828.427124746190097603"),
@@ -142,12 +137,7 @@ describe("BancorZeroCurve", () => {
   });
   it("viewMeTokensMinted should work with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
-    let estimate = await bancorZeroCurve.viewMeTokensMinted(
-      amount,
-      hubId,
-      0,
-      0
-    );
+    let estimate = await bancorABDK.viewMeTokensMinted(amount, hubId, 0, 0);
     const calculatedRes = calculateTokenReturnedFromZero(
       999999999999999,
       1000,
@@ -163,7 +153,7 @@ describe("BancorZeroCurve", () => {
     let amount = ethers.utils.parseEther("200");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.viewAssetsReturned(
+    let estimate = await bancorABDK.viewAssetsReturned(
       amount,
       hubId,
       one.mul(200),
@@ -185,7 +175,7 @@ describe("BancorZeroCurve", () => {
     let amount = ethers.utils.parseEther("585.786437626904952");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.viewAssetsReturned(
+    let estimate = await bancorABDK.viewAssetsReturned(
       amount,
       hubId,
       one.mul(2000),
@@ -205,7 +195,7 @@ describe("BancorZeroCurve", () => {
 
     amount = ethers.utils.parseEther("1171.572875253809903");
 
-    estimate = await bancorZeroCurve.viewAssetsReturned(
+    estimate = await bancorABDK.viewAssetsReturned(
       amount,
       hubId,
       one.mul(4000),
@@ -226,7 +216,7 @@ describe("BancorZeroCurve", () => {
   it("viewAssetsReturned should work with a max of 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
 
-    let estimate = await bancorZeroCurve.viewAssetsReturned(
+    let estimate = await bancorABDK.viewAssetsReturned(
       amount,
       hubId,
       ethers.utils.parseEther("999999999999998999.99999999999999744"),
@@ -251,19 +241,19 @@ describe("BancorZeroCurve", () => {
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await bancorZeroCurve.initReconfigure(hubId, encodedValueSet);
-    const detail = await bancorZeroCurve.getDetails(hubId);
+    await bancorABDK.initReconfigure(hubId, encodedValueSet);
+    const detail = await bancorABDK.getBancorDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
     expect(detail.targetBaseY).to.equal(targetBaseY);
   });
   it("viewTargetMeTokensMinted() from zero should work", async () => {
-    const detail = await bancorZeroCurve.getDetails(hubId);
+    const detail = await bancorABDK.getBancorDetails(hubId);
     let amount = one.mul(2);
 
     // (2^((1/0.98)−1))/(0.000510204081632653^((1/0.98)−1)) ==1.183947292541541
 
-    let estimate = await bancorZeroCurve.viewTargetMeTokensMinted(
+    let estimate = await bancorABDK.viewTargetMeTokensMinted(
       amount,
       hubId,
       0,
@@ -282,12 +272,12 @@ describe("BancorZeroCurve", () => {
     );
   });
   it("viewTargetMeTokensMinted() should work", async () => {
-    const detail = await bancorZeroCurve.getDetails(hubId);
+    const detail = await bancorABDK.getBancorDetails(hubId);
     const targetReserveWeight = detail.targetReserveWeight;
     let amount = one.mul(2);
 
     //   2/(2000^((1/0.98)−1))* 1944.930817973436691629^((1/0.98)−1)) == 1,998860701224224
-    let estimate = await bancorZeroCurve.viewTargetMeTokensMinted(
+    let estimate = await bancorABDK.viewTargetMeTokensMinted(
       amount,
       hubId,
       one.mul(2000),
@@ -309,7 +299,7 @@ describe("BancorZeroCurve", () => {
     let amount = ethers.utils.parseEther("2000");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.viewTargetAssetsReturned(
+    let estimate = await bancorABDK.viewTargetAssetsReturned(
       amount,
       hubId,
       one.mul(2000),
@@ -331,7 +321,7 @@ describe("BancorZeroCurve", () => {
     let amount = ethers.utils.parseEther("1944.930817973436691629");
     // 586 burned token should release 1 DAI
     //  let p = await getRequestParams(amount);
-    let estimate = await bancorZeroCurve.viewTargetAssetsReturned(
+    let estimate = await bancorABDK.viewTargetAssetsReturned(
       amount,
       hubId,
       ethers.utils.parseEther("3944.930817973436691629"),
@@ -353,7 +343,7 @@ describe("BancorZeroCurve", () => {
 
     amount = one.mul(1000);
 
-    estimate = await bancorZeroCurve.viewTargetAssetsReturned(
+    estimate = await bancorABDK.viewTargetAssetsReturned(
       amount,
       hubId,
       one.mul(2000),
@@ -372,7 +362,7 @@ describe("BancorZeroCurve", () => {
     );
   });
   describe("with baseY less than 1 ", () => {
-    let newBancorZeroCurve: BancorZeroCurve;
+    let newBancorABDK: BancorABDK;
     before(async () => {
       baseY = one.mul(1000);
 
@@ -387,7 +377,7 @@ describe("BancorZeroCurve", () => {
         ["address"],
         [DAI]
       );
-      newBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+      newBancorABDK = await deploy<BancorABDK>("BancorABDK");
 
       ({
         token,
@@ -403,13 +393,13 @@ describe("BancorZeroCurve", () => {
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
-        newBancorZeroCurve
+        newBancorABDK
       ));
       dai = token;
     });
     it("viewMeTokensMinted() from zero should work", async () => {
       let amount = one.mul(100);
-      let estimate = await newBancorZeroCurve.viewMeTokensMinted(
+      let estimate = await newBancorABDK.viewMeTokensMinted(
         amount,
         hubId,
         0,

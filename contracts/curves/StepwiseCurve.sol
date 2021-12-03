@@ -9,7 +9,7 @@ import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve {
+contract StepwiseCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
     struct Stepwise {
@@ -24,7 +24,10 @@ contract StepwiseCurve {
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
 
-    function register(uint256 _hubId, bytes calldata _encodedDetails) external {
+    function register(uint256 _hubId, bytes calldata _encodedDetails)
+        external
+        override
+    {
         // TODO: access control
         require(_encodedDetails.length > 0, "_encodedDetails empty");
 
@@ -42,6 +45,7 @@ contract StepwiseCurve {
 
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external
+        override
     {
         // TODO: access control
 
@@ -70,7 +74,7 @@ contract StepwiseCurve {
         stepwiseDetails.targetStepX = targetStepX;
     }
 
-    function finishReconfigure(uint256 _hubId) external {
+    function finishReconfigure(uint256 _hubId) external override {
         // TODO; only foundry can call
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepwise_.targetStepX;
@@ -79,7 +83,7 @@ contract StepwiseCurve {
         stepwise_.targetStepY = 0;
     }
 
-    function getDetails(uint256 stepwise)
+    function getStepWiseDetails(uint256 stepwise)
         external
         view
         returns (Stepwise memory)
@@ -87,12 +91,26 @@ contract StepwiseCurve {
         return _stepwises[stepwise];
     }
 
+    function getDetails(uint256 stepwise)
+        external
+        view
+        override
+        returns (uint256[4] memory)
+    {
+        return [
+            _stepwises[stepwise].stepX,
+            _stepwises[stepwise].stepY,
+            _stepwises[stepwise].targetStepX,
+            _stepwises[stepwise].targetStepY
+        ];
+    }
+
     function viewMeTokensMinted(
         uint256 _assetsDeposited, // assets deposited
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) external view returns (uint256 meTokensMinted) {
+    ) external view override returns (uint256 meTokensMinted) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
             _assetsDeposited,
@@ -108,7 +126,7 @@ contract StepwiseCurve {
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
-    ) external view returns (uint256 meTokensMinted) {
+    ) external view override returns (uint256 meTokensMinted) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         meTokensMinted = _viewMeTokensMinted(
             _assetsDeposited,
@@ -124,7 +142,7 @@ contract StepwiseCurve {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
@@ -140,7 +158,7 @@ contract StepwiseCurve {
         uint256 _hubId,
         uint256 _supply,
         uint256 _balancePooled
-    ) external view returns (uint256 assetsReturned) {
+    ) external view override returns (uint256 assetsReturned) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsReturned = _viewAssetsReturned(
             _meTokensBurned,
@@ -156,7 +174,7 @@ contract StepwiseCurve {
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsDeposited = _viewAssetsDeposited(
             _desiredMeTokensMinted,
@@ -172,7 +190,7 @@ contract StepwiseCurve {
         uint256 _hubId, // hubId
         uint256 _supply, // current supply
         uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited) {
+    ) external view override returns (uint256 assetsDeposited) {
         Stepwise memory stepwiseDetails = _stepwises[_hubId];
         assetsDeposited = _viewAssetsDeposited(
             _desiredMeTokensMinted,

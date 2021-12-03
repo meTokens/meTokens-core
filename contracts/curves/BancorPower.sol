@@ -13,7 +13,7 @@ import "../interfaces/ICurve.sol";
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
  * and to You under the Apache License, Version 2.0. "
  */
-contract BancorBancor is Power, ICurve {
+contract BancorPower is Power, ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -84,8 +84,26 @@ contract BancorBancor is Power, ICurve {
         bancor_.targetBaseY = 0;
     }
 
-    function getDetails(uint256 bancor) external view returns (Bancor memory) {
+    function getBancorDetails(uint256 bancor)
+        external
+        view
+        returns (Bancor memory)
+    {
         return _bancors[bancor];
+    }
+
+    function getDetails(uint256 bancor)
+        external
+        view
+        override
+        returns (uint256[4] memory)
+    {
+        return [
+            _bancors[bancor].baseY,
+            uint256(_bancors[bancor].reserveWeight),
+            _bancors[bancor].targetBaseY,
+            uint256(_bancors[bancor].targetReserveWeight)
+        ];
     }
 
     function viewMeTokensMinted(

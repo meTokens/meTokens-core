@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
@@ -13,7 +13,7 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 
 describe("Hub - update CurveDetails", () => {
   let meTokenRegistry: MeTokenRegistry;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let migrationRegistry: MigrationRegistry;
   let foundry: Foundry;
@@ -41,7 +41,7 @@ describe("Hub - update CurveDetails", () => {
       ["address"],
       [DAI]
     );
-    bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    bancorABDK = await deploy<BancorABDK>("BancorABDK");
     let token;
 
     ({
@@ -58,7 +58,7 @@ describe("Hub - update CurveDetails", () => {
       encodedCurveDetailsTarget,
       encodedVaultArgs,
       5000,
-      bancorZeroCurve
+      bancorABDK
     ));
     dai = token;
   });

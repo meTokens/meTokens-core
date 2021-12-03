@@ -9,7 +9,7 @@ import "../utils/ABDKMathQuad.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
-contract BancorZeroCurve is ICurve {
+contract BancorABDK is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -82,8 +82,26 @@ contract BancorZeroCurve is ICurve {
         bancor_.targetBaseY = 0;
     }
 
-    function getDetails(uint256 bancor) external view returns (Bancor memory) {
+    function getBancorDetails(uint256 bancor)
+        external
+        view
+        returns (Bancor memory)
+    {
         return _bancors[bancor];
+    }
+
+    function getDetails(uint256 bancor)
+        external
+        view
+        override
+        returns (uint256[4] memory)
+    {
+        return [
+            _bancors[bancor].baseY,
+            uint256(_bancors[bancor].reserveWeight),
+            _bancors[bancor].targetBaseY,
+            uint256(_bancors[bancor].targetReserveWeight)
+        ];
     }
 
     /// @inheritdoc ICurve
