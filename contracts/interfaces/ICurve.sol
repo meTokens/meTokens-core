@@ -21,7 +21,7 @@ interface ICurve {
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external;
 
-    function getDetails(uint256 stepwise)
+    function getDetails(uint256 _hubId)
         external
         view
         returns (uint256[4] memory);
