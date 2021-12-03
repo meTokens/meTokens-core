@@ -6,7 +6,7 @@ import fs from "fs";
 import { deploy } from "../test/utils/helpers";
 import { MeTokenFactory } from "../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../artifacts/types/MeTokenRegistry";
-import { BancorZeroCurve } from "../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../artifacts/types/BancorABDK";
 import { CurveRegistry } from "../artifacts/types/CurveRegistry";
 import { Foundry } from "../artifacts/types/Foundry";
 import { WeightedAverage } from "../artifacts/types/WeightedAverage";
@@ -91,9 +91,9 @@ async function main() {
   //   const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
   //   contracts.push(weightedAverage.address);
 
-  //   printLog("Deploying BancorZeroCurve Contract...");
-  //   const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
-  //   contracts.push(bancorZeroCurve.address);
+  //   printLog("Deploying BancorABDK Contract...");
+  //   const BancorABDK = await deploy<BancorABDK>("BancorABDK");
+  //   contracts.push(BancorABDK.address);
 
   //   printLog("Deploying CurveRegistry Contract...");
   //   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
@@ -149,7 +149,7 @@ async function main() {
   //   contracts.push(fees.address);
 
   //   printLog("Registering Bancor Curve to curve registry...");
-  //   let tx = await curveRegistry.approve(bancorZeroCurve.address);
+  //   let tx = await curveRegistry.approve(BancorABDK.address);
   //   await tx.wait();
   //   printLog("Registering vault to vault registry...");
   //   tx = await vaultRegistry.approve(singleAssetVault.address);
@@ -260,7 +260,7 @@ async function main() {
     //  "SingleAsset Vault Contract Address": singleAssetVault.address,
     // "Fee Contract Address": fees.address,
     // "Curve Registry Contract Address": curveRegistry.address,
-    // "Bancor Curve Contract Address": bancorZeroCurve.address,
+    // "Bancor Curve Contract Address": BancorABDK.address,
     "Foundry Contract Address": foundry.address,
     // "MeToken Factory Contract Address": meTokenFactory.address,
     "MeToken Registry Contract Address": meTokenRegistry.address,

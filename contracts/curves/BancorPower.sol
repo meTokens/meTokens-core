@@ -13,7 +13,7 @@ import "../interfaces/ICurve.sol";
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
  * and to You under the Apache License, Version 2.0. "
  */
-contract BancorBancor is Power, ICurve {
+contract BancorPower is Power, ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 

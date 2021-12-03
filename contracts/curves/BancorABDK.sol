@@ -9,7 +9,7 @@ import "../utils/ABDKMathQuad.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
-contract BancorZeroCurve is ICurve {
+contract BancorABDK is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 

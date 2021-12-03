@@ -21,7 +21,7 @@ import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 
 describe("All curves", () => {
@@ -32,7 +32,7 @@ const setup = async () => {
   let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
-  let bancorZeroCurve: BancorZeroCurve;
+  let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
@@ -65,7 +65,7 @@ const setup = async () => {
     ["address"],
     [DAI]
   );
-  bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  bancorABDK = await deploy<BancorABDK>("BancorABDK");
 
   ({
     token,
@@ -78,17 +78,12 @@ const setup = async () => {
     account1,
     account2,
     meTokenRegistry,
-  } = await hubSetup(
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorZeroCurve
-  ));
+  } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, bancorABDK));
   dai = token;
   let targetReserveWeight = MAX_WEIGHT - 20000;
   const curve1 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve,
+    curve: bancorABDK,
     baseY: toETHNumber(baseY),
     reserveWeight: reserveWeight,
     MAX_WEIGHT,
@@ -102,7 +97,7 @@ const setup = async () => {
 
   // Second Curve
 
-  const bancorZeroCurve2 = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorABDK2 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(100);
   reserveWeight = MAX_WEIGHT / 10;
@@ -120,13 +115,13 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    bancorZeroCurve2,
+    bancorABDK2,
     account0.address
   );
 
   const curve2 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve2,
+    curve: bancorABDK2,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
@@ -139,7 +134,7 @@ const setup = async () => {
   };
 
   // third curve
-  const bancorZeroCurve3 = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorABDK3 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
   reserveWeight = 150000;
@@ -157,13 +152,13 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    bancorZeroCurve3,
+    bancorABDK3,
     account0.address
   );
 
   const curve3 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve3,
+    curve: bancorABDK3,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
@@ -176,7 +171,7 @@ const setup = async () => {
   };
 
   // fourth curve
-  const bancorZeroCurve4 = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorABDK4 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
   reserveWeight = 150000;
@@ -194,13 +189,13 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    bancorZeroCurve4,
+    bancorABDK4,
     account0.address
   );
 
   const curve4 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve4,
+    curve: bancorABDK4,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
@@ -213,7 +208,7 @@ const setup = async () => {
   };
 
   // fifth curve
-  const bancorZeroCurve5 = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorABDK5 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
   reserveWeight = 500000;
@@ -231,13 +226,13 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    bancorZeroCurve5,
+    bancorABDK5,
     account0.address
   );
 
   const curve5 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve5,
+    curve: bancorABDK5,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,
@@ -250,7 +245,7 @@ const setup = async () => {
   };
 
   // sixth curve
-  const bancorZeroCurve6 = await deploy<BancorZeroCurve>("BancorZeroCurve");
+  const bancorABDK6 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
   reserveWeight = 500000;
@@ -268,13 +263,13 @@ const setup = async () => {
     encodedCurveDetails,
     encodedVaultArgs,
     5000,
-    bancorZeroCurve6,
+    bancorABDK6,
     account0.address
   );
 
   const curve6 = {
     signers: [account0, account1, account2],
-    curve: bancorZeroCurve6,
+    curve: bancorABDK6,
     baseY: toETHNumber(baseY),
     reserveWeight,
     MAX_WEIGHT,

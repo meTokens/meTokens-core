@@ -1,6 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { BancorZeroCurve } from "../../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { Hub } from "../../../artifacts/types/Hub";
 import { ERC20 } from "../../../artifacts/types/ERC20";
@@ -42,14 +42,9 @@ describe("MeTokenRegistry.sol", () => {
       ["address"],
       [DAI]
     );
-    const bancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    const bancorABDK = await deploy<BancorABDK>("BancorABDK");
     ({ token, hub, account0, account1, account2, account3, meTokenRegistry } =
-      await hubSetup(
-        encodedCurveDetails,
-        encodedVaultArgs,
-        50000,
-        bancorZeroCurve
-      ));
+      await hubSetup(encodedCurveDetails, encodedVaultArgs, 50000, bancorABDK));
   });
 
   describe("register()", () => {
