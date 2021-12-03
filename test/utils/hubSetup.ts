@@ -15,6 +15,7 @@ import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
 import { Fees } from "../../artifacts/types/Fees";
+import { expect } from "chai";
 
 let tokenAddr: string;
 let weightedAverage: WeightedAverage;
@@ -178,10 +179,12 @@ export async function addHubSetup(
 ): Promise<{
   hubId: number;
 }> {
-  const isCurveApproved = curveRegistry.isApproved(curve.address);
+  const isCurveApproved = await curveRegistry.isApproved(curve.address);
   if (!isCurveApproved) {
     await curveRegistry.approve(curve.address);
   }
+  const isCurveApprovedAfter = await curveRegistry.isApproved(curve.address);
+  expect(isCurveApprovedAfter).to.be.true;
   let dao = daoAddress;
   if (!dao) {
     [account0] = await ethers.getSigners();

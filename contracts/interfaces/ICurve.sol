@@ -21,6 +21,11 @@ interface ICurve {
     function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
         external;
 
+    function getDetails(uint256 stepwise)
+        external
+        view
+        returns (uint256[4] memory);
+
     function viewMeTokensMinted(
         uint256 _assetsDeposited,
         uint256 _hubId,

@@ -82,6 +82,7 @@ const config: HardhatUserConfig = {
     ],
   },
   mocha: {
+    delay: true,
     timeout: 60000, // Here is 2min but can be whatever timeout is suitable for you.
   },
   namedAccounts: {
