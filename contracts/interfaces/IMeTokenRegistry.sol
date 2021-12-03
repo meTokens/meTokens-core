@@ -111,6 +111,11 @@ interface IMeTokenRegistry {
     function getOwnerMeToken(address _owner) external view returns (address);
 
     /// @notice TODO
+    /// @param _oldOwner TODO
+    /// @return TODO
+    function getPendingOwner(address _oldOwner) external view returns (address);
+
+    /// @notice TODO
     /// @param meToken Address of meToken queried
     /// @return meToken_ details of the meToken
     function getDetails(address meToken)
