@@ -175,7 +175,128 @@ const setup = async () => {
     calculateTokenReturnedFromZero,
     precision: 0.00000000000000000001,
   };
-  return [firstCurve, sndCurve, thirdCurve];
+
+  // fourth curve
+  const fourthBancorZeroCurve = await deploy<BancorZeroCurve>(
+    "BancorZeroCurve"
+  );
+
+  baseY = one.mul(1);
+  reserveWeight = 150000;
+  targetReserveWeight = reserveWeight - 20000;
+  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY, reserveWeight]
+  );
+  const fourthHub = await addHubSetup(
+    hub,
+    foundry,
+    meTokenRegistry,
+    migrationRegistry,
+    vaultRegistry,
+    encodedCurveDetails,
+    encodedVaultArgs,
+    5000,
+    fourthBancorZeroCurve,
+    account0.address
+  );
+
+  const fourthCurve = {
+    signers: [account0, account1, account2],
+    curve: fourthBancorZeroCurve,
+    baseY: toETHNumber(baseY),
+    reserveWeight,
+    MAX_WEIGHT,
+    targetReserveWeight,
+    hubId: fourthHub.hubId,
+    calculateCollateralReturned,
+    calculateTokenReturned,
+    calculateTokenReturnedFromZero,
+    precision: 0.00000000000000000001,
+  };
+
+  // fifth curve
+  const fifthBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+
+  baseY = one.mul(1);
+  reserveWeight = 500000;
+  targetReserveWeight = 333333;
+  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY, reserveWeight]
+  );
+  const fifthHub = await addHubSetup(
+    hub,
+    foundry,
+    meTokenRegistry,
+    migrationRegistry,
+    vaultRegistry,
+    encodedCurveDetails,
+    encodedVaultArgs,
+    5000,
+    fifthBancorZeroCurve,
+    account0.address
+  );
+
+  const fifthCurve = {
+    signers: [account0, account1, account2],
+    curve: fifthBancorZeroCurve,
+    baseY: toETHNumber(baseY),
+    reserveWeight,
+    MAX_WEIGHT,
+    targetReserveWeight,
+    hubId: fifthHub.hubId,
+    calculateCollateralReturned,
+    calculateTokenReturned,
+    calculateTokenReturnedFromZero,
+    precision: 0.00000000000000000001,
+  };
+
+  // sixth curve
+  const sixthBancorZeroCurve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+
+  baseY = one.mul(1);
+  reserveWeight = 500000;
+  targetReserveWeight = 333333;
+  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY, reserveWeight]
+  );
+  const sixthHub = await addHubSetup(
+    hub,
+    foundry,
+    meTokenRegistry,
+    migrationRegistry,
+    vaultRegistry,
+    encodedCurveDetails,
+    encodedVaultArgs,
+    5000,
+    sixthBancorZeroCurve,
+    account0.address
+  );
+
+  const sixthCurve = {
+    signers: [account0, account1, account2],
+    curve: sixthBancorZeroCurve,
+    baseY: toETHNumber(baseY),
+    reserveWeight,
+    MAX_WEIGHT,
+    targetReserveWeight,
+    hubId: sixthHub.hubId,
+    calculateCollateralReturned,
+    calculateTokenReturned,
+    calculateTokenReturnedFromZero,
+    precision: 0.00000000000000000001,
+  };
+
+  return [
+    firstCurve,
+    sndCurve,
+    thirdCurve,
+    fourthCurve,
+    fifthCurve,
+    sixthCurve,
+  ];
 };
 setup().then((tests) => {
   describe(`${tests.length} Curves should work`, async () => {
