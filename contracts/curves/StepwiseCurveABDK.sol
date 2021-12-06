@@ -171,38 +171,6 @@ contract StepwiseCurve is ICurve {
         );
     }
 
-    function viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
-            _supply,
-            _balancePooled
-        );
-    }
-
-    function viewTargetAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
-            _supply,
-            _balancePooled
-        );
-    }
-
     /// @notice Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @param _assetsDeposited, // assets deposited
@@ -315,34 +283,6 @@ contract StepwiseCurve is ICurve {
             .sub(balancePooledAtStepsAfterBurn)
             .sub(supplyAtStepAfterBurn)
             .mul(stepY_);
-        return res.toUInt();
-    }
-
-    function _viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted, // desired meTokens Minted
-        uint256 _stepX, // length of step (aka supply duration)
-        uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
-    ) private view returns (uint256) {
-        bytes16 desiredMeTokensMinted_ = _desiredMeTokensMinted.fromUInt();
-        bytes16 stepX_ = _stepX.fromUInt();
-        bytes16 stepY_ = _stepY.fromUInt();
-        bytes16 supply_ = _supply.fromUInt();
-        bytes16 balancePooled_ = _balancePooled.fromUInt();
-
-        bytes16 stepsAfterMint = (supply_.add(desiredMeTokensMinted_)).div(
-            stepX_
-        );
-        bytes16 stepSupplyAfterMint = supply_.sub(stepsAfterMint.mul(stepX_));
-        bytes16 stepBalanceAfterMint = (
-            (stepsAfterMint.mul(stepsAfterMint).add(stepsAfterMint)).div(_two)
-        ).mul(stepX_).mul(stepY_);
-
-        bytes16 res = stepBalanceAfterMint
-            .add(stepSupplyAfterMint)
-            .mul(stepY_)
-            .sub(balancePooled_);
         return res.toUInt();
     }
 }

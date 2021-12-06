@@ -54,19 +54,5 @@ interface ICurve {
         uint256 _balancePooled
     ) external view returns (uint256 assetsReturned);
 
-    function viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited);
-
-    function viewTargetAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view returns (uint256 assetsDeposited);
-
     function finishReconfigure(uint256 id) external;
 }
