@@ -563,55 +563,54 @@ describe("Hub.sol", () => {
       expect(details.targetRefundRatio).to.be.equal(0);
     });
     it("should revert when not updating", async () => {
-      const tx = hub.cancelUpdate(hubId);
-      await expect(tx).to.be.revertedWith("!updating");
+      await expect(hub.cancelUpdate(hubId)).to.be.revertedWith("!updating");
     });
-    it("should revert after warmup period");
+    it("should revert after warmup period", async () => {});
   });
 
   describe("finishUpdate()", () => {
-    xit("Should revert if all arguments are the same", async () => {
+    it("Should revert if all arguments are the same", async () => {
       // TODO
     });
-    xit("Doesn't trigger during warmup or duration", async () => {
-      // TODO
-    });
-
-    xit("Trigger once when mint() called during cooldown", async () => {
+    it("Doesn't trigger during warmup or duration", async () => {
       // TODO
     });
 
-    xit("Trigger once when burn() called during cooldown", async () => {
+    it("Trigger once when mint() called during cooldown", async () => {
       // TODO
     });
 
-    xit("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
+    it("Trigger once when burn() called during cooldown", async () => {
       // TODO
     });
 
-    xit("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
+    it("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
       // TODO
     });
 
-    xit("Correctly set HubDetails when called during cooldown", async () => {
+    it("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
       // TODO
     });
-    xit("Correctly set HubDetails when called after cooldown", async () => {
+
+    it("Correctly set HubDetails when called during cooldown", async () => {
       // TODO
     });
-    xit("Correctly set HubDetails when called during second initUpdate()", async () => {
+    it("Correctly set HubDetails when called after cooldown", async () => {
+      // TODO
+    });
+    it("Correctly set HubDetails when called during second initUpdate()", async () => {
       // TODO
     });
   });
 
   describe("transferHubOwnership()", () => {
-    xit("Cannot be called by non-owner", async () => {
+    it("Cannot be called by non-owner", async () => {
       // TODO
     });
-    xit("Cannot be set to the current owner", async () => {
+    it("Cannot be set to the current owner", async () => {
       // TODO
     });
-    xit("Successfully transfers hub ownership", async () => {
+    it("Successfully transfers hub ownership", async () => {
       // TODO
     });
   });
