@@ -14,6 +14,7 @@ import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { deploy } from "../utils/helpers";
 import { hubSetup, hubSetupWithoutRegister } from "../utils/hubSetup";
 import { expect } from "chai";
+import { mineBlock } from "../utils/hardhatNode";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -371,8 +372,7 @@ describe("Hub.sol", () => {
       // TODO as this revert is caused by external contracts, do they need to be covered here?
     });
 
-    // FIXME hub.sol l-141
-    it("Should be able to update with new refundRation", async () => {
+    it("Should be able to initUpdate with new refundRatio", async () => {
       const tx = await hub.initUpdate(
         hubId,
         curve.address,
@@ -418,25 +418,155 @@ describe("Hub.sol", () => {
     it("Should revert to called during warmup, duration, and cooldown", async () => {
       // TODO: fast fwd to warmup, duration, cooldown and use expect() for each
       // calling initUpdate() to revert
+      const txBeforeStartTime = hub.initUpdate(
+        hubId,
+        curve.address,
+        refundRatio2,
+        encodedCurveDetails
+      );
+      const details = await hub.getDetails(1);
+
+      await expect(txBeforeStartTime).to.be.revertedWith("already updating");
+      let block = await ethers.provider.getBlock("latest");
+
+      // fast fwd to startTime | warmup
+      await mineBlock(details.startTime.toNumber() + 1);
+      const txAfterStartTime = hub.initUpdate(
+        hubId,
+        curve.address,
+        refundRatio2,
+        encodedCurveDetails
+      );
+      await expect(txAfterStartTime).to.be.revertedWith("already updating");
+      block = await ethers.provider.getBlock("latest");
+      expect(details.startTime).to.be.lt(block.timestamp);
+
+      // fast fwd to endTime - 1
+      await mineBlock(details.endTime.toNumber() - 1);
+      const txBeforeEndTime = hub.initUpdate(
+        hubId,
+        curve.address,
+        refundRatio2,
+        encodedCurveDetails
+      );
+      await expect(txBeforeEndTime).to.be.revertedWith("already updating");
+      block = await ethers.provider.getBlock("latest");
+      expect(details.endTime).to.be.gte(block.timestamp);
+
+      // fast fwd to endTime | duration
+      await mineBlock(details.endTime.toNumber() + 1);
+      const txAfterEndTime = hub.initUpdate(
+        hubId,
+        curve.address,
+        refundRatio2,
+        encodedCurveDetails
+      );
+      await expect(txAfterEndTime).to.be.revertedWith("Still cooling down");
+      block = await ethers.provider.getBlock("latest");
+      expect(details.endTime).to.be.lt(block.timestamp);
+
+      // fast fwd to endCooldown - 2
+      await mineBlock(details.endCooldown.toNumber() - 2);
+      const txBeforeEndCooldown = hub.initUpdate(
+        hubId,
+        curve.address,
+        refundRatio2,
+        encodedCurveDetails
+      );
+      await expect(txBeforeEndCooldown).to.be.revertedWith(
+        "Still cooling down"
+      );
+      block = await ethers.provider.getBlock("latest");
+      expect(details.endTime).to.be.lt(block.timestamp);
     });
 
-    xit("Sets target values to values if finishUpdate() never after from first update", async () => {});
+    it("Should first finishUpdate (if not) before next initUpdate", async () => {
+      let details = await hub.getDetails(1);
+      const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        ["uint32"],
+        [reserveWeight / 2]
+      );
 
-    xit("Can be called a second time after cooldown", async () => {
-      // TODO: fast fwd to after cooldown and call initUpdate()
+      // fast fwd to endCooldown - 2
+      await mineBlock(details.endCooldown.toNumber());
+      const txAfterEndCooldown = await hub.initUpdate(
+        hubId,
+        ethers.constants.AddressZero,
+        0,
+        newEncodedCurveDetails
+      );
+
+      const receipt = await txAfterEndCooldown.wait();
+      let block = await ethers.provider.getBlock("latest");
+      expect(details.endCooldown).to.be.lte(block.timestamp);
+
+      block = await ethers.provider.getBlock(receipt.blockNumber);
+      const expectedStartTime = block.timestamp + duration;
+      const expectedEndTime = block.timestamp + duration + duration;
+      const expectedEndCooldownTime =
+        block.timestamp + duration + duration + duration;
+
+      expect(txAfterEndCooldown)
+        .to.emit(hub, "InitUpdate")
+        .withArgs(
+          hubId,
+          ethers.constants.AddressZero,
+          0,
+          newEncodedCurveDetails,
+          true,
+          expectedStartTime,
+          expectedEndTime,
+          expectedEndCooldownTime
+        );
+
+      details = await hub.getDetails(1);
+      expect(details.active).to.be.equal(true);
+      expect(details.owner).to.be.equal(account0.address);
+      expect(details.vault).to.be.equal(singleAssetVault.address);
+      expect(details.asset).to.be.equal(DAI);
+      expect(details.curve).to.be.equal(curve.address);
+      expect(details.refundRatio).to.be.equal(refundRatio2);
+      expect(details.updating).to.be.equal(true);
+      expect(details.startTime).to.be.equal(expectedStartTime);
+      expect(details.endTime).to.be.equal(expectedEndTime);
+      expect(details.endCooldown).to.be.equal(expectedEndCooldownTime);
+      expect(details.reconfigure).to.be.equal(true);
+      expect(details.targetCurve).to.be.equal(curve.address);
+      expect(details.targetRefundRatio).to.be.equal(0);
     });
   });
 
   describe("cancelUpdate()", () => {
-    xit("Cannot be called by non-owner", async () => {
-      // TODO
+    it("should revert when called by non-owner", async () => {
+      const tx = hub.connect(account1).cancelUpdate(hubId);
+      await expect(tx).to.be.revertedWith("!owner");
     });
-    xit("Can only be called when updating and during the warmup period", async () => {
-      // TODO
+    it("should correctly cancels hub update and resets hub struct update values", async () => {
+      const tx = await hub.cancelUpdate(hubId);
+      await tx.wait();
+
+      expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
+
+      const details = await hub.getDetails(1);
+      expect(details.active).to.be.equal(true);
+      expect(details.owner).to.be.equal(account0.address);
+      expect(details.vault).to.be.equal(singleAssetVault.address);
+      expect(details.asset).to.be.equal(DAI);
+      expect(details.curve).to.be.equal(curve.address);
+      expect(details.refundRatio).to.be.equal(refundRatio2);
+      expect(details.updating).to.be.equal(false);
+      expect(details.startTime).to.be.equal(0);
+      expect(details.endTime).to.be.equal(0);
+      expect(details.endCooldown).to.be.equal(0);
+      expect(details.reconfigure).to.be.equal(false);
+      expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
+      expect(details.targetRefundRatio).to.be.equal(0);
     });
-    xit("Correctly cancels a hub update and resets hub struct update values", async () => {
-      // TODO
+    it("should revert when not updating", async () => {
+      const tx = hub.cancelUpdate(hubId);
+      await expect(tx).to.be.revertedWith("!updating");
     });
+    it("should revert after warmup period");
   });
 
   describe("finishUpdate()", () => {
