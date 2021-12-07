@@ -156,6 +156,7 @@ contract Hub is IHub, Ownable, Initializable {
 
         hub_.targetRefundRatio = 0;
         hub_.reconfigure = false;
+        hub_.targetCurve = address(0);
         hub_.updating = false;
         hub_.startTime = 0;
         hub_.endTime = 0;
