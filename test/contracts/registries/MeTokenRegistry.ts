@@ -50,7 +50,7 @@ describe("MeTokenRegistry.sol", () => {
       await hubSetup(encodedCurveDetails, encodedVaultArgs, 50000, bancorABDK));
   });
 
-  describe("register()", () => {
+  describe("subcribe()", () => {
     it("User can create a meToken with no collateral", async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
@@ -104,6 +104,35 @@ describe("MeTokenRegistry.sol", () => {
       console.log(`    calculatedRes:${calculatedRes}`);
       expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
     });
+  });
+
+  describe("initResubscribe()", () => {
+    it("Fails if msg.sender not meToken owner", async () => {});
+    it("Fails if resubscribing to same hub", async () => {});
+    it("Fails if resubscribing to inactive hub", async () => {});
+    it("Fails if current hub currently updating", async () => {});
+    it("Fails if target hub currently updating", async () => {});
+    it("Fails if attempting to use an unapproved migration", async () => {});
+    it("Fails from invalid _encodedMigrationArgs", async () => {});
+    it("Successfully calls IMigration.initMigration()", async () => {});
+    it("Successfully sets meToken resubscription details", async () => {});
+    it("Emits InitResubscribe()", async () => {});
+  });
+
+  describe("cancelResubscribe()", () => {
+    it("Fails if a called by non-owner", async () => {});
+    it("Fails if meToken not resubscribing", async () => {});
+    it("Fails if resubscription already started", async () => {});
+    it("Successfully resets meToken details", async () => {});
+    it("Emits CancelResubscribe()", async () => {});
+  });
+
+  describe("finishResubscribe()", () => {
+    it("Fails if meToken not resubscribing", async () => {});
+    it("Fails if updating but cooldown not reached", async () => {});
+    it("Succesfully calls IMigration.finishMigration()", async () => {});
+    it("Succesfully updates meToken details", async () => {});
+    it("Emits FinishResubscribe()", async () => {});
   });
 
   describe("transferMeTokenOwnership()", () => {
