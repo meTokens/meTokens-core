@@ -125,12 +125,12 @@ describe("Foundry.sol", () => {
       // Get balances before mint
       let minterDaiBalanceBefore = await dai.balanceOf(account1.address);
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
-      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
-        expectedMeTokensMinted,
-        hubId,
-        0,
-        0
-      );
+      // let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+      //   expectedMeTokensMinted,
+      //   hubId,
+      //   0,
+      //   0
+      // );
       const calculated = calculateCollateralToDepositFromZero(
         toETHNumber(expectedMeTokensMinted),
         toETHNumber(baseY),
@@ -143,10 +143,10 @@ describe("Foundry.sol", () => {
         0.000000000000000000000001
       );
 
-      expect(toETHNumber(amount1)).to.approximately(
-        toETHNumber(expectedAssetsDeposited),
-        0.000000000000000000000001
-      );
+      // expect(toETHNumber(amount1)).to.approximately(
+      //   toETHNumber(expectedAssetsDeposited),
+      //   0.000000000000000000000001
+      // );
 
       // Mint first meTokens to owner account1
       let tx = await meTokenRegistry
@@ -182,12 +182,12 @@ describe("Foundry.sol", () => {
         0,
         0
       );
-      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
-        expectedMeTokensMinted,
-        hubId,
-        0,
-        0
-      );
+      // let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+      //   expectedMeTokensMinted,
+      //   hubId,
+      //   0,
+      //   0
+      // );
       // Get balances before mint
       let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
       let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
@@ -220,10 +220,10 @@ describe("Foundry.sol", () => {
       // Expect balance of vault to have increased by assets deposited
       let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
       expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(amount1);
-      expect(toETHNumber(amount1)).to.be.approximately(
-        toETHNumber(expectedAssetsDeposited),
-        0.000000000000000001
-      );
+      // expect(toETHNumber(amount1)).to.be.approximately(
+      //   toETHNumber(expectedAssetsDeposited),
+      //   0.000000000000000001
+      // );
     });
 
     it("balanceLocked = 0, balancePooled > 0", async () => {

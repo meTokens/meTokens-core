@@ -182,54 +182,6 @@ contract BancorPower is Power, ICurve {
         );
     }
 
-    function viewAssetsDeposited(
-        uint256 _desiredMeTokens,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Bancor memory bancor_ = _bancors[_hubId];
-        if (_supply > 0) {
-            assetsDeposited = _viewAssetsDeposited(
-                _desiredMeTokens,
-                bancor_.reserveWeight,
-                _supply,
-                bancor_.baseY,
-                _balancePooled
-            );
-        } else {
-            assetsDeposited = _viewAssetsDepositedFromZero(
-                _desiredMeTokens,
-                bancor_.reserveWeight,
-                bancor_.baseY
-            );
-        }
-    }
-
-    function viewTargetAssetsDeposited(
-        uint256 _desiredMeTokens,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Bancor memory bancor_ = _bancors[_hubId];
-        if (_supply > 0) {
-            assetsDeposited = _viewAssetsDeposited(
-                _desiredMeTokens,
-                bancor_.targetReserveWeight,
-                _supply,
-                bancor_.targetBaseY,
-                _balancePooled
-            );
-        } else {
-            assetsDeposited = _viewAssetsDepositedFromZero(
-                _desiredMeTokens,
-                bancor_.targetReserveWeight,
-                bancor_.targetBaseY
-            );
-        }
-    }
-
     function _viewMeTokensMinted(
         uint256 _depositAmount,
         uint32 _connectorWeight,
@@ -329,41 +281,5 @@ contract BancorPower is Power, ICurve {
         uint256 oldBalance = _connectorBalance * result;
         uint256 newBalance = _connectorBalance << precision;
         return (oldBalance - newBalance) / result;
-    }
-
-    function _viewAssetsDepositedFromZero(
-        uint256 _desiredMeTokens,
-        uint256 _reserveWeight,
-        uint256 _baseY
-    ) private view returns (uint256) {
-        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
-        bytes16 numerator = _baseY.fromUInt().mul(reserveWeight);
-        // Instead of calculating s ^ exp, we calculate e ^ (log(s) * exp).
-        bytes16 squared = _desiredMeTokens
-            .fromUInt()
-            .ln()
-            .mul(uint256(2).fromUInt())
-            .exp();
-        bytes16 res = numerator.mul(squared).div(_baseX);
-        return res.toUInt();
-    }
-
-    function _viewAssetsDeposited(
-        uint256 _desiredMeTokens,
-        uint256 _reserveWeight,
-        uint256 _supply,
-        uint256 _baseY,
-        uint256 _balancePooled
-    ) private view returns (uint256) {
-        // TODO: does this need to be divided?
-        bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
-        bytes16 k = _baseY.fromUInt().mul(reserveWeight).div(_baseX);
-        bytes16 squared = (_supply + _desiredMeTokens)
-            .fromUInt()
-            .ln()
-            .mul(uint256(2).fromUInt())
-            .exp();
-        bytes16 res = k.mul(squared).sub(_balancePooled.fromUInt());
-        return res.toUInt();
     }
 }

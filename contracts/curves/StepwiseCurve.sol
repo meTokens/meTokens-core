@@ -169,38 +169,6 @@ contract StepwiseCurve is ICurve {
         );
     }
 
-    function viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
-            _supply,
-            _balancePooled
-        );
-    }
-
-    function viewTargetAssetsDeposited(
-        uint256 _desiredMeTokensMinted,
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled
-    ) external view override returns (uint256 assetsDeposited) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
-        assetsDeposited = _viewAssetsDeposited(
-            _desiredMeTokensMinted,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
-            _supply,
-            _balancePooled
-        );
-    }
-
     /// @notice Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @param _assetsDeposited, // assets deposited
@@ -294,27 +262,5 @@ contract StepwiseCurve is ICurve {
             balancePooledAtStepsAfterBurn -
             supplyAtStepAfterBurn *
             _stepY;
-    }
-
-    function _viewAssetsDeposited(
-        uint256 _desiredMeTokensMinted, // desired meTokens Minted
-        uint256 _stepX, // length of step (aka supply duration)
-        uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
-    ) private pure returns (uint256) {
-        uint256 stepsAfterMint = (_supply + _desiredMeTokensMinted) / _stepX;
-        uint256 stepSupplyAfterMint = _supply - (stepsAfterMint * _stepX);
-        uint256 stepBalanceAfterMint = ((stepsAfterMint *
-            stepsAfterMint +
-            stepsAfterMint) / 2) *
-            _stepX *
-            _stepY;
-
-        return
-            stepBalanceAfterMint +
-            stepSupplyAfterMint *
-            _stepY -
-            _balancePooled;
     }
 }
