@@ -24,24 +24,7 @@ import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/sta
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 
 describe("BancorABDK", () => {
-  let DAI: string;
-  let weightedAverage: WeightedAverage;
-  let meTokenRegistry: MeTokenRegistry;
-  let meTokenFactory: MeTokenFactory;
   let bancorABDK: BancorABDK;
-  let curveRegistry: CurveRegistry;
-  let vaultRegistry: VaultRegistry;
-  let migrationRegistry: MigrationRegistry;
-  let singleAssetVault: SingleAssetVault;
-  let foundry: Foundry;
-  let hub: Hub;
-  let dai: ERC20;
-  let account0: SignerWithAddress;
-  let account1: SignerWithAddress;
-  let account2: SignerWithAddress;
-  let daiHolder: Signer;
-  let DAIWhale: string;
-  const decimals = 18;
   const one = ethers.utils.parseEther("1");
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
@@ -65,23 +48,12 @@ describe("BancorABDK", () => {
     bancorABDK = await deploy<BancorABDK>("BancorABDK");
     let token;
 
-    ({
-      token,
-      hub,
-      curveRegistry,
-      migrationRegistry,
-      foundry,
-      account0,
-      account1,
-      account2,
-      meTokenRegistry,
-    } = await hubSetup(
+    ({ token } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
       bancorABDK
     ));
-    dai = token;
   });
 
   it("viewMeTokensMinted() from zero should work", async () => {
@@ -379,23 +351,12 @@ describe("BancorABDK", () => {
       );
       newBancorABDK = await deploy<BancorABDK>("BancorABDK");
 
-      ({
-        token,
-        hub,
-        curveRegistry,
-        migrationRegistry,
-        foundry,
-        account0,
-        account1,
-        account2,
-        meTokenRegistry,
-      } = await hubSetup(
+      ({ token } = await hubSetup(
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
         newBancorABDK
       ));
-      dai = token;
     });
     it("viewMeTokensMinted() from zero should work", async () => {
       let amount = one.mul(100);

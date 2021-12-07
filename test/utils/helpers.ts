@@ -357,6 +357,12 @@ export const calculateCollateralReturned = (
   balancePooled: number,
   reserveWeight: number
 ) => {
+  console.log(`
+  calculateCollateralReturned 
+  meTokenBurned   :${meTokenBurned}
+  meTokenSupply   :${meTokenSupply}
+  `);
+  if (meTokenBurned == meTokenSupply) return balancePooled;
   const _meTokenBurned = new Decimal(meTokenBurned);
   const _meTokenSupply = new Decimal(meTokenSupply);
   const _balancePooled = new Decimal(balancePooled);
