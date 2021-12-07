@@ -11,6 +11,7 @@ import "./interfaces/ICurve.sol";
 import "./interfaces/IFoundry.sol";
 
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
@@ -50,7 +51,10 @@ contract Hub is IHub, Ownable, Initializable {
         bytes memory _encodedVaultArgs
     ) external override {
         // TODO: access control
-
+        console.log(
+            "## approved:%s",
+            vaultRegistry.isApproved(address(_vault))
+        );
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
@@ -90,15 +94,15 @@ contract Hub is IHub, Ownable, Initializable {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            Details.Hub memory hubUpdated = finishUpdate(_id);
-            hub_.refundRatio = hubUpdated.refundRatio;
+            finishUpdate(_id);
+            /*   hub_.refundRatio = hubUpdated.refundRatio;
             hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
             hub_.curve = hubUpdated.curve;
             hub_.targetCurve = hubUpdated.targetCurve;
             hub_.reconfigure = hubUpdated.reconfigure;
             hub_.updating = hubUpdated.updating;
             hub_.startTime = hubUpdated.startTime;
-            hub_.endTime = hubUpdated.endTime;
+            hub_.endTime = hubUpdated.endTime; */
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
@@ -122,6 +126,7 @@ contract Hub is IHub, Ownable, Initializable {
                     curveRegistry.isApproved(_targetCurve),
                     "_targetCurve !approved"
                 );
+                require(_targetCurve != hub_.curve, "targetCurve==curve");
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
             }

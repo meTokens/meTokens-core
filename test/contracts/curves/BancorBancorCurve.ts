@@ -24,24 +24,8 @@ import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
 
 describe("BancorPowerCurve", () => {
-  let DAI: string;
-  let weightedAverage: WeightedAverage;
-  let meTokenRegistry: MeTokenRegistry;
-  let meTokenFactory: MeTokenFactory;
   let bancorABDK: BancorPower;
-  let curveRegistry: CurveRegistry;
-  let vaultRegistry: VaultRegistry;
-  let migrationRegistry: MigrationRegistry;
-  let singleAssetVault: SingleAssetVault;
-  let foundry: Foundry;
-  let hub: Hub;
   let dai: ERC20;
-  let account0: SignerWithAddress;
-  let account1: SignerWithAddress;
-  let account2: SignerWithAddress;
-  let daiHolder: Signer;
-  let DAIWhale: string;
-  const decimals = 18;
   const one = ethers.utils.parseEther("1");
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
@@ -62,21 +46,9 @@ describe("BancorPowerCurve", () => {
       ["address"],
       [DAI]
     );
-    // bancorABDK = await deploy<BancorPower>("BancorPower");
     let token;
     bancorABDK = await deploy<BancorPower>("BancorPower");
-
-    ({
-      token,
-      hub,
-      curveRegistry,
-      migrationRegistry,
-      foundry,
-      account0,
-      account1,
-      account2,
-      meTokenRegistry,
-    } = await hubSetup(
+    ({ token } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
@@ -380,18 +352,7 @@ describe("BancorPowerCurve", () => {
         [DAI]
       );
       newBancorABDK = await deploy<BancorPower>("BancorPower");
-
-      ({
-        token,
-        hub,
-        curveRegistry,
-        migrationRegistry,
-        foundry,
-        account0,
-        account1,
-        account2,
-        meTokenRegistry,
-      } = await hubSetup(
+      ({ token } = await hubSetup(
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
