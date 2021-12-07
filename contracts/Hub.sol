@@ -91,15 +91,7 @@ contract Hub is IHub, Ownable, Initializable {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            Details.Hub memory hubUpdated = finishUpdate(_id);
-            hub_.refundRatio = hubUpdated.refundRatio;
-            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
-            hub_.curve = hubUpdated.curve;
-            hub_.targetCurve = hubUpdated.targetCurve;
-            hub_.reconfigure = hubUpdated.reconfigure;
-            hub_.updating = hubUpdated.updating;
-            hub_.startTime = hubUpdated.startTime;
-            hub_.endTime = hubUpdated.endTime;
+            finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
@@ -120,6 +112,7 @@ contract Hub is IHub, Ownable, Initializable {
                 _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
             );
+            hub_.targetRefundRatio = _targetRefundRatio;
         }
         bool reconfigure;
         if (_encodedCurveDetails.length > 0) {
@@ -134,10 +127,6 @@ contract Hub is IHub, Ownable, Initializable {
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
             }
-        }
-
-        if (_targetRefundRatio != 0) {
-            hub_.targetRefundRatio = _targetRefundRatio;
         }
 
         hub_.reconfigure = reconfigure;
