@@ -64,6 +64,82 @@ export async function hubSetup(
   tokenHolder: Signer;
   tokenWhale: string;
 }> {
+  const {
+    tokenAddr,
+    weightedAverage,
+    meTokenRegistry,
+    meTokenFactory,
+    curveRegistry,
+    vaultRegistry,
+    migrationRegistry,
+    singleAssetVault,
+    foundry,
+    fee,
+    hub,
+    token,
+    account0,
+    account1,
+    account2,
+    account3,
+    tokenHolder,
+    tokenWhale,
+  } = await hubSetupWithoutRegister(curve, fees, erc20Address, erc20Whale);
+
+  await hub.register(
+    account0.address,
+    tokenAddr,
+    singleAssetVault.address,
+    curve.address,
+    refundRatio, //refund ratio
+    encodedCurveDetails,
+    encodedVaultArgs
+  );
+  return {
+    tokenAddr,
+    weightedAverage,
+    meTokenRegistry,
+    meTokenFactory,
+    curveRegistry,
+    vaultRegistry,
+    migrationRegistry,
+    singleAssetVault,
+    foundry,
+    fee,
+    hub,
+    token,
+    account0,
+    account1,
+    account2,
+    account3,
+    tokenHolder,
+    tokenWhale,
+  };
+}
+export async function hubSetupWithoutRegister(
+  curve: ICurve,
+  fees?: number[],
+  erc20Address?: string,
+  erc20Whale?: string
+): Promise<{
+  tokenAddr: string;
+  weightedAverage: WeightedAverage;
+  meTokenRegistry: MeTokenRegistry;
+  meTokenFactory: MeTokenFactory;
+  curveRegistry: CurveRegistry;
+  vaultRegistry: VaultRegistry;
+  migrationRegistry: MigrationRegistry;
+  singleAssetVault: SingleAssetVault;
+  foundry: Foundry;
+  hub: Hub;
+  token: ERC20;
+  fee: Fees;
+  account0: SignerWithAddress;
+  account1: SignerWithAddress;
+  account2: SignerWithAddress;
+  account3: SignerWithAddress;
+  tokenHolder: Signer;
+  tokenWhale: string;
+}> {
   if (!erc20Address || !erc20Whale) {
     let DAI;
     let DAIWhale;
@@ -134,15 +210,6 @@ export async function hubSetup(
     curveRegistry.address
   );
 
-  await hub.register(
-    account0.address,
-    tokenAddr,
-    singleAssetVault.address,
-    curve.address,
-    refundRatio, //refund ratio
-    encodedCurveDetails,
-    encodedVaultArgs
-  );
   return {
     tokenAddr,
     weightedAverage,
