@@ -6,10 +6,14 @@ import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BancorZeroCurve } from "../../artifacts/types/BancorZeroCurve";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { deploy } from "../utils/helpers";
+import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetupWithoutRegister } from "../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
+import { ERC20 } from "../../artifacts/types/ERC20";
+import { Signer } from "@ethersproject/abstract-signer";
+import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeToken } from "../../artifacts/types/MeToken";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -27,6 +31,7 @@ describe("Hub.sol", () => {
   let WETH: string;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
   let curve: BancorZeroCurve;
   let foundry: Foundry;
   let hub: Hub;
@@ -36,6 +41,11 @@ describe("Hub.sol", () => {
   let encodedVaultDAIArgs: string;
   let encodedVaultWETHArgs: string;
   let encodedCurveDetails: string;
+  let token: ERC20;
+  let dai: ERC20;
+  let tokenHolder: Signer;
+  let meTokenRegistry: MeTokenRegistry;
+  let meToken: MeToken;
 
   const hubId = 1;
   const refundRatio1 = 250000;
@@ -46,6 +56,9 @@ describe("Hub.sol", () => {
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
   const baseY = PRECISION.div(1000);
+  const amount = ethers.utils.parseEther("100");
+  const name = "Carl meToken";
+  const symbol = "CARL";
 
   before(async () => {
     ({ DAI, WETH } = await getNamedAccounts());
@@ -63,10 +76,14 @@ describe("Hub.sol", () => {
     );
     curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
     ({
+      token,
+      tokenHolder,
       hub,
       foundry,
       account0,
       account1,
+      account2,
+      meTokenRegistry,
       vaultRegistry,
       curveRegistry,
       singleAssetVault,
@@ -220,6 +237,26 @@ describe("Hub.sol", () => {
   });
 
   describe("setWarmup()", () => {
+    before(async () => {
+      // required in later testing
+
+      dai = token;
+      await dai.connect(tokenHolder).transfer(account0.address, amount);
+      await dai.connect(tokenHolder).transfer(account1.address, amount);
+      await dai.connect(tokenHolder).transfer(account2.address, amount);
+      await dai.connect(account1).approve(foundry.address, amount);
+      await dai.connect(account2).approve(foundry.address, amount);
+      await dai.connect(account1).approve(meTokenRegistry.address, amount);
+      // account0 is registering a metoken
+      const tx = await meTokenRegistry
+        .connect(account0)
+        .subscribe(name, symbol, hubId, 0);
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    });
     it("Should revert to setWarmup if not owner", async () => {
       const tx = hub.connect(account1).setWarmup(duration);
       await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
@@ -588,9 +625,6 @@ describe("Hub.sol", () => {
   });
 
   describe("finishUpdate()", () => {
-    xit("Should revert if all arguments are the same", async () => {
-      // TODO
-    });
     it("should revert before endTime, during warmup and duration", async () => {
       // increase time before endTime
       const details = await hub.getDetails(hubId);
@@ -603,22 +637,6 @@ describe("Hub.sol", () => {
       await expect(hub.finishUpdate(hubId)).to.be.revertedWith(
         "Still updating"
       );
-    });
-
-    xit("Trigger once when mint() called during cooldown", async () => {
-      // TODO
-    });
-
-    xit("Trigger once when burn() called during cooldown", async () => {
-      // TODO
-    });
-
-    xit("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
-      // TODO first mint should finish update.
-    });
-
-    xit("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
-      // TODO no more updating, should not call finish
     });
 
     it("should correctly set HubDetails when called during cooldown", async () => {
@@ -647,6 +665,96 @@ describe("Hub.sol", () => {
       expect(newDetails.reconfigure).to.be.equal(false);
       expect(newDetails.targetCurve).to.be.equal(ethers.constants.AddressZero);
       expect(newDetails.targetRefundRatio).to.be.equal(0);
+    });
+
+    describe("finishUpdate() from mint | burn", () => {
+      let toggle = false; // for generating different weight each time
+      beforeEach(async () => {
+        const oldDetails = await hub.getDetails(hubId);
+        await mineBlock(oldDetails.endCooldown.toNumber() + 10);
+
+        const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+          ["uint32"],
+          [reserveWeight / (toggle ? 2 : 1)]
+        );
+        toggle = !toggle;
+        const tx = await hub.initUpdate(
+          hubId,
+          ethers.constants.AddressZero,
+          0,
+          newEncodedCurveDetails
+        );
+        await tx.wait();
+
+        // increase time after endTime
+        const details = await hub.getDetails(hubId);
+        await mineBlock(details.endTime.toNumber() + 2);
+        const block = await ethers.provider.getBlock("latest");
+        expect(details.endTime).to.be.lt(block.timestamp);
+        expect(details.endCooldown).to.be.gt(block.timestamp);
+      });
+
+      it("Trigger once when mint() called during cooldown", async () => {
+        const amount = ethers.utils.parseEther("100");
+        await dai.connect(tokenHolder).transfer(account2.address, amount);
+        // need an approve of metoken registry first
+        await dai.connect(account2).approve(foundry.address, amount);
+
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+
+        await tx.wait();
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
+      });
+
+      it("Trigger once when burn() called during cooldown", async () => {
+        const amount = ethers.utils.parseEther("10");
+
+        const tx = await foundry
+          .connect(account2)
+          .burn(meToken.address, amount, account2.address);
+
+        await tx.wait();
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
+      });
+
+      it("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
+        // increase time after endCooldown
+        const details = await hub.getDetails(hubId);
+        await mineBlock(details.endCooldown.toNumber() + 2);
+        const block = await ethers.provider.getBlock("latest");
+        expect(details.endCooldown).to.be.lt(block.timestamp);
+
+        const amount = ethers.utils.parseEther("100");
+        await dai.connect(tokenHolder).transfer(account2.address, amount);
+        // need an approve of metoken registry first
+        await dai.connect(account2).approve(foundry.address, amount);
+
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+
+        await tx.wait();
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
+      });
+
+      it("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
+        // increase time after endCooldown
+        const details = await hub.getDetails(hubId);
+        await mineBlock(details.endCooldown.toNumber() + 2);
+        const block = await ethers.provider.getBlock("latest");
+        expect(details.endCooldown).to.be.lt(block.timestamp);
+
+        const amount = ethers.utils.parseEther("10");
+
+        const tx = await foundry
+          .connect(account2)
+          .burn(meToken.address, amount, account2.address);
+
+        await tx.wait();
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
+      });
     });
   });
 
