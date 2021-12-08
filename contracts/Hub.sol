@@ -97,9 +97,7 @@ contract Hub is IHub, Ownable, Initializable {
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (_targetRefundRatio != 0) ||
-                (_targetCurve != hub_.curve) ||
-                (_encodedCurveDetails.length > 0),
+            (_targetRefundRatio != 0) || (_encodedCurveDetails.length > 0),
             "Nothing to update"
         );
 
