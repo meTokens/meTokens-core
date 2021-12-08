@@ -168,7 +168,7 @@ contract Hub is IHub, Ownable, Initializable {
     function transferHubOwnership(uint256 _id, address _newOwner) external {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
-        require(msg.sender != hub_.owner, "Same owner");
+        require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
 
         emit TransferHubOwnership(_id, _newOwner);
