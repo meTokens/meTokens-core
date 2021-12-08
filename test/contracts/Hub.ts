@@ -139,8 +139,6 @@ describe("Hub.sol", () => {
         encodedVaultDAIArgs
       );
       await expect(tx).to.be.revertedWith("!_encodedDetails");
-
-      // TODO as this revert is caused by external contracts, do they need to be covered here?
     });
     it("Should revert from invalid encodedVaultArgs", async () => {
       // Invalid _encodedVaultArgs
@@ -192,7 +190,7 @@ describe("Hub.sol", () => {
       );
       await tx.wait();
 
-      expect(tx)
+      await expect(tx)
         .to.emit(hub, "Register")
         .withArgs(
           account0.address,
@@ -283,7 +281,6 @@ describe("Hub.sol", () => {
     it("Should revert when nothing to update", async () => {
       const tx = hub.initUpdate(hubId, curve.address, 0, "0x");
       await expect(tx).to.be.revertedWith("Nothing to update");
-      // FIXME Hub.sol, -109 fix the require conditions
     });
 
     it("Should revert from invalid _refundRatio", async () => {
@@ -315,7 +312,6 @@ describe("Hub.sol", () => {
         badEncodedCurveDetails
       );
       await expect(tx).to.be.revertedWith("!reserveWeight");
-      // TODO as this revert is caused by external contracts, do they need to be covered here?
     });
 
     it("Should revert when curve is not approved", async () => {
@@ -340,7 +336,6 @@ describe("Hub.sol", () => {
         badEncodedCurveDetails
       );
       await expect(tx).to.be.revertedWith("!baseY");
-      // TODO as this revert is caused by external contracts, do they need to be covered here?
     });
 
     it("Should be able to initUpdate with new refundRatio", async () => {
@@ -357,7 +352,7 @@ describe("Hub.sol", () => {
       const expectedEndCooldownTime =
         block.timestamp + duration + duration + duration;
 
-      expect(tx)
+      await expect(tx)
         .to.emit(hub, "InitUpdate")
         .withArgs(
           hubId,
@@ -452,18 +447,14 @@ describe("Hub.sol", () => {
 
     it("Should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
       let details = await hub.getDetails(hubId);
-      const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint32"],
-        [reserveWeight / 2]
-      );
 
       // fast fwd to endCooldown - 2
       await mineBlock(details.endCooldown.toNumber());
       const txAfterEndCooldown = await hub.initUpdate(
         hubId,
         ethers.constants.AddressZero,
-        0,
-        newEncodedCurveDetails
+        refundRatio1,
+        "0x"
       );
 
       const receipt = await txAfterEndCooldown.wait();
@@ -476,16 +467,16 @@ describe("Hub.sol", () => {
       const expectedEndCooldownTime =
         block.timestamp + duration + duration + duration;
 
-      expect(txAfterEndCooldown)
+      await expect(txAfterEndCooldown)
         .to.emit(hub, "FinishUpdate")
         .withArgs(1)
         .to.emit(hub, "InitUpdate")
         .withArgs(
           hubId,
           ethers.constants.AddressZero,
-          0,
-          newEncodedCurveDetails,
-          true,
+          refundRatio1,
+          "0x",
+          false,
           expectedStartTime,
           expectedEndTime,
           expectedEndCooldownTime
@@ -502,9 +493,9 @@ describe("Hub.sol", () => {
       expect(details.startTime).to.be.equal(expectedStartTime);
       expect(details.endTime).to.be.equal(expectedEndTime);
       expect(details.endCooldown).to.be.equal(expectedEndCooldownTime);
-      expect(details.reconfigure).to.be.equal(true);
+      expect(details.reconfigure).to.be.equal(false);
       expect(details.targetCurve).to.be.equal(curve.address);
-      expect(details.targetRefundRatio).to.be.equal(0);
+      expect(details.targetRefundRatio).to.be.equal(refundRatio1);
     });
   });
 
@@ -517,7 +508,7 @@ describe("Hub.sol", () => {
       const tx = await hub.cancelUpdate(hubId);
       await tx.wait();
 
-      expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
+      await expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
 
       const details = await hub.getDetails(hubId);
       expect(details.active).to.be.equal(true);
@@ -557,7 +548,7 @@ describe("Hub.sol", () => {
       const expectedEndCooldownTime =
         block.timestamp + duration + duration + duration;
 
-      expect(tx)
+      await expect(tx)
         .to.emit(hub, "InitUpdate")
         .withArgs(
           hubId,
@@ -597,7 +588,7 @@ describe("Hub.sol", () => {
   });
 
   describe("finishUpdate()", () => {
-    it("Should revert if all arguments are the same", async () => {
+    xit("Should revert if all arguments are the same", async () => {
       // TODO
     });
     it("should revert before endTime, during warmup and duration", async () => {
@@ -614,20 +605,20 @@ describe("Hub.sol", () => {
       );
     });
 
-    it("Trigger once when mint() called during cooldown", async () => {
+    xit("Trigger once when mint() called during cooldown", async () => {
       // TODO
     });
 
-    it("Trigger once when burn() called during cooldown", async () => {
+    xit("Trigger once when burn() called during cooldown", async () => {
       // TODO
     });
 
-    it("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
-      // TODO
+    xit("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
+      // TODO first mint should finish update.
     });
 
-    it("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
-      // TODO
+    xit("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
+      // TODO no more updating, should not call finish
     });
 
     it("should correctly set HubDetails when called during cooldown", async () => {
@@ -640,7 +631,7 @@ describe("Hub.sol", () => {
       const finishUpdateTx = await hub.finishUpdate(hubId);
       await finishUpdateTx.wait();
 
-      expect(finishUpdateTx).to.emit(hub, "FinishUpdate").withArgs(hubId);
+      await expect(finishUpdateTx).to.emit(hub, "FinishUpdate").withArgs(hubId);
 
       const newDetails = await hub.getDetails(hubId);
       expect(newDetails.active).to.be.equal(true);
@@ -656,12 +647,6 @@ describe("Hub.sol", () => {
       expect(newDetails.reconfigure).to.be.equal(false);
       expect(newDetails.targetCurve).to.be.equal(ethers.constants.AddressZero);
       expect(newDetails.targetRefundRatio).to.be.equal(0);
-    });
-    it("Correctly set HubDetails when called after cooldown", async () => {
-      // TODO Not required as would be same as above
-    });
-    it("Correctly set HubDetails when called during second initUpdate()", async () => {
-      // TODO Covered in initUpdate() describe
     });
   });
 
@@ -683,7 +668,7 @@ describe("Hub.sol", () => {
       );
       await transferHubOwnershipTx.wait();
 
-      expect(transferHubOwnershipTx)
+      await expect(transferHubOwnershipTx)
         .to.emit(hub, "TransferHubOwnership")
         .withArgs(hubId, account1.address);
 
