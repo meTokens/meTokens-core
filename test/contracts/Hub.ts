@@ -119,7 +119,7 @@ describe("Hub.sol", () => {
   });
 
   describe("register()", () => {
-    it("Should revert from invalid address arguments", async () => {
+    it("should revert from invalid address arguments", async () => {
       // Un-approved curve
       let tx = hub.register(
         account0.address,
@@ -144,7 +144,7 @@ describe("Hub.sol", () => {
       );
       await expect(tx).to.be.revertedWith("_vault !approved");
     });
-    it("Should revert from invalid encodedCurveDetails", async () => {
+    it("should revert from invalid encodedCurveDetails", async () => {
       // Invalid _encodedCurveDetails for particular curve
       let tx = hub.register(
         account0.address,
@@ -157,7 +157,7 @@ describe("Hub.sol", () => {
       );
       await expect(tx).to.be.revertedWith("!_encodedDetails");
     });
-    it("Should revert from invalid encodedVaultArgs", async () => {
+    it("should revert from invalid encodedVaultArgs", async () => {
       // Invalid _encodedVaultArgs
       const tx = hub.register(
         account0.address,
@@ -170,7 +170,7 @@ describe("Hub.sol", () => {
       );
       await expect(tx).to.be.revertedWith("asset !valid");
     });
-    it("Should revert from invalid _refundRatio", async () => {
+    it("should revert from invalid _refundRatio", async () => {
       // _refundRatio > MAX_REFUND_RATIO
       let tx = hub.register(
         account0.address,
@@ -195,7 +195,7 @@ describe("Hub.sol", () => {
       );
       await expect(tx).to.be.revertedWith("_refundRatio == 0");
     });
-    it("Should be able to register", async () => {
+    it("should be able to register", async () => {
       const tx = await hub.register(
         account0.address,
         DAI,
@@ -257,16 +257,16 @@ describe("Hub.sol", () => {
 
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
     });
-    it("Should revert to setWarmup if not owner", async () => {
+    it("should revert to setWarmup if not owner", async () => {
       const tx = hub.connect(account1).setWarmup(duration);
       await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
     });
-    it("Should revert to setWarmup if same as before", async () => {
+    it("should revert to setWarmup if same as before", async () => {
       const oldWarmup = await hub.getWarmup();
       const tx = hub.setWarmup(oldWarmup);
       await expect(tx).to.be.revertedWith("warmup_ == _warmup");
     });
-    it("Should be able to setWarmup", async () => {
+    it("should be able to setWarmup", async () => {
       const tx = await hub.setWarmup(duration);
       await tx.wait();
       expect(await hub.getWarmup()).to.be.equal(duration);
@@ -274,16 +274,16 @@ describe("Hub.sol", () => {
   });
 
   describe("setDuration()", () => {
-    it("Should revert to setDuration if not owner", async () => {
+    it("should revert to setDuration if not owner", async () => {
       const tx = hub.connect(account1).setDuration(duration);
       await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
     });
-    it("Should revert to setDuration if same as before", async () => {
+    it("should revert to setDuration if same as before", async () => {
       const oldWarmup = await hub.getDuration();
       const tx = hub.setDuration(oldWarmup);
       await expect(tx).to.be.revertedWith("duration_ == _duration");
     });
-    it("Should be able to setDuration", async () => {
+    it("should be able to setDuration", async () => {
       const tx = await hub.setDuration(duration);
       await tx.wait();
       expect(await hub.getDuration()).to.be.equal(duration);
@@ -291,16 +291,16 @@ describe("Hub.sol", () => {
   });
 
   describe("setCooldown()", () => {
-    it("Should revert to setCooldown if not owner", async () => {
+    it("should revert to setCooldown if not owner", async () => {
       const tx = hub.connect(account1).setCooldown(duration);
       await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
     });
-    it("Should revert to setCooldown if same as before", async () => {
+    it("should revert to setCooldown if same as before", async () => {
       const oldWarmup = await hub.getCooldown();
       const tx = hub.setCooldown(oldWarmup);
       await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
     });
-    it("Should be able to setCooldown", async () => {
+    it("should be able to setCooldown", async () => {
       const tx = await hub.setCooldown(duration);
       await tx.wait();
       expect(await hub.getCooldown()).to.be.equal(duration);
@@ -308,19 +308,19 @@ describe("Hub.sol", () => {
   });
 
   describe("initUpdate()", () => {
-    it("Should revert when sender is not owner", async () => {
+    it("should revert when sender is not owner", async () => {
       const tx = hub
         .connect(account1)
         .initUpdate(hubId, curve.address, refundRatio2, encodedCurveDetails);
       await expect(tx).to.be.revertedWith("!owner");
     });
 
-    it("Should revert when nothing to update", async () => {
+    it("should revert when nothing to update", async () => {
       const tx = hub.initUpdate(hubId, curve.address, 0, "0x");
       await expect(tx).to.be.revertedWith("Nothing to update");
     });
 
-    it("Should revert from invalid _refundRatio", async () => {
+    it("should revert from invalid _refundRatio", async () => {
       const tx1 = hub.initUpdate(
         hubId,
         curve.address,
@@ -337,7 +337,7 @@ describe("Hub.sol", () => {
       await expect(tx2).to.be.revertedWith("_targetRefundRatio == refundRatio");
     });
 
-    it("Should revert on ICurve.initReconfigure() from invalid encodedCurveDetails", async () => {
+    it("should revert on ICurve.initReconfigure() from invalid encodedCurveDetails", async () => {
       const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint32"],
         [0]
@@ -351,7 +351,7 @@ describe("Hub.sol", () => {
       await expect(tx).to.be.revertedWith("!reserveWeight");
     });
 
-    it("Should revert when curve is not approved", async () => {
+    it("should revert when curve is not approved", async () => {
       const tx = hub.initUpdate(
         hubId,
         account0.address, // invalid curve address
@@ -361,7 +361,7 @@ describe("Hub.sol", () => {
       await expect(tx).to.be.revertedWith("_targetCurve !approved");
     });
 
-    it("Should revert on ICurve.register() from invalid encodedCurveDetails", async () => {
+    it("should revert on ICurve.register() from invalid encodedCurveDetails", async () => {
       const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [0, 0]
@@ -375,7 +375,7 @@ describe("Hub.sol", () => {
       await expect(tx).to.be.revertedWith("!baseY");
     });
 
-    it("Should be able to initUpdate with new refundRatio", async () => {
+    it("should be able to initUpdate with new refundRatio", async () => {
       const tx = await hub.initUpdate(
         hubId,
         curve.address,
@@ -418,7 +418,7 @@ describe("Hub.sol", () => {
       expect(details.targetRefundRatio).to.be.equal(refundRatio2);
     });
 
-    it("Should revert to called during warmup, duration, and cooldown", async () => {
+    it("should revert to called during warmup, duration, and cooldown", async () => {
       // calling initUpdate() to revert
       const txBeforeStartTime = hub.initUpdate(
         hubId,
@@ -482,7 +482,7 @@ describe("Hub.sol", () => {
       expect(details.endTime).to.be.lt(block.timestamp);
     });
 
-    it("Should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
+    it("should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
       let details = await hub.getDetails(hubId);
 
       // fast fwd to endCooldown - 2
@@ -694,7 +694,7 @@ describe("Hub.sol", () => {
         expect(details.endCooldown).to.be.gt(block.timestamp);
       });
 
-      it("Trigger once when mint() called during cooldown", async () => {
+      it("should trigger finishUpdate() once when mint() called during cooldown", async () => {
         const amount = ethers.utils.parseEther("100");
         await dai.connect(tokenHolder).transfer(account2.address, amount);
         // need an approve of metoken registry first
@@ -708,7 +708,7 @@ describe("Hub.sol", () => {
         await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
       });
 
-      it("Trigger once when burn() called during cooldown", async () => {
+      it("should trigger finishUpdate() once when burn() called during cooldown", async () => {
         const amount = ethers.utils.parseEther("10");
 
         const tx = await foundry
@@ -719,7 +719,7 @@ describe("Hub.sol", () => {
         await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
       });
 
-      it("Trigger once when mint() called if no mint() / burn() called during cooldown", async () => {
+      it("should trigger finishUpdate() once after cooldown when mint() called if no mint() / burn() called during cooldown", async () => {
         // increase time after endCooldown
         const details = await hub.getDetails(hubId);
         await mineBlock(details.endCooldown.toNumber() + 2);
@@ -739,7 +739,7 @@ describe("Hub.sol", () => {
         await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
       });
 
-      it("Trigger once when burn() called if no mint() / burn() called during cooldown", async () => {
+      it("should trigger finishUpdate() once after cooldown when burn() called if no mint() / burn() called during cooldown", async () => {
         // increase time after endCooldown
         const details = await hub.getDetails(hubId);
         await mineBlock(details.endCooldown.toNumber() + 2);
