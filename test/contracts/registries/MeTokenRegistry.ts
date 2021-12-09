@@ -22,6 +22,7 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Fees } from "../../../artifacts/types/Fees";
+import { mineBlock } from "../../utils/hardhatNode";
 
 describe("MeTokenRegistry.sol", () => {
   let meTokenAddr0: string;
@@ -59,6 +60,7 @@ describe("MeTokenRegistry.sol", () => {
   const warmup = 2 * 60 * 24 * 24; // 2 days
   const duration = 4 * 60 * 24 * 24; // 4 days
   const coolDown = 5 * 60 * 24 * 24; // 5 days
+  let block: any;
   before(async () => {
     let DAI;
     ({ DAI } = await getNamedAccounts());
@@ -111,6 +113,21 @@ describe("MeTokenRegistry.sol", () => {
   });
 
   describe("subscribe()", () => {
+    it("should revert when hub is updating", async () => {
+      await hub.initUpdate(hubId, bancorABDK.address, refundRatio / 2, "0x");
+      const name = "Carl0 meToken";
+      const symbol = "CARL";
+      const assetsDeposited = 0;
+
+      const tx = meTokenRegistry.subscribe(
+        name,
+        symbol,
+        hubId,
+        assetsDeposited
+      );
+      await expect(tx).to.be.revertedWith("Hub updating");
+      await hub.cancelUpdate(hubId);
+    });
     it("User can create a meToken with no collateral", async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
@@ -262,7 +279,7 @@ describe("MeTokenRegistry.sol", () => {
       await expect(tx).to.be.revertedWith("duration_ == _duration");
     });
     it("should revert when warmup + duration > hub's warmup", async () => {
-      const tx = meTokenRegistry.setWarmup(hubWarmup);
+      const tx = meTokenRegistry.setDuration(hubWarmup);
       await expect(tx).to.be.revertedWith("too long");
     });
     it("should be able to setDuration", async () => {
@@ -330,8 +347,34 @@ describe("MeTokenRegistry.sol", () => {
       );
       await expect(tx).to.be.revertedWith("targetHub inactive");
     });
-    xit("Fails if current hub currently updating", async () => {});
-    xit("Fails if target hub currently updating", async () => {});
+    it("Fails if current hub currently updating", async () => {
+      await (
+        await hub.initUpdate(hubId, bancorABDK.address, refundRatio / 2, "0x")
+      ).wait();
+
+      const tx = meTokenRegistry.initResubscribe(
+        meTokenAddr0,
+        hubId2,
+        ethers.constants.AddressZero,
+        "0x"
+      );
+      await expect(tx).to.be.revertedWith("hub updating");
+      await (await hub.cancelUpdate(hubId)).wait();
+    });
+    it("Fails if target hub currently updating", async () => {
+      await (
+        await hub.initUpdate(hubId2, bancorABDK.address, refundRatio / 2, "0x")
+      ).wait();
+
+      const tx = meTokenRegistry.initResubscribe(
+        meTokenAddr0,
+        hubId2,
+        ethers.constants.AddressZero,
+        "0x"
+      );
+      await expect(tx).to.be.revertedWith("targetHub updating");
+      await (await hub.cancelUpdate(hubId2)).wait();
+    });
     xit("Fails if attempting to use an unapproved migration", async () => {});
     xit("Fails from invalid _encodedMigrationArgs", async () => {});
     it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
@@ -368,15 +411,89 @@ describe("MeTokenRegistry.sol", () => {
       expect(meTokenRegistryDetails.targetHubId).to.equal(targetHubId);
       expect(meTokenRegistryDetails.migration).to.equal(migration);
     });
-    xit("Emits InitResubscribe()", async () => {});
+    it("Fail if already resubscribing before endCoolDown", async () => {
+      const meToken = meTokenAddr0;
+      const targetHubId = hubId2;
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = meTokenRegistry.initResubscribe(
+        meToken,
+        targetHubId,
+        migration,
+        encodedMigrationArgs
+      );
+      await expect(tx).to.be.revertedWith("Cooldown not complete");
+    });
   });
 
   describe("cancelResubscribe()", () => {
-    xit("Fails if a called by non-owner", async () => {});
-    xit("Fails if meToken not resubscribing", async () => {});
-    xit("Fails if resubscription already started", async () => {});
-    xit("Successfully resets meToken details", async () => {});
-    xit("Emits CancelResubscribe()", async () => {});
+    it("Fails if a called by non-owner", async () => {
+      await expect(
+        meTokenRegistry.connect(account1).cancelResubscribe(meTokenAddr0)
+      ).to.be.revertedWith("!owner");
+    });
+    it("Fails if meToken not resubscribing", async () => {
+      await expect(
+        meTokenRegistry.connect(account1).cancelResubscribe(meTokenAddr1)
+      ).to.be.revertedWith("!resubscribing");
+    });
+    it("Successfully resets meToken details", async () => {
+      block = await ethers.provider.getBlock("latest");
+      expect(
+        (await meTokenRegistry.getDetails(meTokenAddr0)).startTime
+      ).to.be.gt(block.timestamp);
+      const tx = await meTokenRegistry.cancelResubscribe(meTokenAddr0);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(meTokenRegistry, "CancelResubscribe")
+        .withArgs(meTokenAddr0);
+
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      expect(meTokenRegistryDetails.startTime).to.be.equal(0);
+      expect(meTokenRegistryDetails.endTime).to.be.equal(0);
+      expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
+      expect(meTokenRegistryDetails.migration).to.be.equal(
+        ethers.constants.AddressZero
+      );
+    });
+    it("Fails if resubscription already started", async () => {
+      const oldMeTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      // forward time after start time
+      await mineBlock(oldMeTokenRegistryDetails.endCooldown.toNumber() + 2);
+      block = await ethers.provider.getBlock("latest");
+      expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
+
+      const meToken = meTokenAddr0;
+      const targetHubId = hubId2;
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = await meTokenRegistry.initResubscribe(
+        meToken,
+        targetHubId,
+        migration,
+        encodedMigrationArgs
+      );
+      await tx.wait();
+
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      // forward time after start time
+      await mineBlock(meTokenRegistryDetails.startTime.toNumber() + 2);
+      block = await ethers.provider.getBlock("latest");
+      expect(meTokenRegistryDetails.startTime).to.be.lt(block.timestamp);
+
+      await expect(
+        meTokenRegistry.cancelResubscribe(meTokenAddr0)
+      ).to.be.revertedWith("Resubscription has started");
+    });
   });
 
   describe("finishResubscribe()", () => {
@@ -420,6 +537,13 @@ describe("MeTokenRegistry.sol", () => {
       expect(tx)
         .to.emit(meTokenRegistry, "TransferMeTokenOwnership")
         .withArgs(account1.address, account2.address, meTokenAddr1);
+    });
+    it("Fails to when pending ownership", async () => {
+      await expect(
+        meTokenRegistry
+          .connect(account1)
+          .transferMeTokenOwnership(account2.address)
+      ).to.be.revertedWith("transfer ownership already pending");
     });
   });
 
