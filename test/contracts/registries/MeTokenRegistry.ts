@@ -12,23 +12,45 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { expect } from "chai";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { Foundry } from "../../../artifacts/types/Foundry";
+import { Fees } from "../../../artifacts/types/Fees";
 
 describe("MeTokenRegistry.sol", () => {
   let meTokenAddr0: string;
   let meTokenAddr1: string;
   let tx: ContractTransaction;
   let meTokenRegistry: MeTokenRegistry;
+  let refundRatio = 50000;
 
+  let tokenAddr: string;
+  let weightedAverage: WeightedAverage;
+  let meTokenFactory: MeTokenFactory;
+  let curveRegistry: CurveRegistry;
+  let vaultRegistry: VaultRegistry;
+  let migrationRegistry: MigrationRegistry;
+  let singleAssetVault: SingleAssetVault;
+  let foundry: Foundry;
   let hub: Hub;
   let token: ERC20;
+  let fee: Fees;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let account3: SignerWithAddress;
+  let tokenHolder: Signer;
+  let tokenWhale: string;
+  let bancorABDK: BancorABDK;
 
   const hubId = 1;
+  const hubId2 = 2;
   const MAX_WEIGHT = 1000000;
   const PRECISION = BigNumber.from(10).pow(18);
   const reserveWeight = MAX_WEIGHT / 2;
@@ -45,23 +67,78 @@ describe("MeTokenRegistry.sol", () => {
       ["address"],
       [DAI]
     );
-    const bancorABDK = await deploy<BancorABDK>("BancorABDK");
-    ({ token, hub, account0, account1, account2, account3, meTokenRegistry } =
-      await hubSetup(encodedCurveDetails, encodedVaultArgs, 50000, bancorABDK));
+    bancorABDK = await deploy<BancorABDK>("BancorABDK");
+    ({
+      tokenAddr,
+      weightedAverage,
+      meTokenRegistry,
+      meTokenFactory,
+      curveRegistry,
+      vaultRegistry,
+      migrationRegistry,
+      singleAssetVault,
+      foundry,
+      hub,
+      token,
+      fee,
+      account0,
+      account1,
+      account2,
+      account3,
+      tokenHolder,
+      tokenWhale,
+    } = await hubSetup(
+      encodedCurveDetails,
+      encodedVaultArgs,
+      refundRatio,
+      bancorABDK
+    ));
+
+    await hub.register(
+      account0.address,
+      tokenAddr,
+      singleAssetVault.address,
+      bancorABDK.address,
+      refundRatio, //refund ratio
+      encodedCurveDetails,
+      encodedVaultArgs
+    );
   });
 
-  describe("subcribe()", () => {
+  describe("subscribe()", () => {
     it("User can create a meToken with no collateral", async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
+      const assetsDeposited = 0;
 
-      const tx = await meTokenRegistry
-        .connect(account0)
-        .subscribe(name, "CARL", hubId, 0);
+      const tx = await meTokenRegistry.subscribe(
+        name,
+        symbol,
+        hubId,
+        assetsDeposited
+      );
+      await tx.wait();
+
       meTokenAddr0 = await meTokenRegistry.getOwnerMeToken(account0.address);
-      /*  expect(tx)
-        .to.emit(meTokenRegistry, "Register")
-        .withArgs(meTokenAddr, account0.address, name, symbol, hubId); */
+      const meTokensMinted = await bancorABDK.viewMeTokensMinted(
+        assetsDeposited,
+        hubId,
+        0,
+        0
+      );
+
+      await expect(tx)
+        .to.emit(meTokenRegistry, "Subscribe")
+        .withArgs(
+          meTokenAddr0,
+          account0.address,
+          meTokensMinted,
+          tokenAddr,
+          assetsDeposited,
+          name,
+          symbol,
+          hubId
+        );
 
       // assert token infos
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr0);
@@ -69,12 +146,28 @@ describe("MeTokenRegistry.sol", () => {
       expect(await meToken.symbol()).to.equal(symbol);
       expect(await meToken.decimals()).to.equal(18);
       expect(await meToken.totalSupply()).to.equal(0);
+      expect(await meToken.totalSupply()).to.equal(0);
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      expect(meTokenRegistryDetails.owner).to.equal(account0.address);
+      expect(meTokenRegistryDetails.hubId).to.equal(hubId);
+      expect(meTokenRegistryDetails.balancePooled).to.equal(assetsDeposited);
+      expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
+      expect(meTokenRegistryDetails.startTime).to.equal(0);
+      expect(meTokenRegistryDetails.endTime).to.equal(0);
+      expect(meTokenRegistryDetails.endCooldown).to.equal(0);
+      expect(meTokenRegistryDetails.targetHubId).to.equal(0);
+      expect(meTokenRegistryDetails.migration).to.equal(
+        ethers.constants.AddressZero
+      );
     });
+
     it("User can't create two meToken", async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
       await expect(
-        meTokenRegistry.connect(account0).subscribe(name, "CARL", hubId, 0)
+        meTokenRegistry.connect(account0).subscribe(name, symbol, hubId, 0)
       ).to.be.revertedWith("msg.sender already owns a meToken");
     });
 
@@ -103,6 +196,30 @@ describe("MeTokenRegistry.sol", () => {
       );
       console.log(`    calculatedRes:${calculatedRes}`);
       expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
+    });
+
+    it("should revert to subscribe to invalid hub", async () => {
+      const name = "Carl0 meToken";
+      const symbol = "CARL";
+      const assetsDeposited = 0;
+      const invalidHub = 0;
+
+      const tx = meTokenRegistry
+        .connect(account2)
+        .subscribe(name, symbol, invalidHub, assetsDeposited);
+      expect(tx).to.be.revertedWith("Hub inactive");
+    });
+
+    it("should revert when _assetsDeposited transferFrom fails", async () => {
+      // there can be multiple external cause here. Only checking for one
+      const name = "Carl0 meToken";
+      const symbol = "CARL";
+      const assetsDeposited = ethers.utils.parseEther("20");
+
+      const tx = meTokenRegistry
+        .connect(account2)
+        .subscribe(name, symbol, hubId, assetsDeposited);
+      await expect(tx).to.be.revertedWith("Dai/insufficient-balance");
     });
   });
 
