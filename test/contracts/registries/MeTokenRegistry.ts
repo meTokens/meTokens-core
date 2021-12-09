@@ -12,7 +12,13 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
+import {
+  BigNumber,
+  Bytes,
+  ContractReceipt,
+  ContractTransaction,
+  Signer,
+} from "ethers";
 import { expect } from "chai";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
@@ -23,8 +29,10 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Fees } from "../../../artifacts/types/Fees";
 import { mineBlock } from "../../utils/hardhatNode";
+import { Address } from "hardhat-deploy/dist/types";
+import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 
-describe("MeTokenRegistry.sol", () => {
+describe.only("MeTokenRegistry.sol", () => {
   let meTokenAddr0: string;
   let meTokenAddr1: string;
   let tx: ContractTransaction;
@@ -49,6 +57,11 @@ describe("MeTokenRegistry.sol", () => {
   let tokenHolder: Signer;
   let tokenWhale: string;
   let bancorABDK: BancorABDK;
+  let targetHubId: number;
+  let migration: UniswapSingleTransferMigration;
+  let meToken: Address;
+  let encodedMigrationArgs: string;
+  let receipt: ContractReceipt;
 
   const hubId = 1;
   const hubId2 = 2;
@@ -60,6 +73,7 @@ describe("MeTokenRegistry.sol", () => {
   const warmup = 2 * 60 * 24 * 24; // 2 days
   const duration = 4 * 60 * 24 * 24; // 4 days
   const coolDown = 5 * 60 * 24 * 24; // 5 days
+  const fees = 3000;
   let block: any;
   before(async () => {
     let DAI;
@@ -110,6 +124,17 @@ describe("MeTokenRegistry.sol", () => {
       encodedVaultArgs
     );
     await hub.setWarmup(hubWarmup);
+    // Deploy uniswap migration and approve it to the registry
+    migration = await deploy<UniswapSingleTransferMigration>(
+      "UniswapSingleTransferMigration",
+      undefined,
+      account0.address,
+      foundry.address,
+      hub.address,
+      meTokenRegistry.address,
+      migrationRegistry.address
+    );
+    await migration.deployed();
   });
 
   describe("subscribe()", () => {
@@ -133,7 +158,7 @@ describe("MeTokenRegistry.sol", () => {
       const symbol = "CARL";
       const assetsDeposited = 0;
 
-      const tx = await meTokenRegistry.subscribe(
+      tx = await meTokenRegistry.subscribe(
         name,
         symbol,
         hubId,
@@ -262,7 +287,7 @@ describe("MeTokenRegistry.sol", () => {
       await expect(tx).to.be.revertedWith("too long");
     });
     it("should be able to setWarmup", async () => {
-      const tx = await meTokenRegistry.setWarmup(warmup);
+      tx = await meTokenRegistry.setWarmup(warmup);
       await tx.wait();
       expect(await meTokenRegistry.getWarmup()).to.be.equal(warmup);
     });
@@ -283,7 +308,7 @@ describe("MeTokenRegistry.sol", () => {
       await expect(tx).to.be.revertedWith("too long");
     });
     it("should be able to setDuration", async () => {
-      const tx = await meTokenRegistry.setDuration(duration);
+      tx = await meTokenRegistry.setDuration(duration);
       await tx.wait();
       expect(await meTokenRegistry.getDuration()).to.be.equal(duration);
     });
@@ -300,7 +325,7 @@ describe("MeTokenRegistry.sol", () => {
       await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
     });
     it("should be able to setCooldown", async () => {
-      const tx = await meTokenRegistry.setCooldown(coolDown);
+      tx = await meTokenRegistry.setCooldown(coolDown);
       await tx.wait();
       expect(await meTokenRegistry.getCooldown()).to.be.equal(coolDown);
     });
@@ -308,21 +333,30 @@ describe("MeTokenRegistry.sol", () => {
 
   describe("initResubscribe()", () => {
     it("Fails if msg.sender not meToken owner", async () => {
-      const meToken = meTokenAddr0;
-      const targetHubId = hubId2;
-      const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
+      meToken = meTokenAddr0;
+      targetHubId = hubId2;
+      block = await ethers.provider.getBlock("latest");
+      const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+      encodedMigrationArgs = encodedMigrationArgs =
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
 
       const tx = meTokenRegistry
         .connect(account1)
-        .initResubscribe(meToken, targetHubId, migration, encodedMigrationArgs);
+        .initResubscribe(
+          meToken,
+          targetHubId,
+          migration.address,
+          encodedMigrationArgs
+        );
       await expect(tx).to.be.revertedWith("!owner");
     });
     it("Fails if resubscribing to same hub", async () => {
       const meToken = meTokenAddr0;
       const targetHubId = hubId; // exiting hubId
       const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
 
       const tx = meTokenRegistry.initResubscribe(
         meToken,
@@ -337,7 +371,6 @@ describe("MeTokenRegistry.sol", () => {
       const meToken = meTokenAddr0;
       const targetHubId = 0; // inactive hub
       const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
 
       const tx = meTokenRegistry.initResubscribe(
         meToken,
@@ -375,30 +408,49 @@ describe("MeTokenRegistry.sol", () => {
       await expect(tx).to.be.revertedWith("targetHub updating");
       await (await hub.cancelUpdate(hubId2)).wait();
     });
-    xit("Fails if attempting to use an unapproved migration", async () => {});
-    xit("Fails from invalid _encodedMigrationArgs", async () => {});
-    it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
-      const meToken = meTokenAddr0;
-      const targetHubId = hubId2;
-      const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
+    it("Fails if attempting to use an unapproved migration", async () => {
+      await expect(
+        meTokenRegistry.initResubscribe(
+          meToken,
+          targetHubId,
+          migration.address,
+          encodedMigrationArgs
+        )
+      ).to.be.revertedWith("!approved");
 
-      const tx = await meTokenRegistry.initResubscribe(
+      await migrationRegistry.approve(
+        singleAssetVault.address,
+        singleAssetVault.address,
+        migration.address
+      );
+    });
+    it("Fails from invalid _encodedMigrationArgs", async () => {
+      const badEncodedMigrationArgs = "0x";
+      await expect(
+        meTokenRegistry.initResubscribe(
+          meToken,
+          targetHubId,
+          migration.address,
+          badEncodedMigrationArgs
+        )
+      ).to.be.revertedWith("Invalid _encodedMigrationArgs");
+    });
+
+    it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
+      tx = await meTokenRegistry.initResubscribe(
         meToken,
         targetHubId,
-        migration,
+        migration.address,
         encodedMigrationArgs
       );
-      const receipt = await tx.wait();
+      receipt = await tx.wait();
+    });
+    it("Successfully sets meToken resubscription details", async () => {
       const block = await ethers.provider.getBlock(receipt.blockNumber);
       const expectedStartTime = block.timestamp + warmup;
       const expectedEndTime = block.timestamp + warmup + duration;
       const expectedEndCooldownTime =
         block.timestamp + warmup + duration + coolDown;
-
-      await expect(tx)
-        .to.emit(meTokenRegistry, "InitResubscribe")
-        .withArgs(meToken, targetHubId, migration, encodedMigrationArgs);
 
       const meTokenRegistryDetails = await meTokenRegistry.getDetails(
         meTokenAddr0
@@ -409,18 +461,23 @@ describe("MeTokenRegistry.sol", () => {
         expectedEndCooldownTime
       );
       expect(meTokenRegistryDetails.targetHubId).to.equal(targetHubId);
-      expect(meTokenRegistryDetails.migration).to.equal(migration);
+      expect(meTokenRegistryDetails.migration).to.equal(migration.address);
+    });
+    it("Emits InitResubscribe()", async () => {
+      await expect(tx)
+        .to.emit(meTokenRegistry, "InitResubscribe")
+        .withArgs(
+          meToken,
+          targetHubId,
+          migration.address,
+          encodedMigrationArgs
+        );
     });
     it("Fail if already resubscribing before endCoolDown", async () => {
-      const meToken = meTokenAddr0;
-      const targetHubId = hubId2;
-      const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
-
       const tx = meTokenRegistry.initResubscribe(
         meToken,
         targetHubId,
-        migration,
+        migration.address,
         encodedMigrationArgs
       );
       await expect(tx).to.be.revertedWith("Cooldown not complete");
@@ -443,13 +500,10 @@ describe("MeTokenRegistry.sol", () => {
       expect(
         (await meTokenRegistry.getDetails(meTokenAddr0)).startTime
       ).to.be.gt(block.timestamp);
-      const tx = await meTokenRegistry.cancelResubscribe(meTokenAddr0);
+      tx = await meTokenRegistry.cancelResubscribe(meTokenAddr0);
       await tx.wait();
-
-      await expect(tx)
-        .to.emit(meTokenRegistry, "CancelResubscribe")
-        .withArgs(meTokenAddr0);
-
+    });
+    it("Successfully resets meToken details", async () => {
       const meTokenRegistryDetails = await meTokenRegistry.getDetails(
         meTokenAddr0
       );
@@ -460,6 +514,11 @@ describe("MeTokenRegistry.sol", () => {
         ethers.constants.AddressZero
       );
     });
+    it("Emits CancelResubscribe()", async () => {
+      await expect(tx)
+        .to.emit(meTokenRegistry, "CancelResubscribe")
+        .withArgs(meTokenAddr0);
+    });
     it("Fails if resubscription already started", async () => {
       const oldMeTokenRegistryDetails = await meTokenRegistry.getDetails(
         meTokenAddr0
@@ -469,15 +528,17 @@ describe("MeTokenRegistry.sol", () => {
       block = await ethers.provider.getBlock("latest");
       expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
-      const meToken = meTokenAddr0;
-      const targetHubId = hubId2;
-      const migration = ethers.constants.AddressZero;
-      const encodedMigrationArgs = "0x";
+      const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+      encodedMigrationArgs = encodedMigrationArgs =
+        ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
 
-      const tx = await meTokenRegistry.initResubscribe(
+      tx = await meTokenRegistry.initResubscribe(
         meToken,
         targetHubId,
-        migration,
+        migration.address,
         encodedMigrationArgs
       );
       await tx.wait();
@@ -497,11 +558,50 @@ describe("MeTokenRegistry.sol", () => {
   });
 
   describe("finishResubscribe()", () => {
-    xit("Fails if meToken not resubscribing", async () => {});
-    xit("Fails if updating but cooldown not reached", async () => {});
-    xit("Successfully calls IMigration.finishMigration()", async () => {});
-    xit("Successfully updates meToken details", async () => {});
-    xit("Emits FinishResubscribe()", async () => {});
+    it("Fails if meToken not resubscribing", async () => {
+      await expect(
+        meTokenRegistry.connect(account1).finishResubscribe(meTokenAddr1)
+      ).to.be.revertedWith("No targetHubId");
+    });
+    it("Fails if updating but cooldown not reached", async () => {
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      // forward time before endTime
+      await mineBlock(meTokenRegistryDetails.endTime.toNumber() - 2);
+      block = await ethers.provider.getBlock("latest");
+      expect(meTokenRegistryDetails.endTime).to.be.gt(block.timestamp);
+      await expect(
+        meTokenRegistry.finishResubscribe(meTokenAddr0)
+      ).to.be.revertedWith("block.timestamp < endTime");
+    });
+    it("Successfully calls IMigration.finishMigration()", async () => {
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      // forward time before endTime
+      await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+      block = await ethers.provider.getBlock("latest");
+      expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
+
+      tx = await meTokenRegistry.finishResubscribe(meTokenAddr0);
+      await tx.wait();
+    });
+    it("Successfully updates meToken details", async () => {
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      expect(meTokenRegistryDetails.startTime).to.be.equal(0);
+      expect(meTokenRegistryDetails.endTime).to.be.equal(0);
+      expect(meTokenRegistryDetails.hubId).to.be.equal(0);
+      expect(meTokenRegistryDetails.targetHubId).to.be.equal(targetHubId);
+      expect(meTokenRegistryDetails.migration).to.be.equal(migration);
+    });
+    it("Emits FinishResubscribe()", async () => {
+      await expect(tx)
+        .to.emit(meTokenRegistry, "FinishResubscribe")
+        .withArgs(meTokenAddr0);
+    });
   });
 
   describe("transferMeTokenOwnership()", () => {
