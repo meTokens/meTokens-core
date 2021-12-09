@@ -4,7 +4,7 @@ import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BancorZeroCurve } from "../../artifacts/types/BancorZeroCurve";
+import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetupWithoutRegister } from "../utils/hubSetup";
@@ -32,7 +32,7 @@ describe("Hub.sol", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let curve: BancorZeroCurve;
+  let curve: BancorABDK;
   let foundry: Foundry;
   let hub: Hub;
   let singleAssetVault: SingleAssetVault;
@@ -74,7 +74,7 @@ describe("Hub.sol", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    curve = await deploy<BancorZeroCurve>("BancorZeroCurve");
+    curve = await deploy<BancorABDK>("BancorABDK");
     ({
       token,
       tokenHolder,
