@@ -54,6 +54,7 @@ contract Hub is IHub, Ownable, Initializable {
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
+        require(_refundRatio > 0, "_refundRatio == 0");
 
         // Ensure asset is valid based on encoded args and vault validation logic
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
@@ -90,18 +91,16 @@ contract Hub is IHub, Ownable, Initializable {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            Details.Hub memory hubUpdated = finishUpdate(_id);
-            hub_.refundRatio = hubUpdated.refundRatio;
-            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
-            hub_.curve = hubUpdated.curve;
-            hub_.targetCurve = hubUpdated.targetCurve;
-            hub_.reconfigure = hubUpdated.reconfigure;
-            hub_.updating = hubUpdated.updating;
-            hub_.startTime = hubUpdated.startTime;
-            hub_.endTime = hubUpdated.endTime;
+            finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
+        // Make sure at least one of the values is different
+        require(
+            (_targetRefundRatio != 0) || (_encodedCurveDetails.length > 0),
+            "Nothing to update"
+        );
+
         if (_targetRefundRatio != 0) {
             require(
                 _targetRefundRatio < MAX_REFUND_RATIO,
@@ -111,12 +110,13 @@ contract Hub is IHub, Ownable, Initializable {
                 _targetRefundRatio != hub_.refundRatio,
                 "_targetRefundRatio == refundRatio"
             );
+            hub_.targetRefundRatio = _targetRefundRatio;
         }
         bool reconfigure;
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
-                reconfigure = true;
                 ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
+                reconfigure = true;
             } else {
                 require(
                     curveRegistry.isApproved(_targetCurve),
@@ -125,10 +125,6 @@ contract Hub is IHub, Ownable, Initializable {
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
             }
-        }
-
-        if (_targetRefundRatio != 0) {
-            hub_.targetRefundRatio = _targetRefundRatio;
         }
 
         hub_.reconfigure = reconfigure;
@@ -158,6 +154,7 @@ contract Hub is IHub, Ownable, Initializable {
 
         hub_.targetRefundRatio = 0;
         hub_.reconfigure = false;
+        hub_.targetCurve = address(0);
         hub_.updating = false;
         hub_.startTime = 0;
         hub_.endTime = 0;
@@ -169,7 +166,7 @@ contract Hub is IHub, Ownable, Initializable {
     function transferHubOwnership(uint256 _id, address _newOwner) external {
         Details.Hub storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
-        require(msg.sender != hub_.owner, "Same owner");
+        require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
 
         emit TransferHubOwnership(_id, _newOwner);
