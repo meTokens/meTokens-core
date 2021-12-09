@@ -55,6 +55,10 @@ describe("MeTokenRegistry.sol", () => {
   const PRECISION = BigNumber.from(10).pow(18);
   const reserveWeight = MAX_WEIGHT / 2;
   const baseY = PRECISION.div(1000);
+  const hubWarmup = 7 * 60 * 24 * 24; // 1 week
+  const warmup = 2 * 60 * 24 * 24; // 2 days
+  const duration = 4 * 60 * 24 * 24; // 4 days
+  const coolDown = 5 * 60 * 24 * 24; // 5 days
   before(async () => {
     let DAI;
     ({ DAI } = await getNamedAccounts());
@@ -103,6 +107,7 @@ describe("MeTokenRegistry.sol", () => {
       encodedCurveDetails,
       encodedVaultArgs
     );
+    await hub.setWarmup(hubWarmup);
   });
 
   describe("subscribe()", () => {
@@ -215,11 +220,73 @@ describe("MeTokenRegistry.sol", () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
       const assetsDeposited = ethers.utils.parseEther("20");
+      await token
+        .connect(tokenHolder)
+        .transfer(account2.address, assetsDeposited);
 
       const tx = meTokenRegistry
         .connect(account2)
         .subscribe(name, symbol, hubId, assetsDeposited);
-      await expect(tx).to.be.revertedWith("Dai/insufficient-balance");
+      await expect(tx).to.be.revertedWith("Dai/insufficient-allowance");
+    });
+  });
+
+  describe("setWarmup()", () => {
+    it("should revert to setWarmup if not owner", async () => {
+      const tx = meTokenRegistry.connect(account1).setWarmup(warmup);
+      await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+    it("should revert to setWarmup if same as before", async () => {
+      const oldWarmup = await meTokenRegistry.getWarmup();
+      const tx = meTokenRegistry.setWarmup(oldWarmup);
+      await expect(tx).to.be.revertedWith("warmup_ == _warmup");
+    });
+    it("should revert when warmup + duration > hub's warmup", async () => {
+      const tx = meTokenRegistry.setWarmup(hubWarmup);
+      await expect(tx).to.be.revertedWith("too long");
+    });
+    it("should be able to setWarmup", async () => {
+      const tx = await meTokenRegistry.setWarmup(warmup);
+      await tx.wait();
+      expect(await meTokenRegistry.getWarmup()).to.be.equal(warmup);
+    });
+  });
+
+  describe("setDuration()", () => {
+    it("should revert to setDuration if not owner", async () => {
+      const tx = meTokenRegistry.connect(account1).setDuration(duration);
+      await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+    it("should revert to setDuration if same as before", async () => {
+      const oldWarmup = await meTokenRegistry.getDuration();
+      const tx = meTokenRegistry.setDuration(oldWarmup);
+      await expect(tx).to.be.revertedWith("duration_ == _duration");
+    });
+    it("should revert when warmup + duration > hub's warmup", async () => {
+      const tx = meTokenRegistry.setWarmup(hubWarmup);
+      await expect(tx).to.be.revertedWith("too long");
+    });
+    it("should be able to setDuration", async () => {
+      const tx = await meTokenRegistry.setDuration(duration);
+      await tx.wait();
+      expect(await meTokenRegistry.getDuration()).to.be.equal(duration);
+    });
+  });
+
+  describe("setCooldown()", () => {
+    it("should revert to setCooldown if not owner", async () => {
+      const tx = meTokenRegistry.connect(account1).setCooldown(coolDown);
+      await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+    it("should revert to setCooldown if same as before", async () => {
+      const oldWarmup = await meTokenRegistry.getCooldown();
+      const tx = meTokenRegistry.setCooldown(oldWarmup);
+      await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
+    });
+    it("should be able to setCooldown", async () => {
+      const tx = await meTokenRegistry.setCooldown(coolDown);
+      await tx.wait();
+      expect(await meTokenRegistry.getCooldown()).to.be.equal(coolDown);
     });
   });
 
