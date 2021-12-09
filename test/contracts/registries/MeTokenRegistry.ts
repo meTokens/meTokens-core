@@ -199,7 +199,6 @@ describe("MeTokenRegistry.sol", () => {
         toETHNumber(baseY),
         reserveWeight / MAX_WEIGHT
       );
-      console.log(`    calculatedRes:${calculatedRes}`);
       expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
     });
 
@@ -291,32 +290,101 @@ describe("MeTokenRegistry.sol", () => {
   });
 
   describe("initResubscribe()", () => {
-    it("Fails if msg.sender not meToken owner", async () => {});
-    it("Fails if resubscribing to same hub", async () => {});
-    it("Fails if resubscribing to inactive hub", async () => {});
-    it("Fails if current hub currently updating", async () => {});
-    it("Fails if target hub currently updating", async () => {});
-    it("Fails if attempting to use an unapproved migration", async () => {});
-    it("Fails from invalid _encodedMigrationArgs", async () => {});
-    it("Successfully calls IMigration.initMigration()", async () => {});
-    it("Successfully sets meToken resubscription details", async () => {});
-    it("Emits InitResubscribe()", async () => {});
+    it("Fails if msg.sender not meToken owner", async () => {
+      const meToken = meTokenAddr0;
+      const targetHubId = hubId2;
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = meTokenRegistry
+        .connect(account1)
+        .initResubscribe(meToken, targetHubId, migration, encodedMigrationArgs);
+      await expect(tx).to.be.revertedWith("!owner");
+    });
+    it("Fails if resubscribing to same hub", async () => {
+      const meToken = meTokenAddr0;
+      const targetHubId = hubId; // exiting hubId
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = meTokenRegistry.initResubscribe(
+        meToken,
+        targetHubId,
+        migration,
+        encodedMigrationArgs
+      );
+      await expect(tx).to.be.revertedWith("same hub");
+    });
+    xit("Fails if current hub is inactive");
+    it("Fails if resubscribing to inactive hub", async () => {
+      const meToken = meTokenAddr0;
+      const targetHubId = 0; // inactive hub
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = meTokenRegistry.initResubscribe(
+        meToken,
+        targetHubId,
+        migration,
+        encodedMigrationArgs
+      );
+      await expect(tx).to.be.revertedWith("targetHub inactive");
+    });
+    xit("Fails if current hub currently updating", async () => {});
+    xit("Fails if target hub currently updating", async () => {});
+    xit("Fails if attempting to use an unapproved migration", async () => {});
+    xit("Fails from invalid _encodedMigrationArgs", async () => {});
+    it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
+      const meToken = meTokenAddr0;
+      const targetHubId = hubId2;
+      const migration = ethers.constants.AddressZero;
+      const encodedMigrationArgs = "0x";
+
+      const tx = await meTokenRegistry.initResubscribe(
+        meToken,
+        targetHubId,
+        migration,
+        encodedMigrationArgs
+      );
+      const receipt = await tx.wait();
+      const block = await ethers.provider.getBlock(receipt.blockNumber);
+      const expectedStartTime = block.timestamp + warmup;
+      const expectedEndTime = block.timestamp + warmup + duration;
+      const expectedEndCooldownTime =
+        block.timestamp + warmup + duration + coolDown;
+
+      await expect(tx)
+        .to.emit(meTokenRegistry, "InitResubscribe")
+        .withArgs(meToken, targetHubId, migration, encodedMigrationArgs);
+
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr0
+      );
+      expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
+      expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
+      expect(meTokenRegistryDetails.endCooldown).to.equal(
+        expectedEndCooldownTime
+      );
+      expect(meTokenRegistryDetails.targetHubId).to.equal(targetHubId);
+      expect(meTokenRegistryDetails.migration).to.equal(migration);
+    });
+    xit("Emits InitResubscribe()", async () => {});
   });
 
   describe("cancelResubscribe()", () => {
-    it("Fails if a called by non-owner", async () => {});
-    it("Fails if meToken not resubscribing", async () => {});
-    it("Fails if resubscription already started", async () => {});
-    it("Successfully resets meToken details", async () => {});
-    it("Emits CancelResubscribe()", async () => {});
+    xit("Fails if a called by non-owner", async () => {});
+    xit("Fails if meToken not resubscribing", async () => {});
+    xit("Fails if resubscription already started", async () => {});
+    xit("Successfully resets meToken details", async () => {});
+    xit("Emits CancelResubscribe()", async () => {});
   });
 
   describe("finishResubscribe()", () => {
-    it("Fails if meToken not resubscribing", async () => {});
-    it("Fails if updating but cooldown not reached", async () => {});
-    it("Succesfully calls IMigration.finishMigration()", async () => {});
-    it("Succesfully updates meToken details", async () => {});
-    it("Emits FinishResubscribe()", async () => {});
+    xit("Fails if meToken not resubscribing", async () => {});
+    xit("Fails if updating but cooldown not reached", async () => {});
+    xit("Successfully calls IMigration.finishMigration()", async () => {});
+    xit("Successfully updates meToken details", async () => {});
+    xit("Emits FinishResubscribe()", async () => {});
   });
 
   describe("transferMeTokenOwnership()", () => {
@@ -366,7 +434,7 @@ describe("MeTokenRegistry.sol", () => {
         meTokenRegistry.connect(account2).cancelTransferMeTokenOwnership()
       ).to.be.revertedWith("meToken does not exist");
     });
-    it("Succesfully cancels transfer and removes from _pendingOwners", async () => {
+    it("Successfully cancels transfer and removes from _pendingOwners", async () => {
       tx = await meTokenRegistry
         .connect(account1)
         .cancelTransferMeTokenOwnership();
