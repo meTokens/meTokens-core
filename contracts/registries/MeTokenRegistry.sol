@@ -132,24 +132,22 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         require(!targetHub_.updating, "targetHub updating");
 
         // Ensure the migration we're using is approved
-        if (hub_.asset != targetHub_.asset || _migration != address(0)) {
-            require(
-                migrationRegistry.isApproved(
-                    hub_.vault,
-                    targetHub_.vault,
-                    _migration
-                ),
-                "!approved"
-            );
-            require(
-                IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
-                "Invalid _encodedMigrationArgs"
-            );
-            IMigration(_migration).initMigration(
-                _meToken,
-                _encodedMigrationArgs
-            );
-        }
+        require(hub_.asset != targetHub_.asset, "asset same");
+        require(_migration != address(0), "migration address(0)");
+
+        require(
+            migrationRegistry.isApproved(
+                hub_.vault,
+                targetHub_.vault,
+                _migration
+            ),
+            "!approved"
+        );
+        require(
+            IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
+            "Invalid _encodedMigrationArgs"
+        );
+        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
 
         meToken_.startTime = block.timestamp + _warmup;
         meToken_.endTime = block.timestamp + _warmup + _duration;
