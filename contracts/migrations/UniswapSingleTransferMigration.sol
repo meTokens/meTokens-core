@@ -101,7 +101,10 @@ contract UniswapSingleTransferMigration is
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
         }
 
-        if (!usts_.swapped) {
+        if (
+            !usts_.swapped &&
+            meToken_.balancePooled + meToken_.balanceLocked > 0
+        ) {
             amountOut = _swap(_meToken);
         } else {
             // No swap, amountOut = amountIn
