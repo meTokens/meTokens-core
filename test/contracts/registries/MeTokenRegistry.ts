@@ -32,7 +32,7 @@ import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 
-describe.only("MeTokenRegistry.sol", () => {
+describe("MeTokenRegistry.sol", () => {
   let meTokenAddr0: string;
   let meTokenAddr1: string;
   let tx: ContractTransaction;
