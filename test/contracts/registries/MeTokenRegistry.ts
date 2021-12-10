@@ -32,6 +32,38 @@ import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 
+export const checkUniswapPoolLiquidity = async (
+  DAI: string,
+  WETH: string,
+  fees: number
+) => {
+  const uniswapRouterAddress = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
+
+  // make sure that pair exists on router
+  const UniswapRouterInterfaceABI = [
+    "function factory() view returns (address factory)",
+  ];
+  const UniswapV3FactoryInterfaceABI = [
+    "function getPool(address, address, uint24) view returns(address)",
+  ];
+  const UniswapV3PoolABI = ["function liquidity() view returns (uint256)"];
+  const uniswapRouter = await ethers.getContractAt(
+    UniswapRouterInterfaceABI,
+    uniswapRouterAddress
+  );
+
+  const uniswapV3FactoryAddress = await uniswapRouter.factory();
+
+  const uniswapV3Factory = await ethers.getContractAt(
+    UniswapV3FactoryInterfaceABI,
+    uniswapV3FactoryAddress
+  );
+
+  const pool = await uniswapV3Factory.getPool(DAI, WETH, fees);
+  const uniswapV3Pool = await ethers.getContractAt(UniswapV3PoolABI, pool);
+  expect(await uniswapV3Pool.liquidity()).to.be.gt(0);
+};
+
 describe("MeTokenRegistry.sol", () => {
   let meTokenAddr0: string;
   let meTokenAddr1: string;
@@ -39,7 +71,8 @@ describe("MeTokenRegistry.sol", () => {
   let meTokenRegistry: MeTokenRegistry;
   let refundRatio = 50000;
 
-  let tokenAddr: string;
+  let DAI: string;
+  let WETH: string;
   let weightedAverage: WeightedAverage;
   let meTokenFactory: MeTokenFactory;
   let curveRegistry: CurveRegistry;
@@ -76,8 +109,8 @@ describe("MeTokenRegistry.sol", () => {
   const fees = 3000;
   let block: any;
   before(async () => {
-    let DAI;
-    ({ DAI } = await getNamedAccounts());
+    ({ DAI, WETH } = await getNamedAccounts());
+    await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
     const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
@@ -89,7 +122,7 @@ describe("MeTokenRegistry.sol", () => {
     );
     bancorABDK = await deploy<BancorABDK>("BancorABDK");
     ({
-      tokenAddr,
+      tokenAddr: DAI,
       weightedAverage,
       meTokenRegistry,
       meTokenFactory,
@@ -116,7 +149,7 @@ describe("MeTokenRegistry.sol", () => {
 
     await hub.register(
       account0.address,
-      tokenAddr,
+      WETH,
       singleAssetVault.address,
       bancorABDK.address,
       refundRatio, //refund ratio
@@ -180,7 +213,7 @@ describe("MeTokenRegistry.sol", () => {
           meTokenAddr0,
           account0.address,
           meTokensMinted,
-          tokenAddr,
+          DAI,
           assetsDeposited,
           name,
           symbol,
@@ -593,9 +626,11 @@ describe("MeTokenRegistry.sol", () => {
       );
       expect(meTokenRegistryDetails.startTime).to.be.equal(0);
       expect(meTokenRegistryDetails.endTime).to.be.equal(0);
-      expect(meTokenRegistryDetails.hubId).to.be.equal(0);
-      expect(meTokenRegistryDetails.targetHubId).to.be.equal(targetHubId);
-      expect(meTokenRegistryDetails.migration).to.be.equal(migration);
+      expect(meTokenRegistryDetails.hubId).to.be.equal(2);
+      expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
+      expect(meTokenRegistryDetails.migration).to.be.equal(
+        ethers.constants.AddressZero
+      );
     });
     it("Emits FinishResubscribe()", async () => {
       await expect(tx)
