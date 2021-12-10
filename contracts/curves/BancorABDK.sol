@@ -70,7 +70,6 @@ contract BancorABDK is ICurve {
         // targetBaseX = (old baseY * oldR) / newR
         uint256 targetBaseY = (bancor_.baseY * bancor_.reserveWeight) /
             targetReserveWeight;
-
         bancor_.targetBaseY = targetBaseY;
         bancor_.targetReserveWeight = targetReserveWeight;
     }
@@ -84,25 +83,25 @@ contract BancorABDK is ICurve {
         bancor_.targetBaseY = 0;
     }
 
-    function getBancorDetails(uint256 bancor)
+    function getBancorDetails(uint256 hubId)
         external
         view
         returns (Bancor memory)
     {
-        return _bancors[bancor];
+        return _bancors[hubId];
     }
 
-    function getDetails(uint256 bancor)
+    function getDetails(uint256 hubId)
         external
         view
         override
         returns (uint256[4] memory)
     {
         return [
-            _bancors[bancor].baseY,
-            uint256(_bancors[bancor].reserveWeight),
-            _bancors[bancor].targetBaseY,
-            uint256(_bancors[bancor].targetReserveWeight)
+            _bancors[hubId].baseY,
+            uint256(_bancors[hubId].reserveWeight),
+            _bancors[hubId].targetBaseY,
+            uint256(_bancors[hubId].targetReserveWeight)
         ];
     }
 

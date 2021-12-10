@@ -590,7 +590,6 @@ const setup = async () => {
 
     describe("After cooldown", () => {
       it("initUpdate() can be called again", async () => {
-        // TODO: fast fwd to after cooldown
         const {
           active,
           refundRatio,
@@ -680,7 +679,7 @@ const setup = async () => {
         expect(detAfterUpdate.targetRefundRatio).to.equal(1000);
       });
 
-      it("If no burns during cooldown, initUpdate() args are compared to new vals set from on finishUpdate()", async () => {});
+      it("If no burns during cooldown, initUpdate() args are compared to new values set from on finishUpdate()", async () => {});
     });
   });
 };

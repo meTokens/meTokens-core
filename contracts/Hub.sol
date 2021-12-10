@@ -240,13 +240,16 @@ contract Hub is IHub, Ownable, Initializable {
         }
 
         if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
+            console.log(
+                "##             targetCurve == address(0)       9999999999      finishReconfigure   id:%s ",
+                id
+            );
+            ICurve(hub_.curve).finishReconfigure(id);
             hub_.reconfigure = false;
+        }
+        if (hub_.targetCurve != address(0)) {
+            hub_.curve = hub_.targetCurve;
+            hub_.targetCurve = address(0);
         }
 
         hub_.updating = false;
