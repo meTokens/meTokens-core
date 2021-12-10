@@ -177,7 +177,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
-        // Calculate how many tokens tokens are returned
+        // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
             _meToken,
             _meTokensBurned
@@ -379,8 +379,9 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.endTime
             );
             console.log(
-                "## calculateMeTokensMinted WeightedAverage meTokensMinted:%s",
-                meTokensMinted
+                "## calculateMeTokensMinted WeightedAverage meTokensMinted:%s targetMeTokensMinted:%s ",
+                meTokensMinted,
+                targetMeTokensMinted
             );
         } else if (meToken_.targetHubId != 0) {
             console.log(
@@ -495,7 +496,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
                 PRECISION;
             console.log(
-                "## sender=owner calculateActualAssetsReturned  _meTokensBurned:%s actualAssetsReturned:%s",
+                "## sender=owner calculateActualAssetsReturned  rawAssetsReturned:%s _meTokensBurned:%s actualAssetsReturned:%s",
+                rawAssetsReturned,
                 _meTokensBurned,
                 actualAssetsReturned
             );

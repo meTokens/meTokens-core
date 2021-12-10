@@ -95,14 +95,6 @@ contract Hub is IHub, Ownable, Initializable {
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             finishUpdate(_id);
-            /*   hub_.refundRatio = hubUpdated.refundRatio;
-            hub_.targetRefundRatio = hubUpdated.targetRefundRatio;
-            hub_.curve = hubUpdated.curve;
-            hub_.targetCurve = hubUpdated.targetCurve;
-            hub_.reconfigure = hubUpdated.reconfigure;
-            hub_.updating = hubUpdated.updating;
-            hub_.startTime = hubUpdated.startTime;
-            hub_.endTime = hubUpdated.endTime; */
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
@@ -243,13 +235,16 @@ contract Hub is IHub, Ownable, Initializable {
         }
 
         if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
+            console.log(
+                "##             targetCurve == address(0)       9999999999      finishReconfigure   id:%s ",
+                id
+            );
+            ICurve(hub_.curve).finishReconfigure(id);
             hub_.reconfigure = false;
+        }
+        if (hub_.targetCurve != address(0)) {
+            hub_.curve = hub_.targetCurve;
+            hub_.targetCurve = address(0);
         }
 
         hub_.updating = false;
