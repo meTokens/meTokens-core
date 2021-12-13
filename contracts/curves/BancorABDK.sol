@@ -7,8 +7,6 @@ import "../libs/WeightedAverage.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
-import "hardhat/console.sol";
-
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
 contract BancorABDK is ICurve {
@@ -113,11 +111,7 @@ contract BancorABDK is ICurve {
         uint256 _balancePooled
     ) external view override returns (uint256 meTokensMinted) {
         Bancor memory bancorDetails = _bancors[_hubId];
-        console.log(
-            "## ## viewMeTokensMinted _supply:%s bancorDetails.reserveWeight:%s  ",
-            _supply,
-            bancorDetails.reserveWeight
-        );
+
         if (_supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 _assetsDeposited,
@@ -325,11 +319,6 @@ contract BancorABDK is ICurve {
         if (_meTokensBurned == 0) {
             return 0;
         }
-        console.log(
-            "## BANCORCURVEABDK_viewAssetsReturned  _meTokensBurned:%s _supply:%s",
-            _meTokensBurned,
-            _supply
-        );
         // special case for selling the entire supply
         if (_meTokensBurned == _supply) {
             return _balancePooled;

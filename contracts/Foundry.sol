@@ -15,7 +15,6 @@ import "./interfaces/IHub.sol";
 import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
-import "hardhat/console.sol";
 
 contract Foundry is IFoundry, Ownable, Initializable {
     using SafeERC20 for IERC20;
@@ -83,7 +82,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meToken,
             assetsDepositedAfterFees
         );
-        console.log("## meTokensMinted:%s", meTokensMinted);
         IVault vault;
         address asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
@@ -267,18 +265,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         // gas savings
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
-        console.log(
-            "## calculateMeTokensMinted hub_ meToken_.hubId:%s refundRatio:%s targetRefundRatio:%s  ",
-            meToken_.hubId,
-            hub_.refundRatio,
-            hub_.targetRefundRatio
-        );
-        console.log(
-            "## calculateMeTokensMinted viewMeTokensMinted _assetsDeposited:%s balancePooled:%s totalSupply_:%s  ",
-            _assetsDeposited,
-            meToken_.balancePooled,
-            totalSupply_
-        );
         // Calculate return assuming update/resubscribe is not happening
         meTokensMinted = ICurve(hub_.curve).viewMeTokensMinted(
             _assetsDeposited,
@@ -287,20 +273,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.balancePooled
         );
 
-        console.log(
-            "## calculateMeTokensMinted                    meTokensMinted:%s",
-            meTokensMinted
-        );
         // Logic for if we're switching to a new curve type // reconfiguring
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
             (hub_.reconfigure)
         ) {
-            console.log(
-                "## hub updating targetCurve:%s             meTokensMinted:%s",
-                hub_.targetCurve,
-                meTokensMinted
-            );
             uint256 targetMeTokensMinted;
             if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
@@ -327,16 +304,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.startTime,
                 hub_.endTime
             );
-            console.log(
-                "## calculateMeTokensMinted WeightedAverage meTokensMinted:%s targetMeTokensMinted:%s ",
-                meTokensMinted,
-                targetMeTokensMinted
-            );
         } else if (meToken_.targetHubId != 0) {
-            console.log(
-                "## targetHubId !=0 targetHubId:%s",
-                meToken_.targetHubId
-            );
             Details.Hub memory targetHub = hub.getDetails(meToken_.targetHubId);
             uint256 targetMeTokensMinted = ICurve(targetHub.curve)
                 .viewMeTokensMinted(
@@ -370,12 +338,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             totalSupply_,
             meToken_.balancePooled
         );
-        console.log(
-            "## --calculateRawAssetsReturned hub_.updating:%s hub_.targetCurve:%s hub_.reconfigure:%s",
-            hub_.updating,
-            hub_.targetCurve,
-            hub_.reconfigure
-        );
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
@@ -392,10 +354,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         totalSupply_,
                         meToken_.balancePooled
                     );
-                console.log(
-                    "## -**-calculateRawAssetsReturned targetassetsReturned:%s ",
-                    targetassetsReturned
-                );
             } else {
                 // Must mean we're updating curveDetails
                 targetassetsReturned = ICurve(hub_.curve)
@@ -406,21 +364,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         meToken_.balancePooled
                     );
             }
-            console.log(
-                "## -**-calculateRawAssetsReturned rawAssetsReturned:%s ",
-                rawAssetsReturned
-            );
             rawAssetsReturned = WeightedAverage.calculate(
                 rawAssetsReturned,
                 targetassetsReturned,
                 hub_.startTime,
                 hub_.endTime
-            );
-
-            console.log(
-                "## -**-calculateRawAssetsReturned rawAssetsReturned:%s targetassetsReturned:%s",
-                rawAssetsReturned,
-                targetassetsReturned
             );
         }
     }
@@ -437,19 +385,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        console.log("## --calculateActualAssetsReturned");
         if (_sender == meToken_.owner) {
             actualAssetsReturned =
                 rawAssetsReturned +
                 (((PRECISION * _meTokensBurned) /
                     IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
                 PRECISION;
-            console.log(
-                "## sender=owner calculateActualAssetsReturned  rawAssetsReturned:%s _meTokensBurned:%s actualAssetsReturned:%s",
-                rawAssetsReturned,
-                _meTokensBurned,
-                actualAssetsReturned
-            );
         } else {
             if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
                 // Not updating targetRefundRatio or resubscribing
@@ -457,12 +398,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 actualAssetsReturned =
                     (rawAssetsReturned * hub_.refundRatio) /
                     MAX_REFUND_RATIO;
-                console.log(
-                    "## targethub=0 calculateActualAssetsReturned  rawAssetsReturned:%s actualAssetsReturned:%s hub_.refundRatio:%s",
-                    rawAssetsReturned,
-                    actualAssetsReturned,
-                    hub_.refundRatio
-                );
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
