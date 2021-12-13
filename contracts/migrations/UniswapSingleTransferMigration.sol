@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
@@ -39,7 +40,7 @@ contract UniswapSingleTransferMigration is
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    ISwapRouter private immutable _router =
+    ISwapRouter private constant _router =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
@@ -69,7 +70,6 @@ contract UniswapSingleTransferMigration is
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         usts_.fee = fee;
         usts_.soonest = soonest;
-        usts_.started = true;
     }
 
     function poke(address _meToken) external override {
@@ -79,6 +79,7 @@ contract UniswapSingleTransferMigration is
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
+            usts_.started = true;
         }
         _swap(_meToken);
     }
@@ -99,6 +100,7 @@ contract UniswapSingleTransferMigration is
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
+            usts_.started = true;
         }
 
         if (
@@ -172,6 +174,12 @@ contract UniswapSingleTransferMigration is
         }
 
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
+        if (amountIn == 0) {
+            return 0;
+        }
+
+        // Approve router to spend
+        IERC20(hub_.asset).approve(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
