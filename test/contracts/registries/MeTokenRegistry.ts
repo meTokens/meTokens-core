@@ -98,6 +98,7 @@ describe("MeTokenRegistry.sol", () => {
 
   const hubId = 1;
   const hubId2 = 2;
+  const hubId3 = 3;
   const MAX_WEIGHT = 1000000;
   const PRECISION = BigNumber.from(10).pow(18);
   const reserveWeight = MAX_WEIGHT / 2;
@@ -150,6 +151,15 @@ describe("MeTokenRegistry.sol", () => {
     await hub.register(
       account0.address,
       WETH,
+      singleAssetVault.address,
+      bancorABDK.address,
+      refundRatio, //refund ratio
+      encodedCurveDetails,
+      encodedVaultArgs
+    );
+    await hub.register(
+      account0.address,
+      DAI,
       singleAssetVault.address,
       bancorABDK.address,
       refundRatio, //refund ratio
@@ -468,7 +478,26 @@ describe("MeTokenRegistry.sol", () => {
         )
       ).to.be.revertedWith("Invalid _encodedMigrationArgs");
     });
-
+    it("Fails when current and target hub has same asset", async () => {
+      await expect(
+        meTokenRegistry.initResubscribe(
+          meToken,
+          hubId3,
+          migration.address,
+          encodedMigrationArgs
+        )
+      ).to.be.revertedWith("asset same");
+    });
+    it("Fails when migration address is 0", async () => {
+      await expect(
+        meTokenRegistry.initResubscribe(
+          meToken,
+          targetHubId,
+          ethers.constants.AddressZero,
+          encodedMigrationArgs
+        )
+      ).to.be.revertedWith("migration address(0)");
+    });
     it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
       tx = await meTokenRegistry.initResubscribe(
         meToken,
