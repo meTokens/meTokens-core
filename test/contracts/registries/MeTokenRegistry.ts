@@ -305,7 +305,6 @@ const setup = async () => {
           toETHNumber(estimateCalculateTokenReturnedFromZero)
         ).to.be.approximately(calculatedRes, 0.000000000000000000000000001);
 
-        // FIXME
         await expect(tx)
           .to.emit(meTokenRegistry, "Subscribe")
           .withArgs(
@@ -322,8 +321,9 @@ const setup = async () => {
         expect(await meToken.name()).to.equal(name);
         expect(await meToken.symbol()).to.equal(symbol);
         expect(await meToken.decimals()).to.equal(18);
-        // FIXME
-        // expect(await meToken.totalSupply()).to.be.equal(ethers.utils.parseEther(calculatedRes.toString()));
+        expect(await meToken.totalSupply()).to.be.equal(
+          estimateCalculateTokenReturnedFromZero
+        );
         const meTokenRegistryDetails = await meTokenRegistry.getDetails(
           meTokenAddr1
         );
@@ -727,6 +727,37 @@ const setup = async () => {
     });
 
     describe("updateBalances()", () => {
+      before(async () => {
+        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
+        console.log(targetHubId);
+
+        tx = await meTokenRegistry
+          .connect(account1)
+          .initResubscribe(
+            meTokenAddr1,
+            targetHubId,
+            migration.address,
+            encodedMigrationArgs
+          );
+        await tx.wait();
+
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meTokenAddr1
+        );
+        // forward time before endTime
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
+
+        tx = await meTokenRegistry
+          .connect(account1)
+          .finishResubscribe(meTokenAddr1);
+        await tx.wait();
+      });
       it("revert when sender is not migration", async () => {
         await expect(
           meTokenRegistry.updateBalances(meTokenAddr0, 5)
