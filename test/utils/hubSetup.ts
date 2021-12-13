@@ -143,9 +143,11 @@ export async function hubSetupWithoutRegister(
   curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
+
   foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   });
+
   hub = await deploy<Hub>("Hub");
   meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   meTokenRegistry = await deploy<MeTokenRegistry>(
@@ -170,6 +172,7 @@ export async function hubSetupWithoutRegister(
     feeInitialization[5]
   );
   await foundry.initialize(hub.address, fee.address, meTokenRegistry.address);
+
   singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
@@ -228,7 +231,6 @@ export async function addHubSetup(
 }> {
   let singleAssetVault: SingleAssetVault;
   let account0: SignerWithAddress;
-
   const isCurveApproved = await curveRegistry.isApproved(curve.address);
   if (!isCurveApproved) {
     await curveRegistry.approve(curve.address);
