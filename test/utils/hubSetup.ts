@@ -121,6 +121,25 @@ export async function hubSetupWithoutRegister(
   tokenHolder: Signer;
   tokenWhale: string;
 }> {
+  let tokenAddr: string;
+  let weightedAverage: WeightedAverage;
+  let meTokenRegistry: MeTokenRegistry;
+  let meTokenFactory: MeTokenFactory;
+  let curveRegistry: CurveRegistry;
+  let vaultRegistry: VaultRegistry;
+  let migrationRegistry: MigrationRegistry;
+  let singleAssetVault: SingleAssetVault;
+  let foundry: Foundry;
+  let fee: Fees;
+  let hub: Hub;
+  let token: ERC20;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  let account3: SignerWithAddress;
+  let tokenHolder: Signer;
+  let tokenWhale: string;
+
   if (!erc20Address || !erc20Whale) {
     let DAI;
     let DAIWhale;
