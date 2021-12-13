@@ -40,7 +40,7 @@ contract UniswapSingleTransferMigration is
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    ISwapRouter private constant _router =
+    ISwapRouter private immutable _router =
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
