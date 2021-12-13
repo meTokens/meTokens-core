@@ -216,6 +216,11 @@ describe("MeTokenRegistry.sol", () => {
         0,
         0
       );
+      const calculatedRes = calculateTokenReturnedFromZero(
+        assetsDeposited,
+        toETHNumber(baseY),
+        reserveWeight / MAX_WEIGHT
+      );
 
       await expect(tx)
         .to.emit(meTokenRegistry, "Subscribe")
@@ -235,8 +240,10 @@ describe("MeTokenRegistry.sol", () => {
       expect(await meToken.name()).to.equal(name);
       expect(await meToken.symbol()).to.equal(symbol);
       expect(await meToken.decimals()).to.equal(18);
-      expect(await meToken.totalSupply()).to.equal(0);
-      expect(await meToken.totalSupply()).to.equal(0);
+      expect(await meToken.totalSupply())
+        .to.equal(0)
+        .to.be.equal(calculatedRes)
+        .to.be.equal(meTokensMinted);
       const meTokenRegistryDetails = await meTokenRegistry.getDetails(
         meTokenAddr0
       );
@@ -262,18 +269,24 @@ describe("MeTokenRegistry.sol", () => {
     });
 
     it("User can create a meToken with 100 DAI as collateral", async () => {
-      const amount = ethers.utils.parseEther("20");
+      const name = "Carl1 meToken";
+      const symbol = "CARL";
+      const assetsInEth = "20";
+      const assetsDeposited = ethers.utils.parseEther(assetsInEth);
       const balBefore = await token.balanceOf(account1.address);
       // need an approve of metoken registry first
-      await token.connect(account1).approve(meTokenRegistry.address, amount);
-      await meTokenRegistry
+      await token
         .connect(account1)
-        .subscribe("Carl1 meToken", "CARL", hubId, amount);
+        .approve(meTokenRegistry.address, assetsDeposited);
+      tx = await meTokenRegistry
+        .connect(account1)
+        .subscribe(name, symbol, hubId, assetsDeposited);
+      tx.wait();
       const balAfter = await token.balanceOf(account1.address);
-      expect(balBefore.sub(balAfter)).equal(amount);
+      expect(balBefore.sub(balAfter)).equal(assetsDeposited);
       const hubDetail = await hub.getDetails(hubId);
       const balVault = await token.balanceOf(hubDetail.vault);
-      expect(balVault).equal(amount);
+      expect(balVault).equal(assetsDeposited);
       // assert token infos
       meTokenAddr1 = await meTokenRegistry.getOwnerMeToken(account1.address);
       const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
@@ -284,7 +297,40 @@ describe("MeTokenRegistry.sol", () => {
         toETHNumber(baseY),
         reserveWeight / MAX_WEIGHT
       );
-      expect(toETHNumber(await meToken.totalSupply())).to.equal(calculatedRes);
+
+      // FIXME
+      // await expect(tx)
+      //   .to.emit(meTokenRegistry, "Subscribe")
+      //   .withArgs(
+      //     meTokenAddr1,
+      //     account1.address,
+      //     ethers.utils.parseEther(calculatedRes.toString()),
+      //     DAI,
+      //     assetsDeposited,
+      //     name,
+      //     symbol,
+      //     hubId
+      //   );
+
+      expect(await meToken.name()).to.equal(name);
+      expect(await meToken.symbol()).to.equal(symbol);
+      expect(await meToken.decimals()).to.equal(18);
+      // FIXME
+      // expect(await meToken.totalSupply()).to.be.equal(ethers.utils.parseEther(calculatedRes.toString()));
+      const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenAddr1
+      );
+      expect(meTokenRegistryDetails.owner).to.equal(account1.address);
+      expect(meTokenRegistryDetails.hubId).to.equal(hubId);
+      expect(meTokenRegistryDetails.balancePooled).to.equal(assetsDeposited);
+      expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
+      expect(meTokenRegistryDetails.startTime).to.equal(0);
+      expect(meTokenRegistryDetails.endTime).to.equal(0);
+      expect(meTokenRegistryDetails.endCooldown).to.equal(0);
+      expect(meTokenRegistryDetails.targetHubId).to.equal(0);
+      expect(meTokenRegistryDetails.migration).to.equal(
+        ethers.constants.AddressZero
+      );
     });
 
     it("should revert to subscribe to invalid hub", async () => {
@@ -668,6 +714,14 @@ describe("MeTokenRegistry.sol", () => {
     });
   });
 
+  describe("updateBalances()", () => {
+    it("revert when sender is not migration", async () => {
+      await expect(
+        meTokenRegistry.updateBalances(meTokenAddr0, 5)
+      ).to.be.revertedWith("!migration");
+    });
+  });
+
   describe("transferMeTokenOwnership()", () => {
     it("Fails if not a meToken owner", async () => {
       await expect(
@@ -820,6 +874,6 @@ describe("MeTokenRegistry.sol", () => {
       //   .incrementBalancePooled(true, meTokenAddr, account2.address);
     });
 
-    it("updateBalanceLocked()", async () => {});
+    xit("updateBalanceLocked()", async () => {});
   });
 });
