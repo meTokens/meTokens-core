@@ -165,70 +165,70 @@ describe("Generic Curve", () => {
       //   0.000000000000000001
       // );
     });
-    /* 
-    it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
-      let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
-        amount1,
-        hubId,
-        0,
-        0
-      );
-      let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
-        expectedMeTokensMinted,
-        hubId,
-        0,
-        0
-      );
 
-      // Get balances before mint
-      let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
-      let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
+    // it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
+    //   let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
+    //     amount1,
+    //     hubId,
+    //     0,
+    //     0
+    //   );
+    //   let expectedAssetsDeposited = await _curve.viewAssetsDeposited(
+    //     expectedMeTokensMinted,
+    //     hubId,
+    //     0,
+    //     0
+    //   );
 
-      // Create meToken w/o issuing supply
-      const tx = await meTokenRegistry
-        .connect(account2)
-        .subscribe(name, symbol, hubId, 0);
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account2.address
-      );
-      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    //   // Get balances before mint
+    //   let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
+    //   let vaultDaiBalanceBefore = await dai.balanceOf(singleAssetVault.address);
 
-      // Mint meToken
-      await foundry
-        .connect(account2)
-        .mint(meToken.address, amount1, account2.address);
+    //   // Create meToken w/o issuing supply
+    //   const tx = await meTokenRegistry
+    //     .connect(account2)
+    //     .subscribe(name, symbol, hubId, 0);
+    //   const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+    //     account2.address
+    //   );
+    //   meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-      // Compare expected meTokens minted to actual held
-      const meTokensMinted = await meToken.balanceOf(account2.address);
-      expect(meTokensMinted).to.equal(expectedMeTokensMinted);
-      const totalSupply = await meToken.totalSupply();
-      expect(totalSupply).to.equal(meTokensMinted);
+    //   // Mint meToken
+    //   await foundry
+    //     .connect(account2)
+    //     .mint(meToken.address, amount1, account2.address);
 
-      // Compare buyer dai balance before/after
-      let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
-      expect(
-        Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
-      ).to.equal(amount1);
+    //   // Compare expected meTokens minted to actual held
+    //   const meTokensMinted = await meToken.balanceOf(account2.address);
+    //   expect(meTokensMinted).to.equal(expectedMeTokensMinted);
+    //   const totalSupply = await meToken.totalSupply();
+    //   expect(totalSupply).to.equal(meTokensMinted);
 
-      // Expect balance of vault to have increased by assets deposited
-      let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
-      expect(
-        Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
-      ).to.equal(amount1);
-      expect(amount1).to.equal(expectedAssetsDeposited);
-    });
+    //   // Compare buyer dai balance before/after
+    //   let minterDaiBalanceAfter = await dai.balanceOf(account2.address);
+    //   expect(
+    //     Number(minterDaiBalanceBefore) - Number(minterDaiBalanceAfter)
+    //   ).to.equal(amount1);
 
-    it("balanceLocked = 0, balancePooled > 0", async () => {
-      // TODO
-    });
+    //   // Expect balance of vault to have increased by assets deposited
+    //   let vaultDaiBalanceAfter = await dai.balanceOf(singleAssetVault.address);
+    //   expect(
+    //     Number(vaultDaiBalanceAfter) - Number(vaultDaiBalanceBefore)
+    //   ).to.equal(amount1);
+    //   expect(amount1).to.equal(expectedAssetsDeposited);
+    // });
 
-    it("balanceLocked > 0, balancePooled = 0", async () => {
-      // TODO
-    });
+    // it("balanceLocked = 0, balancePooled > 0", async () => {
+    //   // TODO
+    // });
 
-    it("balanceLocked > 0, balancePooled > 0", async () => {
-      // TODO
-    }); */
+    // it("balanceLocked > 0, balancePooled = 0", async () => {
+    //   // TODO
+    // });
+
+    // it("balanceLocked > 0, balancePooled > 0", async () => {
+    //   // TODO
+    // });
   });
 
   describe("calculateBurnReturn()", () => {

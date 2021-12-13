@@ -82,7 +82,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meToken,
             assetsDepositedAfterFees
         );
-
         IVault vault;
         address asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
@@ -176,7 +175,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
-        // Calculate how many tokens tokens are returned
+        // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
             _meToken,
             _meTokensBurned
@@ -266,7 +265,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         // gas savings
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
-
         // Calculate return assuming update/resubscribe is not happening
         meTokensMinted = ICurve(hub_.curve).viewMeTokensMinted(
             _assetsDeposited,
@@ -340,7 +338,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             totalSupply_,
             meToken_.balancePooled
         );
-
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
@@ -349,6 +346,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             uint256 targetassetsReturned;
             if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
+
                 targetassetsReturned = ICurve(hub_.targetCurve)
                     .viewAssetsReturned(
                         _meTokensBurned,
@@ -396,6 +394,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         } else {
             if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
                 // Not updating targetRefundRatio or resubscribing
+
                 actualAssetsReturned =
                     (rawAssetsReturned * hub_.refundRatio) /
                     MAX_REFUND_RATIO;

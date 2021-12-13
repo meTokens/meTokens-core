@@ -17,7 +17,6 @@ import {
   deploy,
   toETHNumber,
 } from "../../utils/helpers";
-import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
@@ -29,30 +28,24 @@ describe("All curves", () => {
 });
 const setup = async () => {
   let DAI: string;
-  let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
-  let meTokenFactory: MeTokenFactory;
   let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
-  let singleAssetVault: SingleAssetVault;
   let foundry: Foundry;
   let hub: Hub;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let daiHolder: Signer;
-  let DAIWhale: string;
-  const decimals = 18;
   const one = ethers.utils.parseEther("1");
   let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
   let reserveWeight = MAX_WEIGHT / 2;
   let hubId = 1;
   let token;
-
+  let tokenAddr: string;
   baseY = one.mul(1000);
 
   ({ DAI } = await getNamedAccounts());
@@ -71,6 +64,7 @@ const setup = async () => {
     token,
     hub,
     curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     foundry,
@@ -110,6 +104,8 @@ const setup = async () => {
     hub,
     foundry,
     meTokenRegistry,
+    curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails,
@@ -147,6 +143,8 @@ const setup = async () => {
     hub,
     foundry,
     meTokenRegistry,
+    curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails,
@@ -184,6 +182,8 @@ const setup = async () => {
     hub,
     foundry,
     meTokenRegistry,
+    curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails,
@@ -221,6 +221,8 @@ const setup = async () => {
     hub,
     foundry,
     meTokenRegistry,
+    curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails,
@@ -258,6 +260,8 @@ const setup = async () => {
     hub,
     foundry,
     meTokenRegistry,
+    curveRegistry,
+    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails,

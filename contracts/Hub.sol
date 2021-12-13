@@ -122,6 +122,7 @@ contract Hub is IHub, Ownable, Initializable {
                     curveRegistry.isApproved(_targetCurve),
                     "_targetCurve !approved"
                 );
+                require(_targetCurve != hub_.curve, "targetCurve==curve");
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);
                 hub_.targetCurve = _targetCurve;
             }
@@ -235,13 +236,12 @@ contract Hub is IHub, Ownable, Initializable {
         }
 
         if (hub_.reconfigure) {
-            if (hub_.targetCurve == address(0)) {
-                ICurve(hub_.curve).finishReconfigure(id);
-            } else {
-                hub_.curve = hub_.targetCurve;
-                hub_.targetCurve = address(0);
-            }
+            ICurve(hub_.curve).finishReconfigure(id);
             hub_.reconfigure = false;
+        }
+        if (hub_.targetCurve != address(0)) {
+            hub_.curve = hub_.targetCurve;
+            hub_.targetCurve = address(0);
         }
 
         hub_.updating = false;
