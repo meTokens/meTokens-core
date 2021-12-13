@@ -11,7 +11,6 @@ import "./interfaces/ICurve.sol";
 import "./interfaces/IFoundry.sol";
 
 import "./libs/Details.sol";
-import "hardhat/console.sol";
 
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson)
@@ -51,10 +50,7 @@ contract Hub is IHub, Ownable, Initializable {
         bytes memory _encodedVaultArgs
     ) external override {
         // TODO: access control
-        console.log(
-            "## approved:%s",
-            vaultRegistry.isApproved(address(_vault))
-        );
+
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
         require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
@@ -235,10 +231,6 @@ contract Hub is IHub, Ownable, Initializable {
         }
 
         if (hub_.reconfigure) {
-            console.log(
-                "##             targetCurve == address(0)       9999999999      finishReconfigure   id:%s ",
-                id
-            );
             ICurve(hub_.curve).finishReconfigure(id);
             hub_.reconfigure = false;
         }
