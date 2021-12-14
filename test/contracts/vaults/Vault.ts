@@ -15,7 +15,6 @@ import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, Signer } from "ethers";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { validateAndParseAddress } from "@uniswap/sdk-core";
 import { Fees } from "../../../artifacts/types/Fees";
 
 describe("Vault.sol", () => {
@@ -107,6 +106,7 @@ describe("Vault.sol", () => {
         migrationRegistry.address
       );
       expect(await vault.accruedFees(DAI)).to.be.equal(0);
+      expect(await vault.getAccruedFees(DAI)).to.be.equal(0);
     });
   });
 
@@ -171,8 +171,22 @@ describe("Vault.sol", () => {
       );
     });
 
-    xit("Transfer all remaining accrued fees", async () => {
-      // TODO
+    it("Transfer all remaining accrued fees", async () => {
+      const amountToWithdraw = accruedFee;
+      const daoBalanceBefore = await token.balanceOf(dao.address);
+      const tx = await vault.withdraw(DAI, true, 0);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(vault, "Withdraw")
+        .withArgs(DAI, amountToWithdraw);
+
+      const daoBalanceAfter = await token.balanceOf(dao.address);
+      accruedFee = accruedFee.sub(amountToWithdraw);
+      expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
+        amountToWithdraw
+      );
     });
   });
 });
