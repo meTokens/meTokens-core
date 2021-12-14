@@ -184,7 +184,7 @@ describe("BancorPowerCurve", () => {
     // estimate = 4.000000000000000001
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
-      0.000000000000001
+      0.00000000000001
     );
   });
   it("viewAssetsReturned should work with a max of 999999999999999000000000000000000 supply should work", async () => {
@@ -205,7 +205,7 @@ describe("BancorPowerCurve", () => {
     // estimate = 0.002
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
-      0.000000000000001
+      0.00000000000001
     );
   });
   it("initReconfigure() should work", async () => {
@@ -266,7 +266,7 @@ describe("BancorPowerCurve", () => {
     );
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
-      0.00000000000000000001
+      0.000000000001
     );
   });
   it("viewTargetAssetsReturned()  to zero supply should work", async () => {

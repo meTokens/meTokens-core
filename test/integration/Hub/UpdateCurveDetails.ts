@@ -213,7 +213,7 @@ describe("Hub - update CurveDetails", () => {
 
       expect(toETHNumber(balAfter)).to.be.approximately(
         calculatedReturn,
-        0.0000000000000001
+        0.000000000000001
       );
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
       const balDaiAcc1Before = await token.balanceOf(account1.address);
@@ -351,7 +351,7 @@ describe("Hub - update CurveDetails", () => {
       // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
       expect(
         toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
-      ).to.be.approximately(assetsReturned, 0.0000000000000001);
+      ).to.be.approximately(assetsReturned, 0.000000000000001);
     });
     it("Assets received for buyer based on weighted average not burning full supply ", async () => {
       const tokenDepositedInETH = 100;
@@ -434,7 +434,7 @@ describe("Hub - update CurveDetails", () => {
       // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
       expect(
         toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
-      ).to.be.approximately(assetsReturned, 0.0000000000000001);
+      ).to.be.approximately(assetsReturned, 0.000000000000001);
     });
     it("Assets received for owner based on weighted average not burning full supply ", async () => {
       // TODO: calculate weighted refundRatio based on current time relative to duration
@@ -577,11 +577,11 @@ describe("Hub - update CurveDetails", () => {
       expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         toETHNumber(tokenMinted),
-        0.000001
+        0.00001
       );
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         calcWAvrgRes,
-        0.0001
+        0.00001
       );
     });
   });
@@ -648,11 +648,11 @@ describe("Hub - update CurveDetails", () => {
       const balAfter = await meToken.balanceOf(account0.address);
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         calcTargetTokenReturn,
-        0.0001
+        0.0000000000001
       );
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         toETHNumber(tokenMinted),
-        0.000001
+        0.0000000000001
       );
       const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
@@ -760,11 +760,11 @@ describe("Hub - update CurveDetails", () => {
       const balAfter = await meToken.balanceOf(account2.address);
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         toETHNumber(tokenMinted),
-        0.000001
+        0.0000000000001
       );
       expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
         calcTargetTokenReturn,
-        0.0001
+        0.0000000000001
       );
 
       const vaultBalAfterMint = await token.balanceOf(singleAssetVault.address);
@@ -922,7 +922,7 @@ describe("Hub - update CurveDetails", () => {
 
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calculatedReturn,
-          0.0000000000000001
+          0.000000000000001
         );
         expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
         const balDaiAcc1Before = await token.balanceOf(account1.address);
@@ -1067,7 +1067,7 @@ describe("Hub - update CurveDetails", () => {
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
-        ).to.be.approximately(calcWithRefundRatio, 0.000000000000001);
+        ).to.be.approximately(calcWithRefundRatio, 0.0000000000001);
       });
       it("Assets received for buyer based on weighted average not burning full supply ", async () => {
         const tokenDepositedInETH = 100;
@@ -1154,7 +1154,7 @@ describe("Hub - update CurveDetails", () => {
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
-        ).to.be.approximately(assetsReturned, 0.0000000000000001);
+        ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
       it("Assets received for owner based on weighted average not burning full supply ", async () => {
         // TODO: calculate weighted refundRatio based on current time relative to duration
@@ -1311,7 +1311,7 @@ describe("Hub - update CurveDetails", () => {
         );
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcWAvrgRes,
-          0.0001
+          0.00001
         );
       });
     });
@@ -1376,11 +1376,11 @@ describe("Hub - update CurveDetails", () => {
         const balAfter = await meToken.balanceOf(account0.address);
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcTargetTokenReturn,
-          0.0001
+          0.0000000000001
         );
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           toETHNumber(tokenMinted),
-          0.000001
+          0.0000000000001
         );
         const vaultBalAfterMint = await token.balanceOf(
           singleAssetVault.address
@@ -1495,11 +1495,11 @@ describe("Hub - update CurveDetails", () => {
         const balAfter = await meToken.balanceOf(account2.address);
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           toETHNumber(tokenMinted),
-          0.000001
+          0.0000000000001
         );
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcTargetTokenReturn,
-          0.0001
+          0.0000000000001
         );
 
         const vaultBalAfterMint = await token.balanceOf(

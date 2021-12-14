@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
@@ -69,7 +70,6 @@ contract UniswapSingleTransferMigration is
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         usts_.fee = fee;
         usts_.soonest = soonest;
-        usts_.started = true;
     }
 
     function poke(address _meToken) external override {
@@ -79,6 +79,7 @@ contract UniswapSingleTransferMigration is
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
+            usts_.started = true;
         }
         _swap(_meToken);
     }
@@ -99,6 +100,7 @@ contract UniswapSingleTransferMigration is
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
+            usts_.started = true;
         }
 
         if (!usts_.swapped) {
@@ -154,12 +156,15 @@ contract UniswapSingleTransferMigration is
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only swap if
+        // - There are tokens to swap
         // - The resubscription has started
         // - The asset hasn't been swapped
         // - Current time is past the soonest it can swap, and time to swap has been set
         if (
+            amountIn == 0 ||
             !usts_.started ||
             usts_.swapped ||
             usts_.soonest == 0 ||
@@ -168,7 +173,8 @@ contract UniswapSingleTransferMigration is
             return 0;
         }
 
-        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
+        // Approve router to spend
+        IERC20(hub_.asset).approve(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter

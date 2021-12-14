@@ -24,9 +24,20 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
     function startMigration(address _meToken) external override {
-        require(msg.sender == address(hub), "!hub");
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+
+        require(
+            msg.sender == address(hub) ||
+                // TODO: Ensure meToken can actually start migrating from the migration addr
+                // and properly check these arguments
+                migrationRegistry.isApproved(
+                    address(this),
+                    address(this),
+                    meToken_.migration
+                ),
+            "!hub || !migrationRegistry.approved"
+        );
         uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
 
         if (

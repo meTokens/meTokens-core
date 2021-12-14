@@ -216,8 +216,10 @@ export const curvesTestsHelper = async ({
       999999999999999,
       reserveWeight / MAX_WEIGHT
     );
-    // precision is not as high as usual
-    expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, 0.00001);
+    expect(toETHNumber(estimate)).to.be.approximately(
+      calculatedRes,
+      0.000000000001
+    );
   });
 
   it("initReconfigure() should work", async () => {
