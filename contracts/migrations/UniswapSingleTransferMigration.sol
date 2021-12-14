@@ -103,10 +103,7 @@ contract UniswapSingleTransferMigration is
             usts_.started = true;
         }
 
-        if (
-            !usts_.swapped &&
-            meToken_.balancePooled + meToken_.balanceLocked > 0
-        ) {
+        if (!usts_.swapped) {
             amountOut = _swap(_meToken);
         } else {
             // No swap, amountOut = amountIn
