@@ -17,22 +17,30 @@ describe("Vault.sol", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
+
+  let dao: SignerWithAddress;
+  let weightedAverage: WeightedAverage;
+  let migrationRegistry: MigrationRegistry;
+  let foundry: Foundry;
+  let hub: Hub;
+  let meTokenFactory: MeTokenFactory;
+  let meTokenRegistry: MeTokenRegistry;
+
+  const precision = ethers.utils.parseUnits("1");
   before(async () => {
     ({ DAI } = await getNamedAccounts());
 
     [account0, account1, account2] = await ethers.getSigners();
+    dao = account1;
+    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
 
-    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    const migrationRegistry = await deploy<MigrationRegistry>(
-      "MigrationRegistry"
-    );
-
-    const foundry = await deploy<Foundry>("Foundry", {
+    foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    const hub = await deploy<Hub>("Hub");
-    const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-    const meTokenRegistry = await deploy<MeTokenRegistry>(
+    hub = await deploy<Hub>("Hub");
+    meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+    meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",
       undefined,
       foundry.address,
@@ -43,8 +51,8 @@ describe("Vault.sol", () => {
 
     vault = await deploy<SingleAssetVault>(
       "SingleAssetVault",
-      undefined, //no libs
-      account1.address, // DAO
+      undefined,
+      dao.address, // DAO
       foundry.address, // foundry
       hub.address, // hub
       meTokenRegistry.address, //IMeTokenRegistry
@@ -52,9 +60,34 @@ describe("Vault.sol", () => {
     );
   });
 
+  describe("Check initial state", () => {
+    it("check initial state", async () => {
+      expect(await vault.owner()).to.be.equal(account0.address);
+      expect(await vault.PRECISION()).to.be.equal(precision);
+      expect(await vault.dao()).to.be.equal(dao.address);
+      expect(await vault.foundry()).to.be.equal(foundry.address);
+      expect(await vault.hub()).to.be.equal(hub.address);
+      expect(await vault.meTokenRegistry()).to.be.equal(
+        meTokenRegistry.address
+      );
+      expect(await vault.migrationRegistry()).to.be.equal(
+        migrationRegistry.address
+      );
+      expect(await vault.accruedFees(dao.address)).to.be.equal(0);
+    });
+  });
+
+  describe("approveAsset()", () => {
+    it("reverts when sender is not foundry or meTokenRegistry", async () => {
+      await expect(vault.approveAsset(DAI, amount)).to.be.revertedWith(
+        "!foundry||!meTokenRegistry"
+      );
+    });
+  });
+
   describe("addFee()", () => {
-    it("Reverts when not called by owner", async () => {
-      // TODO
+    xit("Reverts when not called by owner", async () => {
+      // FIXME not a valid test
     });
     it("Increments accruedFees revert if not foundry", async () => {
       await expect(vault.addFee(DAI, amount)).to.be.revertedWith("!foundry");
@@ -62,16 +95,22 @@ describe("Vault.sol", () => {
   });
 
   describe("withdrawFees()", () => {
-    it("Reverts when not called by owner", async () => {
+    xit("Reverts when not called by owner", async () => {
       // TODO
     });
 
-    it("Transfer some accrued fees", async () => {
+    xit("Transfer some accrued fees", async () => {
       // TODO
     });
 
-    it("Transfer all remaining accrued fees", async () => {
+    xit("Transfer all remaining accrued fees", async () => {
       // TODO
+    });
+  });
+
+  describe("withdraw()", () => {
+    it("reverts when sender is not dao", async () => {
+      await expect(vault.withdraw(DAI, true, 0)).to.be.revertedWith("!DAO");
     });
   });
 });
