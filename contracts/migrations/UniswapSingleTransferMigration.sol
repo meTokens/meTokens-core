@@ -156,22 +156,19 @@ contract UniswapSingleTransferMigration is
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only swap if
         // - The resubscription has started
         // - The asset hasn't been swapped
         // - Current time is past the soonest it can swap, and time to swap has been set
         if (
+            amountIn == 0 ||
             !usts_.started ||
             usts_.swapped ||
             usts_.soonest == 0 ||
             usts_.soonest > block.timestamp
         ) {
-            return 0;
-        }
-
-        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
-        if (amountIn == 0) {
             return 0;
         }
 
