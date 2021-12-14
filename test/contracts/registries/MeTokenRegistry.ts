@@ -577,6 +577,7 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
         expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
+        // TODO check next line
         expect(meTokenRegistryDetails.endCooldown).to.equal(
           expectedEndCooldownTime
         );
@@ -733,7 +734,6 @@ const setup = async () => {
           ["uint256", "uint24"],
           [earliestSwapTime, fees]
         );
-        console.log(targetHubId);
 
         tx = await meTokenRegistry
           .connect(account1)
@@ -744,7 +744,15 @@ const setup = async () => {
             encodedMigrationArgs
           );
         await tx.wait();
+      });
 
+      it("revert when sender is not migration", async () => {
+        await expect(
+          meTokenRegistry.updateBalances(meTokenAddr0, 5)
+        ).to.be.revertedWith("!migration");
+      });
+
+      it("Successfully call updateBalances() from migration", async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getDetails(
           meTokenAddr1
         );
@@ -757,11 +765,28 @@ const setup = async () => {
           .connect(account1)
           .finishResubscribe(meTokenAddr1);
         await tx.wait();
-      });
-      it("revert when sender is not migration", async () => {
-        await expect(
-          meTokenRegistry.updateBalances(meTokenAddr0, 5)
-        ).to.be.revertedWith("!migration");
+
+        await expect(tx)
+          .to.emit(singleAssetVault, "StartMigration")
+          .withArgs(meTokenAddr1)
+          .to.emit(meTokenRegistry, "UpdateBalances")
+          // TODO check args
+          // .withArgs()
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .withArgs(meTokenAddr1);
+
+        const meTokenDetails = await meTokenRegistry.getDetails(meTokenAddr1);
+        expect(meTokenDetails.owner).to.equal(account1.address);
+        expect(meTokenDetails.hubId).to.equal(targetHubId);
+        // TODO check args
+        // expect(meTokenDetails.balancePooled).to.equal();
+        // expect(meTokenDetails.balanceLocked).to.equal();
+        expect(meTokenDetails.startTime).to.equal(0);
+        expect(meTokenDetails.endTime).to.equal(0);
+        // TODO check next line
+        // expect(meTokenDetails.endCooldown).to.equal(0);
+        expect(meTokenDetails.targetHubId).to.equal(0);
+        expect(meTokenDetails.migration).to.equal(ethers.constants.AddressZero);
       });
     });
 
@@ -908,7 +933,7 @@ const setup = async () => {
           )
         ).to.revertedWith("!foundry");
       });
-      it("updateBalancePooled()", async () => {
+      xit("updateBalancePooled()", async () => {
         //  const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         //   account2.address
         // );
