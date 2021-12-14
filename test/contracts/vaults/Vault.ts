@@ -116,12 +116,11 @@ describe("Vault.sol", () => {
         "!foundry||!meTokenRegistry"
       );
     });
+    xit("Succesfully called from foundry", async () => {});
+    xit("Successfully called from meTokenRegistry", async () => {});
   });
 
   describe("addFee()", () => {
-    xit("Reverts when not called by owner", async () => {
-      // FIXME not a valid test
-    });
     it("Increments accruedFees revert if not foundry", async () => {
       await expect(
         vault.connect(account1).addFee(DAI, amount)
