@@ -108,7 +108,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
         vault.approveAsset(asset, _assetsDeposited);
 
-        vault.addFee(asset, fee);
+        if (fee > 0) vault.addFee(asset, fee);
 
         meTokenRegistry.updateBalancePooled(
             true,
