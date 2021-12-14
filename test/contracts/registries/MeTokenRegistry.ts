@@ -924,7 +924,7 @@ const setup = async () => {
       });
     });
     describe("balancePool", () => {
-      it("Fails if not foundry", async () => {
+      it("Fails updateBalancePooled() if not foundry", async () => {
         await expect(
           meTokenRegistry.updateBalancePooled(
             true,
@@ -942,6 +942,15 @@ const setup = async () => {
         //   .incrementBalancePooled(true, meTokenAddr, account2.address);
       });
 
+      it("Fails updateBalanceLocked() if not foundry", async () => {
+        await expect(
+          meTokenRegistry.updateBalanceLocked(
+            true,
+            meTokenAddr1,
+            account2.address
+          )
+        ).to.revertedWith("!foundry");
+      });
       xit("updateBalanceLocked()", async () => {});
     });
   });
