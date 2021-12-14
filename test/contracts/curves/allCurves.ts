@@ -86,7 +86,7 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   // Second Curve
@@ -126,14 +126,14 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   // third curve
   const bancorABDK3 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
-  reserveWeight = 150000;
+  reserveWeight = 100000;
   targetReserveWeight = reserveWeight + 10000;
   encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
@@ -165,14 +165,14 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   // fourth curve
   const bancorABDK4 = await deploy<BancorABDK>("BancorABDK");
 
   baseY = one.mul(1);
-  reserveWeight = 150000;
+  reserveWeight = 100000;
   targetReserveWeight = reserveWeight - 20000;
   encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
@@ -204,7 +204,7 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   // fifth curve
@@ -243,7 +243,7 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   // sixth curve
@@ -282,7 +282,7 @@ const setup = async () => {
     calculateCollateralReturned,
     calculateTokenReturned,
     calculateTokenReturnedFromZero,
-    precision: 0.00000000000000000001,
+    precision: 0.000000000001,
   };
 
   return [curve1, curve2, curve3, curve4, curve5, curve6];

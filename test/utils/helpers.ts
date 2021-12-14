@@ -341,13 +341,9 @@ export const calculateTokenReturned = (
   balancePooled: number,
   reserveWeight: number
 ) => {
-  const _collateralAmount = new Decimal(collateralAmount);
-  const _meTokenSupply = new Decimal(meTokenSupply);
-  const _balancePooled = new Decimal(balancePooled);
-  const _reserveWeight = new Decimal(reserveWeight);
-  const num = one.plus(_collateralAmount.div(_balancePooled));
-  const res = _meTokenSupply.mul(num.pow(_reserveWeight).minus(one));
-  return res.toNumber();
+  const num = 1.0 + collateralAmount / balancePooled;
+  const res = meTokenSupply * (num ** reserveWeight - 1);
+  return res;
 };
 
 //  Return =  _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / 1000000)))

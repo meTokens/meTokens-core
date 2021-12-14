@@ -159,6 +159,7 @@ contract UniswapSingleTransferMigration is
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only swap if
+        // - There are tokens to swap
         // - The resubscription has started
         // - The asset hasn't been swapped
         // - Current time is past the soonest it can swap, and time to swap has been set
