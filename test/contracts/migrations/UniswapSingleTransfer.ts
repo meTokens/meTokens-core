@@ -18,7 +18,7 @@ import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 
-describe("UniswapSingleTransferMigration.sol", () => {
+describe.only("UniswapSingleTransferMigration.sol", () => {
   let earliestSwapTime: number;
   let DAI: string;
   let WETH: string;
@@ -124,7 +124,7 @@ describe("UniswapSingleTransferMigration.sol", () => {
       singleAssetVault.address,
       migration.address
     );
-    // Prefund owner & buyer w/ DAI & WETH
+    // Pre fund owner & buyer w/ DAI & WETH
     dai = await getContractAt<ERC20>("ERC20", DAI);
     weth = await getContractAt<ERC20>("ERC20", WETH);
     daiHolder = await impersonate(DAIWhale);
@@ -151,6 +151,10 @@ describe("UniswapSingleTransferMigration.sol", () => {
   });
 
   describe("isValid()", () => {
+    it("Returns false for invalid encoding", async () => {
+      const isValid = await migration.isValid(meToken.address, "0x");
+      expect(isValid).to.be.false;
+    });
     it("Returns true for valid encoding", async () => {
       const isValid = await migration.isValid(
         meToken.address,
@@ -190,6 +194,11 @@ describe("UniswapSingleTransferMigration.sol", () => {
   });
 
   describe("initMigration()", () => {
+    it("Reverts when sender is not meTokenRegistry", async () => {
+      await expect(
+        migration.initMigration(meToken.address, encodedMigrationArgs)
+      ).to.be.revertedWith("!meTokenRegistry");
+    });
     it("Fails from bad encodings", async () => {
       await expect(
         meTokenRegistry
@@ -218,9 +227,14 @@ describe("UniswapSingleTransferMigration.sol", () => {
   });
 
   describe("poke()", () => {
-    it("Triggers startMigration()", async () => {});
+    xit("Triggers startMigration()", async () => {});
   });
   describe("finishMigration()", () => {
+    it("Reverts when sender is not meTokenRegistry", async () => {
+      await expect(
+        migration.finishMigration(meToken.address)
+      ).to.be.revertedWith("!meTokenRegistry");
+    });
     it("Triggers startsMigration() if it hasn't already started", async () => {
       // fast-forward 24h to when finishMigration() can be called
       let block = await ethers.provider.getBlock("latest");
