@@ -100,7 +100,6 @@ describe("Vault.sol", () => {
         migrationRegistry.address
       );
       expect(await vault.accruedFees(DAI)).to.be.equal(0);
-      expect(await vault.getAccruedFees(DAI)).to.be.equal(0);
     });
   });
 
