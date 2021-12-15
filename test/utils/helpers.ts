@@ -1,6 +1,6 @@
 import { BigNumber } from "@ethersproject/bignumber";
 import { Decimal } from "decimal.js";
-import { BaseContract, Contract } from "@ethersproject/contracts";
+import { Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
 
@@ -341,9 +341,15 @@ export const calculateTokenReturned = (
   balancePooled: number,
   reserveWeight: number
 ) => {
-  const num = 1.0 + collateralAmount / balancePooled;
-  const res = meTokenSupply * (num ** reserveWeight - 1);
-  return res;
+  const _collateralAmount = new Decimal(collateralAmount);
+  const _balancePooled = new Decimal(balancePooled);
+  const _reserveWeight = new Decimal(reserveWeight);
+  const _meTokenSupply = new Decimal(meTokenSupply);
+  const num = one.add(_collateralAmount.div(_balancePooled));
+
+  const res = _meTokenSupply.mul(num.pow(_reserveWeight).sub(one));
+  //const res = _meTokenSupply * (num ** reserveWeight - 1);
+  return res.toNumber();
 };
 
 //  Return =  _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / 1000000)))
