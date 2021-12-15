@@ -81,15 +81,9 @@ describe("Vault.sol", () => {
       curve
     ));
 
-    await token.connect(tokenHolder).transfer(account0.address, amount);
+    await token.connect(tokenHolder).transfer(account0.address, amount.mul(3));
     await token.connect(tokenHolder).transfer(account1.address, amount);
     await token.connect(tokenHolder).transfer(account2.address, amount);
-
-    await meTokenRegistry.subscribe("METOKEN", "MT", hubId, 0);
-    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
-
-    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-    await fees.setMintFee(1e8);
   });
 
   describe("Check initial state", () => {
@@ -111,13 +105,39 @@ describe("Vault.sol", () => {
   });
 
   describe("approveAsset()", () => {
+    it("Successfully called from meTokenRegistry", async () => {
+      await token.approve(meTokenRegistry.address, amount);
+      const tx = await meTokenRegistry.subscribe(
+        "METOKEN",
+        "MT",
+        hubId,
+        amount
+      );
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(token, "Approval")
+        .withArgs(vault.address, foundry.address, amount);
+
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    });
+    it("Successfully called from foundry", async () => {
+      await token.approve(foundry.address, amount);
+      const tx = await foundry.mint(meToken.address, amount, account1.address);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(token, "Approval")
+        .withArgs(vault.address, foundry.address, amount.mul(2)); // adding up approval from subscribe
+    });
     it("reverts when sender is not foundry or meTokenRegistry", async () => {
       await expect(vault.approveAsset(DAI, amount)).to.be.revertedWith(
         "!foundry||!meTokenRegistry"
       );
     });
-    xit("Successfully called from foundry", async () => {});
-    xit("Successfully called from meTokenRegistry", async () => {});
   });
 
   describe("addFee()", () => {
@@ -127,6 +147,7 @@ describe("Vault.sol", () => {
       ).to.be.revertedWith("!foundry");
     });
     it("should be call addFee() from foundry", async () => {
+      await fees.setMintFee(1e8);
       await token.approve(foundry.address, amount);
       const tx = await foundry.mint(meToken.address, amount, account1.address);
       await tx.wait();
