@@ -100,25 +100,16 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
     await token
       .connect(tokenHolder)
       .transfer(account2.address, ethers.utils.parseEther("1000"));
-    // Create meToken and subscribe to Hub1
 
+    // Create meToken and subscribe to Hub1
     const tx = await meTokenRegistry
       .connect(account0)
       .subscribe("Carl meToken", "CARL", firstHubId, 0);
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
     meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-    // Register Hub2 w/ same args but different refund Ratio
-    const tokenDeposited = ethers.utils.parseEther("100");
-    await token.connect(account2).approve(foundry.address, tokenDeposited);
-    const balBefore = await meToken.balanceOf(account2.address);
-    const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
-    await foundry
-      .connect(account2)
-      .mint(meTokenAddr, tokenDeposited, account2.address);
-    const balAfter = await meToken.balanceOf(account2.address);
-    const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
-    expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
+    // Create Hub2 w/ same args but different refund Ratio
+    // TODO
 
     await hub.setWarmup(7 * 60 * 24 * 24); // 1 week
     await meTokenRegistry.setWarmup(2 * 60 * 24 * 24); // 2 days
@@ -127,14 +118,17 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
   });
 
   describe("Warmup", () => {
-    it("burn() [buyer]: assets received based on initial refundRatio", async () => {});
+    xit("burn() [owner]: assets received do not apply refundRatio", async () => {});
+    xit("burn() [buyer]: assets received based on initial refundRatio", async () => {});
   });
 
   describe("Duration", () => {
-    it("burn() [buyer]: assets received based on weighted average refundRatio", async () => {});
+    xit("burn() [owner]: assets received do not apply refundRatio", async () => {});
+    xit("burn() [buyer]: assets received based on weighted average refundRatio", async () => {});
   });
 
   describe("Cooldown", () => {
-    it("burn() [buyer]: assets received based on target refundRatio", async () => {});
+    xit("burn() [owner]: assets received do not apply refundRatio", async () => {});
+    xit("burn() [buyer]: assets received based on targetRefundRatio", async () => {});
   });
 });
