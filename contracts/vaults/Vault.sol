@@ -63,7 +63,8 @@ abstract contract Vault is Ownable, IVault {
         if (_max) {
             _amount = accruedFees[_asset];
         } else {
-            require(_amount <= accruedFees[_asset]);
+            require(_amount > 0, "amount < 0");
+            require(_amount <= accruedFees[_asset], "amount > accrued fees");
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);

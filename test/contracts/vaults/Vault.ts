@@ -116,7 +116,7 @@ describe("Vault.sol", () => {
         "!foundry||!meTokenRegistry"
       );
     });
-    xit("Succesfully called from foundry", async () => {});
+    xit("Successfully called from foundry", async () => {});
     xit("Successfully called from meTokenRegistry", async () => {});
   });
 
@@ -145,10 +145,16 @@ describe("Vault.sol", () => {
       ).to.be.revertedWith("!DAO");
     });
 
+    it("should revert when amount is 0", async () => {
+      await expect(vault.withdraw(DAI, false, 0)).to.be.revertedWith(
+        "amount < 0"
+      );
+    });
+
     it("should revert when try to withdraw more than accruedFees[_asset]", async () => {
       await expect(
         vault.withdraw(DAI, false, accruedFee.add(1))
-      ).to.be.revertedWith("");
+      ).to.be.revertedWith("amount > accrued fees");
     });
 
     it("Transfer some accrued fees", async () => {
