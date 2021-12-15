@@ -80,8 +80,8 @@ contract UniswapSingleTransferMigration is
         if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
+            _swap(_meToken);
         }
-        _swap(_meToken);
     }
 
     function finishMigration(address _meToken)
