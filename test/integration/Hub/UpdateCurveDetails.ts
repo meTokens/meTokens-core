@@ -585,12 +585,14 @@ const setup = async () => {
         expect(active).to.be.true;
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
+        // add 1 second to take into account the time when
+        // the mint transaction will be included
         const calcWAvrgRes = weightedAverageSimulation(
           calcTokenReturn,
           calcTargetTokenReturn,
           startTime.toNumber(),
           endTime.toNumber(),
-          block.timestamp
+          block.timestamp + 1
         );
         // buyer mint metokens
         await foundry
@@ -602,13 +604,14 @@ const setup = async () => {
           singleAssetVault.address
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
+        // not that precise because block timestamp is a little bit different of when we ask for tokenMinted
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           toETHNumber(tokenMinted),
           0.00001
         );
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcWAvrgRes,
-          0.000001
+          0.00000000000001
         );
       });
     });
@@ -1328,7 +1331,8 @@ const setup = async () => {
             meToken.address,
             tokenDeposited
           );
-
+          const mrd = await meTokenRegistry.getDetails(meToken.address);
+          const hd = await hub.getDetails(mrd.hubId);
           let balBefore = await meToken.balanceOf(account3.address);
           await meToken.connect(account3).transfer(account0.address, balBefore);
           balBefore = await meToken.balanceOf(account3.address);
@@ -1356,12 +1360,14 @@ const setup = async () => {
           expect(active).to.be.true;
           expect(updating).to.be.true;
           const block = await ethers.provider.getBlock("latest");
+          // add 1 second to take into account the time when
+          // the mint transaction will be included
           const calcWAvrgRes = weightedAverageSimulation(
             calcTokenReturn,
             calcTargetTokenReturn,
             startTime.toNumber(),
             endTime.toNumber(),
-            block.timestamp
+            block.timestamp + 1
           );
           // buyer mint metokens
           await foundry
@@ -1374,14 +1380,16 @@ const setup = async () => {
           expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(
             tokenDeposited
           );
-
+          // not that precise because block timestamp is a little bit different of when we ask for tokenMinted
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             toETHNumber(tokenMinted),
-            0.00001
+            0.01
           );
+          //ssqdsq
+          // dqdsqdq
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcWAvrgRes,
-            0.00001
+            0.0000000000001
           );
         });
       });
