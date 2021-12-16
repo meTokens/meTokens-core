@@ -95,6 +95,7 @@ contract UniswapSingleTransferMigration is
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
+        require(usts_.soonest < block.timestamp, "timestamp < soonest");
         require(!usts_.finished, "finished");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
