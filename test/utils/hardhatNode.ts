@@ -36,6 +36,20 @@ export async function mineBlock(timestamp: number): Promise<void> {
     params: [timestamp],
   });
 }
+
+export async function setNextBlockTimestamp(timestamp: number): Promise<void> {
+  await network.provider.request({
+    method: "evm_setNextBlockTimestamp",
+    params: [timestamp],
+  });
+}
+export async function setAutomine(automine: boolean): Promise<void> {
+  await network.provider.request({
+    method: "evm_setAutomine",
+    params: [automine],
+  });
+}
+
 export async function latestBlockNumber(): Promise<{
   number: number;
   timestamp: number;

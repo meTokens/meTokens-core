@@ -21,7 +21,14 @@ import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { passDays, passHours, passSeconds } from "../../utils/hardhatNode";
+import {
+  mineBlock,
+  passDays,
+  passHours,
+  passSeconds,
+  setAutomine,
+  setNextBlockTimestamp,
+} from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
 import { start } from "repl";
 const setup = async () => {
@@ -555,6 +562,8 @@ const setup = async () => {
         );
         await token.connect(account2).approve(foundry.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
+        await setAutomine(false);
+        const block = await ethers.provider.getBlock("latest");
         const tokenMinted = await foundry.calculateMeTokensMinted(
           meToken.address,
           tokenDeposited
@@ -566,6 +575,7 @@ const setup = async () => {
         const meTokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
+
         const calcTokenReturn = calculateTokenReturned(
           tokenDepositedInETH,
           toETHNumber(meTokenTotalSupply),
@@ -584,8 +594,8 @@ const setup = async () => {
         );
         expect(active).to.be.true;
         expect(updating).to.be.true;
-        const block = await ethers.provider.getBlock("latest");
-        // add 1 second to take into account the time when
+
+        //  take into account the time when
         // the mint transaction will be included
         const calcWAvrgRes = weightedAverageSimulation(
           calcTokenReturn,
@@ -594,17 +604,21 @@ const setup = async () => {
           endTime.toNumber(),
           block.timestamp + 1
         );
+        // to be precise we set the next block timestamp to be the same of when we ask for tokenMinted
+        //  await setNextBlockTimestamp(block.timestamp);
         // buyer mint metokens
         await foundry
           .connect(account2)
           .mint(meToken.address, tokenDeposited, account3.address);
+        await mineBlock(block.timestamp + 1);
+        await setAutomine(true);
         const balDaiAfterMint = await token.balanceOf(account2.address);
         const balAfter = await meToken.balanceOf(account3.address);
         const vaultBalAfterMint = await token.balanceOf(
           singleAssetVault.address
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
-        // not that precise because block timestamp is a little bit different of when we ask for tokenMinted
+
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           toETHNumber(tokenMinted),
           0.00001
@@ -1327,6 +1341,8 @@ const setup = async () => {
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
+          await setAutomine(false);
+          const block = await ethers.provider.getBlock("latest");
           const tokenMinted = await foundry.calculateMeTokensMinted(
             meToken.address,
             tokenDeposited
@@ -1334,9 +1350,9 @@ const setup = async () => {
           const mrd = await meTokenRegistry.getDetails(meToken.address);
           const hd = await hub.getDetails(mrd.hubId);
           let balBefore = await meToken.balanceOf(account3.address);
-          await meToken.connect(account3).transfer(account0.address, balBefore);
-          balBefore = await meToken.balanceOf(account3.address);
-          expect(balBefore).to.equal(0);
+          // await meToken.connect(account3).transfer(account0.address, balBefore);
+          //balBefore = await meToken.balanceOf(account3.address);
+          // expect(balBefore).to.equal(0);
           const meTokenTotalSupply = await meToken.totalSupply();
           const meTokenDetails = await meTokenRegistry.getDetails(
             meToken.address
@@ -1359,8 +1375,8 @@ const setup = async () => {
           );
           expect(active).to.be.true;
           expect(updating).to.be.true;
-          const block = await ethers.provider.getBlock("latest");
-          // add 1 second to take into account the time when
+
+          // take into account the time when
           // the mint transaction will be included
           const calcWAvrgRes = weightedAverageSimulation(
             calcTokenReturn,
@@ -1369,10 +1385,14 @@ const setup = async () => {
             endTime.toNumber(),
             block.timestamp + 1
           );
+
           // buyer mint metokens
           await foundry
             .connect(account2)
             .mint(meToken.address, tokenDeposited, account3.address);
+          // to be precise we set the next block timestamp to be the same of when we ask for tokenMinted
+          await mineBlock(block.timestamp + 1);
+          await setAutomine(true);
           const balAfter = await meToken.balanceOf(account3.address);
           const vaultBalAfterMint = await token.balanceOf(
             singleAssetVault.address
@@ -1380,13 +1400,11 @@ const setup = async () => {
           expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(
             tokenDeposited
           );
-          // not that precise because block timestamp is a little bit different of when we ask for tokenMinted
+          // not that precise because block timestamp is a little bit different of when we asked for tokenMinted
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             toETHNumber(tokenMinted),
             0.01
           );
-          //ssqdsq
-          // dqdsqdq
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcWAvrgRes,
             0.0000000000001
