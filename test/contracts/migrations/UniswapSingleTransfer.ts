@@ -18,7 +18,7 @@ import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 
-describe.only("UniswapSingleTransferMigration.sol", () => {
+describe("UniswapSingleTransferMigration.sol", () => {
   let earliestSwapTime: number;
   let DAI: string;
   let WETH: string;
@@ -58,6 +58,14 @@ describe.only("UniswapSingleTransferMigration.sol", () => {
   let badEncodedMigrationArgs: string;
   let encodedVaultDAIArgs: string;
   let encodedVaultWETHArgs: string;
+  let block;
+  let details: [BigNumber, number, boolean, boolean, boolean] & {
+    soonest: BigNumber;
+    fee: number;
+    started: boolean;
+    swapped: boolean;
+    finished: boolean;
+  };
 
   before(async () => {
     ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
@@ -227,7 +235,35 @@ describe.only("UniswapSingleTransferMigration.sol", () => {
   });
 
   describe("poke()", () => {
-    xit("Triggers startMigration()", async () => {});
+    it("should be able to call before soonest, but wont run startMigration()", async () => {
+      details = await migration.getDetails(meToken.address);
+      block = await ethers.provider.getBlock("latest");
+      expect(details.soonest).to.be.gt(block.timestamp);
+
+      const tx = await migration.poke(meToken.address);
+      await tx.wait();
+
+      await expect(tx).to.not.emit(singleAssetVault, "StartMigration");
+      details = await migration.getDetails(meToken.address);
+      expect(details.started).to.be.equal(false);
+    });
+    it("Triggers startMigration()", async () => {
+      await mineBlock(details.soonest.toNumber() + 1);
+      block = await ethers.provider.getBlock("latest");
+      expect(details.soonest).to.be.lt(block.timestamp);
+
+      const tx = await migration.poke(meToken.address);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(singleAssetVault, "StartMigration")
+        .withArgs(meToken.address)
+        // TODO check updated balance here
+        .to.emit(meTokenRegistry, "UpdateBalances");
+      details = await migration.getDetails(meToken.address);
+      expect(details.started).to.be.equal(true);
+      expect(details.swapped).to.be.equal(true);
+    });
   });
   describe("finishMigration()", () => {
     it("Reverts when sender is not meTokenRegistry", async () => {
@@ -235,7 +271,7 @@ describe.only("UniswapSingleTransferMigration.sol", () => {
         migration.finishMigration(meToken.address)
       ).to.be.revertedWith("!meTokenRegistry");
     });
-    it("Triggers startsMigration() if it hasn't already started", async () => {
+    xit("Triggers startsMigration() if it hasn't already started", async () => {
       // fast-forward 24h to when finishMigration() can be called
       let block = await ethers.provider.getBlock("latest");
       await mineBlock(block.timestamp + 24 * 60);
