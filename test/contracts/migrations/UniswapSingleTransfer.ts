@@ -60,7 +60,7 @@ const setup = async () => {
     let encodedVaultDAIArgs: string;
     let encodedVaultWETHArgs: string;
     let block;
-    let details: [BigNumber, number, boolean, boolean, boolean] & {
+    let migrationDetails: [BigNumber, number, boolean, boolean, boolean] & {
       soonest: BigNumber;
       fee: number;
       started: boolean;
@@ -238,22 +238,28 @@ const setup = async () => {
     });
 
     describe("poke()", () => {
+      it("should be able to call for invalid metoken, but wont run startMigration()", async () => {
+        const tx = await migration.poke(account0.address);
+        await tx.wait();
+
+        await expect(tx).to.not.emit(singleAssetVault, "StartMigration");
+      });
       it("should be able to call before soonest, but wont run startMigration()", async () => {
-        details = await migration.getDetails(meToken.address);
+        migrationDetails = await migration.getDetails(meToken.address);
         block = await ethers.provider.getBlock("latest");
-        expect(details.soonest).to.be.gt(block.timestamp);
+        expect(migrationDetails.soonest).to.be.gt(block.timestamp);
 
         const tx = await migration.poke(meToken.address);
         await tx.wait();
 
         await expect(tx).to.not.emit(singleAssetVault, "StartMigration");
-        details = await migration.getDetails(meToken.address);
-        expect(details.started).to.be.equal(false);
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.started).to.be.equal(false);
       });
       it("Triggers startMigration()", async () => {
-        await mineBlock(details.soonest.toNumber() + 1);
+        await mineBlock(migrationDetails.soonest.toNumber() + 1);
         block = await ethers.provider.getBlock("latest");
-        expect(details.soonest).to.be.lt(block.timestamp);
+        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
 
         const tx = await migration.poke(meToken.address);
         await tx.wait();
@@ -263,9 +269,15 @@ const setup = async () => {
           .withArgs(meToken.address)
           // TODO check updated balance here
           .to.emit(meTokenRegistry, "UpdateBalances");
-        details = await migration.getDetails(meToken.address);
-        expect(details.started).to.be.equal(true);
-        expect(details.swapped).to.be.equal(true);
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.started).to.be.equal(true);
+        expect(migrationDetails.swapped).to.be.equal(true);
+      });
+      it("should be able to call when migration already started, but wont run startMigration()", async () => {
+        const tx = await migration.poke(meToken.address);
+        await tx.wait();
+
+        await expect(tx).to.not.emit(singleAssetVault, "StartMigration");
       });
     });
     describe("finishMigration()", () => {
@@ -274,11 +286,113 @@ const setup = async () => {
           migration.finishMigration(meToken.address)
         ).to.be.revertedWith("!meTokenRegistry");
       });
-      xit("Triggers startsMigration() if it hasn't already started", async () => {
-        // fast-forward 24h to when finishMigration() can be called
-        let block = await ethers.provider.getBlock("latest");
-        await mineBlock(block.timestamp + 24 * 60);
+      it("Should not trigger startsMigration() if already started", async () => {
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
+
+        const tx = await meTokenRegistry.finishResubscribe(meToken.address);
+        await tx.wait();
+        console.log(
+          meTokenRegistryDetails.balancePooled
+            .add(meTokenRegistryDetails.balanceLocked)
+            .toString()
+        );
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .to.emit(weth, "Transfer")
+          .withArgs(
+            migration.address,
+            singleAssetVault.address,
+            meTokenRegistryDetails.balancePooled.add(
+              meTokenRegistryDetails.balanceLocked
+            )
+          )
+          .to.not.emit(singleAssetVault, "StartMigration");
+
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(0);
+        expect(migrationDetails.soonest).to.equal(0);
+        expect(migrationDetails.started).to.equal(false);
+        expect(migrationDetails.swapped).to.equal(false);
+        expect(migrationDetails.finished).to.equal(false);
       });
+      it("should revert before soonest", async () => {
+        block = await ethers.provider.getBlock("latest");
+        earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
+
+        await meTokenRegistry
+          .connect(account1)
+          .initResubscribe(
+            meToken.address,
+            hubId1,
+            migration.address,
+            encodedMigrationArgs
+          );
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(fees);
+        expect(migrationDetails.soonest).to.equal(earliestSwapTime);
+
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
+
+        await expect(
+          meTokenRegistry.finishResubscribe(meToken.address)
+        ).to.be.revertedWith("timestamp < soonest");
+      });
+      it("Triggers startsMigration() if it hasn't already started", async () => {
+        let meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        migrationDetails = await migration.getDetails(meToken.address);
+
+        await mineBlock(migrationDetails.soonest.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
+
+        const tx = await meTokenRegistry.finishResubscribe(meToken.address);
+        await tx.wait();
+
+        meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .to.emit(singleAssetVault, "StartMigration")
+          .withArgs(meToken.address)
+          // TODO check updated balance here
+          .to.emit(dai, "Transfer")
+          .withArgs(
+            migration.address,
+            singleAssetVault.address,
+            meTokenRegistryDetails.balancePooled.add(
+              meTokenRegistryDetails.balanceLocked
+            )
+          )
+          .to.emit(meTokenRegistry, "UpdateBalances");
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(0);
+        expect(migrationDetails.soonest).to.equal(0);
+        expect(migrationDetails.started).to.equal(false);
+        expect(migrationDetails.swapped).to.equal(false);
+        expect(migrationDetails.finished).to.equal(false);
+      });
+
+      // TODO seems redundant
+      xit("Reverts if migration already finished");
+
       describe("During resubscribe", () => {
         xit("From warmup => startTime: assets transferred to/from initial vault", async () => {});
         xit("From startTime => soonest: assets transferred to/from initial vault", async () => {});
