@@ -433,11 +433,10 @@ const setup = async () => {
         targetHubId = hubId2;
         block = await ethers.provider.getBlock("latest");
         const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-        encodedMigrationArgs = encodedMigrationArgs =
-          ethers.utils.defaultAbiCoder.encode(
-            ["uint256", "uint24"],
-            [earliestSwapTime, fees]
-          );
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
 
         const tx = meTokenRegistry
           .connect(account1)
@@ -650,11 +649,10 @@ const setup = async () => {
         expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-        encodedMigrationArgs = encodedMigrationArgs =
-          ethers.utils.defaultAbiCoder.encode(
-            ["uint256", "uint24"],
-            [earliestSwapTime, fees]
-          );
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fees]
+        );
 
         tx = await meTokenRegistry.initResubscribe(
           meToken,
