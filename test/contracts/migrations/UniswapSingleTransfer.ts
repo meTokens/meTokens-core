@@ -17,6 +17,7 @@ import { UniswapSingleTransferMigration } from "../../../artifacts/types/Uniswap
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
+import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
@@ -37,10 +38,12 @@ const setup = async () => {
     let curve: BancorABDK;
     let meTokenRegistry: MeTokenRegistry;
     let singleAssetVault: SingleAssetVault;
+    let singleAssetVault2: SingleAssetVault;
     let foundry: Foundry;
     let meToken: MeToken;
     let hub: Hub;
     let fee: Fees;
+    let vaultRegistry: VaultRegistry;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -53,6 +56,10 @@ const setup = async () => {
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
     const baseY = PRECISION.div(1000).toString();
+    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
+    const warmup = 2 * 60 * 24 * 24; // 2 days
+    const duration = 4 * 60 * 24 * 24; // 4 days
+    const coolDown = 5 * 60 * 24 * 24; // 5 days
 
     let encodedCurveDetails: string;
     let encodedMigrationArgs: string;
@@ -101,6 +108,7 @@ const setup = async () => {
         account1,
         account2,
         meTokenRegistry,
+        vaultRegistry,
         fee,
       } = await hubSetup(
         encodedCurveDetails,
@@ -108,11 +116,23 @@ const setup = async () => {
         refundRatio,
         curve
       ));
+
+      singleAssetVault2 = await deploy<SingleAssetVault>(
+        "SingleAssetVault",
+        undefined, //no libs
+        account0.address, // DAO
+        foundry.address, // foundry
+        hub.address, // hub
+        meTokenRegistry.address, //IMeTokenRegistry
+        migrationRegistry.address //IMigrationRegistry
+      );
+      await vaultRegistry.approve(singleAssetVault2.address);
+
       // Register 2nd hub to which we'll migrate to
       await hub.register(
         account0.address,
         WETH,
-        singleAssetVault.address,
+        singleAssetVault2.address,
         curve.address,
         refundRatio,
         encodedCurveDetails,
@@ -130,7 +150,7 @@ const setup = async () => {
       );
       await migrationRegistry.approve(
         singleAssetVault.address,
-        singleAssetVault.address,
+        singleAssetVault2.address,
         migration.address
       );
       // Pre fund owner & buyer w/ DAI & WETH
@@ -159,6 +179,7 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      await hub.setWarmup(hubWarmup);
     });
 
     describe("isValid()", () => {
@@ -296,11 +317,7 @@ const setup = async () => {
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
-        console.log(
-          meTokenRegistryDetails.balancePooled
-            .add(meTokenRegistryDetails.balanceLocked)
-            .toString()
-        );
+
         await expect(tx)
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(weth, "Transfer")
@@ -394,7 +411,59 @@ const setup = async () => {
       xit("Reverts if migration already finished");
 
       describe("During resubscribe", () => {
-        xit("From warmup => startTime: assets transferred to/from initial vault", async () => {});
+        before(async () => {
+          await meTokenRegistry.setWarmup(warmup);
+          await meTokenRegistry.setDuration(duration);
+          await meTokenRegistry.setCooldown(coolDown);
+
+          await meTokenRegistry
+            .connect(account2)
+            .subscribe(name, symbol, hubId1, 0);
+          const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+            account2.address
+          );
+          meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+          block = await ethers.provider.getBlock("latest");
+          earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint256", "uint24"],
+            [earliestSwapTime, fees]
+          );
+
+          await meTokenRegistry
+            .connect(account2)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+          migrationDetails = await migration.getDetails(meToken.address);
+          expect(migrationDetails.fee).to.equal(fees);
+          expect(migrationDetails.soonest).to.equal(earliestSwapTime);
+        });
+
+        it("From warmup => startTime: assets transferred to/from initial vault", async () => {
+          const vaultBalanceBefore = await dai.balanceOf(
+            singleAssetVault.address
+          );
+
+          await dai.connect(account2).approve(foundry.address, amount);
+          const tx = await foundry
+            .connect(account2)
+            .mint(meToken.address, amount, account2.address);
+          await tx.wait();
+
+          await expect(tx).to.be.emit(dai, "Transfer");
+
+          const vaultBalanceAfter = await dai.balanceOf(
+            singleAssetVault.address
+          );
+
+          console.log(vaultBalanceAfter.sub(vaultBalanceBefore));
+        });
         xit("From startTime => soonest: assets transferred to/from initial vault", async () => {});
         xit("From soonest => endTime: assets transferred to/from migration vault", async () => {});
         xit("After endTime: assets transferred to/from target vault", async () => {});
