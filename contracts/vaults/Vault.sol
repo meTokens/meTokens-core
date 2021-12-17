@@ -21,8 +21,6 @@ abstract contract Vault is Ownable, IVault {
     IHub public hub;
     IMeTokenRegistry public meTokenRegistry;
     IMigrationRegistry public migrationRegistry;
-    /// @dev key: addr of asset, value: cumulative fees paid in the asset
-    mapping(address => uint256) public accruedFees;
 
     constructor(
         address _dao,
@@ -63,20 +61,12 @@ abstract contract Vault is Ownable, IVault {
         if (_max) {
             _amount = accruedFees[_asset];
         } else {
-            require(_amount <= accruedFees[_asset]);
+            require(_amount > 0, "amount < 0");
+            require(_amount <= accruedFees[_asset], "amount > accrued fees");
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);
         emit Withdraw(_asset, _amount);
-    }
-
-    function getAccruedFees(address _asset)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return accruedFees[_asset];
     }
 
     function isValid(address _meToken, bytes memory _encodedArgs)
