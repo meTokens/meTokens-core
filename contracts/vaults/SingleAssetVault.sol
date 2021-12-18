@@ -27,17 +27,7 @@ contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
-        require(
-            msg.sender == address(hub) ||
-                // TODO: Ensure meToken can actually start migrating from the migration addr
-                // and properly check these arguments
-                migrationRegistry.isApproved(
-                    address(this),
-                    address(this),
-                    meToken_.migration
-                ),
-            "!hub || !migrationRegistry.approved"
-        );
+        require(msg.sender == (meToken_.migration), "!migration");
         uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
 
         if (
