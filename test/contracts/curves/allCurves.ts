@@ -23,14 +23,15 @@ import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/sta
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import { BancorPower } from "../../../artifacts/types/BancorPower";
+import { ICurve } from "../../../artifacts/types/ICurve";
 
 describe("All curves", () => {
   before("setup curves instance", async () => {});
 });
 const setup = async () => {
+  let curves = new Array();
   let DAI: string;
   let meTokenRegistry: MeTokenRegistry;
-  let bancorABDK: BancorABDK;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
@@ -41,26 +42,70 @@ const setup = async () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   const one = ethers.utils.parseEther("1");
-  let baseY: BigNumber;
   const MAX_WEIGHT = 1000000;
-  let reserveWeight = MAX_WEIGHT / 2;
-  let hubId = 1;
+
   let token;
   let tokenAddr: string;
-  baseY = one.mul(1000);
 
   ({ DAI } = await getNamedAccounts());
-
-  let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
   );
-  bancorABDK = await deploy<BancorABDK>("BancorABDK");
+  const bancorABDK = await deploy<BancorABDK>("BancorABDK");
+  const bancorPower = await deploy<BancorPower>("BancorPower");
 
+  // Setting up curve info to test
+
+  let baseY1 = one.mul(1000);
+  let reserveWeight1 = MAX_WEIGHT / 2;
+  let targetReserveWeight1 = MAX_WEIGHT - 20000;
+  let encodedCurveDetails1 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY1, reserveWeight1]
+  );
+
+  let baseY2 = one.mul(100);
+  let reserveWeight2 = MAX_WEIGHT / 10;
+  let targetReserveWeight2 = reserveWeight2 + 20000;
+  let encodedCurveDetails2 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY2, reserveWeight2]
+  );
+
+  let baseY3 = one.mul(1);
+  let reserveWeight3 = 100000;
+  let targetReserveWeight3 = reserveWeight3 + 10000;
+  let encodedCurveDetails3 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY3, reserveWeight3]
+  );
+
+  let baseY4 = one.mul(1);
+  let reserveWeight4 = 100000;
+  let targetReserveWeight4 = reserveWeight4 + 10000;
+  let encodedCurveDetails4 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY4, reserveWeight4]
+  );
+
+  let baseY5 = one.mul(1);
+  let reserveWeight5 = 500000;
+  let targetReserveWeight5 = 333333;
+  let encodedCurveDetails5 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY5, reserveWeight5]
+  );
+
+  let baseY6 = one.mul(1);
+  let reserveWeight6 = 250000;
+  let targetReserveWeight6 = 333333;
+  let encodedCurveDetails6 = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY6, reserveWeight6]
+  );
+
+  // Create hub and register first hub
   ({
     token,
     hub,
@@ -73,33 +118,22 @@ const setup = async () => {
     account1,
     account2,
     meTokenRegistry,
-  } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, bancorABDK));
-  dai = token;
+  } = await hubSetup(encodedCurveDetails1, encodedVaultArgs, 5000, bancorABDK));
 
-  let targetReserveWeight = MAX_WEIGHT - 20000;
-  const curve1 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight: reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // Second Curve
-  baseY = one.mul(100);
-  reserveWeight = MAX_WEIGHT / 10;
-  targetReserveWeight = reserveWeight + 20000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hub2 = await addHubSetup(
+  let hubArgs: [
+    Hub,
+    Foundry,
+    MeTokenRegistry,
+    CurveRegistry,
+    string,
+    MigrationRegistry,
+    VaultRegistry,
+    string,
+    string,
+    number,
+    ICurve,
+    string
+  ] = [
     hub,
     foundry,
     meTokenRegistry,
@@ -107,422 +141,144 @@ const setup = async () => {
     tokenAddr,
     migrationRegistry,
     vaultRegistry,
-    encodedCurveDetails,
+    encodedCurveDetails1,
     encodedVaultArgs,
     5000,
     bancorABDK,
-    account0.address
-  );
-
-  const curve2 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hub2.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // third curve
-
-  baseY = one.mul(1);
-  reserveWeight = 100000;
-  targetReserveWeight = reserveWeight + 10000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hub3 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorABDK,
-    account0.address
-  );
-
-  const curve3 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hub3.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // fourth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 100000;
-  targetReserveWeight = reserveWeight - 20000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hub4 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorABDK,
-    account0.address
-  );
-
-  const curve4 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hub4.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // fifth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 500000;
-  targetReserveWeight = 333333;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hub5 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorABDK,
-    account0.address
-  );
-
-  const curve5 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hub5.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // sixth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 500000;
-  targetReserveWeight = 333333;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hub6 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorABDK,
-    account0.address
-  );
-
-  const curve6 = {
-    signers: [account0, account1, account2],
-    curve: bancorABDK,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hub6.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // Curve Power
-  const bancorPower = await deploy<BancorPower>("BancorPower");
-
-  baseY = one.mul(1000);
-  reserveWeight = MAX_WEIGHT / 2;
-  targetReserveWeight = reserveWeight - 20000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp1 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep1 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp1.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // power 2
-
-  baseY = one.mul(100);
-  reserveWeight = MAX_WEIGHT / 10;
-  targetReserveWeight = reserveWeight + 20000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp2 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep2 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp2.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // third curve
-
-  baseY = one.mul(1);
-  reserveWeight = 100000;
-  targetReserveWeight = reserveWeight + 10000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp3 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep3 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp3.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // fourth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 100000;
-  targetReserveWeight = reserveWeight - 20000;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp4 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep4 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp4.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // fifth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 500000;
-  targetReserveWeight = 333333;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp5 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep5 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp5.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  // sixth curve
-
-  baseY = one.mul(1);
-  reserveWeight = 500000;
-  targetReserveWeight = 333333;
-  encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
-  const hubp6 = await addHubSetup(
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address
-  );
-
-  const curvep6 = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    baseY: toETHNumber(baseY),
-    reserveWeight,
-    MAX_WEIGHT,
-    targetReserveWeight,
-    hubId: hubp6.hubId,
-    calculateCollateralReturned,
-    calculateTokenReturned,
-    calculateTokenReturnedFromZero,
-    precision: 0.000000000001,
-  };
-
-  return [
-    curve1,
-    curve2,
-    curve3,
-    curve4,
-    curve5,
-    curve6,
-    curvep1,
-    curvep2,
-    curvep3,
-    curvep4,
-    curvep5,
-    curvep6,
+    account0.address,
   ];
+  let hubDetails = await addHubSetup(...hubArgs);
+
+  let curve = {
+    signers: [account0, account1, account2],
+    curve: bancorABDK,
+    baseY: toETHNumber(baseY1),
+    reserveWeight: reserveWeight1,
+    MAX_WEIGHT: MAX_WEIGHT,
+    targetReserveWeight: targetReserveWeight1,
+    hubId: hubDetails.hubId,
+    calculateCollateralReturned: calculateCollateralReturned,
+    calculateTokenReturned: calculateTokenReturned,
+    calculateTokenReturnedFromZero: calculateTokenReturnedFromZero,
+    precision: 0.000000000001,
+  };
+
+  curves.push(curve);
+
+  // Second ABDK Curve
+  hubArgs[7] = encodedCurveDetails2;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY2);
+  curve.reserveWeight = reserveWeight2;
+  curve.targetReserveWeight = targetReserveWeight2;
+  curves.push(curve);
+
+  // Third ABDK curve
+  hubArgs[7] = encodedCurveDetails3;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY3);
+  curve.reserveWeight = reserveWeight3;
+  curve.targetReserveWeight = targetReserveWeight3;
+  curves.push(curve);
+
+  // Fourth ABDK curve
+  hubArgs[7] = encodedCurveDetails4;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY4);
+  curve.reserveWeight = reserveWeight4;
+  curve.targetReserveWeight = targetReserveWeight4;
+  curves.push(curve);
+
+  // fifth ABDK curve
+  hubArgs[7] = encodedCurveDetails5;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY5);
+  curve.reserveWeight = reserveWeight5;
+  curve.targetReserveWeight = targetReserveWeight5;
+  curves.push(curve);
+
+  // sixth ABDK curve
+  hubArgs[7] = encodedCurveDetails6;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY6);
+  curve.reserveWeight = reserveWeight6;
+  curve.targetReserveWeight = targetReserveWeight6;
+  curves.push(curve);
+
+  // Bancor Power
+  hubArgs[-2] = bancorPower;
+
+  // First Power curve
+  hubArgs[7] = encodedCurveDetails1;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY1);
+  curve.reserveWeight = reserveWeight1;
+  curve.targetReserveWeight = targetReserveWeight1;
+  curves.push(curve);
+
+  // Second Power curve
+  hubArgs[7] = encodedCurveDetails2;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY2);
+  curve.reserveWeight = reserveWeight2;
+  curve.targetReserveWeight = targetReserveWeight2;
+  curves.push(curve);
+
+  // third power curve
+  hubArgs[7] = encodedCurveDetails3;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY3);
+  curve.reserveWeight = reserveWeight3;
+  curve.targetReserveWeight = targetReserveWeight3;
+  curves.push(curve);
+
+  // fourth power curve
+  hubArgs[7] = encodedCurveDetails4;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY4);
+  curve.reserveWeight = reserveWeight4;
+  curve.targetReserveWeight = targetReserveWeight4;
+  curves.push(curve);
+
+  // fifth power curve
+  hubArgs[7] = encodedCurveDetails5;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY5);
+  curve.reserveWeight = reserveWeight5;
+  curve.targetReserveWeight = targetReserveWeight5;
+  curves.push(curve);
+
+  // sixth power curve
+  hubArgs[7] = encodedCurveDetails6;
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curve.hubId = hubDetails.hubId;
+  curve.baseY = toETHNumber(baseY6);
+  curve.reserveWeight = reserveWeight6;
+  curve.targetReserveWeight = targetReserveWeight6;
+  curves.push(curve);
+
+  return curves;
 };
 setup().then((tests) => {
   describe(`${tests.length} Curves should work`, async () => {
