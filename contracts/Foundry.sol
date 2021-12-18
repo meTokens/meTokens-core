@@ -82,24 +82,24 @@ contract Foundry is IFoundry, Ownable, Initializable {
             _meToken,
             assetsDepositedAfterFees
         );
-        IVault vault;
-        address asset;
+        IVault vault = IVault(hub_.vault);
+        address asset = hub_.asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
         // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
         // in which case a migration vault isn't needed
-        if (
-            meToken_.migration != address(0) &&
-            block.timestamp > meToken_.startTime
-        ) {
-            vault = IVault(meToken_.migration);
-            // Use meToken address to get the asset address from the migration vault
+        if (meToken_.migration != address(0)) {
             Details.Hub memory targetHub_ = hub.getDetails(
                 meToken_.targetHubId
             );
-            asset = targetHub_.asset;
-        } else {
-            vault = IVault(hub_.vault);
-            asset = hub_.asset;
+            if (block.timestamp > meToken_.endTime) {
+                // Use meToken address to get the asset address from the migration vault
+                vault = IVault(targetHub_.vault);
+                asset = targetHub_.asset;
+            } else if (block.timestamp > meToken_.startTime) {
+                // Use meToken address to get the asset address from the migration vault
+                vault = IVault(meToken_.migration);
+                asset = targetHub_.asset;
+            }
         }
         IERC20(asset).safeTransferFrom(
             msg.sender,
