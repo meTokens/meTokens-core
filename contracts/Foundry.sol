@@ -69,6 +69,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         } else if (meToken_.targetHubId != 0) {
             if (block.timestamp > meToken_.endTime) {
                 meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+                hub_ = hub.getDetails(meToken_.hubId);
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
                 IMigration(meToken_.migration).poke(_meToken);
@@ -87,19 +88,16 @@ contract Foundry is IFoundry, Ownable, Initializable {
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
         // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
         // in which case a migration vault isn't needed
-        if (meToken_.migration != address(0)) {
+        if (
+            meToken_.migration != address(0) &&
+            block.timestamp > meToken_.startTime
+        ) {
             Details.Hub memory targetHub_ = hub.getDetails(
                 meToken_.targetHubId
             );
-            if (block.timestamp > meToken_.endTime) {
-                // Use meToken address to get the asset address from the migration vault
-                vault = IVault(targetHub_.vault);
-                asset = targetHub_.asset;
-            } else if (block.timestamp > meToken_.startTime) {
-                // Use meToken address to get the asset address from the migration vault
-                vault = IVault(meToken_.migration);
-                asset = targetHub_.asset;
-            }
+            // Use meToken address to get the asset address from the migration vault
+            vault = IVault(meToken_.migration);
+            asset = targetHub_.asset;
         }
         IERC20(asset).safeTransferFrom(
             msg.sender,
@@ -174,6 +172,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
         ) {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+            hub_ = hub.getDetails(meToken_.hubId);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
@@ -221,16 +220,31 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         uint256 fee = assetsReturned * feeRate;
         assetsReturned -= fee;
-        IERC20(hub_.asset).safeTransferFrom(
-            hub_.vault,
+
+        IVault _vault = IVault(hub_.vault);
+        address _asset = hub_.asset;
+
+        if (
+            meToken_.migration != address(0) &&
+            block.timestamp > meToken_.startTime
+        ) {
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+            _vault = IVault(meToken_.migration);
+            _asset = targetHub_.asset;
+        }
+
+        IERC20(_asset).safeTransferFrom(
+            address(_vault),
             _recipient,
             assetsReturned
         );
-        IVault(hub_.vault).addFee(hub_.asset, fee);
+        _vault.addFee(_asset, fee);
 
         emit Burn(
             _meToken,
-            hub_.asset,
+            _asset,
             msg.sender,
             _recipient,
             _meTokensBurned,
