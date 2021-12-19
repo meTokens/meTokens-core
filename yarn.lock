@@ -1028,15 +1028,17 @@
   resolved "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.11.1.tgz"
   integrity sha512-H8BSBoKE8EubJa0ONqecA2TviT3TnHeC4NpgnAHSUiuhZoQBfPB4L2P9bs8R6AoTW10Endvh3vc+fomVMIDIYQ==
 
-"@solidity-parser/parser@^0.12.0":
-  version "0.12.2"
-  resolved "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.12.2.tgz"
-  integrity sha512-d7VS7PxgMosm5NyaiyDJRNID5pK4AWj1l64Dbz0147hJgy5k2C0/ZiKK/9u5c5K+HRUVHmp+RMvGEjGh84oA5Q==
-
 "@solidity-parser/parser@^0.13.2":
   version "0.13.2"
   resolved "https://registry.npmjs.org/@solidity-parser/parser/-/parser-0.13.2.tgz"
   integrity sha512-RwHnpRnfrnD2MSPveYoPh8nhofEvX7fgjHk1Oq+NNvCcLx4r1js91CO9o+F/F3fBzOCyvm8kKRTriFICX/odWw==
+  dependencies:
+    antlr4ts "^0.5.0-alpha.4"
+
+"@solidity-parser/parser@^0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.14.0.tgz#d51f074efb0acce0e953ec48133561ed710cebc0"
+  integrity sha512-cX0JJRcmPtNUJpzD2K7FdA7qQsTOk1UZnFx2k7qAg9ZRvuaH5NBe5IEdBMXGlmf2+FmjhqbygJ26H8l2SV7aKQ==
   dependencies:
     antlr4ts "^0.5.0-alpha.4"
 
@@ -1656,6 +1658,11 @@ array-union@^2.1.0:
   version "2.1.0"
   resolved "https://registry.npmjs.org/array-union/-/array-union-2.1.0.tgz"
   integrity sha512-HGyxoOTYUyCM6stUe6EJgnd4EoewAI7zMdfqO+kGjnlZmBDz/cR5pf8r/cR4Wq60sL/p0IkcjUEEPwS3GFrIyw==
+
+array-uniq@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/array-uniq/-/array-uniq-1.0.3.tgz#af6ac877a25cc7f74e058894753858dfdb24fdb6"
+  integrity sha1-r2rId6Jcx/dOBYiUdThY39sk/bY=
 
 array-unique@^0.3.2:
   version "0.3.2"
@@ -3928,13 +3935,13 @@ eth-ens-namehash@2.0.8, eth-ens-namehash@^2.0.8:
     idna-uts46-hx "^2.3.1"
     js-sha3 "^0.5.7"
 
-eth-gas-reporter@^0.2.20:
-  version "0.2.22"
-  resolved "https://registry.npmjs.org/eth-gas-reporter/-/eth-gas-reporter-0.2.22.tgz"
-  integrity sha512-L1FlC792aTf3j/j+gGzSNlGrXKSxNPXQNk6TnV5NNZ2w3jnQCRyJjDl0zUo25Cq2t90IS5vGdbkwqFQK7Ce+kw==
+eth-gas-reporter@^0.2.23:
+  version "0.2.23"
+  resolved "https://registry.yarnpkg.com/eth-gas-reporter/-/eth-gas-reporter-0.2.23.tgz#7a2a412b41285298cdad810cf54adac11d406208"
+  integrity sha512-T8KsVakDEupvQxW3MfFfHDfJ7y8zl2+XhyEQk4hZ3qQsAh/FE27BfFHM9UhqNQvrJLz8zVWnPZWNcARwLT/lsA==
   dependencies:
     "@ethersproject/abi" "^5.0.0-beta.146"
-    "@solidity-parser/parser" "^0.12.0"
+    "@solidity-parser/parser" "^0.14.0"
     cli-table3 "^0.5.0"
     colors "^1.1.2"
     ethereumjs-util "6.2.0"
@@ -5298,12 +5305,13 @@ hardhat-deploy@^0.9.2:
     murmur-128 "^0.2.1"
     qs "^6.9.4"
 
-hardhat-gas-reporter@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.npmjs.org/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.4.tgz"
-  integrity sha512-G376zKh81G3K9WtDA+SoTLWsoygikH++tD1E7llx+X7J+GbIqfwhDKKgvJjcnEesMrtR9UqQHK02lJuXY1RTxw==
+hardhat-gas-reporter@^1.0.6:
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.6.tgz#699bc0bb96e8c962c7f136a1c1f29cd3c32d569e"
+  integrity sha512-LlCEmSx1dZpnxKmODb2hmP5eJ1IAM5It3NnBNTUpBTxn9g9qPPI3JQTxj8AbGEiNc3r6V+w/mXYCmiC8pWvnoQ==
   dependencies:
-    eth-gas-reporter "^0.2.20"
+    array-uniq "1.0.3"
+    eth-gas-reporter "^0.2.23"
     sha1 "^1.1.1"
 
 hardhat-watcher@^2.1.1:

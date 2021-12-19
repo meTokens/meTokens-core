@@ -225,7 +225,7 @@ contract BancorPower is Power, ICurve {
         bytes16 reserveWeight = _reserveWeight.fromUInt().div(_maxWeight);
         // _assetsDeposited * baseY ^ (1/connectorWeight)
         bytes16 numerator = _assetsDeposited.fromUInt().mul(
-            _baseY.fromUInt().ln().mul(_one.div(reserveWeight)).exp()
+            _baseX.ln().mul(_one.div(reserveWeight)).exp()
         );
         // as baseX == 1 ether and we want to result to be in ether too we simply remove
         // the multiplication by baseY
@@ -238,8 +238,8 @@ contract BancorPower is Power, ICurve {
         bytes16 res = (numerator.div(denominator))
             .ln()
             .mul(reserveWeight)
-            .exp()
-            .mul(_maxWeight);
+            .exp();
+
         return res.toUInt();
     }
 
