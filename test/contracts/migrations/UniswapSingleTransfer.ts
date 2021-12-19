@@ -518,7 +518,7 @@ const setup = async () => {
           expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
             amount
           ); // amount deposited before start time
-          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // migration receive WETH
+          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
           // TODO fix with swap balance
           expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
         });
@@ -550,7 +550,7 @@ const setup = async () => {
             .mint(meToken.address, amount, account2.address);
           await tx.wait();
 
-          await expect(tx).to.be.emit(dai, "Transfer");
+          await expect(tx).to.be.emit(weth, "Transfer");
 
           const initialVaultDAIAfter = await dai.balanceOf(
             initialVault.address
@@ -565,22 +565,16 @@ const setup = async () => {
             targetVault.address
           );
 
-          console.log("migrationWETHBefore", migrationWETHBefore.toString());
-          console.log("migrationWETHAfter", migrationWETHAfter.toString());
-          console.log("targetVaultDAIBefore", targetVaultDAIBefore.toString());
-          console.log("targetVaultDAIAfter", targetVaultDAIAfter.toString());
-          console.log(
-            "targetVaultWETHBefore",
-            targetVaultWETHBefore.toString()
-          );
-          console.log("targetVaultWETHAfter", targetVaultWETHAfter.toString());
-
           expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
             0
           ); // initial vault weth balance has no change
-          expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
-            amount
-          ); // initial vault dai balance has no change
+          expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(0); // initial vault dai balance has no change
+          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
+          expect(migrationWETHAfter).to.be.equal(0); // migration balance goes to target vault
+          expect(targetVaultDAIAfter.sub(targetVaultDAIBefore)).to.be.equal(0); // no change
+          expect(targetVaultWETHAfter.sub(targetVaultWETHBefore)).to.be.equal(
+            amount.add(migrationWETHBefore)
+          ); // newly minted amount + migration weth balance
         });
       });
     });
