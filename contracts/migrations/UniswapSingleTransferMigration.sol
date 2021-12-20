@@ -5,7 +5,6 @@ import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRoute
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
 import "../interfaces/IMigration.sol";
@@ -74,7 +73,7 @@ contract UniswapSingleTransferMigration is
 
     function poke(address _meToken) external override {
         // Make sure meToken is in a state of resubscription
-        UniswapSingleTransfer memory usts_ = _uniswapSingleTransfers[_meToken];
+        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
