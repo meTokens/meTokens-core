@@ -472,8 +472,6 @@ const setup = async () => {
             initialVaultBalanceAfter.sub(initialVaultBalanceBefore)
           ).to.equal(amount);
         });
-        // TODO invalid as assets will be transferred to migration after start time
-        xit("From startTime => soonest: assets transferred to/from initial vault", async () => {});
         it("From soonest => endTime: assets transferred to/from migration vault", async () => {
           const meTokenDetails = await meTokenRegistry.getDetails(
             meToken.address
@@ -508,9 +506,6 @@ const setup = async () => {
           );
           const migrationDAIAfter = await dai.balanceOf(migration.address);
           const migrationWETHAfter = await weth.balanceOf(migration.address);
-
-          console.log("migrationWETHBefore", migrationWETHBefore.toString());
-          console.log("migrationWETHAfter", migrationWETHAfter.toString());
 
           expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
             0
