@@ -2,9 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "../MeToken.sol";
-
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
 import "../interfaces/IMeTokenRegistry.sol";
@@ -223,14 +221,13 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         require(msg.sender == meToken_.migration, "!migration");
 
         uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
-        meToken_.balancePooled *=
-            (PRECISION * _newBalance) /
-            oldBalance /
-            PRECISION;
-        meToken_.balanceLocked *=
-            (PRECISION * _newBalance) /
-            oldBalance /
-            PRECISION;
+
+        meToken_.balancePooled =
+            (meToken_.balancePooled * (PRECISION * _newBalance)) /
+            (oldBalance * PRECISION);
+        meToken_.balanceLocked =
+            (meToken_.balanceLocked * PRECISION * _newBalance) /
+            (oldBalance * PRECISION);
 
         emit UpdateBalances(_meToken, _newBalance);
     }
