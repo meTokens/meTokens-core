@@ -73,6 +73,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
                 IMigration(meToken_.migration).poke(_meToken);
+                meToken_ = meTokenRegistry.getDetails(_meToken);
             }
         }
 
