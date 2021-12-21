@@ -67,12 +67,11 @@ const setup = async () => {
     let encodedVaultDAIArgs: string;
     let encodedVaultWETHArgs: string;
     let block;
-    let migrationDetails: [BigNumber, number, boolean, boolean, boolean] & {
+    let migrationDetails: [BigNumber, number, boolean, boolean] & {
       soonest: BigNumber;
       fee: number;
       started: boolean;
       swapped: boolean;
-      finished: boolean;
     };
 
     before(async () => {
@@ -335,7 +334,6 @@ const setup = async () => {
         expect(migrationDetails.soonest).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
         expect(migrationDetails.swapped).to.equal(false);
-        expect(migrationDetails.finished).to.equal(false);
       });
       it("should revert before soonest", async () => {
         await migrationRegistry.approve(
@@ -410,11 +408,7 @@ const setup = async () => {
         expect(migrationDetails.soonest).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
         expect(migrationDetails.swapped).to.equal(false);
-        expect(migrationDetails.finished).to.equal(false);
       });
-
-      // Reentrancy case
-      xit("Reverts if migration already finished");
 
       describe("During resubscribe", () => {
         before(async () => {
