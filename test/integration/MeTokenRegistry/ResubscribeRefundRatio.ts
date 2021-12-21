@@ -46,8 +46,8 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
   let encodedCurveDetails: string;
   let encodedVaultArgs: string;
   const firstHubId = 1;
-  const firstRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
-  const targetedRefundRatio = ethers.utils.parseUnits("500000", 0); // 50%
+  const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
+  const targetRefundRatio = ethers.utils.parseUnits("500000", 0); // 50%
   const fees = 3000;
 
   let tokenDepositedInETH;
@@ -85,7 +85,7 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
     } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
-      firstRefundRatio.toNumber(),
+      initialRefundRatio.toNumber(),
       bancorABDK
     ));
 
@@ -129,7 +129,7 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       WETH,
       singleAssetVault.address,
       bancorABDK.address,
-      targetedRefundRatio,
+      targetRefundRatio,
       encodedCurveDetails,
       encodedVaultArgs
     );
@@ -181,12 +181,15 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       await foundry
         .connect(account0)
         .burn(meToken.address, ownerMeTokenBefore, account0.address);
+
+      const totalSupply = await meToken.totalSupply();
       const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
       const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
       const ownerDAIAfter = await dai.balanceOf(account0.address);
       const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
 
+      expect(totalSupply).to.equal(0);
       expect(ownerMeTokenAfter).to.equal(0);
       expect(ownerDAIAfter.sub(ownerDAIBefore)).to.equal(tokenDeposited);
       expect(vaultDAIAfter).to.equal(0);
@@ -207,13 +210,15 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
         .connect(account1) // non owner
         .burn(meToken.address, buyerMeTokenBefore, account1.address);
 
+      const totalSupply = await meToken.totalSupply();
       const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
       const buyerDAIAfter = await dai.balanceOf(account1.address);
       const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
       const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
-      const refundAmount = tokenDeposited.mul(firstRefundRatio).div(1e6);
+      const refundAmount = tokenDeposited.mul(initialRefundRatio).div(1e6);
 
+      expect(totalSupply).to.equal(0);
       expect(buyerMeTokenAfter).to.equal(0);
       expect(buyerDAIAfter.sub(buyerDAIBefore)).to.equal(refundAmount);
       expect(vaultDAIBefore.sub(vaultDAIAfter)).to.equal(refundAmount);
@@ -257,6 +262,7 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
         .connect(account0)
         .burn(meToken.address, ownerMeTokenBefore, account0.address);
 
+      const totalSupply = await meToken.totalSupply();
       const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
       const ownerDAIAfter = await dai.balanceOf(account0.address);
       const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
@@ -266,6 +272,7 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       const migrationWETHAfter = await weth.balanceOf(migration.address);
       const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
+      expect(totalSupply).to.equal(0);
       expect(ownerMeTokenAfter).to.equal(0); // as all tokens are burned
       expect(ownerDAIAfter).to.equal(ownerDAIBefore); // as owner receives new fund in weth
       expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault do not receive any funds
@@ -276,30 +283,69 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       expect(metokenDetails.balancePooled).to.equal(0);
       expect(metokenDetails.balanceLocked).to.equal(0);
     });
-    xit("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
-      await foundry
+    it("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
+      const tx = await foundry
         .connect(account2)
         .mint(meToken.address, tokenDeposited, account1.address);
 
+      await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
+
       const buyerMeTokenBefore = await meToken.balanceOf(account1.address);
       const buyerDAIBefore = await dai.balanceOf(account1.address);
-      const ownerDAIBefore = await dai.balanceOf(account0.address);
       const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
+      const buyerWETHBefore = await weth.balanceOf(account1.address);
+      const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
+      const migrationDAIBefore = await dai.balanceOf(migration.address);
+      const migrationWETHBefore = await weth.balanceOf(migration.address);
+
+      expect(migrationWETHBefore).to.equal(tokenDeposited);
 
       await foundry
         .connect(account1) // non owner
         .burn(meToken.address, buyerMeTokenBefore, account1.address);
 
+      const { startTime, endTime, targetHubId } =
+        await meTokenRegistry.getDetails(meToken.address);
+      const { refundRatio: targetRefundRatio } = await hub.getDetails(
+        targetHubId
+      );
+      const block = await ethers.provider.getBlock("latest");
+      const calculatedWeightedAvg = weightedAverageSimulation(
+        initialRefundRatio.toNumber(),
+        targetRefundRatio.toNumber(),
+        startTime.toNumber(),
+        endTime.toNumber(),
+        block.timestamp
+      );
+
       const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
       const buyerDAIAfter = await dai.balanceOf(account1.address);
-      const ownerDAIAfter = await dai.balanceOf(account0.address);
       const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
+      const buyerWETHAfter = await weth.balanceOf(account1.address);
+      const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
+      const migrationDAIAfter = await dai.balanceOf(migration.address);
+      const migrationWETHAfter = await weth.balanceOf(migration.address);
+      const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
+      const totalSupply = await meToken.totalSupply();
 
-      const refundAmount = tokenDeposited.mul(firstRefundRatio).div(1e6);
+      const refundAmount = tokenDeposited
+        .mul(Math.floor(calculatedWeightedAvg))
+        .div(1e6);
 
-      expect(buyerMeTokenAfter).to.equal(0);
-      expect(buyerDAIAfter.sub(buyerDAIBefore)).to.equal(refundAmount);
-      expect(vaultDAIBefore.sub(vaultDAIAfter)).to.equal(refundAmount);
+      expect(totalSupply).to.equal(0);
+      expect(buyerMeTokenAfter).to.equal(0); // as all tokens are burned
+      expect(buyerDAIAfter).to.equal(buyerDAIBefore); // as buyer receives new fund in weth
+      expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault do not receive any funds
+      expect(vaultWETHBefore).to.equal(vaultWETHAfter); // as vault do not receive any funds
+      expect(migrationDAIBefore).to.equal(migrationDAIAfter); // as migration receives new fund in weth
+      expect(metokenDetails.balancePooled).to.equal(0);
+      expect(metokenDetails.balanceLocked).to.equal(
+        tokenDeposited.sub(refundAmount)
+      );
+      expect(buyerWETHAfter.sub(buyerWETHBefore)).to.equal(refundAmount);
+      expect(migrationWETHBefore.sub(migrationWETHAfter)).to.equal(
+        refundAmount
+      );
     });
   });
 
@@ -315,3 +361,22 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
     xit("burn() [buyer]: assets received based on targetRefundRatio", async () => {});
   });
 });
+// console.log("totalSupply", (await meToken.totalSupply()).toString());
+// console.log("ownerMeTokenBefore", ownerMeTokenBefore.toString());
+// console.log("ownerDAIBefore", ownerDAIBefore.toString());
+// console.log("vaultDAIBefore", vaultDAIBefore.toString());
+// console.log("ownerWETHBefore", ownerWETHBefore.toString());
+// console.log("vaultWETHBefore", vaultWETHBefore.toString());
+// console.log("migrationDAIBefore", migrationDAIBefore.toString());
+// console.log("migrationWETHBefore", migrationWETHBefore.toString());
+
+// console.log("ownerMeTokenAfter", ownerMeTokenAfter.toString());
+// console.log("ownerDAIAfter", ownerDAIAfter.toString());
+// console.log("vaultDAIAfter", vaultDAIAfter.toString());
+// console.log("ownerWETHAfter", ownerWETHAfter.toString());
+// console.log("vaultWETHAfter", vaultWETHAfter.toString());
+// console.log("migrationDAIAfter", migrationDAIAfter.toString());
+// console.log("migrationWETHAfter", migrationWETHAfter.toString());
+
+// console.log("balancePooled", metokenDetails.balancePooled.toString());
+// console.log("balanceLocked", metokenDetails.balanceLocked.toString());
