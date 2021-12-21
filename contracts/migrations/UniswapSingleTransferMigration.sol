@@ -76,11 +76,15 @@ contract UniswapSingleTransferMigration is
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
+        if (
+            usts_.soonest != 0 &&
+            block.timestamp > usts_.soonest &&
+            !usts_.started
+        ) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
+            _swap(_meToken);
         }
-        _swap(_meToken);
     }
 
     function finishMigration(address _meToken)
