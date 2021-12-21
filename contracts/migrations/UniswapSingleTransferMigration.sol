@@ -74,14 +74,18 @@ contract UniswapSingleTransferMigration is
 
     function poke(address _meToken) external override {
         // Make sure meToken is in a state of resubscription
-        UniswapSingleTransfer memory usts_ = _uniswapSingleTransfers[_meToken];
+        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        if (usts_.soonest != 0 && block.timestamp > usts_.soonest) {
+        if (
+            usts_.soonest != 0 &&
+            block.timestamp > usts_.soonest &&
+            !usts_.started
+        ) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
+            _swap(_meToken);
         }
-        _swap(_meToken);
     }
 
     function finishMigration(address _meToken)
@@ -91,6 +95,7 @@ contract UniswapSingleTransferMigration is
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
+        require(usts_.soonest < block.timestamp, "timestamp < soonest");
         require(!usts_.finished, "finished");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
