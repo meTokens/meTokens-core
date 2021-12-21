@@ -201,6 +201,12 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             _meToken
         );
 
+        // Approve funds to new vault
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        address vault_ = targetHub_.vault;
+        address asset_ = targetHub_.asset;
+        IVault(vault_).approveAsset(asset_, newBalance);
+
         // Finish updating metoken details
         meToken_.startTime = 0;
         meToken_.endTime = 0;
