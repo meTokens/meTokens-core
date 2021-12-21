@@ -37,6 +37,34 @@ abstract contract Vault is Ownable, IVault {
         migrationRegistry = _migrationRegistry;
     }
 
+    // TODO: access control
+    // function handleDeposit(
+    //     address _asset,
+    //     address _from,
+    //     uint256 _depositAmount,
+    //     uint256 _feeAmount
+    // ) external override {
+
+    //     uint256 totalDeposited = _depositAmount + _feeAmount;
+    //     IERC20(_asset).safeTransferFrom(
+    //         msg.sender,
+    //         address(this),
+    //         totalDeposited
+    //     );
+
+    //     if (_feeAmount > 0) {accruedFees[_asset] += _feeAmount;}
+
+    // }
+
+    // function handleWithdrawal(
+    //     address _asset,
+    //     address _to,
+    //     uint256 _depositAmount,
+    //     uint256 _feeAmount
+    // ) external override {
+
+    // }
+
     function approveAsset(address _asset, uint256 _amount) external override {
         require(
             msg.sender == foundry || msg.sender == address(meTokenRegistry),
@@ -52,7 +80,7 @@ abstract contract Vault is Ownable, IVault {
         emit AddFee(_asset, _amount);
     }
 
-    function withdraw(
+    function claim(
         address _asset,
         bool _max,
         uint256 _amount
@@ -66,7 +94,7 @@ abstract contract Vault is Ownable, IVault {
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);
-        emit Withdraw(_asset, _amount);
+        emit Claim(dao, _asset, _amount);
     }
 
     function isValid(address _meToken, bytes memory _encodedArgs)

@@ -158,60 +158,54 @@ describe("Vault.sol", () => {
     });
   });
 
-  describe("withdraw()", () => {
+  describe("claim()", () => {
     it("Reverts when not called by owner", async () => {
       await expect(
-        vault.connect(account1).withdraw(DAI, true, 0)
+        vault.connect(account1).claim(DAI, true, 0)
       ).to.be.revertedWith("!DAO");
     });
 
     it("should revert when amount is 0", async () => {
-      await expect(vault.withdraw(DAI, false, 0)).to.be.revertedWith(
-        "amount < 0"
-      );
+      await expect(vault.claim(DAI, false, 0)).to.be.revertedWith("amount < 0");
     });
 
-    it("should revert when try to withdraw more than accruedFees[_asset]", async () => {
+    it("should revert when try to claim more than accruedFees[_asset]", async () => {
       await expect(
-        vault.withdraw(DAI, false, accruedFee.add(1))
+        vault.claim(DAI, false, accruedFee.add(1))
       ).to.be.revertedWith("amount > accrued fees");
     });
 
     it("Transfer some accrued fees", async () => {
-      const amountToWithdraw = accruedFee.div(2);
+      const amountToClaim = accruedFee.div(2);
       const daoBalanceBefore = await token.balanceOf(dao.address);
 
-      const tx = await vault.withdraw(DAI, false, amountToWithdraw);
+      const tx = await vault.claim(DAI, false, amountToClaim);
       await tx.wait();
 
       await expect(tx)
-        .to.emit(vault, "Withdraw")
-        .withArgs(DAI, amountToWithdraw);
+        .to.emit(vault, "Claim")
+        .withArgs(dao.address, DAI, amountToClaim);
 
       const daoBalanceAfter = await token.balanceOf(dao.address);
-      accruedFee = accruedFee.sub(amountToWithdraw);
+      accruedFee = accruedFee.sub(amountToClaim);
       expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
-        amountToWithdraw
-      );
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(amountToClaim);
     });
 
     it("Transfer all remaining accrued fees", async () => {
-      const amountToWithdraw = accruedFee;
+      const amountToClaim = accruedFee;
       const daoBalanceBefore = await token.balanceOf(dao.address);
-      const tx = await vault.withdraw(DAI, true, 0);
+      const tx = await vault.claim(DAI, true, 0);
       await tx.wait();
 
       await expect(tx)
-        .to.emit(vault, "Withdraw")
-        .withArgs(DAI, amountToWithdraw);
+        .to.emit(vault, "Claim")
+        .withArgs(dao.address, DAI, amountToClaim);
 
       const daoBalanceAfter = await token.balanceOf(dao.address);
-      accruedFee = accruedFee.sub(amountToWithdraw);
+      accruedFee = accruedFee.sub(amountToClaim);
       expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
-        amountToWithdraw
-      );
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(amountToClaim);
     });
   });
 });

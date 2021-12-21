@@ -2,13 +2,13 @@
 pragma solidity ^0.8.0;
 
 abstract contract IVault {
-    event Withdraw(address _asset, uint256 _amount);
+    event Claim(address _recipient, address _asset, uint256 _amount);
     event AddFee(address _asset, uint256 _amount);
 
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
 
-    function withdraw(
+    function claim(
         address _asset,
         bool _max,
         uint256 _amount
