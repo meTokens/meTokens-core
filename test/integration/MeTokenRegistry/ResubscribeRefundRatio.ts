@@ -357,7 +357,57 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       const block = await ethers.provider.getBlock("latest");
       expect(metokenDetails.endTime).to.be.lt(block.timestamp);
     });
-    xit("burn() [owner]: assets received do not apply refundRatio", async () => {});
+    it("burn() [owner]: assets received do not apply refundRatio", async () => {
+      const migrationWETHBeforeMint = await weth.balanceOf(migration.address);
+
+      const tx = await foundry
+        .connect(account2)
+        .mint(meToken.address, tokenDeposited, account0.address);
+
+      await tx.wait();
+
+      await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
+
+      const ownerMeTokenBefore = await meToken.balanceOf(account0.address);
+      const ownerDAIBefore = await dai.balanceOf(account0.address);
+      const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
+      const ownerWETHBefore = await weth.balanceOf(account0.address);
+      const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
+      const migrationDAIBefore = await dai.balanceOf(migration.address);
+      const migrationWETHBefore = await weth.balanceOf(migration.address);
+
+      expect(migrationWETHBeforeMint).to.be.gt(0); // due to refund ration from last burn
+      expect(vaultWETHBefore).to.equal(
+        tokenDeposited.add(migrationWETHBeforeMint)
+      );
+      expect(migrationWETHBefore).to.equal(0); // as all funds are transferred to vault
+
+      await foundry
+        .connect(account0)
+        .burn(meToken.address, ownerMeTokenBefore, account0.address);
+
+      const totalSupply = await meToken.totalSupply();
+      const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
+      const ownerDAIAfter = await dai.balanceOf(account0.address);
+      const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
+      const ownerWETHAfter = await weth.balanceOf(account0.address);
+      const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
+      const migrationDAIAfter = await dai.balanceOf(migration.address);
+      const migrationWETHAfter = await weth.balanceOf(migration.address);
+      const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
+
+      expect(totalSupply).to.equal(0);
+      expect(ownerMeTokenAfter).to.equal(0); // as all tokens are burned
+      expect(ownerDAIAfter).to.equal(ownerDAIBefore); // as owner receives new fund in weth
+      expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault receives new fund in weth
+      expect(migrationDAIBefore).to.equal(migrationDAIAfter); // as migration receives no funds
+      expect(migrationWETHAfter).to.equal(migrationWETHBefore); // as migration receives no funds
+
+      expect(vaultWETHAfter).to.equal(0); // as all token deposited goes to owner incl migration
+      expect(ownerWETHAfter.sub(ownerWETHBefore)).to.equal(vaultWETHBefore); // as all token deposited goes to owner plus migration
+      expect(metokenDetails.balancePooled).to.equal(0);
+      expect(metokenDetails.balanceLocked).to.equal(0);
+    });
     xit("burn() [buyer]: assets received based on targetRefundRatio", async () => {});
   });
 });
