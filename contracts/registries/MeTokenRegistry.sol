@@ -229,6 +229,15 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             (meToken_.balanceLocked * PRECISION * _newBalance) /
             (oldBalance * PRECISION);
 
+        if (block.timestamp < meToken_.endTime) {
+            // Called while duration
+            address vault_ = meToken_.migration;
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+            address asset_ = targetHub_.asset;
+            IVault(vault_).approveAsset(asset_, _newBalance);
+        }
         emit UpdateBalances(_meToken, _newBalance);
     }
 
