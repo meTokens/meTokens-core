@@ -5,6 +5,7 @@ import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRoute
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
@@ -20,6 +21,7 @@ import "../interfaces/ISingleAssetVault.sol";
 contract UniswapSingleTransferMigration is
     Initializable,
     Ownable,
+    ReentrancyGuard,
     Vault,
     IMigration
 {
@@ -32,8 +34,6 @@ contract UniswapSingleTransferMigration is
         bool started;
         // meToken has executed the swap and can finish migrating
         bool swapped;
-        // finishMigration() has been called so it's not recallable
-        bool finished;
     }
 
     mapping(address => UniswapSingleTransfer) private _uniswapSingleTransfers;
@@ -72,7 +72,7 @@ contract UniswapSingleTransferMigration is
         usts_.soonest = soonest;
     }
 
-    function poke(address _meToken) external override {
+    function poke(address _meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
@@ -91,12 +91,12 @@ contract UniswapSingleTransferMigration is
     function finishMigration(address _meToken)
         external
         override
+        nonReentrant
         returns (uint256 amountOut)
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         require(usts_.soonest < block.timestamp, "timestamp < soonest");
-        require(!usts_.finished, "finished");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
