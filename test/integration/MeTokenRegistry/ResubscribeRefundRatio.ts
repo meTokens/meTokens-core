@@ -181,6 +181,7 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       await foundry
         .connect(account0)
         .burn(meToken.address, ownerMeTokenBefore, account0.address);
+      const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
       const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
       const ownerDAIAfter = await dai.balanceOf(account0.address);
@@ -189,6 +190,8 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       expect(ownerMeTokenAfter).to.equal(0);
       expect(ownerDAIAfter.sub(ownerDAIBefore)).to.equal(tokenDeposited);
       expect(vaultDAIAfter).to.equal(0);
+      expect(metokenDetails.balancePooled).to.equal(0);
+      expect(metokenDetails.balanceLocked).to.equal(0);
     });
     it("burn() [buyer]: assets received based on initial refundRatio", async () => {
       await foundry
@@ -206,14 +209,16 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
 
       const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
       const buyerDAIAfter = await dai.balanceOf(account1.address);
-      const ownerDAIAfter = await dai.balanceOf(account0.address);
       const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
+      const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
       const refundAmount = tokenDeposited.mul(firstRefundRatio).div(1e6);
 
       expect(buyerMeTokenAfter).to.equal(0);
       expect(buyerDAIAfter.sub(buyerDAIBefore)).to.equal(refundAmount);
       expect(vaultDAIBefore.sub(vaultDAIAfter)).to.equal(refundAmount);
+      expect(metokenDetails.balancePooled).to.equal(0);
+      expect(metokenDetails.balanceLocked).to.gt(0); // due to refund ratio
     });
   });
 
@@ -227,7 +232,6 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
     });
     it("burn() [owner]: assets received do not apply refundRatio", async () => {
       const vaultDAIBeforeMint = await dai.balanceOf(singleAssetVault.address);
-      console.log("totalSupply", (await meToken.totalSupply()).toString());
       const tx = await foundry
         .connect(account2)
         .mint(meToken.address, tokenDeposited, account0.address);
@@ -243,7 +247,6 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
       const migrationDAIBefore = await dai.balanceOf(migration.address);
       const migrationWETHBefore = await weth.balanceOf(migration.address);
-      console.log("totalSupply", (await meToken.totalSupply()).toString());
 
       expect(vaultDAIBeforeMint).to.be.gt(0);
       expect(vaultDAIBefore).to.be.equal(0); // as all is swapped for weth and goes to migration
@@ -261,34 +264,19 @@ describe("MeToken Resubscribe - new RefundRatio", () => {
       const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
       const migrationDAIAfter = await dai.balanceOf(migration.address);
       const migrationWETHAfter = await weth.balanceOf(migration.address);
-
-      console.log("totalSupply", (await meToken.totalSupply()).toString());
-      console.log("ownerMeTokenBefore", ownerMeTokenBefore.toString());
-      console.log("ownerDAIBefore", ownerDAIBefore.toString());
-      console.log("vaultDAIBefore", vaultDAIBefore.toString());
-      console.log("ownerWETHBefore", ownerWETHBefore.toString());
-      console.log("vaultWETHBefore", vaultWETHBefore.toString());
-      console.log("migrationDAIBefore", migrationDAIBefore.toString());
-      console.log("migrationWETHBefore", migrationWETHBefore.toString());
-
-      console.log("ownerMeTokenAfter", ownerMeTokenAfter.toString());
-      console.log("ownerDAIAfter", ownerDAIAfter.toString());
-      console.log("vaultDAIAfter", vaultDAIAfter.toString());
-      console.log("ownerWETHAfter", ownerWETHAfter.toString());
-      console.log("vaultWETHAfter", vaultWETHAfter.toString());
-      console.log("migrationDAIAfter", migrationDAIAfter.toString());
-      console.log("migrationWETHAfter", migrationWETHAfter.toString());
+      const metokenDetails = await meTokenRegistry.getDetails(meToken.address);
 
       expect(ownerMeTokenAfter).to.equal(0); // as all tokens are burned
       expect(ownerDAIAfter).to.equal(ownerDAIBefore); // as owner receives new fund in weth
       expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault do not receive any funds
       expect(vaultWETHBefore).to.equal(vaultWETHAfter); // as vault do not receive any funds
       expect(migrationDAIBefore).to.equal(migrationDAIAfter); // as migration receives new fund in weth
-      // FIXME failing
-      expect(migrationWETHBefore.sub(migrationWETHAfter)).to.equal(0); // as all funds are transferred to owner
-      expect(ownerWETHAfter.sub(ownerWETHBefore)).to.gt(tokenDeposited); // as all token deposited goes to owner plus swap tokens
+      expect(migrationWETHAfter).to.equal(0); // as all funds are transferred to owner
+      expect(ownerWETHAfter.sub(ownerWETHBefore)).to.equal(migrationWETHBefore); // as all token deposited goes to owner plus swap tokens
+      expect(metokenDetails.balancePooled).to.equal(0);
+      expect(metokenDetails.balanceLocked).to.equal(0);
     });
-    it("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
+    xit("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
       await foundry
         .connect(account2)
         .mint(meToken.address, tokenDeposited, account1.address);
