@@ -2,9 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "../MeToken.sol";
-
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
 import "../interfaces/IMeTokenRegistry.sol";
@@ -203,6 +201,12 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             _meToken
         );
 
+        // Approve funds to new vault
+        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        address vault_ = targetHub_.vault;
+        address asset_ = targetHub_.asset;
+        IVault(vault_).approveAsset(asset_, newBalance);
+
         // Finish updating metoken details
         meToken_.startTime = 0;
         meToken_.endTime = 0;
@@ -223,6 +227,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         require(msg.sender == meToken_.migration, "!migration");
 
         uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
+
         meToken_.balancePooled =
             (meToken_.balancePooled * (PRECISION * _newBalance)) /
             (oldBalance * PRECISION);
@@ -230,6 +235,15 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             (meToken_.balanceLocked * PRECISION * _newBalance) /
             (oldBalance * PRECISION);
 
+        if (block.timestamp < meToken_.endTime) {
+            // Called while duration
+            address vault_ = meToken_.migration;
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+            address asset_ = targetHub_.asset;
+            IVault(vault_).approveAsset(asset_, _newBalance);
+        }
         emit UpdateBalances(_meToken, _newBalance);
     }
 
