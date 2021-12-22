@@ -106,7 +106,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         //     address(vault),
         //     _assetsDeposited
         // );
-        // vault.approveAsset(asset, _assetsDeposited);
 
         // if (fee > 0) vault.addFee(asset, fee);
 

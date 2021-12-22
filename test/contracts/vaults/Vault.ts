@@ -103,42 +103,6 @@ describe("Vault.sol", () => {
     });
   });
 
-  describe("approveAsset()", () => {
-    it("Successfully called from meTokenRegistry", async () => {
-      await token.approve(meTokenRegistry.address, amount);
-      const tx = await meTokenRegistry.subscribe(
-        "METOKEN",
-        "MT",
-        hubId,
-        amount
-      );
-      await tx.wait();
-
-      await expect(tx)
-        .to.emit(token, "Approval")
-        .withArgs(vault.address, foundry.address, amount);
-
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
-      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-    });
-    it("Successfully called from foundry", async () => {
-      await token.approve(foundry.address, amount);
-      const tx = await foundry.mint(meToken.address, amount, account1.address);
-      await tx.wait();
-
-      await expect(tx)
-        .to.emit(token, "Approval")
-        .withArgs(vault.address, foundry.address, amount.mul(2)); // adding up approval from subscribe
-    });
-    it("reverts when sender is not foundry or meTokenRegistry", async () => {
-      await expect(vault.approveAsset(DAI, amount)).to.be.revertedWith(
-        "!foundry||!meTokenRegistry"
-      );
-    });
-  });
-
   describe("addFee()", () => {
     it("Increments accruedFees revert if not foundry", async () => {
       await expect(

@@ -69,8 +69,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
                 ),
                 "transfer failed"
             );
-            // we need to approve asset otherwise burning can't transfer the asset
-            IVault(hub_.vault).approveAsset(hub_.asset, _assetsDeposited);
         }
 
         // Create meToken erc20 contract

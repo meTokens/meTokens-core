@@ -28,8 +28,6 @@ abstract contract IVault {
         address _to
     ) external virtual;
 
-    function approveAsset(address _asset, uint256 _amount) external virtual;
-
     function isValid(address _asset, bytes memory _encodedArgs)
         external
         virtual
