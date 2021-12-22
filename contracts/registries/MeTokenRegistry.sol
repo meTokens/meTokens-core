@@ -203,7 +203,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
         address vault_ = targetHub_.vault;
         address asset_ = targetHub_.asset;
-        IVault(vault_).approveAsset(asset_, newBalance);
 
         // Finish updating metoken details
         meToken_.startTime = 0;
@@ -240,7 +239,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
                 meToken_.targetHubId
             );
             address asset_ = targetHub_.asset;
-            IVault(vault_).approveAsset(asset_, _newBalance);
         }
         emit UpdateBalances(_meToken, _newBalance);
     }
