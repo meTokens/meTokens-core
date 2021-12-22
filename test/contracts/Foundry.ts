@@ -101,8 +101,8 @@ describe("Foundry.sol", () => {
     await dai.connect(tokenHolder).transfer(account0.address, amount1);
     await dai.connect(tokenHolder).transfer(account1.address, amount1);
     await dai.connect(tokenHolder).transfer(account2.address, amount1);
-    await dai.connect(account1).approve(foundry.address, amount1);
-    await dai.connect(account2).approve(foundry.address, amount1);
+    await dai.connect(account1).approve(singleAssetVault.address, amount1);
+    await dai.connect(account2).approve(singleAssetVault.address, amount1);
     await dai.connect(account1).approve(meTokenRegistry.address, amount1);
     // account0 is registering a metoken
     const tx = await meTokenRegistry
@@ -277,8 +277,7 @@ describe("Foundry.sol", () => {
     const balBefore = await dai.balanceOf(account0.address);
 
     // need an approve of metoken registry first
-    // await dai.connect(account2).approve(foundry.address, amount);
-    await dai.approve(foundry.address, amount);
+    await dai.approve(singleAssetVault.address, amount);
     const tokenBalBefore = await meToken.balanceOf(account2.address);
 
     const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
@@ -381,7 +380,7 @@ describe("Foundry.sol", () => {
       await dai.connect(tokenHolder).transfer(account2.address, amount);
       const balBefore = await dai.balanceOf(account2.address);
       // need an approve of metoken registry first
-      await dai.connect(account2).approve(foundry.address, amount);
+      await dai.connect(account2).approve(singleAssetVault.address, amount);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const totSupplyBefore = await meToken.totalSupply();
       const tokenBalBefore = await meToken.balanceOf(account2.address);
@@ -441,7 +440,7 @@ describe("Foundry.sol", () => {
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const balBefore = await dai.balanceOf(account2.address);
       // need an approve of metoken registry first
-      await dai.connect(account2).approve(foundry.address, amount);
+      await dai.connect(account2).approve(singleAssetVault.address, amount);
       await foundry
         .connect(account2)
         .mint(meToken.address, amount, account2.address);

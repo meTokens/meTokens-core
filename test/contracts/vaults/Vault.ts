@@ -81,9 +81,18 @@ describe("Vault.sol", () => {
       curve
     ));
 
+    await fees.setMintFee(1e8);
+
     await token.connect(tokenHolder).transfer(account0.address, amount.mul(3));
     await token.connect(tokenHolder).transfer(account1.address, amount);
     await token.connect(tokenHolder).transfer(account2.address, amount);
+
+    await token.approve(meTokenRegistry.address, amount);
+    const tx = await meTokenRegistry.subscribe("METOKEN", "MT", hubId, amount);
+    await tx.wait();
+
+    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
+    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
 
   describe("Check initial state", () => {
@@ -103,25 +112,6 @@ describe("Vault.sol", () => {
     });
   });
 
-  describe("addFee()", () => {
-    it("Increments accruedFees revert if not foundry", async () => {
-      await expect(
-        vault.connect(account1).addFee(DAI, amount)
-      ).to.be.revertedWith("!foundry");
-    });
-    it("should be call addFee() from foundry", async () => {
-      await fees.setMintFee(1e8);
-      await token.approve(foundry.address, amount);
-      const tx = await foundry.mint(meToken.address, amount, account1.address);
-      await tx.wait();
-
-      accruedFee = (await fees.mintFee()).mul(amount).div(precision);
-      await expect(tx).to.emit(vault, "AddFee").withArgs(DAI, accruedFee);
-
-      expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-    });
-  });
-
   describe("claim()", () => {
     it("Reverts when not called by owner", async () => {
       await expect(
@@ -134,6 +124,10 @@ describe("Vault.sol", () => {
     });
 
     it("should revert when try to claim more than accruedFees[_asset]", async () => {
+      await token.approve(vault.address, amount);
+      await foundry.mint(meToken.address, amount, account1.address);
+      accruedFee = (await fees.mintFee()).mul(amount).div(precision);
+
       await expect(
         vault.claim(DAI, false, accruedFee.add(1))
       ).to.be.revertedWith("amount > accrued fees");

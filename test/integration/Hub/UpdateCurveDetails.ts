@@ -16,10 +16,8 @@ import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import {
   mineBlock,
@@ -37,7 +35,6 @@ const setup = async () => {
     let bancorABDK: BancorABDK;
     let updatedBancorABDK: BancorABDK;
     let curveRegistry: CurveRegistry;
-    let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
     let hub: Hub;
@@ -84,7 +81,6 @@ const setup = async () => {
         token,
         hub,
         curveRegistry,
-        migrationRegistry,
         singleAssetVault,
         tokenHolder,
         foundry,
@@ -102,21 +98,6 @@ const setup = async () => {
       dai = token;
       const detail = await bancorABDK.getBancorDetails(firstHubId);
       expect(detail.reserveWeight).to.equal(reserveWeight);
-      // Deploy uniswap migration and approve it to the registry
-      const migration = await deploy<UniswapSingleTransferMigration>(
-        "UniswapSingleTransferMigration",
-        undefined,
-        account0.address,
-        foundry.address,
-        hub.address,
-        meTokenRegistry.address,
-        migrationRegistry.address
-      );
-      await migrationRegistry.approve(
-        singleAssetVault.address,
-        singleAssetVault.address,
-        migration.address
-      );
 
       // Pre-load owner and buyer w/ DAI
       await token
@@ -136,7 +117,9 @@ const setup = async () => {
       // Register Hub2 w/ same args but different refund Ratio
 
       const tokenDeposited = ethers.utils.parseEther("100");
-      await token.connect(account2).approve(foundry.address, tokenDeposited);
+      await token
+        .connect(account2)
+        .approve(singleAssetVault.address, tokenDeposited);
       const balBefore = await meToken.balanceOf(account2.address);
       const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
       await foundry
@@ -204,7 +187,9 @@ const setup = async () => {
           tokenDepositedInETH.toString()
         );
 
-        await token.connect(account2).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account2)
+          .approve(singleAssetVault.address, tokenDeposited);
         const balBefore = await meToken.balanceOf(account0.address);
         const balDaiBefore = await token.balanceOf(account0.address);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
@@ -243,7 +228,9 @@ const setup = async () => {
         );
         // buyer
         const balAcc1Before = await meToken.balanceOf(account1.address);
-        await token.connect(account1).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account1)
+          .approve(singleAssetVault.address, tokenDeposited);
         await foundry
           .connect(account1)
           .mint(meToken.address, tokenDeposited, account1.address);
@@ -293,7 +280,9 @@ const setup = async () => {
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
         );
-        await token.connect(account2).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account2)
+          .approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
 
         // send token to owner
@@ -308,7 +297,9 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         //  burnt by owner
-        await meToken.connect(account2).approve(foundry.address, balAfter);
+        await meToken
+          .connect(account2)
+          .approve(singleAssetVault.address, balAfter);
 
         const rawAssetsReturnedFromFoundry =
           await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -378,7 +369,9 @@ const setup = async () => {
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
         );
-        await token.connect(account2).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account2)
+          .approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
 
         // send token to owner
@@ -393,7 +386,9 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         //  burnt by owner
-        await meToken.connect(account2).approve(foundry.address, balAfter);
+        await meToken
+          .connect(account2)
+          .approve(singleAssetVault.address, balAfter);
 
         const rawAssetsReturnedFromFoundry =
           await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -469,7 +464,7 @@ const setup = async () => {
         await token
           .connect(account1)
           .transfer(account0.address, ethers.utils.parseEther("100"));
-        await token.approve(foundry.address, tokenDeposited);
+        await token.approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
 
         // send token to owner
@@ -482,7 +477,9 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         //  burnt by owner
-        await meToken.connect(account0).approve(foundry.address, balAfter);
+        await meToken
+          .connect(account0)
+          .approve(singleAssetVault.address, balAfter);
 
         const rawAssetsReturnedFromFoundry =
           await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -560,7 +557,9 @@ const setup = async () => {
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
         );
-        await token.connect(account2).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account2)
+          .approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         await setAutomine(false);
         const block = await ethers.provider.getBlock("latest");
@@ -669,7 +668,7 @@ const setup = async () => {
         await token
           .connect(account1)
           .transfer(account0.address, ethers.utils.parseEther("100"));
-        await token.approve(foundry.address, tokenDeposited);
+        await token.approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         const balBefore = await meToken.balanceOf(account0.address);
 
@@ -703,7 +702,9 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         //  burnt by owner
-        await meToken.connect(account0).approve(foundry.address, balAfter);
+        await meToken
+          .connect(account0)
+          .approve(singleAssetVault.address, balAfter);
 
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
@@ -784,7 +785,9 @@ const setup = async () => {
           tokenDepositedInETH.toString()
         );
 
-        await token.connect(account2).approve(foundry.address, tokenDeposited);
+        await token
+          .connect(account2)
+          .approve(singleAssetVault.address, tokenDeposited);
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         const balBefore = await meToken.balanceOf(account2.address);
 
@@ -821,7 +824,9 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         //  burnt by owner
-        await meToken.connect(account2).approve(foundry.address, balAfter);
+        await meToken
+          .connect(account2)
+          .approve(singleAssetVault.address, balAfter);
 
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
@@ -949,7 +954,7 @@ const setup = async () => {
 
           await token
             .connect(account2)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           const balBefore = await meToken.balanceOf(account0.address);
           const balDaiBefore = await token.balanceOf(account0.address);
           const vaultBalBefore = await token.balanceOf(
@@ -1002,7 +1007,7 @@ const setup = async () => {
           const balAcc1Before = await meToken.balanceOf(account1.address);
           await token
             .connect(account1)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           await foundry
             .connect(account1)
             .mint(meToken.address, tokenDeposited, account1.address);
@@ -1053,7 +1058,7 @@ const setup = async () => {
           );
           await token
             .connect(account2)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1072,7 +1077,9 @@ const setup = async () => {
             tokenDeposited
           );
           //  burnt by owner
-          await meToken.connect(account2).approve(foundry.address, balAfter);
+          await meToken
+            .connect(account2)
+            .approve(singleAssetVault.address, balAfter);
 
           const rawAssetsReturnedFromFoundry =
             await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -1142,7 +1149,7 @@ const setup = async () => {
           );
           await token
             .connect(account2)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1161,7 +1168,9 @@ const setup = async () => {
             tokenDeposited
           );
           //  burnt by owner
-          await meToken.connect(account2).approve(foundry.address, balAfter);
+          await meToken
+            .connect(account2)
+            .approve(singleAssetVault.address, balAfter);
 
           const rawAssetsReturnedFromFoundry =
             await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -1237,7 +1246,7 @@ const setup = async () => {
           await token
             .connect(account1)
             .transfer(account0.address, ethers.utils.parseEther("100"));
-          await token.approve(foundry.address, tokenDeposited);
+          await token.approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1254,7 +1263,9 @@ const setup = async () => {
             tokenDeposited
           );
           //  burnt by owner
-          await meToken.connect(account0).approve(foundry.address, balAfter);
+          await meToken
+            .connect(account0)
+            .approve(singleAssetVault.address, balAfter);
 
           const rawAssetsReturnedFromFoundry =
             await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
@@ -1337,7 +1348,7 @@ const setup = async () => {
             .transfer(account2.address, tokenDeposited);
           await token
             .connect(account2)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1441,7 +1452,7 @@ const setup = async () => {
           await token
             .connect(account1)
             .transfer(account0.address, ethers.utils.parseEther("100"));
-          await token.approve(foundry.address, tokenDeposited);
+          await token.approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1481,7 +1492,9 @@ const setup = async () => {
             tokenDeposited
           );
           //  burnt by owner
-          await meToken.connect(account0).approve(foundry.address, balAfter);
+          await meToken
+            .connect(account0)
+            .approve(singleAssetVault.address, balAfter);
 
           meTokenTotalSupply = await meToken.totalSupply();
           meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
@@ -1551,7 +1564,7 @@ const setup = async () => {
             .transfer(account2.address, tokenDeposited);
           await token
             .connect(account2)
-            .approve(foundry.address, tokenDeposited);
+            .approve(singleAssetVault.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1594,7 +1607,9 @@ const setup = async () => {
             tokenDeposited
           );
           //  burnt by owner
-          await meToken.connect(account2).approve(foundry.address, balAfter);
+          await meToken
+            .connect(account2)
+            .approve(singleAssetVault.address, balAfter);
 
           meTokenTotalSupply = await meToken.totalSupply();
           meTokenDetails = await meTokenRegistry.getDetails(meToken.address);

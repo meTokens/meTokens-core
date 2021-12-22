@@ -245,8 +245,8 @@ const setup = async () => {
         await dai.connect(tokenHolder).transfer(account0.address, amount);
         await dai.connect(tokenHolder).transfer(account1.address, amount);
         await dai.connect(tokenHolder).transfer(account2.address, amount);
-        await dai.connect(account1).approve(foundry.address, amount);
-        await dai.connect(account2).approve(foundry.address, amount);
+        await dai.connect(account1).approve(singleAssetVault.address, amount);
+        await dai.connect(account2).approve(singleAssetVault.address, amount);
         await dai.connect(account1).approve(meTokenRegistry.address, amount);
         // account0 is registering a metoken
         const tx = await meTokenRegistry
@@ -708,7 +708,7 @@ const setup = async () => {
           const amount = ethers.utils.parseEther("100");
           await dai.connect(tokenHolder).transfer(account2.address, amount);
           // need an approve of metoken registry first
-          await dai.connect(account2).approve(foundry.address, amount);
+          await dai.connect(account2).approve(singleAssetVault.address, amount);
 
           const tx = await foundry
             .connect(account2)
@@ -739,7 +739,7 @@ const setup = async () => {
           const amount = ethers.utils.parseEther("100");
           await dai.connect(tokenHolder).transfer(account2.address, amount);
           // need an approve of metoken registry first
-          await dai.connect(account2).approve(foundry.address, amount);
+          await dai.connect(account2).approve(singleAssetVault.address, amount);
 
           const tx = await foundry
             .connect(account2)

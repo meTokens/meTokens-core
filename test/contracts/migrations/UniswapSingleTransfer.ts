@@ -450,7 +450,7 @@ const setup = async () => {
             initialVault.address
           );
 
-          await dai.connect(account2).approve(foundry.address, amount);
+          await dai.connect(account2).approve(initialVault.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
@@ -484,7 +484,7 @@ const setup = async () => {
           const migrationDAIBefore = await dai.balanceOf(migration.address);
           const migrationWETHBefore = await weth.balanceOf(migration.address);
 
-          await weth.connect(account2).approve(foundry.address, amount);
+          await weth.connect(account2).approve(migration.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
@@ -533,7 +533,7 @@ const setup = async () => {
             targetVault.address
           );
 
-          await weth.connect(account2).approve(foundry.address, amount);
+          await weth.connect(account2).approve(targetVault.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
