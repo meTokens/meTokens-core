@@ -103,13 +103,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         vault.handleDeposit(asset, _assetsDeposited, fee, msg.sender);
-        // IERC20(asset).safeTransferFrom(
-        //     msg.sender,
-        //     address(vault),
-        //     _assetsDeposited
-        // );
-
-        // if (fee > 0) vault.addFee(asset, fee);
 
         meTokenRegistry.updateBalancePooled(
             true,
@@ -239,12 +232,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             asset = targetHub_.asset;
         }
 
-        // IERC20(_asset).safeTransferFrom(
-        //     address(_vault),
-        //     _recipient,
-        //     assetsReturned
-        // );
-        // _vault.addFee(_asset, fee);
         vault.handleWithdrawal(asset, assetsReturned, fee, _recipient);
 
         emit Burn(

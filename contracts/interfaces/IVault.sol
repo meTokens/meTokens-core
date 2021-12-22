@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 abstract contract IVault {
     event Claim(address _recipient, address _asset, uint256 _amount);
-    event AddFee(address _asset, uint256 _amount);
 
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
@@ -32,6 +31,4 @@ abstract contract IVault {
         external
         virtual
         returns (bool);
-
-    function addFee(address _meToken, uint256 _amount) external virtual;
 }
