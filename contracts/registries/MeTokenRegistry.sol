@@ -139,6 +139,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             ),
             "!approved"
         );
+
+        // TODO: pre-approve migration to spend initial meToken asset?
+
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
@@ -199,10 +202,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             _meToken
         );
 
-        // Approve funds to new vault
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
-        address vault_ = targetHub_.vault;
-        address asset_ = targetHub_.asset;
+        // TODO: approve targetVault to spend initial meToken asset?
 
         // Finish updating metoken details
         meToken_.startTime = 0;
@@ -232,14 +232,14 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             (meToken_.balanceLocked * PRECISION * _newBalance) /
             (oldBalance * PRECISION);
 
-        if (block.timestamp < meToken_.endTime) {
-            // Called while duration
-            address vault_ = meToken_.migration;
-            Details.Hub memory targetHub_ = hub.getDetails(
-                meToken_.targetHubId
-            );
-            address asset_ = targetHub_.asset;
-        }
+        // TODO: would this block do anything?
+        // if (block.timestamp < meToken_.endTime) {
+        //     // Called while duration
+        //     Details.Hub memory targetHub_ = hub.getDetails(
+        //         meToken_.targetHubId
+        //     );
+        //     IERC20(targetHub_.asset).approve(meToken_.migration, type(uint256).max);
+        // }
         emit UpdateBalances(_meToken, _newBalance);
     }
 
