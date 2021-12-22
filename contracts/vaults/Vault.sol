@@ -38,36 +38,35 @@ abstract contract Vault is Ownable, IVault {
     }
 
     // TODO: access control
-    // function handleDeposit(
-    //     address _asset,
-    //     address _from,
-    //     uint256 _depositAmount,
-    //     uint256 _feeAmount
-    // ) external override {
+    function handleDeposit(
+        address _asset,
+        uint256 _depositAmount,
+        uint256 _feeAmount,
+        address _from
+    ) external override {
+        IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
+        if (_feeAmount > 0) {
+            accruedFees[_asset] += _feeAmount;
+        }
+    }
 
-    //     uint256 totalDeposited = _depositAmount + _feeAmount;
-    //     IERC20(_asset).safeTransferFrom(
-    //         msg.sender,
-    //         address(this),
-    //         totalDeposited
-    //     );
+    function handleWithdrawal(
+        address _asset,
+        uint256 _withdrawalAmount,
+        uint256 _feeAmount,
+        address _to
+    ) external override {
+        IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
+        if (_feeAmount > 0) {
+            accruedFees[_asset] += _feeAmount;
+        }
+    }
 
-    //     if (_feeAmount > 0) {accruedFees[_asset] += _feeAmount;}
-
-    // }
-
-    // function handleWithdrawal(
-    //     address _asset,
-    //     address _to,
-    //     uint256 _depositAmount,
-    //     uint256 _feeAmount
-    // ) external override {
-
-    // }
-
-    function approveAsset(address _asset, uint256 _amount) external override {
+    function approveAsset(address _asset, uint256 _amount) public override {
         require(
-            msg.sender == foundry || msg.sender == address(meTokenRegistry),
+            msg.sender == foundry ||
+                msg.sender == address(meTokenRegistry) ||
+                msg.sender == address(this),
             "!foundry||!meTokenRegistry"
         );
         // increase the allowance to be able to burn tokens and retrieve the collateral

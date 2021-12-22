@@ -14,6 +14,20 @@ abstract contract IVault {
         uint256 _amount
     ) external virtual;
 
+    function handleDeposit(
+        address _asset,
+        uint256 _depositAmount,
+        uint256 _feeAmount,
+        address _from
+    ) external virtual;
+
+    function handleWithdrawal(
+        address _asset,
+        uint256 _withdrawalAmount,
+        uint256 _feeAmount,
+        address _to
+    ) external virtual;
+
     function approveAsset(address _asset, uint256 _amount) external virtual;
 
     function isValid(address _asset, bytes memory _encodedArgs)
