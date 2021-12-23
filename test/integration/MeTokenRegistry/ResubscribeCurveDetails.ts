@@ -7,6 +7,7 @@ import {
   getContractAt,
   toETHNumber,
   weightedAverageSimulation,
+  calculateTokenReturnedFromZero,
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
@@ -36,6 +37,7 @@ const setup = async () => {
     let token: ERC20;
     let tokenHolder: Signer;
     let dai: ERC20;
+    let weth: ERC20;
     let daiWhale: Signer;
     let meToken: MeToken;
     let account0: SignerWithAddress;
@@ -57,10 +59,14 @@ const setup = async () => {
     const reserveWeight2 = MAX_WEIGHT / 2;
     const refundRatio = 5000;
     const fees = 3000;
+    const tokenDepositedInETH = 100;
+    const tokenDeposited = ethers.utils.parseEther(
+      tokenDepositedInETH.toString()
+    );
 
     before(async () => {
-      let DAI;
-      ({ DAI } = await getNamedAccounts());
+      let DAI, WETH;
+      ({ DAI, WETH } = await getNamedAccounts());
 
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -100,11 +106,12 @@ const setup = async () => {
         bancorABDK
       ));
       dai = token;
+      weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
 
       await hub.register(
         account0.address,
-        DAI,
+        WETH,
         singleAssetVault.address,
         bancorABDK.address,
         refundRatio,
@@ -134,9 +141,13 @@ const setup = async () => {
         migration.address
       );
 
-      // Pre-load owner and buyer w/ DAI
+      // Pre-load owner and buyer w/ DAI & WETH
       await dai
         .connect(daiWhale)
+        .transfer(account1.address, ethers.utils.parseEther("1000"));
+
+      await weth
+        .connect(tokenHolder)
         .transfer(account1.address, ethers.utils.parseEther("1000"));
 
       // Create meToken and subscribe to Hub1
@@ -159,10 +170,48 @@ const setup = async () => {
           migration.address,
           encodedMigrationArgs
         );
+      await dai
+        .connect(account1)
+        .approve(foundry.address, ethers.constants.MaxUint256);
+      await weth
+        .connect(account1)
+        .approve(foundry.address, ethers.constants.MaxUint256);
     });
 
     describe("Warmup", () => {
-      xit("mint(): meTokens received based on initial Curve details", async () => {});
+      before(async () => {
+        const metokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const block = await ethers.provider.getBlock("latest");
+        expect(metokenDetails.startTime).to.be.gt(block.timestamp);
+      });
+      it("mint(): meTokens received based on initial Curve details", async () => {
+        const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupplyBefore = await meToken.totalSupply();
+        expect(meTokenTotalSupplyBefore).to.be.equal(0);
+
+        const calculatedReturn = calculateTokenReturnedFromZero(
+          tokenDepositedInETH,
+          toETHNumber(baseY1),
+          reserveWeight1 / MAX_WEIGHT
+        );
+
+        await foundry
+          .connect(account1)
+          .mint(meToken.address, tokenDeposited, account0.address);
+
+        const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
+        const vaultDAIAfter = await token.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupplyAfter = await meToken.totalSupply();
+
+        expect(toETHNumber(ownerMeTokenAfter)).to.be.approximately(
+          calculatedReturn,
+          0.000000000000001
+        );
+        expect(meTokenTotalSupplyAfter).to.be.equal(ownerMeTokenAfter);
+        expect(vaultDAIAfter.sub(vaultDAIBefore)).to.equal(tokenDeposited);
+      });
       xit("burn() [buyer]: assets received based on initial Curve details", async () => {});
       xit("burn() [owner]: assets received based on initial Curve details", async () => {});
     });
