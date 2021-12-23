@@ -347,11 +347,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             (hub_.updating && (hub_.targetCurve != address(0))) ||
             (hub_.reconfigure)
         ) {
-            uint256 targetassetsReturned;
+            uint256 targetAssetsReturned;
             if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
 
-                targetassetsReturned = ICurve(hub_.targetCurve)
+                targetAssetsReturned = ICurve(hub_.targetCurve)
                     .viewAssetsReturned(
                         _meTokensBurned,
                         meToken_.hubId,
@@ -360,7 +360,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetassetsReturned = ICurve(hub_.curve)
+                targetAssetsReturned = ICurve(hub_.curve)
                     .viewTargetAssetsReturned(
                         _meTokensBurned,
                         meToken_.hubId,
@@ -370,7 +370,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             }
             rawAssetsReturned = WeightedAverage.calculate(
                 rawAssetsReturned,
-                targetassetsReturned,
+                targetAssetsReturned,
                 hub_.startTime,
                 hub_.endTime
             );
