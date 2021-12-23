@@ -186,6 +186,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.gt(block.timestamp);
       });
+
       it("mint(): meTokens received based on initial Curve details", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
@@ -212,7 +213,61 @@ const setup = async () => {
         expect(meTokenTotalSupplyAfter).to.be.equal(ownerMeTokenAfter);
         expect(vaultDAIAfter.sub(vaultDAIBefore)).to.equal(tokenDeposited);
       });
-      xit("burn() [buyer]: assets received based on initial Curve details", async () => {});
+
+      it("burn() [buyer]: assets received based on initial Curve details", async () => {
+        const ownerMeToken = await meToken.balanceOf(account0.address);
+        await meToken.transfer(account1.address, ownerMeToken.div(2));
+
+        const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const buyerDAIBefore = await dai.balanceOf(account1.address);
+
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken.div(2)),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight1 / MAX_WEIGHT
+        );
+        // const targetAssetsReturned = calculateCollateralReturned(
+        //   toETHNumber(ownerMeToken.div(2)),
+        //   toETHNumber(meTokenTotalSupply),
+        //   toETHNumber(meTokenDetails.balancePooled),
+        //   updatedReserveWeight / MAX_WEIGHT
+        // );
+        // const calcWAvgRes = weightedAverageSimulation(
+        //   rawAssetsReturned,
+        //   targetAssetsReturned,
+        //   startTime.toNumber(),
+        //   endTime.toNumber(),
+        //   block.timestamp
+        // );
+        const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
+
+        await foundry
+          .connect(account1)
+          .burn(meToken.address, ownerMeToken.div(2), account1.address);
+
+        const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
+        const buyerDAIAfter = await dai.balanceOf(account1.address);
+        const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupplyAfter = await meToken.totalSupply();
+
+        expect(
+          toETHNumber(buyerDAIAfter.sub(buyerDAIBefore))
+        ).to.be.approximately(assetsReturned, 0.000000000000001);
+        expect(buyerMeTokenAfter).to.equal(0);
+        expect(toETHNumber(meTokenTotalSupplyAfter)).to.be.approximately(
+          toETHNumber(meTokenTotalSupply.div(2)),
+          1e-18
+        );
+        expect(toETHNumber(vaultDAIBefore.sub(vaultDAIAfter))).to.approximately(
+          assetsReturned,
+          0.000000000000001
+        );
+      });
       xit("burn() [owner]: assets received based on initial Curve details", async () => {});
     });
 
