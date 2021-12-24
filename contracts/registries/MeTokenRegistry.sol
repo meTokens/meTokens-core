@@ -28,10 +28,12 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     IMeTokenFactory public meTokenFactory;
     IMigrationRegistry public migrationRegistry;
 
-    mapping(address => Details.MeToken) private _meTokens; // key pair: ERC20 address
-    // TODO: this mapping will break when multiple addresses revoke ownership to 0 address
-    mapping(address => address) private _owners; // key: address of owner, value: address of meToken
-    mapping(address => address) private _pendingOwners; // key: address of owner, value: address of pending owner
+    /// @dev key: address of meToken, value: meToken Details struct
+    mapping(address => Details.MeToken) private _meTokens;
+    /// @dev key: address of meToken owner, value: address of meToken
+    mapping(address => address) private _owners;
+    /// @dev key: address of meToken owner, value: address to transfer meToken ownership to
+    mapping(address => address) private _pendingOwners;
 
     constructor(
         address _foundry,
@@ -52,7 +54,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         uint256 _hubId,
         uint256 _assetsDeposited
     ) external override {
-        // TODO: access control
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         Details.Hub memory hub_ = hub.getDetails(_hubId);
         require(hub_.active, "Hub inactive");
@@ -140,8 +141,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             "!approved"
         );
 
-        // TODO: pre-approve migration to spend initial meToken asset?
-
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
@@ -202,8 +201,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             _meToken
         );
 
-        // TODO: approve targetVault to spend initial meToken asset?
-
         // Finish updating metoken details
         meToken_.startTime = 0;
         meToken_.endTime = 0;
@@ -232,14 +229,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             (meToken_.balanceLocked * PRECISION * _newBalance) /
             (oldBalance * PRECISION);
 
-        // TODO: would this block do anything?
-        // if (block.timestamp < meToken_.endTime) {
-        //     // Called while duration
-        //     Details.Hub memory targetHub_ = hub.getDetails(
-        //         meToken_.targetHubId
-        //     );
-        //     IERC20(targetHub_.asset).approve(meToken_.migration, type(uint256).max);
-        // }
         emit UpdateBalances(_meToken, _newBalance);
     }
 

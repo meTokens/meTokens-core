@@ -37,13 +37,13 @@ abstract contract Vault is Ownable, IVault {
         migrationRegistry = _migrationRegistry;
     }
 
-    // TODO: access control
     function handleDeposit(
         address _asset,
         uint256 _depositAmount,
         uint256 _feeAmount,
         address _from
     ) external override {
+        require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;
@@ -56,6 +56,7 @@ abstract contract Vault is Ownable, IVault {
         uint256 _feeAmount,
         address _to
     ) external override {
+        require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;

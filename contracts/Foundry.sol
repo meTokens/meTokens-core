@@ -216,8 +216,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         uint256 fee = assetsReturned * feeRate;
-        // assetsReturned -= fee;
-
         IVault vault = IVault(hub_.vault);
         address asset = hub_.asset;
 
