@@ -169,7 +169,12 @@ const setup = async () => {
       weth
         .connect(wethHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
-      await dai.connect(account1).approve(meTokenRegistry.address, amount);
+      let max = ethers.constants.MaxUint256;
+      await dai.connect(account1).approve(meTokenRegistry.address, max);
+      await dai.connect(account2).approve(initialVault.address, max);
+      await weth.connect(account2).approve(migration.address, max);
+      await weth.connect(account2).approve(targetVault.address, max);
+
       // Create meToken
       await meTokenRegistry
         .connect(account1)
@@ -450,7 +455,6 @@ const setup = async () => {
             initialVault.address
           );
 
-          await dai.connect(account2).approve(initialVault.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
@@ -484,7 +488,6 @@ const setup = async () => {
           const migrationDAIBefore = await dai.balanceOf(migration.address);
           const migrationWETHBefore = await weth.balanceOf(migration.address);
 
-          await weth.connect(account2).approve(migration.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
@@ -533,7 +536,6 @@ const setup = async () => {
             targetVault.address
           );
 
-          await weth.connect(account2).approve(targetVault.address, amount);
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
@@ -573,84 +575,3 @@ const setup = async () => {
 setup().then(() => {
   run();
 });
-
-//     const balBefore = await dai.balanceOf(account0.address);
-
-//     // need an approve of metoken registry first
-//     await dai.approve(foundry.address, amount);
-//     await foundry.mint(meToken.address, amount, account2.address);
-
-//     const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
-
-// });
-// it("burn() from buyer should work", async () => {
-//     await foundry
-//         .connect(account2)
-//         .burn(meToken.address, balBefore, account2.address);
-// });
-// describe("during migration", () => {
-//     before(async () => {
-//         // migrate meToken
-//         // refund ratio stays the same
-//         const targetRefundRatio = 200000;
-
-//         // 10 hour
-//         await hub.setDuration(600 * 60);
-//         await hub.setWarmup(60 * 60);
-//         await hub.setCooldown(60 * 60);
-//         // vault stays the same
-//     });
-//     it("After migration, mint() takes WETH deposited", async () => {
-
-//     });
-//     it("burn() Should work", async () => {
-//         const balBefore = await meToken.balanceOf(account2.address);
-//         const balDaiBefore = await dai.balanceOf(account2.address);
-
-//         const hubDetail = await hub.getDetails(hubId1);
-//         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
-//         await foundry
-//             .connect(account2)
-//             .burn(meToken.address, balBefore, account2.address);
-//         const balAfter = await meToken.balanceOf(account2.address);
-//         const balDaiAfter = await dai.balanceOf(account2.address);
-//         expect(balAfter).equal(0);
-//         expect(await meToken.totalSupply()).to.equal(0);
-//         expect(balDaiAfter).to.be.gt(balDaiBefore);
-
-//         const balVaultAfter = await dai.balanceOf(hubDetail.vault);
-//         expect(balVaultBefore.sub(balVaultAfter)).equal(
-//             balDaiAfter.sub(balDaiBefore)
-//         );
-//     });
-//     it("mint() Should work after some time during the migration ", async () => {
-//         // metoken should be registered
-//         let block = await ethers.provider.getBlock("latest");
-//         await mineBlock(block.timestamp + 60 * 60);
-
-//         const hubDetail = await hub.getDetails(hubId1);
-//         block = await ethers.provider.getBlock("latest");
-//         expect(hubDetail.startTime).to.be.lt(block.timestamp);
-//         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
-//         const balBefore = await dai.balanceOf(account2.address);
-//         // need an approve of metoken registry first
-//         await dai.connect(account2).approve(foundry.address, amount);
-//         await foundry
-//             .connect(account2)
-//             .mint(meToken.address, amount, account2.address);
-//         const balAfter = await dai.balanceOf(account2.address);
-//         expect(balBefore.sub(balAfter)).equal(amount);
-
-//         const balVaultAfter = await dai.balanceOf(hubDetail.vault);
-//         expect(balVaultAfter).equal(balVaultBefore.add(amount));
-//         // assert token infos
-//         const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-//             account0.address
-//         );
-//         expect(meTokenAddr).to.equal(meToken.address);
-//         // should be greater than 0
-//         expect(await meToken.totalSupply()).to.equal(
-//             await meToken.balanceOf(account2.address)
-//         );
-//     });
-// });
