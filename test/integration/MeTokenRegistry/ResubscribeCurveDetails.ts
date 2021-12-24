@@ -144,11 +144,11 @@ const setup = async () => {
       // Pre-load owner and buyer w/ DAI & WETH
       await dai
         .connect(daiWhale)
-        .transfer(account1.address, ethers.utils.parseEther("1000"));
+        .transfer(account1.address, ethers.utils.parseEther("500"));
 
       await weth
         .connect(tokenHolder)
-        .transfer(account1.address, ethers.utils.parseEther("1000"));
+        .transfer(account1.address, ethers.utils.parseEther("500"));
 
       // Create meToken and subscribe to Hub1
       const name = "Carl meToken";
