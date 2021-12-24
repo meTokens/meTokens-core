@@ -217,6 +217,8 @@ const setup = async () => {
       it("burn() [buyer]: assets received based on initial Curve details", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
+        const buyerMeToken = await meToken.balanceOf(account1.address);
+        expect(buyerMeToken).to.be.equal(ownerMeToken.div(2));
 
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -226,13 +228,13 @@ const setup = async () => {
         const buyerDAIBefore = await dai.balanceOf(account1.address);
 
         const rawAssetsReturned = calculateCollateralReturned(
-          toETHNumber(ownerMeToken.div(2)),
+          toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight1 / MAX_WEIGHT
         );
         // const targetAssetsReturned = calculateCollateralReturned(
-        //   toETHNumber(ownerMeToken.div(2)),
+        //   toETHNumber(buyerMeToken),
         //   toETHNumber(meTokenTotalSupply),
         //   toETHNumber(meTokenDetails.balancePooled),
         //   updatedReserveWeight / MAX_WEIGHT
@@ -248,7 +250,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .burn(meToken.address, ownerMeToken.div(2), account1.address);
+          .burn(meToken.address, buyerMeToken, account1.address);
 
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerDAIAfter = await dai.balanceOf(account1.address);
@@ -268,7 +270,44 @@ const setup = async () => {
           0.000000000000001
         );
       });
-      xit("burn() [owner]: assets received based on initial Curve details", async () => {});
+      it("burn() [owner]: assets received based on initial Curve details", async () => {
+        const ownerMeToken = await meToken.balanceOf(account0.address);
+        const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const ownerDAIBefore = await dai.balanceOf(account0.address);
+
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight1 / MAX_WEIGHT
+        );
+        const assetsReturned =
+          rawAssetsReturned +
+          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+            toETHNumber(meTokenDetails.balanceLocked);
+
+        await foundry
+          .connect(account0)
+          .burn(meToken.address, ownerMeToken, account0.address);
+
+        const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
+        const ownerDAIAfter = await dai.balanceOf(account0.address);
+        const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
+        const meTokenTotalSupplyAfter = await meToken.totalSupply();
+
+        expect(vaultDAIBefore.sub(vaultDAIAfter)).to.equal(
+          ownerDAIAfter.sub(ownerDAIBefore)
+        );
+        expect(
+          toETHNumber(ownerDAIAfter.sub(ownerDAIBefore))
+        ).to.be.approximately(assetsReturned, 0.000000000000001);
+        expect(ownerMeTokenAfter).to.equal(0);
+        expect(toETHNumber(meTokenTotalSupplyAfter)).to.equal(0);
+      });
     });
 
     describe("Duration", () => {
