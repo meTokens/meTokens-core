@@ -37,22 +37,33 @@ abstract contract Vault is Ownable, IVault {
         migrationRegistry = _migrationRegistry;
     }
 
-    function approveAsset(address _asset, uint256 _amount) external override {
-        require(
-            msg.sender == foundry || msg.sender == address(meTokenRegistry),
-            "!foundry||!meTokenRegistry"
-        );
-        // increase the allowance to be able to burn tokens and retrieve the collateral
-        IERC20(_asset).safeIncreaseAllowance(foundry, _amount);
-    }
-
-    function addFee(address _asset, uint256 _amount) external override {
+    function handleDeposit(
+        address _asset,
+        uint256 _depositAmount,
+        uint256 _feeAmount,
+        address _from
+    ) external override {
         require(msg.sender == foundry, "!foundry");
-        accruedFees[_asset] += _amount;
-        emit AddFee(_asset, _amount);
+        IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
+        if (_feeAmount > 0) {
+            accruedFees[_asset] += _feeAmount;
+        }
     }
 
-    function withdraw(
+    function handleWithdrawal(
+        address _asset,
+        uint256 _withdrawalAmount,
+        uint256 _feeAmount,
+        address _to
+    ) external override {
+        require(msg.sender == foundry, "!foundry");
+        IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
+        if (_feeAmount > 0) {
+            accruedFees[_asset] += _feeAmount;
+        }
+    }
+
+    function claim(
         address _asset,
         bool _max,
         uint256 _amount
@@ -66,7 +77,7 @@ abstract contract Vault is Ownable, IVault {
         }
         accruedFees[_asset] -= _amount;
         IERC20(_asset).transfer(dao, _amount);
-        emit Withdraw(_asset, _amount);
+        emit Claim(dao, _asset, _amount);
     }
 
     function isValid(address _meToken, bytes memory _encodedArgs)

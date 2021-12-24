@@ -242,12 +242,14 @@ const setup = async () => {
         // required in later testing
 
         dai = token;
-        await dai.connect(tokenHolder).transfer(account0.address, amount);
-        await dai.connect(tokenHolder).transfer(account1.address, amount);
-        await dai.connect(tokenHolder).transfer(account2.address, amount);
-        await dai.connect(account1).approve(foundry.address, amount);
-        await dai.connect(account2).approve(foundry.address, amount);
-        await dai.connect(account1).approve(meTokenRegistry.address, amount);
+        let enough = amount.mul(10);
+        await dai.connect(tokenHolder).transfer(account0.address, enough);
+        await dai.connect(tokenHolder).transfer(account1.address, enough);
+        await dai.connect(tokenHolder).transfer(account2.address, enough);
+        let max = ethers.constants.MaxUint256;
+        await dai.connect(account1).approve(singleAssetVault.address, max);
+        await dai.connect(account2).approve(singleAssetVault.address, max);
+        await dai.connect(account1).approve(meTokenRegistry.address, max);
         // account0 is registering a metoken
         const tx = await meTokenRegistry
           .connect(account0)
@@ -706,9 +708,6 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once when mint() called during cooldown", async () => {
           const amount = ethers.utils.parseEther("100");
-          await dai.connect(tokenHolder).transfer(account2.address, amount);
-          // need an approve of metoken registry first
-          await dai.connect(account2).approve(foundry.address, amount);
 
           const tx = await foundry
             .connect(account2)
@@ -737,9 +736,6 @@ const setup = async () => {
           expect(details.endCooldown).to.be.lt(block.timestamp);
 
           const amount = ethers.utils.parseEther("100");
-          await dai.connect(tokenHolder).transfer(account2.address, amount);
-          // need an approve of metoken registry first
-          await dai.connect(account2).approve(foundry.address, amount);
 
           const tx = await foundry
             .connect(account2)

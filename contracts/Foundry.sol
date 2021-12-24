@@ -101,14 +101,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
             vault = IVault(meToken_.migration);
             asset = targetHub_.asset;
         }
-        IERC20(asset).safeTransferFrom(
-            msg.sender,
-            address(vault),
-            _assetsDeposited
-        );
-        vault.approveAsset(asset, _assetsDeposited);
 
-        if (fee > 0) vault.addFee(asset, fee);
+        vault.handleDeposit(asset, _assetsDeposited, fee, msg.sender);
 
         meTokenRegistry.updateBalancePooled(
             true,
@@ -222,10 +216,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
 
         uint256 fee = assetsReturned * feeRate;
-        assetsReturned -= fee;
-
-        IVault _vault = IVault(hub_.vault);
-        address _asset = hub_.asset;
+        IVault vault = IVault(hub_.vault);
+        address asset = hub_.asset;
 
         if (
             meToken_.migration != address(0) &&
@@ -234,24 +226,19 @@ contract Foundry is IFoundry, Ownable, Initializable {
             Details.Hub memory targetHub_ = hub.getDetails(
                 meToken_.targetHubId
             );
-            _vault = IVault(meToken_.migration);
-            _asset = targetHub_.asset;
+            vault = IVault(meToken_.migration);
+            asset = targetHub_.asset;
         }
 
-        IERC20(_asset).safeTransferFrom(
-            address(_vault),
-            _recipient,
-            assetsReturned
-        );
-        _vault.addFee(_asset, fee);
+        vault.handleWithdrawal(asset, assetsReturned, fee, _recipient);
 
         emit Burn(
             _meToken,
-            _asset,
+            asset,
             msg.sender,
             _recipient,
             _meTokensBurned,
-            assetsReturned
+            assetsReturned - fee
         );
     }
 

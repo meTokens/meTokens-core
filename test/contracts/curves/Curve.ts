@@ -80,12 +80,6 @@ describe("Generic Curve", () => {
       .transfer(account2.address, ethers.utils.parseEther("100"));
     await dai
       .connect(account1)
-      .approve(foundry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account2)
-      .approve(foundry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
       .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
     await dai
       .connect(account1)

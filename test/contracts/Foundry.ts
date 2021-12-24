@@ -98,12 +98,14 @@ describe("Foundry.sol", () => {
 
     // Prefund owner/buyer w/ DAI
     dai = token;
-    await dai.connect(tokenHolder).transfer(account0.address, amount1);
-    await dai.connect(tokenHolder).transfer(account1.address, amount1);
-    await dai.connect(tokenHolder).transfer(account2.address, amount1);
-    await dai.connect(account1).approve(foundry.address, amount1);
-    await dai.connect(account2).approve(foundry.address, amount1);
-    await dai.connect(account1).approve(meTokenRegistry.address, amount1);
+    await dai.connect(tokenHolder).transfer(account0.address, amount1.mul(10));
+    await dai.connect(tokenHolder).transfer(account1.address, amount1.mul(10));
+    await dai.connect(tokenHolder).transfer(account2.address, amount1.mul(10));
+    let max = ethers.constants.MaxUint256;
+    await dai.connect(account0).approve(singleAssetVault.address, max);
+    await dai.connect(account1).approve(singleAssetVault.address, max);
+    await dai.connect(account2).approve(singleAssetVault.address, max);
+    await dai.connect(account1).approve(meTokenRegistry.address, max);
     // account0 is registering a metoken
     const tx = await meTokenRegistry
       .connect(account0)
@@ -272,19 +274,14 @@ describe("Foundry.sol", () => {
     expect(await meToken.symbol()).to.equal(symbol);
     expect(await meToken.decimals()).to.equal(18);
     expect(await meToken.totalSupply()).to.equal(0);
-    // mint
 
     const balBefore = await dai.balanceOf(account0.address);
-
-    // need an approve of metoken registry first
-    // await dai.connect(account2).approve(foundry.address, amount);
-    await dai.approve(foundry.address, amount);
     const tokenBalBefore = await meToken.balanceOf(account2.address);
-
     const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
     // gas savings
     const totalSupply = await meToken.totalSupply();
 
+    // mint
     const meTokensMinted = await _curve.viewMeTokensMinted(
       amount,
       hubId,
@@ -292,13 +289,16 @@ describe("Foundry.sol", () => {
       meTokenDetails.balancePooled
     );
     await foundry.mint(meToken.address, amount, account2.address);
+
     const tokenBalAfter = await meToken.balanceOf(account2.address);
     const balAfter = await dai.balanceOf(account0.address);
     expect(balBefore.sub(balAfter)).equal(amount);
     expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
+
     const hubDetail = await hub.getDetails(hubId);
     const balVault = await dai.balanceOf(hubDetail.vault);
     expect(balVault).equal(amount);
+
     // assert token infos
     const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
     expect(meTokenAddr).to.equal(meToken.address);
@@ -380,8 +380,6 @@ describe("Foundry.sol", () => {
       const balTokenBefore = await meToken.balanceOf(account2.address);
       await dai.connect(tokenHolder).transfer(account2.address, amount);
       const balBefore = await dai.balanceOf(account2.address);
-      // need an approve of metoken registry first
-      await dai.connect(account2).approve(foundry.address, amount);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const totSupplyBefore = await meToken.totalSupply();
       const tokenBalBefore = await meToken.balanceOf(account2.address);
@@ -393,14 +391,15 @@ describe("Foundry.sol", () => {
       const balTokenAfter = await meToken.balanceOf(account2.address);
       expect(balTokenAfter).to.be.gt(balTokenBefore);
       expect(balBefore.sub(balAfter)).equal(amount);
+
       hubDetail = await hub.getDetails(hubId);
       const balVaultAfter = await dai.balanceOf(hubDetail.vault);
       expect(balVaultAfter.sub(balVaultBefore)).equal(amount);
+
       // assert token infos
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account2.address
       );
-
       expect(meTokenAddr).to.equal(meToken.address);
       // should be greater than 0
       const totSupplyAfter = await meToken.totalSupply();
@@ -441,7 +440,7 @@ describe("Foundry.sol", () => {
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const balBefore = await dai.balanceOf(account2.address);
       // need an approve of metoken registry first
-      await dai.connect(account2).approve(foundry.address, amount);
+      await dai.connect(account2).approve(singleAssetVault.address, amount);
       await foundry
         .connect(account2)
         .mint(meToken.address, amount, account2.address);

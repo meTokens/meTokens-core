@@ -81,9 +81,18 @@ describe("Vault.sol", () => {
       curve
     ));
 
+    await fees.setMintFee(1e8);
+
     await token.connect(tokenHolder).transfer(account0.address, amount.mul(3));
     await token.connect(tokenHolder).transfer(account1.address, amount);
     await token.connect(tokenHolder).transfer(account2.address, amount);
+
+    await token.approve(meTokenRegistry.address, amount);
+    const tx = await meTokenRegistry.subscribe("METOKEN", "MT", hubId, amount);
+    await tx.wait();
+
+    const meTokenAddr = await meTokenRegistry.getOwnerMeToken(account0.address);
+    meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
   });
 
   describe("Check initial state", () => {
@@ -103,115 +112,58 @@ describe("Vault.sol", () => {
     });
   });
 
-  describe("approveAsset()", () => {
-    it("Successfully called from meTokenRegistry", async () => {
-      await token.approve(meTokenRegistry.address, amount);
-      const tx = await meTokenRegistry.subscribe(
-        "METOKEN",
-        "MT",
-        hubId,
-        amount
-      );
-      await tx.wait();
-
-      await expect(tx)
-        .to.emit(token, "Approval")
-        .withArgs(vault.address, foundry.address, amount);
-
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
-      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-    });
-    it("Successfully called from foundry", async () => {
-      await token.approve(foundry.address, amount);
-      const tx = await foundry.mint(meToken.address, amount, account1.address);
-      await tx.wait();
-
-      await expect(tx)
-        .to.emit(token, "Approval")
-        .withArgs(vault.address, foundry.address, amount.mul(2)); // adding up approval from subscribe
-    });
-    it("reverts when sender is not foundry or meTokenRegistry", async () => {
-      await expect(vault.approveAsset(DAI, amount)).to.be.revertedWith(
-        "!foundry||!meTokenRegistry"
-      );
-    });
-  });
-
-  describe("addFee()", () => {
-    it("Increments accruedFees revert if not foundry", async () => {
-      await expect(
-        vault.connect(account1).addFee(DAI, amount)
-      ).to.be.revertedWith("!foundry");
-    });
-    it("should be call addFee() from foundry", async () => {
-      await fees.setMintFee(1e8);
-      await token.approve(foundry.address, amount);
-      const tx = await foundry.mint(meToken.address, amount, account1.address);
-      await tx.wait();
-
-      accruedFee = (await fees.mintFee()).mul(amount).div(precision);
-      await expect(tx).to.emit(vault, "AddFee").withArgs(DAI, accruedFee);
-
-      expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-    });
-  });
-
-  describe("withdraw()", () => {
+  describe("claim()", () => {
     it("Reverts when not called by owner", async () => {
       await expect(
-        vault.connect(account1).withdraw(DAI, true, 0)
+        vault.connect(account1).claim(DAI, true, 0)
       ).to.be.revertedWith("!DAO");
     });
 
     it("should revert when amount is 0", async () => {
-      await expect(vault.withdraw(DAI, false, 0)).to.be.revertedWith(
-        "amount < 0"
-      );
+      await expect(vault.claim(DAI, false, 0)).to.be.revertedWith("amount < 0");
     });
 
-    it("should revert when try to withdraw more than accruedFees[_asset]", async () => {
+    it("should revert when try to claim more than accruedFees[_asset]", async () => {
+      await token.approve(vault.address, amount);
+      await foundry.mint(meToken.address, amount, account1.address);
+      accruedFee = (await fees.mintFee()).mul(amount).div(precision);
+
       await expect(
-        vault.withdraw(DAI, false, accruedFee.add(1))
+        vault.claim(DAI, false, accruedFee.add(1))
       ).to.be.revertedWith("amount > accrued fees");
     });
 
     it("Transfer some accrued fees", async () => {
-      const amountToWithdraw = accruedFee.div(2);
+      const amountToClaim = accruedFee.div(2);
       const daoBalanceBefore = await token.balanceOf(dao.address);
 
-      const tx = await vault.withdraw(DAI, false, amountToWithdraw);
+      const tx = await vault.claim(DAI, false, amountToClaim);
       await tx.wait();
 
       await expect(tx)
-        .to.emit(vault, "Withdraw")
-        .withArgs(DAI, amountToWithdraw);
+        .to.emit(vault, "Claim")
+        .withArgs(dao.address, DAI, amountToClaim);
 
       const daoBalanceAfter = await token.balanceOf(dao.address);
-      accruedFee = accruedFee.sub(amountToWithdraw);
+      accruedFee = accruedFee.sub(amountToClaim);
       expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
-        amountToWithdraw
-      );
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(amountToClaim);
     });
 
     it("Transfer all remaining accrued fees", async () => {
-      const amountToWithdraw = accruedFee;
+      const amountToClaim = accruedFee;
       const daoBalanceBefore = await token.balanceOf(dao.address);
-      const tx = await vault.withdraw(DAI, true, 0);
+      const tx = await vault.claim(DAI, true, 0);
       await tx.wait();
 
       await expect(tx)
-        .to.emit(vault, "Withdraw")
-        .withArgs(DAI, amountToWithdraw);
+        .to.emit(vault, "Claim")
+        .withArgs(dao.address, DAI, amountToClaim);
 
       const daoBalanceAfter = await token.balanceOf(dao.address);
-      accruedFee = accruedFee.sub(amountToWithdraw);
+      accruedFee = accruedFee.sub(amountToClaim);
       expect(await vault.accruedFees(DAI)).to.be.equal(accruedFee);
-      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
-        amountToWithdraw
-      );
+      expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(amountToClaim);
     });
   });
 });
