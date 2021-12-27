@@ -101,7 +101,6 @@ const setup = async () => {
       );
 
       weth = await getContractAt<ERC20>("ERC20", WETH);
-      console.log("Work");
       // Pre-load owner and buyer w/ DAI
       await dai
         .connect(tokenHolder)
@@ -119,7 +118,6 @@ const setup = async () => {
         account0.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      console.log("Work");
       // Create Hub2 w/ same args but different refund Ratio
       await hub.register(
         account0.address,
@@ -130,7 +128,6 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs
       );
-      console.log("Work");
       await hub.setWarmup(7 * 60 * 24 * 24); // 1 week
       await meTokenRegistry.setWarmup(2 * 60 * 24 * 24); // 2 days
       await meTokenRegistry.setDuration(4 * 60 * 24 * 24); // 4 days
@@ -142,7 +139,6 @@ const setup = async () => {
         ["uint256", "uint24"],
         [earliestSwapTime, fees]
       );
-      console.log("Work");
       await meTokenRegistry.initResubscribe(
         meToken.address,
         2,
@@ -151,7 +147,6 @@ const setup = async () => {
       );
       tokenDepositedInETH = 100;
       tokenDeposited = ethers.utils.parseEther(tokenDepositedInETH.toString());
-      console.log("Work");
       await dai
         .connect(account2)
         .approve(foundry.address, ethers.constants.MaxUint256);

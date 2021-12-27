@@ -22,7 +22,7 @@ import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { mineBlock } from "../../utils/hardhatNode";
+import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
@@ -313,6 +313,8 @@ const setup = async () => {
         const meTokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
+
+        await setAutomine(false);
         const block = await ethers.provider.getBlock("latest");
 
         const calculatedReturn = calculateTokenReturnedFromZero(
@@ -337,6 +339,9 @@ const setup = async () => {
         await foundry
           .connect(account1)
           .mint(meToken.address, tokenDeposited, account0.address);
+
+        await mineBlock(block.timestamp + 1);
+        await setAutomine(true);
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
@@ -365,6 +370,9 @@ const setup = async () => {
         const meTokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
+
+        await setAutomine(false);
+        const block = await ethers.provider.getBlock("latest");
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
@@ -382,15 +390,18 @@ const setup = async () => {
           .connect(account1)
           .burn(meToken.address, buyerMeToken, account1.address);
 
-        const block = await ethers.provider.getBlock("latest");
         const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
           meTokenDetails.startTime.toNumber(),
           meTokenDetails.endTime.toNumber(),
-          block.timestamp
+          block.timestamp + 1
         );
+
         const assetsReturned = (calcWAvgRes * refundRatio) / MAX_WEIGHT;
+
+        await mineBlock(block.timestamp + 1);
+        await setAutomine(true);
 
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerWETHAfter = await weth.balanceOf(account1.address);
@@ -399,7 +410,7 @@ const setup = async () => {
 
         expect(
           toETHNumber(buyerWETHAfter.sub(buyerWETHBefore))
-        ).to.be.approximately(assetsReturned, 1e-4); // TODO very low precision
+        ).to.be.approximately(assetsReturned, 1e-15);
         expect(buyerMeTokenAfter).to.equal(0);
         expect(toETHNumber(meTokenTotalSupplyAfter)).to.be.approximately(
           toETHNumber(meTokenTotalSupply.div(2)),
@@ -407,7 +418,7 @@ const setup = async () => {
         );
         expect(
           toETHNumber(migrationWETHBefore.sub(migrationWETHAfter))
-        ).to.approximately(assetsReturned, 1e-4); // TODO very low precision
+        ).to.approximately(assetsReturned, 1e-15);
       });
       it("burn() [owner]: assets received based on weighted average Curve details", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
