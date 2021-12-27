@@ -3,14 +3,11 @@ import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { Hub } from "../../../artifacts/types/Hub";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, Signer } from "ethers";
@@ -25,14 +22,11 @@ describe("Vault.sol", () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let dao: SignerWithAddress;
-  let weightedAverage: WeightedAverage;
   let migrationRegistry: MigrationRegistry;
   let foundry: Foundry;
   let hub: Hub;
-  let meTokenFactory: MeTokenFactory;
   let meTokenRegistry: MeTokenRegistry;
   let curve: BancorABDK;
-  let curveRegistry: CurveRegistry;
   let tokenHolder: Signer;
   let meToken: MeToken;
   let fees: Fees;
@@ -50,7 +44,6 @@ describe("Vault.sol", () => {
 
     [account0, account1, account2] = await ethers.getSigners();
     dao = account0;
-    weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
 
     const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
       ["address"],
@@ -70,7 +63,6 @@ describe("Vault.sol", () => {
       account1,
       account2,
       meTokenRegistry,
-      curveRegistry,
       migrationRegistry,
       singleAssetVault: vault,
       fee: fees,
@@ -88,6 +80,7 @@ describe("Vault.sol", () => {
     await token.connect(tokenHolder).transfer(account2.address, amount);
 
     await token.approve(meTokenRegistry.address, amount);
+    await token.approve(vault.address, amount);
     const tx = await meTokenRegistry.subscribe("METOKEN", "MT", hubId, amount);
     await tx.wait();
 
@@ -124,7 +117,6 @@ describe("Vault.sol", () => {
     });
 
     it("should revert when try to claim more than accruedFees[_asset]", async () => {
-      await token.approve(vault.address, amount);
       await foundry.mint(meToken.address, amount, account1.address);
       accruedFee = (await fees.mintFee()).mul(amount).div(precision);
 

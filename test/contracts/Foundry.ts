@@ -439,8 +439,7 @@ describe("Foundry.sol", () => {
       expect(hubDetail.startTime).to.be.lt(block.timestamp);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       const balBefore = await dai.balanceOf(account2.address);
-      // need an approve of metoken registry first
-      await dai.connect(account2).approve(singleAssetVault.address, amount);
+
       await foundry
         .connect(account2)
         .mint(meToken.address, amount, account2.address);

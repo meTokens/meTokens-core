@@ -166,7 +166,6 @@ const setup = async () => {
         const balDaiAcc1Before = await token.balanceOf(account1.address);
 
         //send half burnt by owner
-
         await foundry
           .connect(account0)
           .burn(meToken.address, balAfter, account0.address);

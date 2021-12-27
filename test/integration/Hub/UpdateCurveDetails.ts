@@ -1527,10 +1527,6 @@ const setup = async () => {
           expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(
             tokenDeposited
           );
-          //  burnt by owner
-          await meToken
-            .connect(account2)
-            .approve(singleAssetVault.address, balAfter);
 
           meTokenTotalSupply = await meToken.totalSupply();
           meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
