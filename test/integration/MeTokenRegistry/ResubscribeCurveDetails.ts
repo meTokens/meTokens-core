@@ -170,12 +170,16 @@ const setup = async () => {
           migration.address,
           encodedMigrationArgs
         );
-      await dai
-        .connect(account1)
-        .approve(foundry.address, ethers.constants.MaxUint256);
-      await weth
-        .connect(account1)
-        .approve(foundry.address, ethers.constants.MaxUint256);
+
+      const max = ethers.constants.MaxUint256;
+      await dai.connect(account0).approve(singleAssetVault.address, max);
+      await dai.connect(account1).approve(singleAssetVault.address, max);
+      await dai.connect(account0).approve(migration.address, max);
+      await dai.connect(account0).approve(migration.address, max);
+      await weth.connect(account0).approve(migration.address, max);
+      await weth.connect(account1).approve(migration.address, max);
+      await weth.connect(account0).approve(singleAssetVault.address, max);
+      await weth.connect(account1).approve(singleAssetVault.address, max);
     });
 
     describe("Warmup", () => {

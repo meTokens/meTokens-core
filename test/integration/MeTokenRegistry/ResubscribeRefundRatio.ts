@@ -149,10 +149,16 @@ const setup = async () => {
       tokenDeposited = ethers.utils.parseEther(tokenDepositedInETH.toString());
       await dai
         .connect(account2)
-        .approve(foundry.address, ethers.constants.MaxUint256);
+        .approve(singleAssetVault.address, ethers.constants.MaxUint256);
+      await dai
+        .connect(account2)
+        .approve(migration.address, ethers.constants.MaxUint256);
       await weth
         .connect(account2)
-        .approve(foundry.address, ethers.constants.MaxUint256);
+        .approve(singleAssetVault.address, ethers.constants.MaxUint256);
+      await weth
+        .connect(account2)
+        .approve(migration.address, ethers.constants.MaxUint256);
     });
 
     describe("Warmup", () => {
