@@ -2,7 +2,10 @@
 pragma solidity ^0.8.0;
 
 interface IMeTokenFactory {
-    function create(string calldata name, string calldata symbol)
-        external
-        returns (address);
+    function create(
+        string calldata name,
+        string calldata symbol,
+        address foundry,
+        address meTokenRegistry
+    ) external returns (address);
 }
