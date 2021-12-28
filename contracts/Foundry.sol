@@ -70,7 +70,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
             if (block.timestamp > meToken_.endTime) {
                 hub_ = hub.getDetails(meToken_.targetHubId);
                 meToken_ = meTokenRegistry.finishResubscribe(_meToken);
-                hub_ = hub.getDetails(meToken_.hubId);
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
                 IMigration(meToken_.migration).poke(_meToken);
@@ -169,7 +168,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
         ) {
             hub_ = hub.getDetails(meToken_.targetHubId);
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
-            hub_ = hub.getDetails(meToken_.hubId);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
