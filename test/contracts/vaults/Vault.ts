@@ -105,6 +105,36 @@ describe("Vault.sol", () => {
     });
   });
 
+  describe("handleDeposit()", () => {
+    it("Reverts when not called by foundry", async () => {
+      // TODO
+    });
+    it("Transfer asset from recipient to vault", async () => {
+      // TODO
+    });
+    it("Increments accruedFees", async () => {
+      // TODO
+    });
+    it("Emits HandleDeposit()", async () => {
+      // TODO
+    });
+  });
+
+  describe("handleWithdrawal()", () => {
+    it("Reverts when not called by foundry", async () => {
+      // TODO
+    });
+    it("Transfer asset from vault to recipient", async () => {
+      // TODO
+    });
+    it("Increments accruedFees", async () => {
+      // TODO
+    });
+    it("Emits HandleWithdrawal()", async () => {
+      // TODO
+    });
+  });
+
   describe("claim()", () => {
     it("Reverts when not called by owner", async () => {
       await expect(
