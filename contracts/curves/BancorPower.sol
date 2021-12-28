@@ -4,6 +4,7 @@ import "../utils/ABDKMathQuad.sol";
 import "./Power.sol";
 import "../libs/Details.sol";
 import "../interfaces/ICurve.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Bancor formula by Bancor
@@ -13,7 +14,7 @@ import "../interfaces/ICurve.sol";
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
  * and to You under the Apache License, Version 2.0. "
  */
-contract BancorPower is Power, ICurve {
+contract BancorPower is Power, ICurve, Ownable {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -28,13 +29,22 @@ contract BancorPower is Power, ICurve {
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
     bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
+    address public hub;
+    address public foundry;
+
+    // NOTE: keys are the respective hubId
     mapping(uint256 => Bancor) private _bancors;
+
+    constructor(address _hub, address _foundry) {
+        hub = _hub;
+        foundry = _foundry;
+    }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
         require(_encodedDetails.length > 0, "!_encodedDetails");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
@@ -56,7 +66,7 @@ contract BancorPower is Power, ICurve {
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub || msg.sender == owner(), "!authorized");
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
         Bancor storage bancor_ = _bancors[_hubId];
@@ -76,7 +86,7 @@ contract BancorPower is Power, ICurve {
     }
 
     function finishReconfigure(uint256 _hubId) external override {
-        // TODO; only foundry can call
+        require(msg.sender == hub, "!hub");
         Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
         bancor_.baseY = bancor_.targetBaseY;

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 /// @title migration registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Keeps track of all used migration strategies
-contract MigrationRegistry {
+contract MigrationRegistry is Ownable {
     // Initial vault, target vault, migration vault, approved status
     mapping(address => mapping(address => mapping(address => bool)))
         private _migrations;
@@ -13,8 +15,7 @@ contract MigrationRegistry {
         address initialVault,
         address targetVault,
         address migration
-    ) external {
-        // TODO: access control
+    ) external onlyOwner {
         require(
             !_migrations[initialVault][targetVault][migration],
             "migration already approved"
@@ -26,8 +27,7 @@ contract MigrationRegistry {
         address initialVault,
         address targetVault,
         address migration
-    ) external {
-        // TODO: access control
+    ) external onlyOwner {
         require(
             _migrations[initialVault][targetVault][migration],
             "migration not approved"

@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/ICurve.sol";
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libs/WeightedAverage.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve is ICurve {
+contract StepwiseCurve is ICurve, Ownable {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
     struct Stepwise {
@@ -22,15 +23,22 @@ contract StepwiseCurve is ICurve {
     uint256 public constant PRECISION = 10**18;
     bytes16 private immutable _one = uint256(1).fromUInt();
     bytes16 private immutable _two = uint256(2).fromUInt();
+    address public hub;
+    address public foundry;
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
+
+    constructor(address _hub, address _foundry) {
+        hub = _hub;
+        foundry = _foundry;
+    }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
         require(_encodedDetails.length > 0, "_encodedDetails empty");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
@@ -49,7 +57,7 @@ contract StepwiseCurve is ICurve {
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub || msg.sender == owner(), "!authorized");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
         // require(_encodedDetails.length > 0, "_encodedDetails empty");
@@ -77,7 +85,7 @@ contract StepwiseCurve is ICurve {
     }
 
     function finishReconfigure(uint256 _hubId) external override {
-        // TODO; only foundry can call
+        require(msg.sender == hub, "!hub");
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepwise_.targetStepX;
         stepwise_.stepY = stepwise_.targetStepY;

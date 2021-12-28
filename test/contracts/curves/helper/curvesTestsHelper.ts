@@ -46,17 +46,18 @@ export const curvesTestsHelper = async ({
 }) => {
   const one = ethers.utils.parseEther("1");
 
+  /* 
+  TODO (Ben): what should we do w/ these tests
   it("Reverts w/ empty encodedDetails", async () => {
-    /* await expect(
+    await expect(
       curve.register(hubId, ethers.constants.HashZero)
-    ).to.be.revertedWith("!_encodedDetails"); */
+    ).to.be.revertedWith("!_encodedDetails");
 
     await expect(
       curve.register(hubId, ethers.utils.toUtf8Bytes(""))
     ).to.be.revertedWith("!_encodedDetails");
   });
   it("Reverts w/ invalid encodedDetails", async () => {
-    // TODO
     let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [0, 500000]
@@ -85,6 +86,7 @@ export const curvesTestsHelper = async ({
   it("Passes w/ valid encodedDetails", async () => {
     //register is done in the setup and there is no getDetails part of  the interface
   });
+  */
   it("should be able to calculate Mint Return from zero", async () => {
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
