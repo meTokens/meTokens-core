@@ -71,7 +71,12 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         }
 
         // Create meToken erc20 contract
-        address meTokenAddr = meTokenFactory.create(_name, _symbol);
+        address meTokenAddr = meTokenFactory.create(
+            _name,
+            _symbol,
+            address(this),
+            foundry
+        );
 
         // Mint meToken to user
         uint256 _meTokensMinted;
