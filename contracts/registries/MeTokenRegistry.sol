@@ -74,8 +74,8 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         address meTokenAddr = meTokenFactory.create(
             _name,
             _symbol,
-            address(this),
-            foundry
+            foundry,
+            address(this)
         );
 
         // Mint meToken to user
