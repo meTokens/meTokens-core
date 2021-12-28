@@ -433,6 +433,9 @@ const setup = async () => {
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
 
+        await setAutomine(false);
+        const block = await ethers.provider.getBlock("latest");
+
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
@@ -446,23 +449,23 @@ const setup = async () => {
           reserveWeight2 / MAX_WEIGHT
         );
 
-        await foundry
-          .connect(account0)
-          .burn(meToken.address, ownerMeToken, account0.address);
-
-        const block = await ethers.provider.getBlock("latest");
         const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
           meTokenDetails.startTime.toNumber(),
           meTokenDetails.endTime.toNumber(),
-          block.timestamp
+          block.timestamp + 1
         );
-
         const assetsReturned =
           calcWAvgRes +
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenDetails.balanceLocked);
+
+        await mineBlock(block.timestamp + 1);
+        await setAutomine(true);
+        await foundry
+          .connect(account0)
+          .burn(meToken.address, ownerMeToken, account0.address);
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const ownerWETHAfter = await weth.balanceOf(account0.address);
