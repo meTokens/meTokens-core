@@ -101,7 +101,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             asset = targetHub_.asset;
         }
 
-        vault.handleDeposit(asset, _assetsDeposited, fee, msg.sender);
+        vault.handleDeposit(msg.sender, asset, _assetsDeposited, fee);
 
         meTokenRegistry.updateBalancePooled(
             true,
@@ -228,7 +228,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             asset = targetHub_.asset;
         }
 
-        vault.handleWithdrawal(asset, assetsReturned, fee, _recipient);
+        vault.handleWithdrawal(_recipient, asset, assetsReturned, fee);
 
         emit Burn(
             _meToken,

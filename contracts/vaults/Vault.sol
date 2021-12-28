@@ -38,29 +38,31 @@ abstract contract Vault is Ownable, IVault {
     }
 
     function handleDeposit(
+        address _from,
         address _asset,
         uint256 _depositAmount,
-        uint256 _feeAmount,
-        address _from
+        uint256 _feeAmount
     ) external override {
         require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;
         }
+        emit HandleDeposit(_from, _asset, _depositAmount, _feeAmount);
     }
 
     function handleWithdrawal(
+        address _to,
         address _asset,
         uint256 _withdrawalAmount,
-        uint256 _feeAmount,
-        address _to
+        uint256 _feeAmount
     ) external override {
         require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;
         }
+        emit HandleWithdrawal(_to, _asset, _withdrawalAmount, _feeAmount);
     }
 
     function claim(
