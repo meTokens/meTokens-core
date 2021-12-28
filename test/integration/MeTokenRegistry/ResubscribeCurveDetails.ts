@@ -461,11 +461,67 @@ const setup = async () => {
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenDetails.balanceLocked);
 
+        await foundry
+          .connect(account0)
+          .burn(meToken.address, ownerMeToken.sub(1), account0.address);
+
         await mineBlock(block.timestamp + 1);
         await setAutomine(true);
+        const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
+        const ownerWETHAfter = await weth.balanceOf(account0.address);
+        const migrationWETHAfter = await weth.balanceOf(migration.address);
+        const meTokenTotalSupplyAfter = await meToken.totalSupply();
+
+        expect(migrationWETHBefore.sub(migrationWETHAfter)).to.equal(
+          ownerWETHAfter.sub(ownerWETHBefore)
+        );
+        expect(
+          toETHNumber(ownerWETHAfter.sub(ownerWETHBefore))
+        ).to.be.approximately(assetsReturned, 0.000000000000001);
+        expect(ownerMeTokenAfter).to.equal(1);
+        expect(meTokenTotalSupplyAfter).to.equal(1);
+      });
+    });
+
+    describe("Cooldown", () => {
+      before(async () => {
+        const metokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        await mineBlock(metokenDetails.endTime.toNumber() + 2);
+
+        const block = await ethers.provider.getBlock("latest");
+        expect(metokenDetails.endTime).to.be.lt(block.timestamp);
+      });
+      it("burn(): finish migration must be called", async () => {
+        const ownerMeToken = await meToken.balanceOf(account0.address);
+        const migrationWETHBefore = await weth.balanceOf(migration.address);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const ownerWETHBefore = await weth.balanceOf(account0.address);
+
+        await setAutomine(false);
+        const block = await ethers.provider.getBlock("latest");
+
+        const targetAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight2 / MAX_WEIGHT
+        );
+
+        const assetsReturned =
+          targetAssetsReturned +
+          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+            toETHNumber(meTokenDetails.balanceLocked);
+
         await foundry
           .connect(account0)
           .burn(meToken.address, ownerMeToken, account0.address);
+        await mineBlock(block.timestamp + 1);
+        await setAutomine(true);
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const ownerWETHAfter = await weth.balanceOf(account0.address);
@@ -480,18 +536,6 @@ const setup = async () => {
         ).to.be.approximately(assetsReturned, 0.000000000000001);
         expect(ownerMeTokenAfter).to.equal(0);
         expect(toETHNumber(meTokenTotalSupplyAfter)).to.equal(0);
-      });
-    });
-
-    describe("Cooldown", () => {
-      before(async () => {
-        const metokenDetails = await meTokenRegistry.getDetails(
-          meToken.address
-        );
-        await mineBlock(metokenDetails.endTime.toNumber() + 2);
-
-        const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.endTime).to.be.lt(block.timestamp);
       });
       it("mint(): assets received based on target Curve details", async () => {
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
