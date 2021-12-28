@@ -307,7 +307,7 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetassetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(balAfter),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -337,7 +337,7 @@ const setup = async () => {
           (rawAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
         const calcWAvrgRes = weightedAverageSimulation(
           rawAssetsReturned,
-          targetassetsReturned,
+          targetAssetsReturned,
           startTime.toNumber(),
           endTime.toNumber(),
           block.timestamp
@@ -389,7 +389,7 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetassetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -419,7 +419,7 @@ const setup = async () => {
 
         const calcWAvrgRes = weightedAverageSimulation(
           rawAssetsReturned,
-          targetassetsReturned,
+          targetAssetsReturned,
           startTime.toNumber(),
           endTime.toNumber(),
           block.timestamp
@@ -475,7 +475,7 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetassetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -506,7 +506,7 @@ const setup = async () => {
         // the weighted average on the curve should be applied for owner and buyers
         const calcWAvrgRes = weightedAverageSimulation(
           rawAssetsReturned,
-          targetassetsReturned,
+          targetAssetsReturned,
           startTime.toNumber(),
           endTime.toNumber(),
           block.timestamp
@@ -694,7 +694,7 @@ const setup = async () => {
           curve,
           targetCurve,
         } = await hub.getDetails(1);
-        const targetassetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -735,7 +735,7 @@ const setup = async () => {
         // the weighted average on the curve should be applied for owner and buyers
         // but the owner gets a proportional share of the token burnt from the balanced locked
         const assetsReturned =
-          targetassetsReturned +
+          targetAssetsReturned +
           (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
@@ -808,7 +808,7 @@ const setup = async () => {
           curve,
           targetCurve,
         } = await hub.getDetails(1);
-        const targetassetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -848,7 +848,7 @@ const setup = async () => {
 
         // as it is a buyer we apply the refund ratio
         const assetsReturned =
-          (targetassetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
+          (targetAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
 
         // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
@@ -1046,7 +1046,7 @@ const setup = async () => {
             toETHNumber(meTokenDetails.balancePooled),
             reserveWeight / MAX_WEIGHT
           );
-          const targetassetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(balAfter),
             toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
@@ -1076,7 +1076,7 @@ const setup = async () => {
             (rawAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
           const calcWAvrgRes = weightedAverageSimulation(
             rawAssetsReturned,
-            targetassetsReturned,
+            targetAssetsReturned,
             startTime.toNumber(),
             endTime.toNumber(),
             block.timestamp
@@ -1130,7 +1130,7 @@ const setup = async () => {
             toETHNumber(meTokenDetails.balancePooled),
             reserveWeight / MAX_WEIGHT
           );
-          const targetassetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
@@ -1160,7 +1160,7 @@ const setup = async () => {
 
           const calcWAvrgRes = weightedAverageSimulation(
             rawAssetsReturned,
-            targetassetsReturned,
+            targetAssetsReturned,
             startTime.toNumber(),
             endTime.toNumber(),
             block.timestamp
@@ -1220,7 +1220,7 @@ const setup = async () => {
             toETHNumber(meTokenDetails.balancePooled),
             reserveWeight / MAX_WEIGHT
           );
-          const targetassetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
@@ -1252,7 +1252,7 @@ const setup = async () => {
           // the weighted average on the curve should be applied for owner and buyers
           const calcWAvrgRes = weightedAverageSimulation(
             rawAssetsReturned,
-            targetassetsReturned,
+            targetAssetsReturned,
             startTime.toNumber(),
             endTime.toNumber(),
             block.timestamp
@@ -1431,7 +1431,7 @@ const setup = async () => {
             curve,
             targetCurve,
           } = await hub.getDetails(1);
-          const targetassetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
@@ -1467,7 +1467,7 @@ const setup = async () => {
 
           // but the owner gets a proportional share of the token burnt from the balanced locked
           const assetsReturned =
-            targetassetsReturned +
+            targetAssetsReturned +
             (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
               toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
@@ -1540,7 +1540,7 @@ const setup = async () => {
             curve,
             targetCurve,
           } = await hub.getDetails(1);
-          const targetassetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
@@ -1569,7 +1569,7 @@ const setup = async () => {
 
           // as it is a buyer we apply the refund ratio
           const assetsReturned =
-            (targetassetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
+            (targetAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
 
           // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);

@@ -342,16 +342,17 @@ contract Foundry is IFoundry, Ownable, Initializable {
             totalSupply_,
             meToken_.balancePooled
         );
+
+        uint256 targetAssetsReturned;
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
             (hub_.updating && (hub_.targetCurve != address(0))) ||
             (hub_.reconfigure)
         ) {
-            uint256 targetassetsReturned;
             if (hub_.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
 
-                targetassetsReturned = ICurve(hub_.targetCurve)
+                targetAssetsReturned = ICurve(hub_.targetCurve)
                     .viewAssetsReturned(
                         _meTokensBurned,
                         meToken_.hubId,
@@ -360,7 +361,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetassetsReturned = ICurve(hub_.curve)
+                targetAssetsReturned = ICurve(hub_.curve)
                     .viewTargetAssetsReturned(
                         _meTokensBurned,
                         meToken_.hubId,
@@ -370,9 +371,27 @@ contract Foundry is IFoundry, Ownable, Initializable {
             }
             rawAssetsReturned = WeightedAverage.calculate(
                 rawAssetsReturned,
-                targetassetsReturned,
+                targetAssetsReturned,
                 hub_.startTime,
                 hub_.endTime
+            );
+        } else if (meToken_.targetHubId != 0) {
+            Details.Hub memory targetHub_ = hub.getDetails(
+                meToken_.targetHubId
+            );
+
+            // Calculate return assuming update is not happening
+            targetAssetsReturned = ICurve(targetHub_.curve).viewAssetsReturned(
+                _meTokensBurned,
+                meToken_.targetHubId,
+                totalSupply_,
+                meToken_.balancePooled
+            );
+            rawAssetsReturned = WeightedAverage.calculate(
+                rawAssetsReturned,
+                targetAssetsReturned,
+                meToken_.startTime,
+                meToken_.endTime
             );
         }
     }
