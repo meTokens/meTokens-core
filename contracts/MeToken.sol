@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-import "./Roles.sol";
-
 /// @title meToken
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Base erc20-like meToken contract used for all meTokens

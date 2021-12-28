@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import "./MeToken.sol";
 
-// import "../Roles.sol";
-
 /// @title meToken factory
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract creates and deploys a users' meToken
