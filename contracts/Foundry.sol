@@ -213,7 +213,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
             );
         }
 
-        uint256 fee = assetsReturned * feeRate;
+        uint256 fee = (assetsReturned * feeRate) / PRECISION;
+        assetsReturned = assetsReturned - fee;
         IVault vault = IVault(hub_.vault);
         address asset = hub_.asset;
 
@@ -236,7 +237,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             msg.sender,
             _recipient,
             _meTokensBurned,
-            assetsReturned - fee
+            assetsReturned
         );
     }
 
