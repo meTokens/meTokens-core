@@ -185,13 +185,6 @@ const setup = async () => {
           .mul(tokenDeposited.sub(accruedFee))
           .div(precision);
 
-        console.log("accountTokenBefore", accountTokenBefore.toString());
-        console.log("vaultTokenBefore", vaultTokenBefore.toString());
-        console.log("accountTokenAfter", accountTokenAfter.toString());
-        console.log("vaultTokenAfter", vaultTokenAfter.toString());
-        console.log("accruedFee", accruedFee.toString());
-        console.log("burnFee", burnFee.toString());
-
         expect(accountTokenAfter.sub(accountTokenBefore)).to.equal(
           tokenDeposited.sub(accruedFee).sub(burnFee)
         );
