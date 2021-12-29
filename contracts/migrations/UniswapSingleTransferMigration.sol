@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
 import "../interfaces/IMigration.sol";
@@ -106,9 +105,6 @@ contract UniswapSingleTransferMigration is
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
-        }
-
-        if (!usts_.swapped) {
             amountOut = _swap(_meToken);
         } else {
             // No swap, amountOut = amountIn
