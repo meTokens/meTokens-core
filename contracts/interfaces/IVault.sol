@@ -2,6 +2,18 @@
 pragma solidity ^0.8.0;
 
 abstract contract IVault {
+    event HandleDeposit(
+        address _from,
+        address _asset,
+        uint256 _depositAmount,
+        uint256 _feeAmount
+    );
+    event HandleWithdrawal(
+        address _to,
+        address _asset,
+        uint256 _withdrawalAmount,
+        uint256 _feeAmount
+    );
     event Claim(address _recipient, address _asset, uint256 _amount);
 
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
@@ -14,17 +26,17 @@ abstract contract IVault {
     ) external virtual;
 
     function handleDeposit(
+        address _from,
         address _asset,
         uint256 _depositAmount,
-        uint256 _feeAmount,
-        address _from
+        uint256 _feeAmount
     ) external virtual;
 
     function handleWithdrawal(
+        address _to,
         address _asset,
         uint256 _withdrawalAmount,
-        uint256 _feeAmount,
-        address _to
+        uint256 _feeAmount
     ) external virtual;
 
     function isValid(address _asset, bytes memory _encodedArgs)
