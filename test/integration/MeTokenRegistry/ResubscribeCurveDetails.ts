@@ -699,7 +699,7 @@ const setup = async () => {
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const ownerWETHAfter = await weth.balanceOf(account0.address);
-        const vaultWETHAfter = await dai.balanceOf(singleAssetVault.address);
+        const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupplyAfter = await meToken.totalSupply();
 
         const burnFee = toETHNumber(
