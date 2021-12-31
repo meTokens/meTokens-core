@@ -80,7 +80,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 fee = (_assetsDeposited * fees.mintFee()) / PRECISION;
         uint256 assetsDepositedAfterFees = _assetsDeposited - fee;
 
-        uint256 meTokensMinted = calculateMeTokensMinted(
+        uint256 meTokensMinted = _calculateMeTokensMinted(
             _meToken,
             assetsDepositedAfterFees
         );
@@ -170,11 +170,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
         // Calculate how many tokens are returned
-        uint256 rawAssetsReturned = calculateRawAssetsReturned(
+        uint256 rawAssetsReturned = _calculateRawAssetsReturned(
             _meToken,
             _meTokensBurned
         );
-        uint256 assetsReturned = calculateActualAssetsReturned(
+        uint256 assetsReturned = _calculateActualAssetsReturned(
             msg.sender,
             _meToken,
             _meTokensBurned,
@@ -240,29 +240,11 @@ contract Foundry is IFoundry, Ownable, Initializable {
         );
     }
 
-    function calculateAssetsReturned(
-        address _sender,
-        address _meToken,
-        uint256 _meTokensBurned
-    ) external view returns (uint256 assetsReturned) {
-        uint256 rawAssetsReturned = calculateRawAssetsReturned(
-            _meToken,
-            _meTokensBurned
-        );
-        assetsReturned = calculateActualAssetsReturned(
-            _sender,
-            _meToken,
-            _meTokensBurned,
-            rawAssetsReturned
-        );
-    }
-
     // NOTE: for now this does not include fees
-    function calculateMeTokensMinted(address _meToken, uint256 _assetsDeposited)
-        public
-        view
-        returns (uint256 meTokensMinted)
-    {
+    function _calculateMeTokensMinted(
+        address _meToken,
+        uint256 _assetsDeposited
+    ) private view returns (uint256 meTokensMinted) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         // gas savings
@@ -324,10 +306,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         }
     }
 
-    function calculateRawAssetsReturned(
+    function _calculateRawAssetsReturned(
         address _meToken,
         uint256 _meTokensBurned
-    ) public view returns (uint256 rawAssetsReturned) {
+    ) private view returns (uint256 rawAssetsReturned) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
 
@@ -395,12 +377,12 @@ contract Foundry is IFoundry, Ownable, Initializable {
     }
 
     /// @dev applies refundRatio
-    function calculateActualAssetsReturned(
+    function _calculateActualAssetsReturned(
         address _sender,
         address _meToken,
         uint256 _meTokensBurned,
         uint256 rawAssetsReturned
-    ) public view returns (uint256 actualAssetsReturned) {
+    ) private view returns (uint256 actualAssetsReturned) {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %

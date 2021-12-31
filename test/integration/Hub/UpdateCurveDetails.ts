@@ -289,8 +289,6 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
-        const rawAssetsReturnedFromFoundry =
-          await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
         const balBefore = await meToken.balanceOf(account0.address);
         const balDaiBefore = await token.balanceOf(account0.address);
         const vaultBalBeforeBurn = await token.balanceOf(
@@ -371,8 +369,6 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
-        const rawAssetsReturnedFromFoundry =
-          await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
         const balBefore = await meToken.balanceOf(account0.address);
         const balDaiBefore = await token.balanceOf(account0.address);
         const vaultBalBeforeBurn = await token.balanceOf(
@@ -457,8 +453,6 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
-        const rawAssetsReturnedFromFoundry =
-          await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
         const balBefore = await meToken.balanceOf(account0.address);
         const balDaiBefore = await token.balanceOf(account0.address);
         const vaultBalBeforeBurn = await token.balanceOf(
@@ -536,10 +530,6 @@ const setup = async () => {
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         await setAutomine(false);
         const block = await ethers.provider.getBlock("latest");
-        const tokenMinted = await foundry.calculateMeTokensMinted(
-          meToken.address,
-          tokenDeposited
-        );
 
         const balBefore = await meToken.balanceOf(account3.address);
 
@@ -590,11 +580,6 @@ const setup = async () => {
           singleAssetVault.address
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
-
-        expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-          toETHNumber(tokenMinted),
-          0.00001
-        );
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcWAvrgRes,
           0.00000000000001
@@ -644,10 +629,6 @@ const setup = async () => {
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         const balBefore = await meToken.balanceOf(account0.address);
 
-        const tokenMinted = await foundry.calculateMeTokensMinted(
-          meToken.address,
-          tokenDeposited
-        );
         let meTokenTotalSupply = await meToken.totalSupply();
         let meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
         // the updated curve should be applied
@@ -665,10 +646,7 @@ const setup = async () => {
           calcTargetTokenReturn,
           0.0000000000001
         );
-        expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-          toETHNumber(tokenMinted),
-          0.0000000000001
-        );
+
         const vaultBalAfterMint = await token.balanceOf(
           singleAssetVault.address
         );
@@ -677,11 +655,6 @@ const setup = async () => {
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
         const metokenToBurn = balAfter.div(2);
-        const rawAssetsReturnedFromFoundry =
-          await foundry.calculateRawAssetsReturned(
-            meToken.address,
-            metokenToBurn
-          );
         const {
           active,
           refundRatio,
@@ -755,10 +728,6 @@ const setup = async () => {
         const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
         const balBefore = await meToken.balanceOf(account2.address);
 
-        const tokenMinted = await foundry.calculateMeTokensMinted(
-          meToken.address,
-          tokenDeposited
-        );
         let meTokenTotalSupply = await meToken.totalSupply();
         let meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
         // the updated curve should be applied
@@ -774,10 +743,7 @@ const setup = async () => {
           .mint(meToken.address, tokenDeposited, account2.address);
         const balDaiAfterMint = await token.balanceOf(account2.address);
         const balAfter = await meToken.balanceOf(account2.address);
-        expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-          toETHNumber(tokenMinted),
-          0.0000000000001
-        );
+
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcTargetTokenReturn,
           0.0000000000001
@@ -791,11 +757,6 @@ const setup = async () => {
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
         const metokenToBurn = balAfter.div(2);
-        const rawAssetsReturnedFromFoundry =
-          await foundry.calculateRawAssetsReturned(
-            meToken.address,
-            metokenToBurn
-          );
         const {
           active,
           refundRatio,
@@ -1028,8 +989,6 @@ const setup = async () => {
             tokenDeposited
           );
 
-          const rawAssetsReturnedFromFoundry =
-            await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
           const balBefore = await meToken.balanceOf(account0.address);
           const balDaiBefore = await token.balanceOf(account0.address);
           const vaultBalBeforeBurn = await token.balanceOf(
@@ -1112,8 +1071,6 @@ const setup = async () => {
             tokenDeposited
           );
 
-          const rawAssetsReturnedFromFoundry =
-            await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
           const balBefore = await meToken.balanceOf(account0.address);
           const balDaiBefore = await token.balanceOf(account0.address);
           const vaultBalBeforeBurn = await token.balanceOf(
@@ -1202,8 +1159,6 @@ const setup = async () => {
             tokenDeposited
           );
 
-          const rawAssetsReturnedFromFoundry =
-            await foundry.calculateRawAssetsReturned(meToken.address, balAfter);
           const balBefore = await meToken.balanceOf(account0.address);
           const balDaiBefore = await token.balanceOf(account0.address);
           const vaultBalBeforeBurn = await token.balanceOf(
@@ -1286,10 +1241,6 @@ const setup = async () => {
           );
           await setAutomine(false);
           const block = await ethers.provider.getBlock("latest");
-          const tokenMinted = await foundry.calculateMeTokensMinted(
-            meToken.address,
-            tokenDeposited
-          );
           const mrd = await meTokenRegistry.getDetails(meToken.address);
           const hd = await hub.getDetails(mrd.hubId);
           let balBefore = await meToken.balanceOf(account3.address);
@@ -1340,11 +1291,6 @@ const setup = async () => {
           expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(
             tokenDeposited
           );
-          // not that precise because block timestamp is a little bit different of when we asked for tokenMinted
-          expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-            toETHNumber(tokenMinted),
-            0.01
-          );
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcWAvrgRes,
             0.0000000000001
@@ -1386,10 +1332,6 @@ const setup = async () => {
           );
           const balBefore = await meToken.balanceOf(account0.address);
 
-          const tokenMinted = await foundry.calculateMeTokensMinted(
-            meToken.address,
-            tokenDeposited
-          );
           let meTokenTotalSupply = await meToken.totalSupply();
           let meTokenDetails = await meTokenRegistry.getDetails(
             meToken.address
@@ -1407,10 +1349,6 @@ const setup = async () => {
           const balAfter = await meToken.balanceOf(account0.address);
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcTargetTokenReturn,
-            0.0000000000001
-          );
-          expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-            toETHNumber(tokenMinted),
             0.0000000000001
           );
           const vaultBalAfterMint = await token.balanceOf(
@@ -1491,10 +1429,6 @@ const setup = async () => {
           );
           const balBefore = await meToken.balanceOf(account2.address);
 
-          const tokenMinted = await foundry.calculateMeTokensMinted(
-            meToken.address,
-            tokenDeposited
-          );
           let meTokenTotalSupply = await meToken.totalSupply();
           let meTokenDetails = await meTokenRegistry.getDetails(
             meToken.address
@@ -1512,10 +1446,7 @@ const setup = async () => {
             .mint(meToken.address, tokenDeposited, account2.address);
           const balDaiAfterMint = await token.balanceOf(account2.address);
           const balAfter = await meToken.balanceOf(account2.address);
-          expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-            toETHNumber(tokenMinted),
-            0.0000000000001
-          );
+
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcTargetTokenReturn,
             0.0000000000001
