@@ -320,13 +320,13 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
 
     function setWarmup(uint256 warmup_) external onlyOwner {
         require(warmup_ != _warmup, "warmup_ == _warmup");
-        require(warmup_ + _duration < hub.getWarmup(), "too long");
+        require(warmup_ + _duration < hub.warmup(), "too long");
         _warmup = warmup_;
     }
 
     function setDuration(uint256 duration_) external onlyOwner {
         require(duration_ != _duration, "duration_ == _duration");
-        require(duration_ + _warmup < hub.getWarmup(), "too long");
+        require(duration_ + _warmup < hub.warmup(), "too long");
         _duration = duration_;
     }
 
@@ -365,15 +365,15 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         meToken_ = _meTokens[_meToken];
     }
 
-    function getWarmup() external view returns (uint256) {
+    function warmup() external view returns (uint256) {
         return _warmup;
     }
 
-    function getDuration() external view returns (uint256) {
+    function duration() external view returns (uint256) {
         return _duration;
     }
 
-    function getCooldown() external view returns (uint256) {
+    function cooldown() external view returns (uint256) {
         return _cooldown;
     }
 

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+/// @title meToken interface
+/// @author Carl Farterson (@carlfarterson)
+/// @dev Required for all meTokens
 interface IMeToken {
+    // TODO: are these needed, or can we do IERC20?
     function initialize(
         string calldata name,
         address owner,
@@ -11,8 +15,4 @@ interface IMeToken {
     function mint(address to, uint256 amount) external;
 
     function burn(address from, uint256 amount) external;
-
-    function canMigrate() external view returns (bool);
-
-    function switchUpdating() external returns (bool);
 }

@@ -374,7 +374,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.getWarmup();
+        const oldWarmup = await meTokenRegistry.warmup();
         const tx = meTokenRegistry.setWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("warmup_ == _warmup");
       });
@@ -385,7 +385,7 @@ const setup = async () => {
       it("should be able to setWarmup", async () => {
         tx = await meTokenRegistry.setWarmup(warmup);
         await tx.wait();
-        expect(await meTokenRegistry.getWarmup()).to.be.equal(warmup);
+        expect(await meTokenRegistry.warmup()).to.be.equal(warmup);
       });
     });
 
@@ -395,7 +395,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.getDuration();
+        const oldWarmup = await meTokenRegistry.duration();
         const tx = meTokenRegistry.setDuration(oldWarmup);
         await expect(tx).to.be.revertedWith("duration_ == _duration");
       });
@@ -406,7 +406,7 @@ const setup = async () => {
       it("should be able to setDuration", async () => {
         tx = await meTokenRegistry.setDuration(duration);
         await tx.wait();
-        expect(await meTokenRegistry.getDuration()).to.be.equal(duration);
+        expect(await meTokenRegistry.duration()).to.be.equal(duration);
       });
     });
 
@@ -416,14 +416,14 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.getCooldown();
+        const oldWarmup = await meTokenRegistry.cooldown();
         const tx = meTokenRegistry.setCooldown(oldWarmup);
         await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
       });
       it("should be able to setCooldown", async () => {
         tx = await meTokenRegistry.setCooldown(coolDown);
         await tx.wait();
-        expect(await meTokenRegistry.getCooldown()).to.be.equal(coolDown);
+        expect(await meTokenRegistry.cooldown()).to.be.equal(coolDown);
       });
     });
 

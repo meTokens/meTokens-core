@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../libs/Details.sol";
 import "./IVault.sol";
 import "./ICurve.sol";
+import "../libs/Details.sol";
 
+/// @title MeTokens hub interface
+/// @author Carl Farterson (@carlfarterson)
 interface IHub {
+    /// @notice Event of registering a hub
+    /// @param _owner               address to own hub
+    /// @param _asset               address of underlying asset
+    /// @param _vault               address of vault
+    /// @param _curve               address of curve
+    /// @param _refundRatio         rate to refund burners
+    /// @param _encodedCurveDetails additional encoded curve details
+    /// @param _encodedVaultArgs    additional encoded vault arguments
     event Register(
         address _owner,
         address _asset,
@@ -15,21 +25,49 @@ interface IHub {
         bytes _encodedCurveDetails,
         bytes _encodedVaultArgs
     );
+
+    /// @notice Event of initializing a hub update
+    /// @notice _id                     unique hub identifier
+    /// @notice _targetCurve            address of target curve
+    /// @notice _targetRefundRatio      target rate to refund burners
+    /// @notice _encodedCurveDetails    additional encoded curve details
+    /// @notice _reconfigure            boolean to show if we're changing the
+    ///                                 curveDetails but not the curve address
+    /// @notice _startTime              timestamp to start updating
+    /// @notice _endTime                timestamp to end updating
+    /// @notice _endCooldown            timestamp to allow another update
     event InitUpdate(
         uint256 _id,
         address _targetCurve,
         uint256 _targetRefundRatio,
         bytes _encodedCurveDetails,
-        bool reconfigure,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 endCooldown
+        bool _reconfigure,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _endCooldown
     );
+
+    /// @notice Event of canceling a hub update
+    /// @param _id unique hub identifier
     event CancelUpdate(uint256 _id);
 
+    /// @notice Event of transfering hub ownership
+    /// @param _id          unique hub identifier
+    /// @param _newOwner    address to own the hub
     event TransferHubOwnership(uint256 _id, address _newOwner);
+
+    /// @notice Event of finishing a hub update
+    /// @param _id unique hub identifier
     event FinishUpdate(uint256 _id);
 
+    /// @notice Register a new hub
+    /// @param _owner               address to own hub
+    /// @param _asset               address of vault asset
+    /// @param _vault               address of vault
+    /// @param _curve               address of curve
+    /// @param _refundRatio         rate to refund burners
+    /// @param _encodedCurveDetails additional encoded curve details
+    /// @param _encodedVaultArgs    additional encoded vault arguments
     function register(
         address _owner,
         address _asset,
@@ -40,6 +78,11 @@ interface IHub {
         bytes memory _encodedVaultArgs
     ) external;
 
+    /// @notice Intialize a hub update
+    /// @param _id                  unique hub identifier
+    /// @param _targetCurve         address of target curve
+    /// @param _targetRefundRatio   target rate to refund burners
+    /// @param _encodedCurveDetails additional encoded curve details
     function initUpdate(
         uint256 _id,
         address _targetCurve,
@@ -47,34 +90,34 @@ interface IHub {
         bytes memory _encodedCurveDetails
     ) external;
 
+    /// @notice Cancel a hub update
+    /// @dev Can only be called before _startTime
+    /// @param _id unique hub identifier
     function cancelUpdate(uint256 _id) external;
 
-    /// @notice Function to end the update, setting the target values of the hub,
-    ///         as well as modifying a hubs' status to ACTIVE
-    /// @param id Unique hub identifier
-    function finishUpdate(uint256 id) external returns (Details.Hub memory);
+    /// @notice Finish updating a hub
+    /// @param _id  unique hub identifier
+    /// @return     details of hub
+    function finishUpdate(uint256 _id) external returns (Details.Hub memory);
 
-    /// @notice TODO
-    /// @param id Unique hub identifier
-    /// @return hub_ Details of hub
-    function getDetails(uint256 id)
-        external
-        view
-        returns (Details.Hub memory hub_);
+    /// @notice Get the details of a hub
+    /// @param _id  unique hub identifier
+    /// @return     details of hub
+    function getDetails(uint256 _id) external view returns (Details.Hub memory);
 
-    /// @notice TODO
-    /// @return count of hubs created
+    /// @notice Counter of hubs registered
+    /// @return uint256
     function count() external view returns (uint256);
 
-    function getWarmup() external view returns (uint256);
+    function warmup() external view returns (uint256);
 
     function setWarmup(uint256 warmup_) external;
 
-    function getDuration() external view returns (uint256);
+    function duration() external view returns (uint256);
 
     function setDuration(uint256 duration_) external;
 
-    function getCooldown() external view returns (uint256);
+    function cooldown() external view returns (uint256);
 
     function setCooldown(uint256 cooldown_) external;
 }
