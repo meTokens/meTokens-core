@@ -207,17 +207,17 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
     /// @inheritdoc IHub
-    function getWarmup() external view override returns (uint256) {
+    function warmup() external view override returns (uint256) {
         return _warmup;
     }
 
     /// @inheritdoc IHub
-    function getDuration() external view override returns (uint256) {
+    function duration() external view override returns (uint256) {
         return _duration;
     }
 
     /// @inheritdoc IHub
-    function getCooldown() external view override returns (uint256) {
+    function cooldown() external view override returns (uint256) {
         return _cooldown;
     }
 

@@ -99,9 +99,9 @@ const setup = async () => {
         expect(await hub.curveRegistry()).to.be.equal(curveRegistry.address);
         expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
-        expect(await hub.getWarmup()).to.be.equal(0);
-        expect(await hub.getDuration()).to.be.equal(0);
-        expect(await hub.getCooldown()).to.be.equal(0);
+        expect(await hub.warmup()).to.be.equal(0);
+        expect(await hub.duration()).to.be.equal(0);
+        expect(await hub.cooldown()).to.be.equal(0);
         const details = await hub.getDetails(0);
         expect(details.active).to.be.equal(false);
         expect(details.owner).to.be.equal(ethers.constants.AddressZero);
@@ -265,14 +265,14 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await hub.getWarmup();
+        const oldWarmup = await hub.warmup();
         const tx = hub.setWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("warmup_ == _warmup");
       });
       it("should be able to setWarmup", async () => {
         const tx = await hub.setWarmup(duration);
         await tx.wait();
-        expect(await hub.getWarmup()).to.be.equal(duration);
+        expect(await hub.warmup()).to.be.equal(duration);
       });
     });
 
@@ -282,14 +282,14 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await hub.getDuration();
+        const oldWarmup = await hub.duration();
         const tx = hub.setDuration(oldWarmup);
         await expect(tx).to.be.revertedWith("duration_ == _duration");
       });
       it("should be able to setDuration", async () => {
         const tx = await hub.setDuration(duration);
         await tx.wait();
-        expect(await hub.getDuration()).to.be.equal(duration);
+        expect(await hub.duration()).to.be.equal(duration);
       });
     });
 
@@ -299,14 +299,14 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
       it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await hub.getCooldown();
+        const oldWarmup = await hub.cooldown();
         const tx = hub.setCooldown(oldWarmup);
         await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
       });
       it("should be able to setCooldown", async () => {
         const tx = await hub.setCooldown(duration);
         await tx.wait();
-        expect(await hub.getCooldown()).to.be.equal(duration);
+        expect(await hub.cooldown()).to.be.equal(duration);
       });
     });
 
