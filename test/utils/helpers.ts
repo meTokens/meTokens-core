@@ -1,8 +1,9 @@
-import { BigNumber } from "@ethersproject/bignumber";
+import { BigNumber } from "ethers";
 import { Decimal } from "decimal.js";
 import { Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
+import { expect } from "chai";
 
 export async function deploy<Type>(
   typeName: string,
@@ -317,6 +318,84 @@ export const maxValArray = [
   /* 126 */ "0xbde80a98943810876a7852209de22be2",
   /* 127 */ "0x16b3160a3c604c6667ff40ff1882b0fcf",
 ];
+
+export const getCalculationFuncsForBancorCurves = (
+  baseY: BigNumber,
+  reserveWeight: number,
+  targetReserveWeight: number,
+  MAX_WEIGHT: number
+) => {
+  return {
+    calculateCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateCollateralReturned(
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled,
+        reserveWeight / MAX_WEIGHT
+      ),
+    calculateTargetCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateCollateralReturned(
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled,
+        targetReserveWeight / MAX_WEIGHT
+      ),
+    calculateTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateTokenReturned(
+        collateralAmount,
+        meTokenSupply,
+        balancePooled,
+        reserveWeight / MAX_WEIGHT
+      ),
+    calculateTargetTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateTokenReturned(
+        collateralAmount,
+        meTokenSupply,
+        balancePooled,
+        targetReserveWeight / MAX_WEIGHT
+      ),
+    calculateTokenReturnedFromZero: (depositAmount: number) => {
+      return calculateTokenReturnedFromZero(
+        depositAmount,
+        toETHNumber(baseY),
+        reserveWeight / MAX_WEIGHT
+      );
+    },
+    calculateTargetTokenReturnedFromZero: (depositAmount: number) => {
+      const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
+
+      return calculateTokenReturnedFromZero(
+        depositAmount,
+        toETHNumber(targetBaseY),
+        targetReserveWeight / MAX_WEIGHT
+      );
+    },
+    verifyCurveDetails: (
+      detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+    ) => {
+      const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
+
+      expect(detail[2]).to.equal(targetBaseY);
+      expect(detail[3]).to.equal(targetReserveWeight);
+    },
+  };
+};
 
 const one = new Decimal(1);
 // ( assetsDeposited * _baseX ^(1/reserveWeight ) / _baseX  * _baseY *  reserveWeight ) ^reserveWeight
