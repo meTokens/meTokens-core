@@ -9,7 +9,7 @@ import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve is ICurve {
+contract StepwiseCurveABDK is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
     struct Stepwise {

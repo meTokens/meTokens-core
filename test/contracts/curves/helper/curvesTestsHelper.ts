@@ -8,44 +8,49 @@ import { toETHNumber } from "../../../utils/helpers";
 export const curvesTestsHelper = async ({
   signers,
   curve,
-  baseY,
-  reserveWeight,
-  MAX_WEIGHT,
-  targetReserveWeight,
+  encodedReconfigureValueSet,
   hubId,
+  precision,
   calculateTokenReturned,
+  calculateTargetTokenReturned,
   calculateTokenReturnedFromZero,
   calculateCollateralReturned,
-  precision,
+  calculateTargetCollateralReturned,
+  calculateTargetTokenReturnedFromZero,
+  verifyCurveDetails,
 }: {
   signers: SignerWithAddress[];
   curve: ICurve;
-  baseY: number;
-  reserveWeight: number;
-  MAX_WEIGHT: number;
-  targetReserveWeight: number;
+  encodedReconfigureValueSet: string;
   hubId: number;
+  precision: number;
+  calculateTargetTokenReturned: (
+    collateralAmount: number,
+    meTokenSupply: number,
+    balancePooled: number
+  ) => number;
   calculateTokenReturned: (
     collateralAmount: number,
     meTokenSupply: number,
-    balancePooled: number,
-    reserveWeight: number
+    balancePooled: number
+  ) => number;
+  calculateTargetCollateralReturned: (
+    meTokenBurned: number,
+    meTokenSupply: number,
+    balancePooled: number
   ) => number;
   calculateCollateralReturned: (
     meTokenBurned: number,
     meTokenSupply: number,
-    balancePooled: number,
-    reserveWeight: number
+    balancePooled: number
   ) => number;
-  calculateTokenReturnedFromZero: (
-    depositAmount: number,
-    baseY: number,
-    reserveWeight: number
-  ) => number;
-  precision: number;
+  calculateTokenReturnedFromZero: (depositAmount: number) => number;
+  calculateTargetTokenReturnedFromZero: (depositAmount: number) => number;
+  verifyCurveDetails: (
+    detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+  ) => void;
 }) => {
   const one = ethers.utils.parseEther("1");
-
   it("Reverts w/ empty encodedDetails", async () => {
     /* await expect(
       curve.register(hubId, ethers.constants.HashZero)
@@ -90,11 +95,7 @@ export const curvesTestsHelper = async ({
     let amount = one.mul(etherAmount);
 
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
-    const calculatedReturn = calculateTokenReturnedFromZero(
-      etherAmount,
-      baseY,
-      reserveWeight / MAX_WEIGHT
-    );
+    const calculatedReturn = calculateTokenReturnedFromZero(etherAmount);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedReturn,
       precision
@@ -108,12 +109,7 @@ export const curvesTestsHelper = async ({
       one.mul(2000),
       one.mul(2)
     );
-    let calculatedRes = calculateTokenReturned(
-      2,
-      2000,
-      2,
-      reserveWeight / MAX_WEIGHT
-    );
+    let calculatedRes = calculateTokenReturned(2, 2000, 2);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision //* 3
@@ -124,12 +120,7 @@ export const curvesTestsHelper = async ({
       ethers.utils.parseEther("2828.427124746190097603"),
       one.mul(4)
     );
-    calculatedRes = calculateTokenReturned(
-      2,
-      2828.427124746190097603,
-      4,
-      reserveWeight / MAX_WEIGHT
-    );
+    calculatedRes = calculateTokenReturned(2, 2828.427124746190097603, 4);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision // *4
@@ -138,11 +129,7 @@ export const curvesTestsHelper = async ({
   it("should be able to calculate Mint Return with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
-    const calculatedRes = calculateTokenReturnedFromZero(
-      999999999999999,
-      baseY,
-      reserveWeight / MAX_WEIGHT
-    );
+    const calculatedRes = calculateTokenReturnedFromZero(999999999999999);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision // *4
@@ -156,12 +143,7 @@ export const curvesTestsHelper = async ({
       one.mul(200),
       one.mul(20)
     );
-    const calculatedRes = calculateCollateralReturned(
-      200,
-      200,
-      20,
-      reserveWeight / MAX_WEIGHT
-    );
+    const calculatedRes = calculateCollateralReturned(200, 200, 20);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
   it("should be able to calculate asset needed", async () => {
@@ -175,8 +157,7 @@ export const curvesTestsHelper = async ({
     let calculatedRes = calculateCollateralReturned(
       585.786437626904952,
       2000,
-      2,
-      reserveWeight / MAX_WEIGHT
+      2
     );
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
@@ -190,12 +171,7 @@ export const curvesTestsHelper = async ({
       one.mul(4000),
       one.mul(8)
     );
-    calculatedRes = calculateCollateralReturned(
-      1171.572875253809903,
-      4000,
-      8,
-      reserveWeight / MAX_WEIGHT
-    );
+    calculatedRes = calculateCollateralReturned(1171.572875253809903, 4000, 8);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision * 100000
@@ -213,8 +189,7 @@ export const curvesTestsHelper = async ({
     const calculatedRes = calculateCollateralReturned(
       1,
       999999999999998999.999999,
-      999999999999999,
-      reserveWeight / MAX_WEIGHT
+      999999999999999
     );
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
@@ -223,35 +198,17 @@ export const curvesTestsHelper = async ({
   });
 
   it("initReconfigure() should work", async () => {
-    const encodedValueSet = ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight.toString()]
-    );
-    await curve.initReconfigure(hubId, encodedValueSet);
+    await curve.initReconfigure(hubId, encodedReconfigureValueSet);
     const detail = await curve.getDetails(hubId);
-
-    const targetBaseY = ethers.utils
-      .parseEther(baseY.toString())
-      .mul(reserveWeight)
-      .div(targetReserveWeight);
-
-    expect(detail[3]).to.equal(targetReserveWeight);
-    expect(detail[2]).to.equal(targetBaseY);
+    verifyCurveDetails(detail);
   });
   it("viewTargetMeTokensMinted() from zero should work", async () => {
     const detail = await curve.getDetails(hubId);
     let amount = one.mul(2);
 
     let estimate = await curve.viewTargetMeTokensMinted(amount, hubId, 0, 0);
-    const targetBaseY = ethers.utils
-      .parseEther(baseY.toString())
-      .mul(reserveWeight)
-      .div(targetReserveWeight);
-    const calculatedRes = calculateTokenReturnedFromZero(
-      2,
-      toETHNumber(targetBaseY),
-      targetReserveWeight / MAX_WEIGHT
-    );
+
+    const calculatedRes = calculateTargetTokenReturnedFromZero(2);
 
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
@@ -267,12 +224,7 @@ export const curvesTestsHelper = async ({
       one.mul(2000),
       one.mul(2)
     );
-    const calculatedRes = calculateTokenReturned(
-      2,
-      2000,
-      2,
-      targetReserveWeight / MAX_WEIGHT
-    );
+    const calculatedRes = calculateTargetTokenReturned(2, 2000, 2);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
   it("viewTargetAssetsReturned()  to zero supply should work", async () => {
@@ -284,12 +236,7 @@ export const curvesTestsHelper = async ({
       one.mul(2)
     );
 
-    const calculatedRes = calculateCollateralReturned(
-      2000,
-      2000,
-      2,
-      targetReserveWeight
-    );
+    const calculatedRes = calculateTargetCollateralReturned(2000, 2000, 2);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
   it("viewAssetsReturned() should work", async () => {
@@ -300,11 +247,10 @@ export const curvesTestsHelper = async ({
       ethers.utils.parseEther("3944.930817973436691629"),
       one.mul(4)
     );
-    let calculatedRes = calculateCollateralReturned(
+    let calculatedRes = calculateTargetCollateralReturned(
       1944.930817973436691629,
       3944.930817973436691629,
-      4,
-      targetReserveWeight / MAX_WEIGHT
+      4
     );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
 
@@ -316,12 +262,7 @@ export const curvesTestsHelper = async ({
       one.mul(2000),
       one.mul(2)
     );
-    calculatedRes = calculateCollateralReturned(
-      1000,
-      2000,
-      2,
-      targetReserveWeight / MAX_WEIGHT
-    );
+    calculatedRes = calculateTargetCollateralReturned(1000, 2000, 2);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
 };
