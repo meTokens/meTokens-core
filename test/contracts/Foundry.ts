@@ -305,29 +305,111 @@ const setup = async () => {
     });
 
     describe("burn()", () => {
-      xit("balanceLocked = 0, ending supply = 0, buyer", async () => {
-        // TODO
+      it("balanceLocked > 0, ending supply = 0, buyer", async () => {
+        await foundry
+          .connect(account1)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account1.address),
+            account1.address
+          );
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.be.equal(0);
+        expect(meTokenRegistryDetails.balanceLocked).to.be.gt(0);
+        expect(meTokenRegistryDetails.balancePooled).to.be.equal(0);
       });
-      xit("balanceLocked = 0, ending supply = 0, owner", async () => {
-        // TODO
+      it("balanceLocked = 0, ending supply = 0, owner", async () => {
+        // mint some to owner
+        await foundry
+          .connect(account2)
+          .mint(meToken.address, tokenDeposited, account2.address);
+
+        await foundry
+          .connect(account2)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account2.address),
+            account2.address
+          );
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.be.equal(0);
+        expect(meTokenRegistryDetails.balanceLocked).to.be.equal(0);
+        expect(meTokenRegistryDetails.balancePooled).to.be.equal(0);
       });
-      xit("balanceLocked = 0, ending supply > 0, buyer", async () => {
-        // TODO
+      it("balanceLocked > 0, ending supply > 0, buyer", async () => {
+        // mint some to buyer
+        await foundry
+          .connect(account1)
+          .mint(meToken.address, tokenDeposited, account1.address);
+
+        // mint some to owner
+        await foundry
+          .connect(account2)
+          .mint(meToken.address, tokenDeposited, account2.address);
+
+        // burn buyer shares
+        await foundry
+          .connect(account1)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account1.address),
+            account1.address
+          );
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.be.gt(0);
+        expect(meTokenRegistryDetails.balanceLocked).to.be.gt(0);
+        expect(meTokenRegistryDetails.balancePooled).to.be.gt(0);
       });
-      xit("balanceLocked = 0, ending supply > 0, owner", async () => {
-        // TODO
+      it("balanceLocked = 0, ending supply > 0, owner", async () => {
+        // mint some to buyer
+        await foundry
+          .connect(account1)
+          .mint(meToken.address, tokenDeposited, account1.address);
+
+        // burn owner shares
+        await foundry
+          .connect(account2)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account2.address),
+            account2.address
+          );
+
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.be.gt(0);
+        expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
+        expect(meTokenRegistryDetails.balancePooled).to.be.gt(0);
       });
-      xit("balanceLocked > 0, ending supply = 0, buyer", async () => {
-        // TODO
+      it("balanceLocked > 0, ending supply = 0, owner", async () => {
+        // burn from buyer
+        await foundry
+          .connect(account1)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account1.address),
+            account1.address
+          );
+
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.be.equal(0);
+        expect(meTokenRegistryDetails.balanceLocked).to.be.gt(0);
+        expect(meTokenRegistryDetails.balancePooled).to.be.equal(0);
       });
-      xit("balanceLocked > 0, ending supply = 0, owner", async () => {
-        // TODO
-      });
-      xit("balanceLocked > 0, ending supply > 0, buyer", async () => {
-        // TODO
-      });
-      xit("balanceLocked > 0, ending supply > 0, owner", async () => {
-        // TODO
+      it("balanceLocked > 0, ending supply > 0, owner", async () => {
+        // mint some to buyer
+        await foundry
+          .connect(account1)
+          .mint(meToken.address, tokenDeposited, account1.address);
       });
       after(async () => {
         await foundry
