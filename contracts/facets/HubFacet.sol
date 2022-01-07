@@ -1,17 +1,38 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibHub} from "../libs/LibHub.sol";
+import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
-import "../libs/Details.sol";
 
-contract HubFacet is IHub {
+contract HubFacet {
+    event Register(
+        address _owner,
+        address _asset,
+        address _vault,
+        address _curve,
+        uint256 _refundRatio,
+        bytes _encodedCurveDetails,
+        bytes _encodedVaultArgs
+    );
+    event InitUpdate(
+        uint256 _id,
+        address _targetCurve,
+        uint256 _targetRefundRatio,
+        bytes _encodedCurveDetails,
+        bool _reconfigure,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _endCooldown
+    );
+    event CancelUpdate(uint256 _id);
+    event TransferHubOwnership(uint256 _id, address _newOwner);
+    event FinishUpdate(uint256 _id);
+
     AppStorage internal s;
-    uint256 public constant MAX_REFUND_RATIO = 10**6;
     uint256 private _warmup;
     uint256 private _duration;
     uint256 private _cooldown;
@@ -21,20 +42,16 @@ contract HubFacet is IHub {
     IRegistry public vaultRegistry;
     IRegistry public curveRegistry;
 
-    mapping(uint256 => Details.Hub) private _hubs;
-
     function initialize(
         address _foundry,
         address _vaultRegistry,
-        address _curveRegistry
-    ) external // TODO: initializer from OZ
-    {
+        address _curveRegistry // TODO: initializer from OZ
+    ) external {
         foundry = IFoundry(_foundry);
         vaultRegistry = IRegistry(_vaultRegistry);
         curveRegistry = IRegistry(_curveRegistry);
     }
 
-    /// @inheritdoc IHub
     function register(
         address _owner,
         address _asset,
@@ -43,11 +60,17 @@ contract HubFacet is IHub {
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
-    ) external override {
+    ) external {
         // TODO: access control
+        require(
+            s.curveRegistry.isApproved(address(_curve)),
+            "_curve !approved"
+        );
+        require(
+            s.vaultRegistry.isApproved(address(_vault)),
+            "_vault !approved"
+        );
 
-        require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
-        require(vaultRegistry.isApproved(address(_vault)), "_vault !approved");
         require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
         require(_refundRatio > 0, "_refundRatio == 0");
 
@@ -58,7 +81,7 @@ contract HubFacet is IHub {
         _curve.register(++_count, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = _hubs[_count];
+        Details.Hub storage hub_ = s.hubs[_count];
         hub_.active = true;
         hub_.owner = _owner;
         hub_.asset = _asset;
@@ -76,17 +99,16 @@ contract HubFacet is IHub {
         );
     }
 
-    /// @inheritdoc IHub
     function initUpdate(
         uint256 _id,
         address _targetCurve,
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
-    ) external override {
-        Details.Hub storage hub_ = _hubs[_id];
+    ) external {
+        Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            finishUpdate(_id);
+            this.finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
@@ -141,9 +163,8 @@ contract HubFacet is IHub {
         );
     }
 
-    /// @inheritdoc IHub
-    function cancelUpdate(uint256 _id) external override {
-        Details.Hub storage hub_ = _hubs[_id];
+    function cancelUpdate(uint256 _id) external {
+        Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.updating, "!updating");
         require(block.timestamp < hub_.startTime, "Update has started");
@@ -159,8 +180,12 @@ contract HubFacet is IHub {
         emit CancelUpdate(_id);
     }
 
+    function getDetails(uint256 _id) external view returns (HubInfo memory) {
+        return LibHub.getHub(_id);
+    }
+
     function transferHubOwnership(uint256 _id, address _newOwner) external {
-        Details.Hub storage hub_ = _hubs[_id];
+        Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
@@ -168,61 +193,39 @@ contract HubFacet is IHub {
         emit TransferHubOwnership(_id, _newOwner);
     }
 
-    /// @inheritdoc IHub
-    function setWarmup(uint256 warmup_) external override {
+    function setWarmup(uint256 warmup_) external {
         require(warmup_ != _warmup, "warmup_ == _warmup");
         _warmup = warmup_;
     }
 
-    /// @inheritdoc IHub
-    function setDuration(uint256 duration_) external override {
+    function setDuration(uint256 duration_) external {
         require(duration_ != _duration, "duration_ == _duration");
         _duration = duration_;
     }
 
-    /// @inheritdoc IHub
-    function setCooldown(uint256 cooldown_) external override {
+    function setCooldown(uint256 cooldown_) external {
         require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
         _cooldown = cooldown_;
     }
 
-    /// @inheritdoc IHub
-    function count() external view override returns (uint256) {
+    function count() external view returns (uint256) {
         return _count;
     }
 
-    /// @inheritdoc IHub
-    function getDetails(uint256 id)
-        external
-        view
-        override
-        returns (Details.Hub memory hub_)
-    {
-        hub_ = _hubs[id];
-    }
-
-    /// @inheritdoc IHub
-    function warmup() external view override returns (uint256) {
+    function warmup() external view returns (uint256) {
         return _warmup;
     }
 
-    /// @inheritdoc IHub
-    function duration() external view override returns (uint256) {
+    function duration() external view returns (uint256) {
         return _duration;
     }
 
-    /// @inheritdoc IHub
-    function cooldown() external view override returns (uint256) {
+    function cooldown() external view returns (uint256) {
         return _cooldown;
     }
 
-    /// @inheritdoc IHub
-    function finishUpdate(uint256 id)
-        public
-        override
-        returns (Details.Hub memory)
-    {
-        Details.Hub storage hub_ = _hubs[id];
+    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
+        Details.Hub storage hub_ = s.hubs[id];
         require(block.timestamp > hub_.endTime, "Still updating");
 
         if (hub_.targetRefundRatio != 0) {
