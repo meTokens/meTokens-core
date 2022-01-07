@@ -10,8 +10,18 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import "./libs/Details.sol";
 
 contract Diamond {
+    AppStorage internal s;
+
+    struct Args {
+        address foundry;
+        address vaultRegistry;
+        address curveRegistry;
+        address migrationRegistry;
+    }
+
     constructor(address _contractOwner, address _diamondCutFacet) payable {
         LibDiamond.setContractOwner(_contractOwner);
 
@@ -25,6 +35,14 @@ contract Diamond {
             functionSelectors: functionSelectors
         });
         LibDiamond.diamondCut(cut, address(0), "");
+    }
+
+    // TODO: access control
+    function init(Args memory _args) external {
+        s.foundry = _args.foundry;
+        s.vaultRegistry = _args.vaultRegistry;
+        s.curveRegistry = _args.curveRegistry;
+        s.migrationRegistry = _args.migrationRegistry;
     }
 
     // Find facet for function that is called and execute the

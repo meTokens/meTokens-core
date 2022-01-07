@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import {LibDiamond} from "./LibDiamond.sol";
+import {LibMeta} from "./LibMeta.sol";
+
 library Details {
     struct MeToken {
         address owner;
@@ -34,6 +37,10 @@ library Details {
 struct AppStorage {
     mapping(address => Details.MeToken) metokens;
     mapping(uint256 => Details.Hub) hubs;
+    address foundry;
+    address vaultRegistry;
+    address curveRegistry;
+    address migrationRegistry;
 }
 
 library LibAppStorage {
@@ -42,12 +49,46 @@ library LibAppStorage {
             ds.slot := 0
         }
     }
+}
 
-    function getHub(uint256 id)
-        internal
-        view
-        returns (Details.Hub storage hub)
-    {
-        hub = diamondStorage().hubs[id];
+contract Modifiers {
+    AppStorage internal s;
+
+    modifier onlyOwner() {
+        LibDiamond.enforceIsContractOwner();
+        _;
+    }
+
+    modifier onlyFoundry() {
+        address sender = LibMeta.msgSender();
+        require(sender == s.foundry, "LibAppStorage: msg.sender != foundry");
+        _;
+    }
+
+    modifier onlyVaultRegistry() {
+        address sender = LibMeta.msgSender();
+        require(
+            sender == s.vaultRegistry,
+            "LibAppStorage: msg.sender != vaultRegistry"
+        );
+        _;
+    }
+
+    modifier onlyCurveRegistry() {
+        address sender = LibMeta.msgSender();
+        require(
+            sender == s.curveRegistry,
+            "LibAppStorage: msg.sender != curveRegistry"
+        );
+        _;
+    }
+
+    modifier onlyMigrationRegistry() {
+        address sender = LibMeta.msgSender();
+        require(
+            sender == s.migrationRegistry,
+            "LibAppStorage: msg.sender != migrationRegistry"
+        );
+        _;
     }
 }
