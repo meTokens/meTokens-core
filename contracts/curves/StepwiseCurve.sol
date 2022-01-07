@@ -29,14 +29,14 @@ contract StepwiseCurve is ICurve {
         override
     {
         // TODO: access control
-        require(_encodedDetails.length > 0, "_encodedDetails empty");
+        require(_encodedDetails.length > 0, "!_encodedDetails");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
             _encodedDetails,
             (uint256, uint256)
         );
-        require(stepX > 0 && stepX < PRECISION, "stepX not in range");
-        require(stepY > 0 && stepY < PRECISION, "stepY not in range");
+        require(stepX > 0 && stepX > PRECISION, "stepX not in range");
+        require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepX;

@@ -44,48 +44,42 @@ export const curvesTestsHelper = async ({
     meTokenSupply: number,
     balancePooled: number
   ) => number;
-  calculateTokenReturnedFromZero: (depositAmount: number) => number;
-  calculateTargetTokenReturnedFromZero: (depositAmount: number) => number;
+  calculateTokenReturnedFromZero: (
+    depositAmount: number,
+    balancePooled: number,
+    meTokenSupply: number
+  ) => number;
+  calculateTargetTokenReturnedFromZero: (
+    depositAmount: number,
+    balancePooled: number,
+    meTokenSupply: number
+  ) => number;
   verifyCurveDetails: (
     detail: [BigNumber, BigNumber, BigNumber, BigNumber]
   ) => void;
 }) => {
-  const one = ethers.utils.parseEther("1");
-  it("Reverts w/ empty encodedDetails", async () => {
-    /* await expect(
-      curve.register(hubId, ethers.constants.HashZero)
-    ).to.be.revertedWith("!_encodedDetails"); */
-
+  const one = ethers.utils.parseEther("1"); /*
+  /* it("Reverts w/ empty encodedDetails", async () => {
     await expect(
       curve.register(hubId, ethers.utils.toUtf8Bytes(""))
     ).to.be.revertedWith("!_encodedDetails");
   });
   it("Reverts w/ invalid encodedDetails", async () => {
-    // TODO
     let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [0, 500000]
     );
-    // baseY > 0
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!baseY"
-    );
+    await expect(curve.register(hubId, encodedCurveDetails)).to.be.reverted;
     encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [100, 1000001]
     );
-    // reserveWeight > 1000000
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!reserveWeight"
-    );
-    // reserveWeight =0
+    await expect(curve.register(hubId, encodedCurveDetails)).to.be.reverted;
     encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [100, 0]
     );
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!reserveWeight"
-    );
+    await expect(curve.register(hubId, encodedCurveDetails)).to.be.reverted;
   });
   it("Passes w/ valid encodedDetails", async () => {
     //register is done in the setup and there is no getDetails part of  the interface
@@ -95,32 +89,67 @@ export const curvesTestsHelper = async ({
     let amount = one.mul(etherAmount);
 
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
-    const calculatedReturn = calculateTokenReturnedFromZero(etherAmount);
+    const calculatedReturn = calculateTokenReturnedFromZero(etherAmount, 0, 0);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedReturn,
       precision
     );
   });
   it("should be able to calculate Mint Return", async () => {
-    const amount = one.mul(2);
+    const amountNum = 2;
+    let amount = one.mul(amountNum);
+
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 1000;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    let supplyNum = toETHNumber(supply);
+
+    console.log(`
+supplyNum:${supplyNum}
+balancedPooled:${toETHNumber(balancedPooled)}
+
+`);
     let estimate = await curve.viewMeTokensMinted(
       amount,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      supply,
+      balancedPooled
     );
-    let calculatedRes = calculateTokenReturned(2, 2000, 2);
+    let calculatedRes = calculateTokenReturned(
+      amountNum,
+      supplyNum,
+      balancedPooledNum
+    );
+
+    console.log(`
+    calculatedRes:${calculatedRes}
+    estimate:${toETHNumber(estimate)}
+    
+    `);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision //* 3
     );
+
+    // we need to have the right balancedPooled for supply
+    balancedPooledNum = 10000000;
+    balancedPooled = one.mul(balancedPooledNum);
+    supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    supplyNum = toETHNumber(supply);
+
+    // balancedPooled = one.mul(4);
     estimate = await curve.viewMeTokensMinted(
       amount,
       hubId,
-      ethers.utils.parseEther("2828.427124746190097603"),
-      one.mul(4)
+      supply,
+      balancedPooled
     );
-    calculatedRes = calculateTokenReturned(2, 2828.427124746190097603, 4);
+    calculatedRes = calculateTokenReturned(
+      amountNum,
+      supplyNum,
+      balancedPooledNum
+    );
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision // *4
@@ -129,54 +158,102 @@ export const curvesTestsHelper = async ({
   it("should be able to calculate Mint Return with a max of 1414213562 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
-    const calculatedRes = calculateTokenReturnedFromZero(999999999999999);
+    const calculatedRes = calculateTokenReturnedFromZero(999999999999999, 0, 0);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision // *4
     );
   });
   it("should be able to calculate asset needed from zero supply", async () => {
-    let amount = ethers.utils.parseEther("200");
+    const amountNum = 200;
+    let amount = ethers.utils.parseEther(amountNum.toString());
+
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 7568;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    let supplyNum = toETHNumber(supply);
+
     let estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
-      one.mul(200),
-      one.mul(20)
+      supply,
+      balancedPooled
     );
-    const calculatedRes = calculateCollateralReturned(200, 200, 20);
+    const calculatedRes = calculateCollateralReturned(
+      amountNum,
+      supplyNum,
+      balancedPooledNum
+    );
+    console.log(`
+    calculatedRes:${calculatedRes}
+    estimate:${toETHNumber(estimate)}
+    
+    `);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
-  });
+  });*/
   it("should be able to calculate asset needed", async () => {
-    let amount = ethers.utils.parseEther("585.786437626904952");
+    let amountNum = 585.786437626904952;
+    let amount = ethers.utils.parseEther(amountNum.toString());
+
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 600000;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    let supplyNum = toETHNumber(supply);
+
     let estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      supply,
+      balancedPooled
     );
     let calculatedRes = calculateCollateralReturned(
-      585.786437626904952,
-      2000,
-      2
+      amountNum,
+      supplyNum,
+      balancedPooledNum
     );
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision * 30000
     );
-    amount = ethers.utils.parseEther("1171.572875253809903");
-
+    console.log(`-1-
+    calculatedRes:${calculatedRes}
+    estimate:${toETHNumber(estimate)}
+    
+    `);
+    amountNum = 1171.572875253809903;
+    amount = ethers.utils.parseEther(amountNum.toString());
+    // we need to have the right balancedPooled for supply
+    balancedPooledNum = 400000000;
+    balancedPooled = one.mul(balancedPooledNum);
+    supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    supplyNum = toETHNumber(supply);
+    console.log(`-1-
+    supplyNum:${supplyNum} 
+    
+    `);
     estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
-      one.mul(4000),
-      one.mul(8)
+      supply,
+      balancedPooled
     );
-    calculatedRes = calculateCollateralReturned(1171.572875253809903, 4000, 8);
+    calculatedRes = calculateCollateralReturned(
+      amountNum,
+      supplyNum,
+      balancedPooledNum
+    );
+    console.log(`-2-
+    calculatedRes:${calculatedRes}
+    estimate:${toETHNumber(estimate)}
+    
+    `);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision * 100000
     );
-  });
+  }); /*
   it("should be able to calculate asset needed with a max of 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
 
@@ -264,5 +341,5 @@ export const curvesTestsHelper = async ({
     );
     calculatedRes = calculateTargetCollateralReturned(1000, 2000, 2);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
-  });
+  }); */
 };
