@@ -30,3 +30,24 @@ library Details {
         uint256 targetRefundRatio;
     }
 }
+
+struct AppStorage {
+    mapping(address => Details.MeToken) metokens;
+    mapping(uint256 => Details.Hub) hubs;
+}
+
+library LibAppStorage {
+    function diamondStorage() internal pure returns (AppStorage storage ds) {
+        assembly {
+            ds.slot := 0
+        }
+    }
+
+    function getHub(uint256 id)
+        internal
+        view
+        returns (Details.Hub storage hub)
+    {
+        hub = diamondStorage().hubs[id];
+    }
+}
