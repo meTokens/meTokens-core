@@ -367,17 +367,26 @@ const setup = async () => {
         expect(meTokenRegistryDetails.balancePooled).to.be.gt(0);
       });
       it("balanceLocked = 0, ending supply > 0, owner", async () => {
-        // mint some to buyer
-        await foundry
-          .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
-
-        // burn owner shares
+        // burn all owner shares
         await foundry
           .connect(account2)
           .burn(
             meToken.address,
             await meToken.balanceOf(account2.address),
+            account2.address
+          );
+
+        // mint some to owner
+        await foundry
+          .connect(account2)
+          .mint(meToken.address, tokenDeposited, account2.address);
+
+        // burn some owner shares
+        await foundry
+          .connect(account2)
+          .burn(
+            meToken.address,
+            (await meToken.balanceOf(account2.address)).div(2),
             account2.address
           );
 
@@ -389,6 +398,20 @@ const setup = async () => {
         expect(meTokenRegistryDetails.balancePooled).to.be.gt(0);
       });
       it("balanceLocked > 0, ending supply = 0, owner", async () => {
+        // burn from buyer
+        await foundry
+          .connect(account2)
+          .burn(
+            meToken.address,
+            await meToken.balanceOf(account2.address),
+            account2.address
+          );
+
+        // mint some to buyer
+        await foundry
+          .connect(account1)
+          .mint(meToken.address, tokenDeposited, account1.address);
+
         // burn from buyer
         await foundry
           .connect(account1)
