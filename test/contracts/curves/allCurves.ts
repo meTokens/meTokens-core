@@ -13,6 +13,7 @@ import {
   calculateTokenReturnedFromZero,
   deploy,
   getCalculationFuncsForBancorCurves,
+  getCalculationFuncsForStepwiseCurves,
   toETHNumber,
 } from "../../utils/helpers";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
@@ -77,7 +78,9 @@ const setup = async () => {
     hub.address,
     foundry.address
   );
-
+  const stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
+    "StepwiseCurveABDK"
+  );
   // Setting up curve info to test
 
   let baseY1 = one.mul(1000);
@@ -179,14 +182,15 @@ const setup = async () => {
 
   await curveRegistry.approve(newBancorABDK.address);
 
-  const bancorCurveABDK = {
+  let testCurve = {
     signers: [account0, account1, account2],
-    curve: bancorABDK,
-    newCurve: newBancorABDK,
+    curve: bancorABDK as ICurve,
+    newCurve: newBancorABDK as ICurve,
     precision: 0.000000000001,
   };
+  /*
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
@@ -206,7 +210,7 @@ const setup = async () => {
 
   //  curve.hubId = hubDetails.hubId;
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY2,
@@ -225,7 +229,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY3,
@@ -244,7 +248,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY4,
@@ -263,7 +267,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY5,
@@ -282,7 +286,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurveABDK,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY6,
@@ -297,32 +301,15 @@ const setup = async () => {
   });
 
   // Bancor Power
-  const bancorCurvePower = {
-    signers: [account0, account1, account2],
-    curve: bancorPower,
-    precision: 0.000000000001,
-  };
-  // hubArgs[-2] = bancorPower;
+  testCurve.curve = bancorPower;
+  hubArgs[10] = bancorPower;
+
   // First Power curve
-  //hubArgs[7] = encodedCurveDetails1;
-  hubArgs = [
-    hub,
-    foundry,
-    meTokenRegistry,
-    curveRegistry,
-    tokenAddr,
-    migrationRegistry,
-    vaultRegistry,
-    encodedCurveDetails1,
-    encodedVaultArgs,
-    5000,
-    bancorPower,
-    account0.address,
-  ];
+  hubArgs[7] = encodedCurveDetails1;
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY1,
@@ -341,7 +328,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY2,
@@ -360,7 +347,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY3,
@@ -379,7 +366,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY4,
@@ -398,7 +385,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY5,
@@ -417,7 +404,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
 
   curves.push({
-    ...bancorCurvePower,
+    ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
       baseY6,
@@ -429,9 +416,69 @@ const setup = async () => {
       ["uint32"],
       [targetReserveWeight6.toString()]
     ),
+  });*/
+
+  // stepwise ABDK curves
+
+  testCurve.curve = stepwiseCurveABDK;
+  hubArgs[10] = stepwiseCurveABDK;
+
+  // First Power curve
+  let stepX = 4;
+  let stepY = 2;
+
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  let targetStepX = 8;
+  let targetStepY = 15;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
   });
 
-  // stepwise curves
+  // Second Power curve
+  /* stepX = 5;
+  stepY = 6;
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 4;
+  targetStepY = 2;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
+  }); */
 
   /*   let stepX = one.mul(5);
   let stepY = one.mul(6);
