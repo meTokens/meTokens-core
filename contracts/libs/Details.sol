@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "../interfaces/IRegistry.sol";
+import "../interfaces/IMigrationRegistry.sol";
+
 import {LibDiamond} from "./LibDiamond.sol";
 import {LibMeta} from "./LibMeta.sol";
 
@@ -34,13 +37,15 @@ library Details {
     }
 }
 
+uint256 constant MAX_REFUND_RATIO = 10**6;
+
 struct AppStorage {
     mapping(address => Details.MeToken) metokens;
     mapping(uint256 => Details.Hub) hubs;
     address foundry;
-    address vaultRegistry;
-    address curveRegistry;
-    address migrationRegistry;
+    IRegistry vaultRegistry;
+    IRegistry curveRegistry;
+    IMigrationRegistry migrationRegistry;
 }
 
 library LibAppStorage {
@@ -68,7 +73,7 @@ contract Modifiers {
     modifier onlyVaultRegistry() {
         address sender = LibMeta.msgSender();
         require(
-            sender == s.vaultRegistry,
+            sender == address(s.vaultRegistry),
             "LibAppStorage: msg.sender != vaultRegistry"
         );
         _;
@@ -77,7 +82,7 @@ contract Modifiers {
     modifier onlyCurveRegistry() {
         address sender = LibMeta.msgSender();
         require(
-            sender == s.curveRegistry,
+            sender == address(s.curveRegistry),
             "LibAppStorage: msg.sender != curveRegistry"
         );
         _;
@@ -86,7 +91,7 @@ contract Modifiers {
     modifier onlyMigrationRegistry() {
         address sender = LibMeta.msgSender();
         require(
-            sender == s.migrationRegistry,
+            sender == address(s.migrationRegistry),
             "LibAppStorage: msg.sender != migrationRegistry"
         );
         _;

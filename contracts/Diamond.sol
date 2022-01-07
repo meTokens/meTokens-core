@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {IRegistry} from "./interfaces/IRegistry.sol";
+import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
+
 /******************************************************************************\
 * Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
 * EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
@@ -17,9 +20,9 @@ contract Diamond {
 
     struct Args {
         address foundry;
-        address vaultRegistry;
-        address curveRegistry;
-        address migrationRegistry;
+        IRegistry vaultRegistry;
+        IRegistry curveRegistry;
+        IMigrationRegistry migrationRegistry;
     }
 
     constructor(address _contractOwner, address _diamondCutFacet) payable {
