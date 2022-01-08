@@ -53,8 +53,16 @@ async function deployDiamond() {
   const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
   let tx;
   let receipt;
+  let args = [
+    [
+      "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+    ],
+  ];
   // call to init function
-  let functionCall = diamondInit.interface.encodeFunctionData("init");
+  let functionCall = diamondInit.interface.encodeFunctionData("init", args);
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
   console.log("Diamond cut tx: ", tx.hash);
   receipt = await tx.wait();
