@@ -128,15 +128,16 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
             "Cooldown not complete"
         );
         require(meToken_.hubId != _targetHubId, "same hub");
-        require(hub_.active, "hub inactive");
         require(targetHub_.active, "targetHub inactive");
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
 
-        // Ensure the migration we're using is approved
+        // TODO: what if asset is same?  Is a migration vault needed since it'll start/end
+        // at the same and not change to a different asset?
         require(hub_.asset != targetHub_.asset, "asset same");
         require(_migration != address(0), "migration address(0)");
 
+        // Ensure the migration we're using is approved
         require(
             migrationRegistry.isApproved(
                 hub_.vault,
