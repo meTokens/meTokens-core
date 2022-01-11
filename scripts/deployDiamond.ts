@@ -43,7 +43,7 @@ async function main() {
 
   // deploy facets
   console.log("\nDeploying Facets");
-  const FacetNames = ["DiamondLoupeFacet", "OwnershipFacet"];
+  const FacetNames = ["DiamondLoupeFacet", "HubFacet", "OwnershipFacet"];
   const cut = [];
   for (const FacetName of FacetNames) {
     const Facet = await ethers.getContractFactory(FacetName);

@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC173} from "./interfaces/IERC173.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
-
-/******************************************************************************\
-* Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
-* EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
-*
-* Implementation of a diamond.
-/******************************************************************************/
-
-import {LibDiamond} from "./libs/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
+import {LibDiamond} from "./libs/LibDiamond.sol";
 import "./libs/Details.sol";
 
 contract DiamondInit {
@@ -31,5 +26,13 @@ contract DiamondInit {
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;
+
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+
+        // Adding erc165 data
+        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
+        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
+        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+        ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 }
