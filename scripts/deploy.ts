@@ -36,21 +36,7 @@ function currencySymbol(chainId: number) {
       return "ETH";
   }
 }
-function currencyAddress(chainId: number) {
-  switch (chainId.toString()) {
-    // Rinkeby
-    case "4":
-      return "0x92d75D18C4A2aDF86365EcFd5219f13AfED5103C";
 
-    // Hardhat
-    case "31337":
-      return "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-
-    default: {
-      throw new Error("Un-supported network");
-    }
-  }
-}
 function printLog(msg: string) {
   console.log(msg);
   /*  if (process.stdout.isTTY) {

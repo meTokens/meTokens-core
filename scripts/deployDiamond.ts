@@ -3,6 +3,7 @@ import { network, run, ethers, getNamedAccounts } from "hardhat";
 import { DiamondCutFacet } from "../artifacts/types/DiamondCutFacet";
 import { Diamond } from "../artifacts/types/Diamond";
 import { DiamondInit } from "../artifacts/types/DiamondInit";
+import { HubFacet } from "../artifacts/types/HubFacet";
 import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
@@ -42,14 +43,19 @@ async function main() {
   console.log("DiamondInit deployed at:", diamondInit.address);
 
   // deploy facets
-  console.log("\nDeploying Facets");
-  const FacetNames = ["DiamondLoupeFacet", "HubFacet", "OwnershipFacet"];
+  console.log("\nDeploying Facets...");
+  const hubFacet = await deploy<HubFacet>("HubFacet");
+  console.log("HubFacet deployed at:", hubFacet.address);
+  const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
+    "DiamondLoupeFacet"
+  );
+  console.log("DiamondLoupeFacet deployed at:", diamondLoupeFacet.address);
+  const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
+  console.log("OwnershipFacet deployed at:", ownershipFacet.address);
+
+  const facets = [hubFacet, diamondLoupeFacet, ownershipFacet];
   const cut = [];
-  for (const FacetName of FacetNames) {
-    const Facet = await ethers.getContractFactory(FacetName);
-    const facet = await Facet.deploy();
-    await facet.deployed();
-    console.log(`${FacetName} deployed at: ${facet.address}`);
+  for (const facet of facets) {
     cut.push({
       facetAddress: facet.address,
       action: FacetCutAction.Add,
