@@ -127,6 +127,65 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
     });
 
+    it("mint() from buyer should work", async () => {
+      // metoken should be registered
+      expect(await meToken.name()).to.equal(name);
+      expect(await meToken.symbol()).to.equal(symbol);
+      expect(await meToken.decimals()).to.equal(18);
+      expect(await meToken.totalSupply()).to.equal(0);
+
+      const balBefore = await dai.balanceOf(account0.address);
+      const tokenBalBefore = await meToken.balanceOf(account2.address);
+      const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
+      // gas savings
+      const totalSupply = await meToken.totalSupply();
+
+      // mint
+      const meTokensMinted = await _curve.viewMeTokensMinted(
+        amount,
+        hubId,
+        totalSupply,
+        meTokenDetails.balancePooled
+      );
+      await foundry.mint(meToken.address, amount, account2.address);
+
+      const tokenBalAfter = await meToken.balanceOf(account2.address);
+      const balAfter = await dai.balanceOf(account0.address);
+      expect(balBefore.sub(balAfter)).equal(amount);
+      expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
+
+      const hubDetail = await hub.getDetails(hubId);
+      const balVault = await dai.balanceOf(hubDetail.vault);
+      expect(balVault).equal(amount);
+
+      // assert token infos
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+      expect(meTokenAddr).to.equal(meToken.address);
+      // should be greater than 0
+      expect(await meToken.totalSupply()).to.equal(
+        totalSupply.add(meTokensMinted)
+      );
+    });
+    it("burn() from buyer should work", async () => {
+      const balBefore = await meToken.balanceOf(account2.address);
+      const balDaiBefore = await dai.balanceOf(account2.address);
+      await foundry
+        .connect(account2)
+        .burn(meToken.address, balBefore, account2.address);
+      const balAfter = await meToken.balanceOf(account2.address);
+      const balDaiAfter = await dai.balanceOf(account2.address);
+      expect(balAfter).equal(0);
+      expect(await meToken.totalSupply()).to.equal(0);
+
+      const calculatedCollateralReturned = amount
+        .mul(initRefundRatio)
+        .div(MAX_WEIGHT);
+
+      expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
+    });
+
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
         let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
@@ -443,65 +502,6 @@ const setup = async () => {
             account1.address
           );
       });
-    });
-
-    it("mint() from buyer should work", async () => {
-      // metoken should be registered
-      expect(await meToken.name()).to.equal(name);
-      expect(await meToken.symbol()).to.equal(symbol);
-      expect(await meToken.decimals()).to.equal(18);
-      expect(await meToken.totalSupply()).to.equal(0);
-
-      const balBefore = await dai.balanceOf(account0.address);
-      const tokenBalBefore = await meToken.balanceOf(account2.address);
-      const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
-      // gas savings
-      const totalSupply = await meToken.totalSupply();
-
-      // mint
-      const meTokensMinted = await _curve.viewMeTokensMinted(
-        amount,
-        hubId,
-        totalSupply,
-        meTokenDetails.balancePooled
-      );
-      await foundry.mint(meToken.address, amount, account2.address);
-
-      const tokenBalAfter = await meToken.balanceOf(account2.address);
-      const balAfter = await dai.balanceOf(account0.address);
-      expect(balBefore.sub(balAfter)).equal(amount);
-      expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
-
-      const hubDetail = await hub.getDetails(hubId);
-      const balVault = await dai.balanceOf(hubDetail.vault);
-      expect(balVault).equal(amount);
-
-      // assert token infos
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
-      expect(meTokenAddr).to.equal(meToken.address);
-      // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(
-        totalSupply.add(meTokensMinted)
-      );
-    });
-    it("burn() from buyer should work", async () => {
-      const balBefore = await meToken.balanceOf(account2.address);
-      const balDaiBefore = await dai.balanceOf(account2.address);
-      await foundry
-        .connect(account2)
-        .burn(meToken.address, balBefore, account2.address);
-      const balAfter = await meToken.balanceOf(account2.address);
-      const balDaiAfter = await dai.balanceOf(account2.address);
-      expect(balAfter).equal(0);
-      expect(await meToken.totalSupply()).to.equal(0);
-
-      const calculatedCollateralReturned = amount
-        .mul(initRefundRatio)
-        .div(MAX_WEIGHT);
-
-      expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
     });
 
     describe("during migration", () => {
