@@ -1,7 +1,7 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { Foundry } from "../../artifacts/types/Foundry";
-import { Hub } from "../../artifacts/types/Hub";
+import { HubFacet } from "../../artifacts/types/HubFacet";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import {
@@ -39,7 +39,7 @@ describe("Foundry.sol", () => {
   let token: ERC20;
   let meToken: MeToken;
   let tokenHolder: Signer;
-  let hub: Hub;
+  let hub: HubFacet;
   let singleAssetVault: SingleAssetVault;
   let migrationRegistry: MigrationRegistry;
   let curveRegistry: CurveRegistry;

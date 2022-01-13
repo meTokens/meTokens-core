@@ -5,7 +5,6 @@ import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";

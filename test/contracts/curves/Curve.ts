@@ -5,7 +5,7 @@ import { BigNumber, Signer } from "ethers";
 import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -27,7 +27,7 @@ describe("Generic Curve", () => {
   let token: ERC20;
   let meToken: MeToken;
   let tokenHolder: Signer;
-  let hub: Hub;
+  let hub: HubFacet;
   let singleAssetVault: SingleAssetVault;
 
   const hubId = 1;

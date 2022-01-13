@@ -4,7 +4,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
@@ -36,7 +36,7 @@ const setup = async () => {
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let foundry: Foundry;
-  let hub: Hub;
+  let hub: HubFacet;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -121,7 +121,7 @@ const setup = async () => {
   } = await hubSetup(encodedCurveDetails1, encodedVaultArgs, 5000, bancorABDK));
 
   let hubArgs: [
-    Hub,
+    HubFacet,
     Foundry,
     MeTokenRegistry,
     CurveRegistry,

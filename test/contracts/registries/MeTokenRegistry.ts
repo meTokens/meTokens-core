@@ -2,7 +2,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import {
   calculateTokenReturnedFromZero,
@@ -80,7 +80,7 @@ const setup = async () => {
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let token: ERC20;
     let fee: Fees;
     let account0: SignerWithAddress;

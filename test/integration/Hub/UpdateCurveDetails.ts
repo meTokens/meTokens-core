@@ -14,7 +14,7 @@ import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -30,14 +30,14 @@ import {
 import { ICurve } from "../../../artifacts/types/ICurve";
 import { start } from "repl";
 const setup = async () => {
-  describe("Hub - update CurveDetails", () => {
+  describe("HubFacet - update CurveDetails", () => {
     let meTokenRegistry: MeTokenRegistry;
     let bancorABDK: BancorABDK;
     let updatedBancorABDK: BancorABDK;
     let curveRegistry: CurveRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let token: ERC20;
     let dai: ERC20;
     let meToken: MeToken;

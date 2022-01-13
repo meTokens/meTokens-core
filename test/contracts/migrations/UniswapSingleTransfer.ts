@@ -4,7 +4,7 @@ import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
@@ -41,7 +41,7 @@ const setup = async () => {
     let targetVault: SingleAssetVault;
     let foundry: Foundry;
     let meToken: MeToken;
-    let hub: Hub;
+    let hub: HubFacet;
     let fee: Fees;
     let vaultRegistry: VaultRegistry;
 

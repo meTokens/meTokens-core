@@ -1,7 +1,7 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { deploy } from "../../utils/helpers";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
@@ -13,7 +13,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 describe("SingleAsset.sol", () => {
   let vaultRegistry: VaultRegistry;
   let vault: SingleAssetVault;
-  let hub: Hub;
+  let hub: HubFacet;
   let DAI: string;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -31,7 +31,7 @@ describe("SingleAsset.sol", () => {
     const foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    const hub = await deploy<Hub>("Hub");
+    const hub = await deploy<HubFacet>("HubFacet");
     const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     const meTokenRegistry = await deploy<MeTokenRegistry>(
       "MeTokenRegistry",

@@ -1,5 +1,5 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { Hub } from "../../artifacts/types/Hub";
+import { HubFacet } from "../../artifacts/types/HubFacet";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
@@ -26,7 +26,7 @@ const policyFactory = await ethers.getContractFactory("PolicyLib", {
 });
 */
 const setup = async () => {
-  describe("Hub.sol", () => {
+  describe("HubFacet.sol", () => {
     let DAI: string;
     let WETH: string;
     let account0: SignerWithAddress;
@@ -35,7 +35,7 @@ const setup = async () => {
     let curve: BancorABDK;
     let newCurve: BancorABDK;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
     let vaultRegistry: VaultRegistry;
@@ -97,7 +97,7 @@ const setup = async () => {
         expect(await hub.foundry()).to.be.equal(foundry.address);
         expect(await hub.vaultRegistry()).to.be.equal(vaultRegistry.address);
         expect(await hub.curveRegistry()).to.be.equal(curveRegistry.address);
-        expect(await hub.owner()).to.be.equal(account0.address);
+        // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
         expect(await hub.warmup()).to.be.equal(0);
         expect(await hub.duration()).to.be.equal(0);

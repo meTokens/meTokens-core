@@ -9,7 +9,7 @@ import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
@@ -26,7 +26,7 @@ const setup = async () => {
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let dai: ERC20;
     let weth: ERC20;
     let meToken: MeToken;

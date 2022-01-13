@@ -2,7 +2,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -25,7 +25,7 @@ const setup = async () => {
     let dao: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let meTokenRegistry: MeTokenRegistry;
     let curve: BancorABDK;
     let tokenHolder: Signer;

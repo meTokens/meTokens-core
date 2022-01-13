@@ -12,7 +12,7 @@ import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -26,12 +26,12 @@ import {
   setAutomine,
 } from "../../utils/hardhatNode";
 const setup = async () => {
-  describe("Hub - update RefundRatio", () => {
+  describe("HubFacet - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistry;
     let bancorABDK: BancorABDK;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
-    let hub: Hub;
+    let hub: HubFacet;
     let token: ERC20;
     let meToken: MeToken;
     let tokenHolder: Signer;
