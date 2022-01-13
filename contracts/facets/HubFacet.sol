@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
@@ -8,7 +9,7 @@ import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
 
-contract HubFacet {
+contract HubFacet is Ownable {
     event Register(
         address _owner,
         address _asset,
@@ -32,6 +33,7 @@ contract HubFacet {
     event TransferHubOwnership(uint256 _id, address _newOwner);
     event FinishUpdate(uint256 _id);
 
+    uint256 constant MAX_REFUND_RATIO = 10**6;
     AppStorage internal s;
     uint256 private _warmup;
     uint256 private _duration;

@@ -7,7 +7,13 @@ import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { Foundry } from "../../artifacts/types/Foundry";
-import { Hub } from "../../artifacts/types/Hub";
+import { DiamondCutFacet } from "../../artifacts/types/DiamondCutFacet";
+import { Diamond } from "../../artifacts/types/Diamond";
+import { DiamondInit } from "../../artifacts/types/DiamondInit";
+import { HubFacet } from "../../artifacts/types/HubFacet";
+import { DiamondLoupeFacet } from "../../artifacts/types/DiamondLoupeFacet";
+import { OwnershipFacet } from "../../artifacts/types/OwnershipFacet";
+import { getSelectors } from "../../scripts/libraries/helpers";
 import { ERC20 } from "../../artifacts/types/ERC20";
 import { deploy, getContractAt } from "./helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -16,6 +22,7 @@ import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
 import { Fees } from "../../artifacts/types/Fees";
 import { expect } from "chai";
+import { text } from "stream/consumers";
 
 export async function hubSetup(
   encodedCurveDetails: string,
@@ -35,7 +42,7 @@ export async function hubSetup(
   migrationRegistry: MigrationRegistry;
   singleAssetVault: SingleAssetVault;
   foundry: Foundry;
-  hub: Hub;
+  hub: HubFacet;
   token: ERC20;
   fee: Fees;
   account0: SignerWithAddress;
@@ -111,7 +118,7 @@ export async function hubSetupWithoutRegister(
   migrationRegistry: MigrationRegistry;
   singleAssetVault: SingleAssetVault;
   foundry: Foundry;
-  hub: Hub;
+  hub: HubFacet;
   token: ERC20;
   fee: Fees;
   account0: SignerWithAddress;
@@ -131,7 +138,7 @@ export async function hubSetupWithoutRegister(
   let singleAssetVault: SingleAssetVault;
   let foundry: Foundry;
   let fee: Fees;
-  let hub: Hub;
+  let hub: HubFacet;
   let token: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -167,8 +174,61 @@ export async function hubSetupWithoutRegister(
     WeightedAverage: weightedAverage.address,
   });
 
-  hub = await deploy<Hub>("Hub");
   meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+
+  //
+  // NOTE: start diamond deploy
+  //
+
+  const diamondCutFacet = await deploy<DiamondCutFacet>("DiamondCutFacet");
+  const diamond = await deploy<Diamond>(
+    "Diamond",
+    undefined,
+    account0.address,
+    diamondCutFacet.address
+  );
+  const diamondInit = await deploy<DiamondInit>("DiamondInit");
+
+  // Deploying facets
+  const hubFacet = await deploy<HubFacet>("HubFacet");
+  hub = hubFacet;
+  const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
+    "DiamondLoupeFacet"
+  );
+  const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
+  const facets = [hubFacet, diamondLoupeFacet, ownershipFacet];
+  const cut = [];
+  const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
+  for (const facet of facets) {
+    cut.push({
+      facetAddress: facet.address,
+      action: FacetCutAction.Add,
+      functionSelectors: getSelectors(facet),
+    });
+  }
+
+  // upgrade diamond w/ facets
+  const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
+  let args: any = [
+    {
+      foundry: foundry.address,
+      vaultRegistry: vaultRegistry.address,
+      curveRegistry: curveRegistry.address,
+      migrationRegistry: migrationRegistry.address,
+    },
+  ];
+  let functionCall = diamondInit.interface.encodeFunctionData("init", args);
+  const tx = await diamondCut.diamondCut(
+    cut,
+    diamondInit.address,
+    functionCall
+  );
+  await tx.wait();
+
+  //
+  // NOTE: end diamond deploy
+  //
+
   meTokenRegistry = await deploy<MeTokenRegistry>(
     "MeTokenRegistry",
     undefined,
@@ -233,7 +293,7 @@ export async function hubSetupWithoutRegister(
 }
 
 export async function addHubSetup(
-  hub: Hub,
+  hub: HubFacet,
   foundry: Foundry,
   meTokenRegistry: MeTokenRegistry,
   curveRegistry: CurveRegistry,

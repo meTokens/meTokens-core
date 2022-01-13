@@ -37,8 +37,6 @@ library Details {
     }
 }
 
-uint256 constant MAX_REFUND_RATIO = 10**6;
-
 struct AppStorage {
     mapping(address => Details.MeToken) metokens;
     mapping(uint256 => Details.Hub) hubs;
