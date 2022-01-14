@@ -461,7 +461,7 @@ const setup = async () => {
         );
         await expect(tx).to.be.revertedWith("same hub");
       });
-      xit("Fails if current hub is inactive");
+
       it("Fails if resubscribing to inactive hub", async () => {
         const meToken = meTokenAddr0;
         const targetHubId = 0; // inactive hub
