@@ -5,8 +5,12 @@ import { Hub } from "../../artifacts/types/Hub";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import {
+  calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
+  calculateTokenReturned,
+  calculateTokenReturnedFromZero,
   deploy,
+  fromETHNumber,
   getContractAt,
   toETHNumber,
 } from "../utils/helpers";
@@ -25,6 +29,8 @@ import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
 import { text } from "stream/consumers";
+import { clearConfigCache } from "prettier";
+import Decimal from "decimal.js";
 
 const setup = async () => {
   describe("Foundry.sol", () => {
@@ -125,6 +131,490 @@ const setup = async () => {
       );
 
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+    });
+
+    it("mint() from buyer should work", async () => {
+      // metoken should be registered
+      expect(await meToken.name()).to.equal(name);
+      expect(await meToken.symbol()).to.equal(symbol);
+      expect(await meToken.decimals()).to.equal(18);
+      expect(await meToken.totalSupply()).to.equal(0);
+
+      const balBefore = await dai.balanceOf(account0.address);
+      const tokenBalBefore = await meToken.balanceOf(account2.address);
+      const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
+      // gas savings
+      const totalSupply = await meToken.totalSupply();
+
+      // mint
+      const meTokensMinted = await _curve.viewMeTokensMinted(
+        amount,
+        hubId,
+        totalSupply,
+        meTokenDetails.balancePooled
+      );
+      await foundry.mint(meToken.address, amount, account2.address);
+
+      const tokenBalAfter = await meToken.balanceOf(account2.address);
+      const balAfter = await dai.balanceOf(account0.address);
+      expect(balBefore.sub(balAfter)).equal(amount);
+      expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
+
+      const hubDetail = await hub.getDetails(hubId);
+      const balVault = await dai.balanceOf(hubDetail.vault);
+      expect(balVault).equal(amount);
+
+      // assert token infos
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account0.address
+      );
+      expect(meTokenAddr).to.equal(meToken.address);
+      // should be greater than 0
+      expect(await meToken.totalSupply()).to.equal(
+        totalSupply.add(meTokensMinted)
+      );
+    });
+    it("burn() from buyer should work", async () => {
+      const balBefore = await meToken.balanceOf(account2.address);
+      const balDaiBefore = await dai.balanceOf(account2.address);
+      await foundry
+        .connect(account2)
+        .burn(meToken.address, balBefore, account2.address);
+      const balAfter = await meToken.balanceOf(account2.address);
+      const balDaiAfter = await dai.balanceOf(account2.address);
+      expect(balAfter).equal(0);
+      expect(await meToken.totalSupply()).to.equal(0);
+
+      const calculatedCollateralReturned = amount
+        .mul(initRefundRatio)
+        .div(MAX_WEIGHT);
+
+      expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
+    });
+
+    describe("mint transfer burn", () => {
+      before(async () => {
+        // mint some to owner and burn. To make balance pool and locked 0
+        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.burn(
+          meToken.address,
+          await meToken.balanceOf(account0.address),
+          account0.address
+        );
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.equal(0);
+        expect(meTokenDetails.balanceLocked).to.equal(0);
+        expect(meTokenDetails.balancePooled).to.equal(0);
+      });
+
+      describe("buyer mint and transfer a portion to an owner that burns it and then the buyer burns the remaining", () => {
+        let collateralDeposited = fromETHNumber(0);
+        let collateralReturned = fromETHNumber(0);
+        it("buyer mint and transfer a portion to an owner", async () => {
+          const calculatedReturn = calculateTokenReturnedFromZero(
+            toETHNumber(PRECISION),
+            toETHNumber(baseY),
+            reserveWeight / MAX_WEIGHT
+          );
+
+          // burn mints some
+          await foundry
+            .connect(account1)
+            .mint(meToken.address, PRECISION, account1.address);
+          collateralDeposited = PRECISION;
+
+          // buyer transfer half to owner
+          await meToken
+            .connect(account1)
+            .transfer(
+              account0.address,
+              (await meToken.balanceOf(account1.address)).div(2)
+            );
+
+          expect(await meToken.balanceOf(account0.address)).to.equal(
+            await meToken.balanceOf(account1.address)
+          );
+          expect(
+            toETHNumber(await meToken.balanceOf(account0.address))
+          ).to.be.approximately(calculatedReturn / 2, 1e-15);
+        });
+
+        it("owner burns", async () => {
+          const DAIBefore = await token.balanceOf(account0.address);
+          const rawAssetsReturned = calculateCollateralReturned(
+            toETHNumber(await meToken.balanceOf(account0.address)),
+            toETHNumber(await meToken.totalSupply()),
+            toETHNumber(
+              (await meTokenRegistry.getDetails(meToken.address)).balancePooled
+            ),
+            reserveWeight / MAX_WEIGHT
+          );
+
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+
+          const DAIAfter = await token.balanceOf(account0.address);
+          collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
+          expect(toETHNumber(DAIAfter.sub(DAIBefore))).to.equal(
+            rawAssetsReturned
+          );
+        });
+
+        it("buyer burns", async () => {
+          const DAIBefore = await token.balanceOf(account1.address);
+          const rawAssetsReturned = calculateCollateralReturned(
+            toETHNumber(await meToken.balanceOf(account1.address)),
+            toETHNumber(await meToken.totalSupply()),
+            toETHNumber(
+              (await meTokenRegistry.getDetails(meToken.address)).balancePooled
+            ),
+            reserveWeight / MAX_WEIGHT
+          );
+          const assetsReturned =
+            (rawAssetsReturned * initRefundRatio) / MAX_WEIGHT;
+
+          await foundry
+            .connect(account1)
+            .burn(
+              meToken.address,
+              await meToken.balanceOf(account1.address),
+              account1.address
+            );
+
+          const DAIAfter = await token.balanceOf(account1.address);
+          collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
+          expect(toETHNumber(DAIAfter.sub(DAIBefore))).to.be.approximately(
+            assetsReturned,
+            1e-15
+          );
+        });
+        it("owner can claim the remaining balanceLocked", async () => {
+          // mint some to owner
+          await foundry.mint(meToken.address, 1, account0.address);
+
+          const ownerBalanceBefore = await token.balanceOf(account0.address);
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+          const ownerBalanceAfter = await token.balanceOf(account0.address);
+
+          collateralReturned = collateralReturned.add(
+            ownerBalanceAfter.sub(ownerBalanceBefore).sub(1)
+          );
+        });
+        it("collateral deposited === collateral returned", async () => {
+          expect(toETHNumber(collateralDeposited)).to.be.approximately(
+            toETHNumber(collateralReturned),
+            1e-18
+          );
+        });
+      });
+
+      describe("owner mint and transfer a portion to an buyer that burns it and then the owner burns the remaining", () => {
+        let collateralDeposited = fromETHNumber(0);
+        let collateralReturned = fromETHNumber(0);
+        it("owner mint and transfer a portion to an buyer", async () => {
+          const calculatedReturn = calculateTokenReturnedFromZero(
+            toETHNumber(PRECISION),
+            toETHNumber(baseY),
+            reserveWeight / MAX_WEIGHT
+          );
+
+          // owner mints some
+          await foundry.mint(meToken.address, PRECISION, account0.address);
+          collateralDeposited = PRECISION;
+
+          // owner transfer half to buyer
+          await meToken.transfer(
+            account1.address,
+            (await meToken.balanceOf(account0.address)).div(2)
+          );
+
+          expect(await meToken.balanceOf(account0.address)).to.equal(
+            await meToken.balanceOf(account1.address)
+          );
+          expect(
+            toETHNumber(await meToken.balanceOf(account1.address))
+          ).to.be.approximately(calculatedReturn / 2, 1e-15);
+        });
+
+        it("buyer burns", async () => {
+          const DAIBefore = await token.balanceOf(account1.address);
+          const rawAssetsReturned = calculateCollateralReturned(
+            toETHNumber(await meToken.balanceOf(account1.address)),
+            toETHNumber(await meToken.totalSupply()),
+            toETHNumber(
+              (await meTokenRegistry.getDetails(meToken.address)).balancePooled
+            ),
+            reserveWeight / MAX_WEIGHT
+          );
+          const assetsReturned =
+            (rawAssetsReturned * initRefundRatio) / MAX_WEIGHT;
+
+          await foundry
+            .connect(account1)
+            .burn(
+              meToken.address,
+              await meToken.balanceOf(account1.address),
+              account1.address
+            );
+
+          const DAIAfter = await token.balanceOf(account1.address);
+          collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
+          expect(toETHNumber(DAIAfter.sub(DAIBefore))).to.be.approximately(
+            assetsReturned,
+            1e-15
+          );
+        });
+
+        it("owner burns", async () => {
+          const ownerMeToken = await meToken.balanceOf(account0.address);
+          const meTokenTotalSupply = await meToken.totalSupply();
+          const meTokenDetails = await meTokenRegistry.getDetails(
+            meToken.address
+          );
+          const DAIBefore = await token.balanceOf(account0.address);
+          const rawAssetsReturned = calculateCollateralReturned(
+            toETHNumber(ownerMeToken),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(meTokenDetails.balancePooled),
+            reserveWeight / MAX_WEIGHT
+          );
+          const assetsReturned =
+            rawAssetsReturned +
+            (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+              toETHNumber(meTokenDetails.balanceLocked);
+
+          await foundry.burn(meToken.address, ownerMeToken, account0.address);
+
+          const DAIAfter = await token.balanceOf(account0.address);
+          collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
+          expect(toETHNumber(DAIAfter.sub(DAIBefore))).to.equal(assetsReturned);
+        });
+
+        it("collateral deposited === collateral returned", async () => {
+          expect(toETHNumber(collateralDeposited)).to.be.approximately(
+            toETHNumber(collateralReturned),
+            1e-18
+          );
+        });
+      });
+    });
+
+    describe("multiple burn and mint", () => {
+      before(async () => {
+        // mint some to owner and burn. To make balance pool and locked 0
+        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.burn(
+          meToken.address,
+          await meToken.balanceOf(account0.address),
+          account0.address
+        );
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.equal(0);
+        expect(meTokenDetails.balanceLocked).to.equal(0);
+        expect(meTokenDetails.balancePooled).to.equal(0);
+      });
+      it("multiple mints by owner", async () => {
+        const numberOfMints = 50;
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetTokenReturn = 0;
+        for (let i = 0; i < numberOfMints; i++) {
+          if (i === 0) {
+            targetTokenReturn = calculateTokenReturnedFromZero(
+              toETHNumber(PRECISION),
+              toETHNumber(baseY),
+              reserveWeight / MAX_WEIGHT
+            );
+          } else {
+            const meTokenTotalSupply = await meToken.totalSupply();
+            const balancePooled = (
+              await meTokenRegistry.getDetails(meToken.address)
+            ).balancePooled;
+
+            targetTokenReturn += calculateTokenReturned(
+              toETHNumber(PRECISION),
+              toETHNumber(meTokenTotalSupply),
+              toETHNumber(balancePooled),
+              reserveWeight / MAX_WEIGHT
+            );
+          }
+          await foundry.mint(meToken.address, PRECISION, account0.address);
+        }
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
+
+        expect(ownerBalanceBefore.sub(ownerBalanceAfter)).to.equal(
+          PRECISION.mul(numberOfMints)
+        );
+        expect(targetTokenReturn).to.be.approximately(
+          toETHNumber(await meToken.totalSupply()),
+          1e-12
+        );
+        expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
+          50
+        );
+      });
+      it("multiple burns by owner", async () => {
+        const numberOfBurns = 50;
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        let singleBurnAmount = (await meToken.balanceOf(account0.address)).div(
+          50
+        );
+        let targetCollateralReturn = 0;
+        for (let i = 0; i < numberOfBurns; i++) {
+          if (i === numberOfBurns - 1) {
+            singleBurnAmount = await meToken.balanceOf(account0.address);
+          }
+          const meTokenTotalSupply = await meToken.totalSupply();
+          const balancePooled = (
+            await meTokenRegistry.getDetails(meToken.address)
+          ).balancePooled;
+          targetCollateralReturn += calculateCollateralReturned(
+            toETHNumber(singleBurnAmount),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(balancePooled),
+            reserveWeight / MAX_WEIGHT
+          );
+          await foundry.burn(
+            meToken.address,
+            singleBurnAmount,
+            account0.address
+          );
+        }
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
+        expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(
+          PRECISION.mul(numberOfBurns)
+        );
+        expect(
+          toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
+        ).to.be.approximately(targetCollateralReturn, 1e-14);
+      });
+
+      it("multiple mints by buyer", async () => {
+        const numberOfMints = 50;
+        const buyerBalanceBefore = await token.balanceOf(account1.address);
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetTokenReturn = 0;
+        for (let i = 0; i < numberOfMints; i++) {
+          if (i === 0) {
+            targetTokenReturn = calculateTokenReturnedFromZero(
+              toETHNumber(PRECISION),
+              toETHNumber(baseY),
+              reserveWeight / MAX_WEIGHT
+            );
+          } else {
+            const meTokenTotalSupply = await meToken.totalSupply();
+            const balancePooled = (
+              await meTokenRegistry.getDetails(meToken.address)
+            ).balancePooled;
+
+            targetTokenReturn += calculateTokenReturned(
+              toETHNumber(PRECISION),
+              toETHNumber(meTokenTotalSupply),
+              toETHNumber(balancePooled),
+              reserveWeight / MAX_WEIGHT
+            );
+          }
+          await foundry
+            .connect(account1)
+            .mint(meToken.address, PRECISION, account1.address);
+        }
+        const buyerBalanceAfter = await token.balanceOf(account1.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
+
+        expect(buyerBalanceBefore.sub(buyerBalanceAfter)).to.equal(
+          PRECISION.mul(numberOfMints)
+        );
+        expect(targetTokenReturn).to.be.approximately(
+          toETHNumber(await meToken.totalSupply()),
+          1e-12
+        );
+        expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
+          50
+        );
+      });
+      let assetsReturned = 0;
+      it("multiple burns by buyer", async () => {
+        const numberOfBurns = 50;
+        const buyerBalanceBefore = await token.balanceOf(account1.address);
+        let singleBurnAmount = (await meToken.balanceOf(account1.address)).div(
+          50
+        );
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetCollateralReturn = 0;
+        for (let i = 0; i < numberOfBurns; i++) {
+          if (i === numberOfBurns - 1) {
+            singleBurnAmount = await meToken.balanceOf(account1.address);
+          }
+          const meTokenTotalSupply = await meToken.totalSupply();
+          const balancePooled = (
+            await meTokenRegistry.getDetails(meToken.address)
+          ).balancePooled;
+          targetCollateralReturn += calculateCollateralReturned(
+            toETHNumber(singleBurnAmount),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(balancePooled),
+            reserveWeight / MAX_WEIGHT
+          );
+          await foundry
+            .connect(account1)
+            .burn(meToken.address, singleBurnAmount, account1.address);
+        }
+        assetsReturned =
+          (targetCollateralReturn * initRefundRatio) / MAX_WEIGHT;
+
+        const buyerBalanceAfter = await token.balanceOf(account1.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
+
+        expect(
+          toETHNumber(vaultBalanceBefore.sub(vaultBalanceAfter))
+        ).to.be.approximately(assetsReturned, 1e-15);
+        expect(
+          toETHNumber(buyerBalanceAfter.sub(buyerBalanceBefore))
+        ).to.be.approximately(assetsReturned, 1e-15);
+      });
+
+      it("owner can claim the remaining balanceLocked", async () => {
+        // mint some to owner
+        await foundry.mint(meToken.address, 1, account0.address);
+
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        await foundry.burn(
+          meToken.address,
+          await meToken.balanceOf(account0.address),
+          account0.address
+        );
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
+
+        expect(
+          toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
+        ).to.be.approximately(50 - assetsReturned, 1e-15);
+        expect(await meToken.totalSupply()).to.equal(0);
+        expect(await token.balanceOf(singleAssetVault.address)).to.equal(0);
+      });
     });
 
     describe("mint()", () => {
@@ -443,65 +933,6 @@ const setup = async () => {
             account1.address
           );
       });
-    });
-
-    it("mint() from buyer should work", async () => {
-      // metoken should be registered
-      expect(await meToken.name()).to.equal(name);
-      expect(await meToken.symbol()).to.equal(symbol);
-      expect(await meToken.decimals()).to.equal(18);
-      expect(await meToken.totalSupply()).to.equal(0);
-
-      const balBefore = await dai.balanceOf(account0.address);
-      const tokenBalBefore = await meToken.balanceOf(account2.address);
-      const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
-      // gas savings
-      const totalSupply = await meToken.totalSupply();
-
-      // mint
-      const meTokensMinted = await _curve.viewMeTokensMinted(
-        amount,
-        hubId,
-        totalSupply,
-        meTokenDetails.balancePooled
-      );
-      await foundry.mint(meToken.address, amount, account2.address);
-
-      const tokenBalAfter = await meToken.balanceOf(account2.address);
-      const balAfter = await dai.balanceOf(account0.address);
-      expect(balBefore.sub(balAfter)).equal(amount);
-      expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
-
-      const hubDetail = await hub.getDetails(hubId);
-      const balVault = await dai.balanceOf(hubDetail.vault);
-      expect(balVault).equal(amount);
-
-      // assert token infos
-      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account0.address
-      );
-      expect(meTokenAddr).to.equal(meToken.address);
-      // should be greater than 0
-      expect(await meToken.totalSupply()).to.equal(
-        totalSupply.add(meTokensMinted)
-      );
-    });
-    it("burn() from buyer should work", async () => {
-      const balBefore = await meToken.balanceOf(account2.address);
-      const balDaiBefore = await dai.balanceOf(account2.address);
-      await foundry
-        .connect(account2)
-        .burn(meToken.address, balBefore, account2.address);
-      const balAfter = await meToken.balanceOf(account2.address);
-      const balDaiAfter = await dai.balanceOf(account2.address);
-      expect(balAfter).equal(0);
-      expect(await meToken.totalSupply()).to.equal(0);
-
-      const calculatedCollateralReturned = amount
-        .mul(initRefundRatio)
-        .div(MAX_WEIGHT);
-
-      expect(balDaiAfter.sub(balDaiBefore)).equal(calculatedCollateralReturned);
     });
 
     describe("during migration", () => {
