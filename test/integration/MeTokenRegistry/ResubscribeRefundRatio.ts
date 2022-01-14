@@ -18,6 +18,7 @@ import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../../utils/hardhatNode";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
@@ -64,15 +65,22 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
-
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
       ({
         token: dai,
-        hub,
         tokenHolder,
         migrationRegistry,
         singleAssetVault,
-        foundry,
         account0,
         account1,
         account2,
@@ -81,6 +89,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
+        hub,
+        foundry,
         bancorABDK
       ));
 

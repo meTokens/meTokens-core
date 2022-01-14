@@ -86,10 +86,6 @@ async function main() {
   const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
   contracts.push(weightedAverage.address);
 
-  printLog("Deploying BancorABDK Contract...");
-  const BancorABDK = await deploy<BancorABDK>("BancorABDK");
-  contracts.push(BancorABDK.address);
-
   printLog("Deploying CurveRegistry Contract...");
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   contracts.push(curveRegistry.address);
@@ -113,6 +109,15 @@ async function main() {
   printLog("Deploying Hub Contract...");
   const hub = await deploy<Hub>("Hub");
   contracts.push(hub.address);
+
+  printLog("Deploying BancorABDK Contract...");
+  const BancorABDK = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    hub.address,
+    foundry.address
+  );
+  contracts.push(BancorABDK.address);
 
   printLog("Deploying MeTokenFactory Contract...");
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");

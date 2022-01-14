@@ -14,6 +14,7 @@ import { ERC20 } from "../../artifacts/types/ERC20";
 import { Signer } from "@ethersproject/abstract-signer";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MeToken } from "../../artifacts/types/MeToken";
+import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -75,12 +76,21 @@ const setup = async () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      curve = await deploy<BancorABDK>("BancorABDK");
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      curve = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
+
       ({
         token,
         tokenHolder,
-        hub,
-        foundry,
         account0,
         account1,
         account2,
@@ -88,7 +98,7 @@ const setup = async () => {
         vaultRegistry,
         curveRegistry,
         singleAssetVault,
-      } = await hubSetupWithoutRegister(curve));
+      } = await hubSetupWithoutRegister(hub, foundry, curve));
     });
 
     describe("Initial state", () => {
@@ -371,7 +381,12 @@ const setup = async () => {
           ["uint256", "uint32"],
           [0, 0]
         );
-        const newCurve = await deploy<BancorABDK>("BancorABDK");
+        const newCurve = await deploy<BancorABDK>(
+          "BancorABDK",
+          undefined,
+          hub.address,
+          foundry.address
+        );
         await curveRegistry.approve(newCurve.address);
         const tx = hub.initUpdate(
           hubId,
@@ -383,7 +398,12 @@ const setup = async () => {
       });
 
       it("should be able to initUpdate with new refundRatio", async () => {
-        newCurve = await deploy<BancorABDK>("BancorABDK");
+        newCurve = await deploy<BancorABDK>(
+          "BancorABDK",
+          undefined,
+          hub.address,
+          foundry.address
+        );
         await curveRegistry.approve(newCurve.address);
         const tx = await hub.initUpdate(
           hubId,

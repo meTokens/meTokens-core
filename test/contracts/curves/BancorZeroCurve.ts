@@ -45,13 +45,26 @@ describe("BancorABDK", () => {
       ["address"],
       [DAI]
     );
-    bancorABDK = await deploy<BancorABDK>("BancorABDK");
+
     let token;
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    const foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+    const hub = await deploy<Hub>("Hub");
+    bancorABDK = await deploy<BancorABDK>(
+      "BancorABDK",
+      undefined,
+      hub.address,
+      foundry.address
+    );
 
     ({ token } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
+      hub,
+      foundry,
       bancorABDK
     ));
   });
@@ -349,12 +362,26 @@ describe("BancorABDK", () => {
         ["address"],
         [DAI]
       );
-      newBancorABDK = await deploy<BancorABDK>("BancorABDK");
+
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      const foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      const hub = await deploy<Hub>("Hub");
+
+      newBancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
 
       ({ token } = await hubSetup(
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
+        hub,
+        foundry,
         newBancorABDK
       ));
     });

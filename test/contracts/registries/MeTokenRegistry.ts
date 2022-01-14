@@ -121,18 +121,26 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
+
       ({
         tokenAddr: DAI,
-        weightedAverage,
         meTokenRegistry,
         meTokenFactory,
         curveRegistry,
         vaultRegistry,
         migrationRegistry,
         singleAssetVault,
-        foundry,
-        hub,
         token,
         fee,
         account0,
@@ -145,6 +153,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
+        hub,
+        foundry,
         bancorABDK
       ));
 

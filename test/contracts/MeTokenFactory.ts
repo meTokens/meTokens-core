@@ -4,9 +4,11 @@ import { BigNumber } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { Foundry } from "../../artifacts/types/Foundry";
+import { Hub } from "../../artifacts/types/Hub";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { mineBlock, setAutomine } from "../utils/hardhatNode";
 import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetup } from "../utils/hubSetup";
@@ -37,15 +39,27 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
 
-      ({ meTokenFactory, meTokenRegistry, foundry, account0, account1 } =
-        await hubSetup(
-          encodedCurveDetails,
-          encodedVaultArgs,
-          refundRatio,
-          bancorABDK
-        ));
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      const hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
+
+      ({ meTokenFactory, meTokenRegistry, account0, account1 } = await hubSetup(
+        encodedCurveDetails,
+        encodedVaultArgs,
+        refundRatio,
+        hub,
+        foundry,
+        bancorABDK
+      ));
     });
     it("create() with same params always produce different MeTokens", async () => {
       const name = "ABCD";

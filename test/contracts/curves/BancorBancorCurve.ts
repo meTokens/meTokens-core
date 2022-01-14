@@ -47,11 +47,25 @@ describe("BancorPowerCurve", () => {
       [DAI]
     );
     let token;
-    bancorPower = await deploy<BancorPower>("BancorPower");
+
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    const foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+    const hub = await deploy<Hub>("Hub");
+    bancorPower = await deploy<BancorPower>(
+      "BancorPower",
+      undefined,
+      hub.address,
+      foundry.address
+    );
+
     ({ token } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
+      hub,
+      foundry,
       bancorPower
     ));
     dai = token;
@@ -351,11 +365,25 @@ describe("BancorPowerCurve", () => {
         ["address"],
         [DAI]
       );
-      newbancorPower = await deploy<BancorPower>("BancorPower");
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      const foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      const hub = await deploy<Hub>("Hub");
+
+      newbancorPower = await deploy<BancorPower>(
+        "BancorPower",
+        undefined,
+        hub.address,
+        foundry.address
+      );
+
       ({ token } = await hubSetup(
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
+        hub,
+        foundry,
         newbancorPower
       ));
       dai = token;

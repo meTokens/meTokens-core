@@ -52,8 +52,25 @@ const setup = async () => {
     ["address"],
     [DAI]
   );
-  const bancorABDK = await deploy<BancorABDK>("BancorABDK");
-  const bancorPower = await deploy<BancorPower>("BancorPower");
+
+  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+  foundry = await deploy<Foundry>("Foundry", {
+    WeightedAverage: weightedAverage.address,
+  });
+  hub = await deploy<Hub>("Hub");
+  const bancorABDK = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    hub.address,
+    foundry.address
+  );
+
+  const bancorPower = await deploy<BancorPower>(
+    "BancorPower",
+    undefined,
+    hub.address,
+    foundry.address
+  );
 
   // Setting up curve info to test
 
@@ -108,17 +125,22 @@ const setup = async () => {
   // Create hub and register first hub
   ({
     token,
-    hub,
     curveRegistry,
     tokenAddr,
     migrationRegistry,
     vaultRegistry,
-    foundry,
     account0,
     account1,
     account2,
     meTokenRegistry,
-  } = await hubSetup(encodedCurveDetails1, encodedVaultArgs, 5000, bancorABDK));
+  } = await hubSetup(
+    encodedCurveDetails1,
+    encodedVaultArgs,
+    5000,
+    hub,
+    foundry,
+    bancorABDK
+  ));
 
   let hubArgs: [
     Hub,

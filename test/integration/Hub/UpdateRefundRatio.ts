@@ -25,6 +25,7 @@ import {
   passSeconds,
   setAutomine,
 } from "../../utils/hardhatNode";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 const setup = async () => {
   describe("Hub - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistry;
@@ -62,14 +63,21 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
-
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
       ({
         token,
-        hub,
         tokenHolder,
         singleAssetVault,
-        foundry,
         account0,
         account1,
         account2,
@@ -78,6 +86,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         firstRefundRatio,
+        hub,
+        foundry,
         bancorABDK
       ));
 
