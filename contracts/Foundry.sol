@@ -61,7 +61,6 @@ contract Foundry is IFoundry, Ownable, Initializable {
     ) external override {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        require(hub_.active, "Hub inactive");
 
         // Handling changes
         if (hub_.updating && block.timestamp > hub_.endTime) {
@@ -160,7 +159,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
     ) external override {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        require(hub_.active, "Hub inactive");
+
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (

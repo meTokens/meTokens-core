@@ -461,7 +461,7 @@ const setup = async () => {
         );
         await expect(tx).to.be.revertedWith("same hub");
       });
-      xit("Fails if current hub is inactive");
+
       it("Fails if resubscribing to inactive hub", async () => {
         const meToken = meTokenAddr0;
         const targetHubId = 0; // inactive hub
@@ -556,6 +556,14 @@ const setup = async () => {
         ).to.be.revertedWith("migration address(0)");
       });
       it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
+        // exiting hub is active
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meTokenAddr0
+        );
+        expect(
+          (await hub.getDetails(meTokenRegistryDetails.hubId)).active
+        ).to.equal(true);
+
         tx = await meTokenRegistry.initResubscribe(
           meToken,
           targetHubId,
@@ -639,7 +647,14 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "CancelResubscribe")
           .withArgs(meTokenAddr0);
       });
-      it("Fails if resubscription already started", async () => {
+      it("should be able to resubscribe | migrate from inactive hub", async () => {
+        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+          meTokenAddr0
+        );
+        await hub.deactivate(meTokenRegistryDetails.hubId);
+        expect(
+          (await hub.getDetails(meTokenRegistryDetails.hubId)).active
+        ).to.equal(false);
         const oldMeTokenRegistryDetails = await meTokenRegistry.getDetails(
           meTokenAddr0
         );
@@ -661,7 +676,8 @@ const setup = async () => {
           encodedMigrationArgs
         );
         await tx.wait();
-
+      });
+      it("Fails if resubscription already started", async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getDetails(
           meTokenAddr0
         );

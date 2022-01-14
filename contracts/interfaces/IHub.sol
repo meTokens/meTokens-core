@@ -26,16 +26,20 @@ interface IHub {
         bytes _encodedVaultArgs
     );
 
+    /// @notice Event of making a hub inactive, preventing new subscriptions to the hub
+    /// @param _id  unique hub identifier
+    event Deactivate(uint256 _id);
+
     /// @notice Event of initializing a hub update
-    /// @notice _id                     unique hub identifier
-    /// @notice _targetCurve            address of target curve
-    /// @notice _targetRefundRatio      target rate to refund burners
-    /// @notice _encodedCurveDetails    additional encoded curve details
-    /// @notice _reconfigure            boolean to show if we're changing the
+    /// @param _id                     unique hub identifier
+    /// @param _targetCurve            address of target curve
+    /// @param _targetRefundRatio      target rate to refund burners
+    /// @param _encodedCurveDetails    additional encoded curve details
+    /// @param _reconfigure            boolean to show if we're changing the
     ///                                 curveDetails but not the curve address
-    /// @notice _startTime              timestamp to start updating
-    /// @notice _endTime                timestamp to end updating
-    /// @notice _endCooldown            timestamp to allow another update
+    /// @param _startTime              timestamp to start updating
+    /// @param _endTime                timestamp to end updating
+    /// @param _endCooldown            timestamp to allow another update
     event InitUpdate(
         uint256 _id,
         address _targetCurve,
@@ -77,6 +81,8 @@ interface IHub {
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
     ) external;
+
+    function deactivate(uint256 _id) external;
 
     /// @notice Intialize a hub update
     /// @param _id                  unique hub identifier

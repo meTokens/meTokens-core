@@ -82,6 +82,15 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
     /// @inheritdoc IHub
+    function deactivate(uint256 _id) external override {
+        Details.Hub storage hub_ = _hubs[_id];
+        require(msg.sender == hub_.owner, "!owner");
+        require(hub_.active, "!active");
+        hub_.active = false;
+        emit Deactivate(_id);
+    }
+
+    /// @inheritdoc IHub
     function initUpdate(
         uint256 _id,
         address _targetCurve,
