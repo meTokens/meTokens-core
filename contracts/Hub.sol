@@ -87,7 +87,7 @@ contract Hub is IHub, Ownable, Initializable {
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.active, "!active");
         hub_.active = false;
-        emit Deactivate(_id, msg.sender);
+        emit Deactivate(_id);
     }
 
     /// @inheritdoc IHub

@@ -812,9 +812,7 @@ const setup = async () => {
       it("should deactivate hub", async () => {
         const tx = await hub.deactivate(hubId);
 
-        await expect(tx)
-          .to.emit(hub, "Deactivate")
-          .withArgs(hubId, account0.address);
+        await expect(tx).to.emit(hub, "Deactivate").withArgs(hubId);
 
         const newDetails = await hub.getDetails(hubId);
         expect(newDetails.active).to.equal(false);

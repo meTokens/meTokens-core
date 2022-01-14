@@ -28,8 +28,7 @@ interface IHub {
 
     /// @notice Event of making a hub inactive, preventing new subscriptions to the hub
     /// @param _id  unique hub identifier
-    /// @param _owner address who deactivated the specific hub ID
-    event Deactivate(uint256 _id, address _owner);
+    event Deactivate(uint256 _id);
 
     /// @notice Event of initializing a hub update
     /// @param _id                     unique hub identifier
