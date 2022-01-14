@@ -191,7 +191,6 @@ export async function hubSetupWithoutRegister(
 
   // Deploying facets
   const hubFacet = await deploy<HubFacet>("HubFacet");
-  hub = hubFacet;
   const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
     "DiamondLoupeFacet"
   );
@@ -224,6 +223,8 @@ export async function hubSetupWithoutRegister(
     functionCall
   );
   await tx.wait();
+
+  hub = (await ethers.getContractAt("HubFacet", diamond.address)) as HubFacet;
 
   //
   // NOTE: end diamond deploy
