@@ -27,6 +27,8 @@ contract DiamondInit {
         s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;
 
+        s.MAX_REFUND_RATIO = 10e6;
+
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         // Adding erc165 data

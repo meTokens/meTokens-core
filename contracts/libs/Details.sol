@@ -38,12 +38,17 @@ library Details {
 }
 
 struct AppStorage {
-    mapping(address => Details.MeToken) metokens;
-    mapping(uint256 => Details.Hub) hubs;
+    uint256 MAX_REFUND_RATIO;
+    uint256 hubWarmup;
+    uint256 hubDuration;
+    uint256 hubCooldown;
+    uint256 hubCount;
     address foundry;
     IRegistry vaultRegistry;
     IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
+    mapping(address => Details.MeToken) meTokens;
+    mapping(uint256 => Details.Hub) hubs;
 }
 
 library LibAppStorage {

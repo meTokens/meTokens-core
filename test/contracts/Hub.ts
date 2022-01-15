@@ -93,10 +93,6 @@ const setup = async () => {
 
     describe("Initial state", () => {
       it("Check initial values", async () => {
-        expect(await hub.MAX_REFUND_RATIO()).to.be.equal(10 ** 6);
-        expect(await hub.foundry()).to.be.equal(foundry.address);
-        expect(await hub.vaultRegistry()).to.be.equal(vaultRegistry.address);
-        expect(await hub.curveRegistry()).to.be.equal(curveRegistry.address);
         // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
         expect(await hub.warmup()).to.be.equal(0);
@@ -267,7 +263,7 @@ const setup = async () => {
       it("should revert to setWarmup if same as before", async () => {
         const oldWarmup = await hub.warmup();
         const tx = hub.setWarmup(oldWarmup);
-        await expect(tx).to.be.revertedWith("warmup_ == _warmup");
+        await expect(tx).to.be.revertedWith("_warmup == s.hubWarmup");
       });
       it("should be able to setWarmup", async () => {
         const tx = await hub.setWarmup(duration);

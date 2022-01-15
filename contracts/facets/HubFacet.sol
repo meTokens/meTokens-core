@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
@@ -9,7 +10,6 @@ import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
 
 contract HubFacet {
-    // contract HubFacet is Ownable {
     event Register(
         address _owner,
         address _asset,
@@ -33,25 +33,19 @@ contract HubFacet {
     event TransferHubOwnership(uint256 _id, address _newOwner);
     event FinishUpdate(uint256 _id);
 
-    uint256 public MAX_REFUND_RATIO = 10**6;
     AppStorage internal s;
-    uint256 private _warmup;
-    uint256 private _duration;
-    uint256 private _cooldown;
 
-    uint256 private _count;
-    IFoundry public foundry;
-    IRegistry public vaultRegistry;
-    IRegistry public curveRegistry;
+    modifier onlyOwner() {
+        LibDiamond.enforceIsContractOwner();
+        _;
+    }
 
     function initialize(
         address _foundry,
         address _vaultRegistry,
-        address _curveRegistry // TODO: initializer from OZ
+        address _curveRegistry
     ) external {
-        foundry = IFoundry(_foundry);
-        vaultRegistry = IRegistry(_vaultRegistry);
-        curveRegistry = IRegistry(_curveRegistry);
+        // Do nothing
     }
 
     function register(
@@ -73,17 +67,17 @@ contract HubFacet {
             "_vault !approved"
         );
 
-        require(_refundRatio < MAX_REFUND_RATIO, "_refundRatio > MAX");
+        require(_refundRatio < s.MAX_REFUND_RATIO, "_refundRatio > MAX");
         require(_refundRatio > 0, "_refundRatio == 0");
 
         // Ensure asset is valid based on encoded args and vault validation logic
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(++_count, _encodedCurveDetails);
+        _curve.register(++s.hubCount, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = s.hubs[_count];
+        Details.Hub storage hub_ = s.hubs[s.hubCount];
         hub_.active = true;
         hub_.owner = _owner;
         hub_.asset = _asset;
@@ -122,7 +116,7 @@ contract HubFacet {
 
         if (_targetRefundRatio != 0) {
             require(
-                _targetRefundRatio < MAX_REFUND_RATIO,
+                _targetRefundRatio < s.MAX_REFUND_RATIO,
                 "_targetRefundRatio >= MAX"
             );
             require(
@@ -138,7 +132,7 @@ contract HubFacet {
                 reconfigure = true;
             } else {
                 require(
-                    curveRegistry.isApproved(_targetCurve),
+                    s.curveRegistry.isApproved(_targetCurve),
                     "_targetCurve !approved"
                 );
                 require(_targetCurve != hub_.curve, "targetCurve==curve");
@@ -149,9 +143,13 @@ contract HubFacet {
 
         hub_.reconfigure = reconfigure;
         hub_.updating = true;
-        hub_.startTime = block.timestamp + _warmup;
-        hub_.endTime = block.timestamp + _warmup + _duration;
-        hub_.endCooldown = block.timestamp + _warmup + _duration + _cooldown;
+        hub_.startTime = block.timestamp + s.hubWarmup;
+        hub_.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
+        hub_.endCooldown =
+            block.timestamp +
+            s.hubWarmup +
+            s.hubDuration +
+            s.hubCooldown;
 
         emit InitUpdate(
             _id,
@@ -195,35 +193,35 @@ contract HubFacet {
         emit TransferHubOwnership(_id, _newOwner);
     }
 
-    function setWarmup(uint256 warmup_) external {
-        require(warmup_ != _warmup, "warmup_ == _warmup");
-        _warmup = warmup_;
+    function setWarmup(uint256 _warmup) external onlyOwner {
+        require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
+        s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 duration_) external {
-        require(duration_ != _duration, "duration_ == _duration");
-        _duration = duration_;
+    function setDuration(uint256 _duration) external onlyOwner {
+        require(_duration != s.hubDuration, "_duration == s.hubDuration");
+        s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 cooldown_) external {
-        require(cooldown_ != _cooldown, "cooldown_ == _cooldown");
-        _cooldown = cooldown_;
+    function setCooldown(uint256 _cooldown) external onlyOwner {
+        require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
+        s.hubCooldown = _cooldown;
     }
 
     function count() external view returns (uint256) {
-        return _count;
+        return s.hubCount;
     }
 
     function warmup() external view returns (uint256) {
-        return _warmup;
+        return s.hubWarmup;
     }
 
     function duration() external view returns (uint256) {
-        return _duration;
+        return s.hubDuration;
     }
 
     function cooldown() external view returns (uint256) {
-        return _cooldown;
+        return s.hubCooldown;
     }
 
     function finishUpdate(uint256 id) external returns (Details.Hub memory) {

@@ -397,7 +397,7 @@ const setup = async () => {
       it("should revert to setDuration if same as before", async () => {
         const oldWarmup = await meTokenRegistry.duration();
         const tx = meTokenRegistry.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("duration_ == _duration");
+        await expect(tx).to.be.revertedWith("_duration == s.hubDuration");
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setDuration(hubWarmup);
@@ -418,7 +418,7 @@ const setup = async () => {
       it("should revert to setCooldown if same as before", async () => {
         const oldWarmup = await meTokenRegistry.cooldown();
         const tx = meTokenRegistry.setCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
+        await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
       });
       it("should be able to setCooldown", async () => {
         tx = await meTokenRegistry.setCooldown(coolDown);
