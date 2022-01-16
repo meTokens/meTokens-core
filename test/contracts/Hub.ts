@@ -791,6 +791,37 @@ const setup = async () => {
         const newDetails = await hub.getDetails(hubId);
         expect(newDetails.owner).to.be.equal(account1.address);
       });
+      after(async () => {
+        // transfer ownership back to account0, for simplicity of future tests
+        await hub
+          .connect(account1)
+          .transferHubOwnership(hubId, account0.address);
+        const newDetails = await hub.getDetails(hubId);
+        expect(newDetails.owner).to.be.equal(account0.address);
+      });
+    });
+
+    describe("deactivate()", () => {
+      before(async () => {
+        const newDetails = await hub.getDetails(hubId);
+        expect(newDetails.active).to.equal(true);
+      });
+      it("should revert when sender isn't owner", async () => {
+        await expect(
+          hub.connect(account1).deactivate(hubId)
+        ).to.be.revertedWith("!owner");
+      });
+      it("should deactivate hub", async () => {
+        const tx = await hub.deactivate(hubId);
+
+        await expect(tx).to.emit(hub, "Deactivate").withArgs(hubId);
+
+        const newDetails = await hub.getDetails(hubId);
+        expect(newDetails.active).to.equal(false);
+      });
+      it("should revert when hub already inactive", async () => {
+        await expect(hub.deactivate(hubId)).to.be.revertedWith("!active");
+      });
     });
   });
 };
