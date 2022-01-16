@@ -40,14 +40,6 @@ contract HubFacet {
         _;
     }
 
-    function initialize(
-        address _foundry,
-        address _vaultRegistry,
-        address _curveRegistry
-    ) external {
-        // Do nothing
-    }
-
     function register(
         address _owner,
         address _asset,

@@ -265,12 +265,6 @@ export async function hubSetupWithoutRegister(
   await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
 
-  await hub.initialize(
-    foundry.address,
-    vaultRegistry.address,
-    curveRegistry.address
-  );
-
   return {
     tokenAddr,
     weightedAverage,

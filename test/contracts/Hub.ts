@@ -258,7 +258,9 @@ const setup = async () => {
       });
       it("should revert to setWarmup if not owner", async () => {
         const tx = hub.connect(account1).setWarmup(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(tx).to.be.revertedWith(
+          "LibDiamond: Must be contract owner"
+        );
       });
       it("should revert to setWarmup if same as before", async () => {
         const oldWarmup = await hub.warmup();
@@ -275,12 +277,14 @@ const setup = async () => {
     describe("setDuration()", () => {
       it("should revert to setDuration if not owner", async () => {
         const tx = hub.connect(account1).setDuration(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(tx).to.be.revertedWith(
+          "LibDiamond: Must be contract owner"
+        );
       });
       it("should revert to setDuration if same as before", async () => {
         const oldWarmup = await hub.duration();
         const tx = hub.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("duration_ == _duration");
+        await expect(tx).to.be.revertedWith("_duration_ == s.hubDuration");
       });
       it("should be able to setDuration", async () => {
         const tx = await hub.setDuration(duration);
@@ -292,12 +296,14 @@ const setup = async () => {
     describe("setCooldown()", () => {
       it("should revert to setCooldown if not owner", async () => {
         const tx = hub.connect(account1).setCooldown(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(tx).to.be.revertedWith(
+          "LibDiamond: Must be contract owner"
+        );
       });
       it("should revert to setCooldown if same as before", async () => {
         const oldWarmup = await hub.cooldown();
         const tx = hub.setCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
+        await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
       });
       it("should be able to setCooldown", async () => {
         const tx = await hub.setCooldown(duration);
