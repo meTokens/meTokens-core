@@ -11,14 +11,14 @@ import {LibDiamond} from "./libs/LibDiamond.sol";
 import "./libs/Details.sol";
 
 contract DiamondInit {
-    AppStorage internal s;
-
     struct Args {
         address foundry;
         IRegistry vaultRegistry;
         IRegistry curveRegistry;
         IMigrationRegistry migrationRegistry;
     }
+
+    AppStorage internal s; // solhint-disable-line
 
     // TODO: access control
     function init(Args memory _args) external {

@@ -33,7 +33,7 @@ contract HubFacet {
     event TransferHubOwnership(uint256 _id, address _newOwner);
     event FinishUpdate(uint256 _id);
 
-    AppStorage internal s;
+    AppStorage internal s; // solhint-disable-line
 
     modifier onlyOwner() {
         LibDiamond.enforceIsContractOwner();

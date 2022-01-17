@@ -32,7 +32,6 @@ import { text } from "stream/consumers";
 import { clearConfigCache } from "prettier";
 import Decimal from "decimal.js";
 
-
 const setup = async () => {
   describe("Foundry.sol", () => {
     let DAI: string;

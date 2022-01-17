@@ -8,9 +8,6 @@ pragma solidity ^0.8.0;
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 
 library LibDiamond {
-    bytes32 constant DIAMOND_STORAGE_POSITION =
-        keccak256("diamond.standard.diamond.storage");
-
     struct FacetAddressAndPosition {
         address facetAddress;
         uint96 functionSelectorPosition; // position in facetFunctionSelectors.functionSelectors array
@@ -36,20 +33,18 @@ library LibDiamond {
         address contractOwner;
     }
 
-    function diamondStorage()
-        internal
-        pure
-        returns (DiamondStorage storage ds)
-    {
-        bytes32 position = DIAMOND_STORAGE_POSITION;
-        assembly {
-            ds.slot := position
-        }
-    }
+    bytes32 public constant DIAMOND_STORAGE_POSITION =
+        keccak256("diamond.standard.diamond.storage");
 
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
+    );
+
+    event DiamondCut(
+        IDiamondCut.FacetCut[] _diamondCut,
+        address _init,
+        bytes _calldata
     );
 
     function setContractOwner(address _newOwner) internal {
@@ -58,23 +53,6 @@ library LibDiamond {
         ds.contractOwner = _newOwner;
         emit OwnershipTransferred(previousOwner, _newOwner);
     }
-
-    function contractOwner() internal view returns (address contractOwner_) {
-        contractOwner_ = diamondStorage().contractOwner;
-    }
-
-    function enforceIsContractOwner() internal view {
-        require(
-            msg.sender == diamondStorage().contractOwner,
-            "LibDiamond: Must be contract owner"
-        );
-    }
-
-    event DiamondCut(
-        IDiamondCut.FacetCut[] _diamondCut,
-        address _init,
-        bytes _calldata
-    );
 
     // Internal function version of diamondCut
     function diamondCut(
@@ -335,6 +313,17 @@ library LibDiamond {
         }
     }
 
+    function contractOwner() internal view returns (address contractOwner_) {
+        contractOwner_ = diamondStorage().contractOwner;
+    }
+
+    function enforceIsContractOwner() internal view {
+        require(
+            msg.sender == diamondStorage().contractOwner,
+            "LibDiamond: Must be contract owner"
+        );
+    }
+
     function enforceHasContractCode(
         address _contract,
         string memory _errorMessage
@@ -344,5 +333,16 @@ library LibDiamond {
             contractSize := extcodesize(_contract)
         }
         require(contractSize > 0, _errorMessage);
+    }
+
+    function diamondStorage()
+        internal
+        pure
+        returns (DiamondStorage storage ds)
+    {
+        bytes32 position = DIAMOND_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
     }
 }

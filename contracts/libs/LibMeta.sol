@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library LibMeta {
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    bytes32 internal constant _EIP712_DOMAIN_TYPEHASH =
         keccak256(
             bytes(
                 "EIP712Domain(string name,string version,uint256 salt,address verifyingContract)"
@@ -16,7 +16,7 @@ library LibMeta {
     {
         domainSeparator_ = keccak256(
             abi.encode(
-                EIP712_DOMAIN_TYPEHASH,
+                _EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(name)),
                 keccak256(bytes(version)),
                 getChainID(),
