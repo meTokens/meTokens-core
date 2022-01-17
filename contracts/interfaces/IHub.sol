@@ -9,6 +9,7 @@ import "../libs/Details.sol";
 /// @author Carl Farterson (@carlfarterson)
 interface IHub {
     /// @notice Event of registering a hub
+    /// @param _id                  unique hub identifer
     /// @param _owner               address to own hub
     /// @param _asset               address of underlying asset
     /// @param _vault               address of vault
@@ -17,6 +18,7 @@ interface IHub {
     /// @param _encodedCurveDetails additional encoded curve details
     /// @param _encodedVaultArgs    additional encoded vault arguments
     event Register(
+        uint256 _id,
         address _owner,
         address _asset,
         address _vault,

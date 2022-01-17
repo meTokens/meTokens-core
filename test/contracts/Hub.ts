@@ -233,6 +233,7 @@ const setup = async () => {
         await expect(tx)
           .to.emit(hub, "Register")
           .withArgs(
+            hubId,
             account0.address,
             DAI,
             singleAssetVault.address,
