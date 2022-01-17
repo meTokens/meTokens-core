@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Vault.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson)
 /// @notice Implementation contract for SingleAssetFactory.sol
-contract SingleAssetVault is Ownable, Vault, ISingleAssetVault {
+contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;
 
     constructor(

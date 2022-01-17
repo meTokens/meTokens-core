@@ -78,6 +78,7 @@ contract Hub is IHub, Ownable, Initializable {
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
         emit Register(
+            _count,
             _owner,
             _asset,
             address(_vault),
