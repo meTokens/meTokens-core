@@ -26,6 +26,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 import { Fees } from "../../../artifacts/types/Fees";
 import Decimal from "decimal.js";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
@@ -94,14 +95,23 @@ const setup = async () => {
       );
 
       // Register first and second hub
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
+
       ({
         token,
-        hub,
         tokenHolder,
         migrationRegistry,
         singleAssetVault,
-        foundry,
         account0,
         account1,
         meTokenRegistry,
@@ -110,6 +120,8 @@ const setup = async () => {
         encodedCurveDetails1,
         encodedVaultArgs,
         refundRatio,
+        hub,
+        foundry,
         bancorABDK
       ));
       dai = token;

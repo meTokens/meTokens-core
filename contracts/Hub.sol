@@ -23,11 +23,17 @@ contract Hub is IHub, Ownable, Initializable {
     uint256 private _cooldown;
 
     uint256 private _count;
+    address public registerer;
     IFoundry public foundry;
     IRegistry public vaultRegistry;
     IRegistry public curveRegistry;
 
     mapping(uint256 => Details.Hub) private _hubs;
+
+    modifier onlyRegisterer() {
+        require(msg.sender == registerer, "!registerer");
+        _;
+    }
 
     function initialize(
         address _foundry,
@@ -37,6 +43,7 @@ contract Hub is IHub, Ownable, Initializable {
         foundry = IFoundry(_foundry);
         vaultRegistry = IRegistry(_vaultRegistry);
         curveRegistry = IRegistry(_curveRegistry);
+        registerer = owner();
     }
 
     /// @inheritdoc IHub
@@ -48,7 +55,7 @@ contract Hub is IHub, Ownable, Initializable {
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
-    ) external override {
+    ) external override onlyRegisterer {
         // TODO: access control
 
         require(curveRegistry.isApproved(address(_curve)), "_curve !approved");
@@ -180,6 +187,11 @@ contract Hub is IHub, Ownable, Initializable {
         hub_.owner = _newOwner;
 
         emit TransferHubOwnership(_id, _newOwner);
+    }
+
+    function setRegisterer(address _registerer) external onlyRegisterer {
+        require(_registerer != registerer, "_registerer == registerer");
+        registerer = _registerer;
     }
 
     /// @inheritdoc IHub

@@ -2,16 +2,19 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import { Hub } from "../../../../artifacts/types/Hub";
 import { ICurve } from "../../../../artifacts/types/ICurve";
 import { toETHNumber } from "../../../utils/helpers";
 
 export const curvesTestsHelper = async ({
   signers,
   curve,
+  newCurve,
   baseY,
   reserveWeight,
   MAX_WEIGHT,
   targetReserveWeight,
+  hub,
   hubId,
   calculateTokenReturned,
   calculateTokenReturnedFromZero,
@@ -20,10 +23,12 @@ export const curvesTestsHelper = async ({
 }: {
   signers: SignerWithAddress[];
   curve: ICurve;
+  newCurve: ICurve;
   baseY: number;
   reserveWeight: number;
   MAX_WEIGHT: number;
   targetReserveWeight: number;
+  hub: Hub;
   hubId: number;
   calculateTokenReturned: (
     collateralAmount: number,
@@ -46,45 +51,46 @@ export const curvesTestsHelper = async ({
 }) => {
   const one = ethers.utils.parseEther("1");
 
-  it("Reverts w/ empty encodedDetails", async () => {
-    /* await expect(
-      curve.register(hubId, ethers.constants.HashZero)
-    ).to.be.revertedWith("!_encodedDetails"); */
-
+  it("Reverts w/ invalid parameters", async () => {
     await expect(
-      curve.register(hubId, ethers.utils.toUtf8Bytes(""))
-    ).to.be.revertedWith("!_encodedDetails");
+      hub.initUpdate(hubId, curve.address, 0, ethers.constants.HashZero)
+    ).to.be.revertedWith("targetCurve==curve");
+  });
+  it("Reverts if initReconfigure not called by hub ", async () => {
+    await expect(
+      curve.initReconfigure(hubId, ethers.constants.HashZero)
+    ).to.be.revertedWith("!hub");
+  });
+  it("Reverts if register not called by hub ", async () => {
+    await expect(
+      curve.register(hubId, ethers.constants.HashZero)
+    ).to.be.revertedWith("!hub");
+  });
+  it("Reverts w/ incorrect encodedDetails", async () => {
+    await expect(
+      hub.initUpdate(hubId, newCurve.address, 0, ethers.utils.toUtf8Bytes("a"))
+    ).to.be.reverted;
   });
   it("Reverts w/ invalid encodedDetails", async () => {
-    // TODO
     let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [0, 500000]
     );
-    // baseY > 0
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!baseY"
-    );
-    encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint32"],
-      [100, 1000001]
-    );
-    // reserveWeight > 1000000
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!reserveWeight"
-    );
-    // reserveWeight =0
+    // first param must be > 0
+    await expect(
+      hub.initUpdate(hubId, newCurve.address, 0, encodedCurveDetails)
+    ).to.be.reverted;
+
+    // second param must be > 0
     encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [100, 0]
     );
-    await expect(curve.register(hubId, encodedCurveDetails)).to.be.revertedWith(
-      "!reserveWeight"
-    );
+    await expect(
+      hub.initUpdate(hubId, newCurve.address, 0, encodedCurveDetails)
+    ).to.be.reverted;
   });
-  it("Passes w/ valid encodedDetails", async () => {
-    //register is done in the setup and there is no getDetails part of  the interface
-  });
+
   it("should be able to calculate Mint Return from zero", async () => {
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
@@ -227,7 +233,13 @@ export const curvesTestsHelper = async ({
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await curve.initReconfigure(hubId, encodedValueSet);
+    await hub.initUpdate(
+      hubId,
+      ethers.constants.AddressZero,
+      0,
+      encodedValueSet
+    );
+
     const detail = await curve.getDetails(hubId);
 
     const targetBaseY = ethers.utils

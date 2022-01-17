@@ -21,21 +21,20 @@ export async function hubSetup(
   encodedCurveDetails: string,
   encodedVaultArgs: string,
   refundRatio: number,
+  hub: Hub,
+  foundry: Foundry,
   curve: ICurve,
   fees?: number[],
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
   tokenAddr: string;
-  weightedAverage: WeightedAverage;
   meTokenRegistry: MeTokenRegistry;
   meTokenFactory: MeTokenFactory;
   curveRegistry: CurveRegistry;
   vaultRegistry: VaultRegistry;
   migrationRegistry: MigrationRegistry;
   singleAssetVault: SingleAssetVault;
-  foundry: Foundry;
-  hub: Hub;
   token: ERC20;
   fee: Fees;
   account0: SignerWithAddress;
@@ -47,16 +46,13 @@ export async function hubSetup(
 }> {
   const {
     tokenAddr,
-    weightedAverage,
     meTokenRegistry,
     meTokenFactory,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,
     singleAssetVault,
-    foundry,
     fee,
-    hub,
     token,
     account0,
     account1,
@@ -64,7 +60,14 @@ export async function hubSetup(
     account3,
     tokenHolder,
     tokenWhale,
-  } = await hubSetupWithoutRegister(curve, fees, erc20Address, erc20Whale);
+  } = await hubSetupWithoutRegister(
+    hub,
+    foundry,
+    curve,
+    fees,
+    erc20Address,
+    erc20Whale
+  );
 
   await hub.register(
     account0.address,
@@ -77,16 +80,13 @@ export async function hubSetup(
   );
   return {
     tokenAddr,
-    weightedAverage,
     meTokenRegistry,
     meTokenFactory,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,
     singleAssetVault,
-    foundry,
     fee,
-    hub,
     token,
     account0,
     account1,
@@ -97,21 +97,20 @@ export async function hubSetup(
   };
 }
 export async function hubSetupWithoutRegister(
+  hub: Hub,
+  foundry: Foundry,
   curve: ICurve,
   fees?: number[],
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
   tokenAddr: string;
-  weightedAverage: WeightedAverage;
   meTokenRegistry: MeTokenRegistry;
   meTokenFactory: MeTokenFactory;
   curveRegistry: CurveRegistry;
   vaultRegistry: VaultRegistry;
   migrationRegistry: MigrationRegistry;
   singleAssetVault: SingleAssetVault;
-  foundry: Foundry;
-  hub: Hub;
   token: ERC20;
   fee: Fees;
   account0: SignerWithAddress;
@@ -122,16 +121,13 @@ export async function hubSetupWithoutRegister(
   tokenWhale: string;
 }> {
   let tokenAddr: string;
-  let weightedAverage: WeightedAverage;
   let meTokenRegistry: MeTokenRegistry;
   let meTokenFactory: MeTokenFactory;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
-  let foundry: Foundry;
   let fee: Fees;
-  let hub: Hub;
   let token: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -157,17 +153,11 @@ export async function hubSetupWithoutRegister(
   token
     .connect(tokenHolder)
     .transfer(account1.address, ethers.utils.parseEther("1000"));
-  weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
 
   curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
 
-  foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  });
-
-  hub = await deploy<Hub>("Hub");
   meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   meTokenRegistry = await deploy<MeTokenRegistry>(
     "MeTokenRegistry",
@@ -212,16 +202,13 @@ export async function hubSetupWithoutRegister(
 
   return {
     tokenAddr,
-    weightedAverage,
     meTokenRegistry,
     meTokenFactory,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,
     singleAssetVault,
-    foundry,
     fee,
-    hub,
     token,
     account0,
     account1,

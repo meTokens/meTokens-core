@@ -20,15 +20,22 @@ contract StepwiseCurve is ICurve {
     }
 
     uint256 public constant PRECISION = 10**18;
+    address public hub;
+    address public foundry;
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
+
+    constructor(address _hub, address _foundry) {
+        hub = _hub;
+        foundry = _foundry;
+    }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
         require(_encodedDetails.length > 0, "_encodedDetails empty");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
@@ -47,7 +54,7 @@ contract StepwiseCurve is ICurve {
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
         // require(_encodedDetails.length > 0, "_encodedDetails empty");
@@ -75,7 +82,7 @@ contract StepwiseCurve is ICurve {
     }
 
     function finishReconfigure(uint256 _hubId) external override {
-        // TODO; only foundry can call
+        require(msg.sender == hub, "!hub");
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepwise_.targetStepX;
         stepwise_.stepY = stepwise_.targetStepY;

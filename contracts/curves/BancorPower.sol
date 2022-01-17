@@ -28,13 +28,22 @@ contract BancorPower is Power, ICurve {
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
     bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
+    address public hub;
+    address public foundry;
+
+    // NOTE: keys are the respective hubId
     mapping(uint256 => Bancor) private _bancors;
+
+    constructor(address _hub, address _foundry) {
+        hub = _hub;
+        foundry = _foundry;
+    }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
         require(_encodedDetails.length > 0, "!_encodedDetails");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
@@ -56,7 +65,7 @@ contract BancorPower is Power, ICurve {
         external
         override
     {
-        // TODO: access control
+        require(msg.sender == hub, "!hub");
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
         Bancor storage bancor_ = _bancors[_hubId];
@@ -76,7 +85,7 @@ contract BancorPower is Power, ICurve {
     }
 
     function finishReconfigure(uint256 _hubId) external override {
-        // TODO; only foundry can call
+        require(msg.sender == hub, "!hub");
         Bancor storage bancor_ = _bancors[_hubId];
         bancor_.reserveWeight = bancor_.targetReserveWeight;
         bancor_.baseY = bancor_.targetBaseY;

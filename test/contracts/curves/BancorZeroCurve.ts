@@ -30,6 +30,7 @@ describe("BancorABDK", () => {
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
   let hubId = 1;
+  let hub: Hub;
   let token;
   before(async () => {
     baseY = one.mul(1000);
@@ -45,13 +46,26 @@ describe("BancorABDK", () => {
       ["address"],
       [DAI]
     );
-    bancorABDK = await deploy<BancorABDK>("BancorABDK");
+
     let token;
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    const foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+    hub = await deploy<Hub>("Hub");
+    bancorABDK = await deploy<BancorABDK>(
+      "BancorABDK",
+      undefined,
+      hub.address,
+      foundry.address
+    );
 
     ({ token } = await hubSetup(
       encodedCurveDetails,
       encodedVaultArgs,
       5000,
+      hub,
+      foundry,
       bancorABDK
     ));
   });
@@ -213,7 +227,12 @@ describe("BancorABDK", () => {
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await bancorABDK.initReconfigure(hubId, encodedValueSet);
+    await hub.initUpdate(
+      hubId,
+      ethers.constants.AddressZero,
+      0,
+      encodedValueSet
+    );
     const detail = await bancorABDK.getBancorDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
@@ -349,12 +368,26 @@ describe("BancorABDK", () => {
         ["address"],
         [DAI]
       );
-      newBancorABDK = await deploy<BancorABDK>("BancorABDK");
+
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      const foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      const hub = await deploy<Hub>("Hub");
+
+      newBancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
 
       ({ token } = await hubSetup(
         newEncodedCurveDetails,
         encodedVaultArgs,
         5000,
+        hub,
+        foundry,
         newBancorABDK
       ));
     });

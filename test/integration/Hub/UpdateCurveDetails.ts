@@ -29,6 +29,7 @@ import {
 } from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
 import { start } from "repl";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 const setup = async () => {
   describe("Hub - update CurveDetails", () => {
     let meTokenRegistry: MeTokenRegistry;
@@ -75,15 +76,22 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      bancorABDK = await deploy<BancorABDK>("BancorABDK");
-
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      bancorABDK = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
       ({
         token,
-        hub,
         curveRegistry,
         singleAssetVault,
         tokenHolder,
-        foundry,
         account0,
         account1,
         account2,
@@ -93,6 +101,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
+        hub,
+        foundry,
         bancorABDK
       ));
       dai = token;
@@ -171,7 +181,14 @@ const setup = async () => {
           ["uint256", "uint32"],
           [updatedBaseY, updatedReserveWeight]
         );
-        updatedBancorABDK = await deploy<BancorABDK>("BancorABDK");
+
+        updatedBancorABDK = await deploy<BancorABDK>(
+          "BancorABDK",
+          undefined,
+          hub.address,
+          foundry.address
+        );
+
         await curveRegistry.approve(updatedBancorABDK.address);
         await hub.initUpdate(
           firstHubId,
