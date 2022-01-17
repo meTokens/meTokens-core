@@ -3,14 +3,13 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/ICurve.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libs/WeightedAverage.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Bancor curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison)
-contract BancorABDK is ICurve, Ownable {
+contract BancorABDK is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -62,7 +61,7 @@ contract BancorABDK is ICurve, Ownable {
         external
         override
     {
-        require(msg.sender == hub || msg.sender == owner(), "!authorized");
+        require(msg.sender == hub, "!hub");
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
         Bancor storage bancor_ = _bancors[_hubId];

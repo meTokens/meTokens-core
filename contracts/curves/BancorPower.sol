@@ -4,7 +4,6 @@ import "../utils/ABDKMathQuad.sol";
 import "./Power.sol";
 import "../libs/Details.sol";
 import "../interfaces/ICurve.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Bancor formula by Bancor
@@ -14,7 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements;
  * and to You under the Apache License, Version 2.0. "
  */
-contract BancorPower is Power, ICurve, Ownable {
+contract BancorPower is Power, ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
@@ -66,7 +65,7 @@ contract BancorPower is Power, ICurve, Ownable {
         external
         override
     {
-        require(msg.sender == hub || msg.sender == owner(), "!authorized");
+        require(msg.sender == hub, "!hub");
 
         uint32 targetReserveWeight = abi.decode(_encodedDetails, (uint32));
         Bancor storage bancor_ = _bancors[_hubId];

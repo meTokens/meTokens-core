@@ -30,6 +30,7 @@ describe("BancorABDK", () => {
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
   let hubId = 1;
+  let hub: Hub;
   let token;
   before(async () => {
     baseY = one.mul(1000);
@@ -51,7 +52,7 @@ describe("BancorABDK", () => {
     const foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    const hub = await deploy<Hub>("Hub");
+    hub = await deploy<Hub>("Hub");
     bancorABDK = await deploy<BancorABDK>(
       "BancorABDK",
       undefined,
@@ -226,7 +227,12 @@ describe("BancorABDK", () => {
       ["uint32"],
       [targetReserveWeight.toString()]
     );
-    await bancorABDK.initReconfigure(hubId, encodedValueSet);
+    await hub.initUpdate(
+      hubId,
+      ethers.constants.AddressZero,
+      0,
+      encodedValueSet
+    );
     const detail = await bancorABDK.getBancorDetails(hubId);
     const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
     expect(detail.targetReserveWeight).to.equal(targetReserveWeight);

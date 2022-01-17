@@ -157,16 +157,28 @@ const setup = async () => {
       });
       it("should revert from invalid encodedCurveDetails", async () => {
         // Invalid _encodedCurveDetails for particular curve
-        let tx = hub.register(
-          account0.address,
-          DAI,
-          singleAssetVault.address,
-          curve.address,
-          refundRatio1,
-          "0x", // invalid _encodedCurveDetails
-          encodedVaultDAIArgs
-        );
-        await expect(tx).to.be.revertedWith("!_encodedDetails");
+        await expect(
+          hub.register(
+            account0.address,
+            DAI,
+            singleAssetVault.address,
+            curve.address,
+            refundRatio1,
+            "0x", // invalid _encodedCurveDetails
+            encodedVaultDAIArgs
+          )
+        ).to.be.revertedWith("!_encodedDetails");
+        await expect(
+          hub.register(
+            account0.address,
+            DAI,
+            singleAssetVault.address,
+            curve.address,
+            refundRatio1,
+            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveDetails
+            encodedVaultDAIArgs
+          )
+        ).to.be.revertedWith("!_encodedDetails");
       });
       it("should revert from invalid encodedVaultArgs", async () => {
         // Invalid _encodedVaultArgs

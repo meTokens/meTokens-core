@@ -3,14 +3,13 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/ICurve.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../libs/WeightedAverage.sol";
 
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve is ICurve, Ownable {
+contract StepwiseCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
     struct Stepwise {
@@ -55,7 +54,7 @@ contract StepwiseCurve is ICurve, Ownable {
         external
         override
     {
-        require(msg.sender == hub || msg.sender == owner(), "!authorized");
+        require(msg.sender == hub, "!hub");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
         // require(_encodedDetails.length > 0, "_encodedDetails empty");

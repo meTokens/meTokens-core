@@ -102,18 +102,6 @@ describe("Generic Curve", () => {
       .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
-  describe("register()", () => {
-    it("Reverts w/ empty encodedDetails", async () => {
-      // TODO
-    });
-    it("Reverts w/ invalid encodedDetails", async () => {
-      // TODO
-    });
-    it("Passes w/ valid encodedDetails", async () => {
-      // TODO
-    });
-  });
-
   describe("getDetails()", () => {
     it("Returns correct struct type", async () => {});
     it("Returns correct registered details", async () => {});
