@@ -80,7 +80,7 @@ const setup = async () => {
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      hub = await deploy<Hub>("Hub");
+      hub = await deploy<HubFacet>("HubFacet");
       curve = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,

@@ -44,7 +44,7 @@ const setup = async () => {
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      const hub = await deploy<Hub>("Hub");
+      const hub = await deploy<HubFacet>("HubFacet");
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,

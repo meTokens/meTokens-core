@@ -62,7 +62,7 @@ describe("Generic Curve", () => {
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    hub = await deploy<Hub>("Hub");
+    hub = await deploy<HubFacet>("HubFacet");
     _curve = await deploy<BancorABDK>(
       "BancorABDK",
       undefined,

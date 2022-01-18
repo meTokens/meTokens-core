@@ -47,7 +47,7 @@ const setup = async () => {
     let token: ERC20;
     let meToken: MeToken;
     let tokenHolder: Signer;
-    let hub: Hub;
+    let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let migrationRegistry: MigrationRegistry;
     let curveRegistry: CurveRegistry;
@@ -91,7 +91,7 @@ const setup = async () => {
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      hub = await deploy<Hub>("Hub");
+      hub = await deploy<HubFacet>("HubFacet");
       _curve = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,

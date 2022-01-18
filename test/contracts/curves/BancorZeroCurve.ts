@@ -51,7 +51,7 @@ describe("BancorABDK", () => {
     const foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    hub = await deploy<Hub>("Hub");
+    hub = await deploy<HubFacet>("HubFacet");
     bancorABDK = await deploy<BancorABDK>(
       "BancorABDK",
       undefined,
@@ -372,7 +372,7 @@ describe("BancorABDK", () => {
       const foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      const hub = await deploy<Hub>("Hub");
+      const hub = await deploy<HubFacet>("HubFacet");
 
       newBancorABDK = await deploy<BancorABDK>(
         "BancorABDK",

@@ -52,7 +52,7 @@ const setup = async () => {
       const foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      hub = await deploy<Hub>("Hub");
+      hub = await deploy<HubFacet>("HubFacet");
       bancorPower = await deploy<BancorPower>(
         "BancorPower",
         undefined,
@@ -378,7 +378,7 @@ const setup = async () => {
         const foundry = await deploy<Foundry>("Foundry", {
           WeightedAverage: weightedAverage.address,
         });
-        const hub = await deploy<Hub>("Hub");
+        const hub = await deploy<HubFacet>("HubFacet");
 
         newbancorPower = await deploy<BancorPower>(
           "BancorPower",
