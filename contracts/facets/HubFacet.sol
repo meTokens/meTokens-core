@@ -19,6 +19,7 @@ contract HubFacet {
         bytes _encodedCurveDetails,
         bytes _encodedVaultArgs
     );
+    event Deactivate(uint256 _id);
     event InitUpdate(
         uint256 _id,
         address _targetCurve,
@@ -85,6 +86,14 @@ contract HubFacet {
             _encodedCurveDetails,
             _encodedVaultArgs
         );
+    }
+
+    function deactivate(uint256 _id) external {
+        Details.Hub storage hub_ = s.hubs[_id];
+        require(msg.sender == hub_.owner, "!owner");
+        require(hub_.active, "!active");
+        hub_.active = false;
+        emit Deactivate(_id);
     }
 
     function initUpdate(
