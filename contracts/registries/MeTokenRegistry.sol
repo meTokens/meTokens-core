@@ -201,9 +201,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         );
         // Update balancePooled / balanceLocked
         // solhint-disable-next-line
-        uint256 newBalance = IMigration(meToken_.migration).finishMigration(
-            _meToken
-        );
+        IMigration(meToken_.migration).finishMigration(_meToken);
 
         // Finish updating metoken details
         meToken_.startTime = 0;
