@@ -12,6 +12,7 @@ import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { hubSetup } from "../../utils/hubSetup";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 describe("Generic Curve", () => {
   let DAI: string;
@@ -56,19 +57,34 @@ describe("Generic Curve", () => {
       ["uint256", "uint32"],
       [baseY, reserveWeight]
     );
-    _curve = await deploy<BancorABDK>("BancorABDK");
 
+    const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+    foundry = await deploy<Foundry>("Foundry", {
+      WeightedAverage: weightedAverage.address,
+    });
+    hub = await deploy<Hub>("Hub");
+    _curve = await deploy<BancorABDK>(
+      "BancorABDK",
+      undefined,
+      hub.address,
+      foundry.address
+    );
     ({
       token,
       tokenHolder,
-      hub,
-      foundry,
       account0,
       account1,
       account2,
       meTokenRegistry,
       singleAssetVault,
-    } = await hubSetup(encodedCurveDetails, encodedVaultArgs, 5000, _curve));
+    } = await hubSetup(
+      encodedCurveDetails,
+      encodedVaultArgs,
+      5000,
+      hub,
+      foundry,
+      _curve
+    ));
 
     // Prefund owner/buyer w/ DAI
     dai = token;
@@ -84,18 +100,6 @@ describe("Generic Curve", () => {
     await dai
       .connect(account1)
       .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
-  });
-
-  describe("register()", () => {
-    it("Reverts w/ empty encodedDetails", async () => {
-      // TODO
-    });
-    it("Reverts w/ invalid encodedDetails", async () => {
-      // TODO
-    });
-    it("Passes w/ valid encodedDetails", async () => {
-      // TODO
-    });
   });
 
   describe("getDetails()", () => {

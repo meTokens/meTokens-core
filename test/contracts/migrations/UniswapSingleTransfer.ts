@@ -18,6 +18,7 @@ import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
+import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
@@ -96,13 +97,21 @@ const setup = async () => {
         ["uint256", "uint24"],
         [earliestSwapTime, fees]
       );
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      curve = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
 
-      curve = await deploy<BancorABDK>("BancorABDK");
       ({
-        hub,
         migrationRegistry,
         singleAssetVault: initialVault,
-        foundry,
         account0,
         account1,
         account2,
@@ -113,6 +122,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
+        hub,
+        foundry,
         curve
       ));
 

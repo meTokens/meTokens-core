@@ -87,13 +87,20 @@ const setup = async () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      _curve = await deploy<BancorABDK>("BancorABDK");
-
+      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+      foundry = await deploy<Foundry>("Foundry", {
+        WeightedAverage: weightedAverage.address,
+      });
+      hub = await deploy<Hub>("Hub");
+      _curve = await deploy<BancorABDK>(
+        "BancorABDK",
+        undefined,
+        hub.address,
+        foundry.address
+      );
       ({
         token,
         tokenHolder,
-        hub,
-        foundry,
         account0,
         account1,
         account2,
@@ -105,6 +112,8 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initRefundRatio,
+        hub,
+        foundry,
         _curve
       ));
 
@@ -940,7 +949,13 @@ const setup = async () => {
         // migrate hub
         // refund ratio stays the same
         const targetRefundRatio = 200000;
-        const newCurve = await deploy<BancorABDK>("BancorABDK");
+
+        const newCurve = await deploy<BancorABDK>(
+          "BancorABDK",
+          undefined,
+          hub.address,
+          foundry.address
+        );
 
         await curveRegistry.approve(newCurve.address);
         // for 1 DAI we get 1 metokens
