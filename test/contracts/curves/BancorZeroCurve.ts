@@ -4,7 +4,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
@@ -29,7 +29,7 @@ describe("BancorABDK", () => {
   const MAX_WEIGHT = 1000000;
   const reserveWeight = MAX_WEIGHT / 2;
   let hubId = 1;
-  let hub: Hub;
+  let hub: HubFacet;
   let token;
   before(async () => {
     baseY = one.mul(1000);

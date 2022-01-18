@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { BancorPower } from "../../../artifacts/types/BancorPower";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
@@ -30,7 +30,7 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     let hubId = 1;
-    let hub: Hub;
+    let hub: HubFacet;
     let token;
     before(async () => {
       baseY = one.mul(1000);

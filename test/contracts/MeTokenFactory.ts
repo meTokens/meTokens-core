@@ -4,7 +4,7 @@ import { BigNumber } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { Foundry } from "../../artifacts/types/Foundry";
-import { Hub } from "../../artifacts/types/Hub";
+import { HubFacet } from "../../artifacts/types/HubFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
