@@ -545,7 +545,7 @@ const setup = async () => {
           )
         ).to.be.revertedWith("Invalid _encodedMigrationArgs");
       });
-      it("Fails when current and target hub has same asset", async () => {
+      it("Passes when current and target hub have same asset", async () => {
         const tx = meTokenRegistry.callStatic.initResubscribe(
           meToken,
           hubId3,

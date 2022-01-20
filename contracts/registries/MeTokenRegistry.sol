@@ -134,6 +134,11 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
 
         require(_migration != address(0), "migration address(0)");
 
+        require(
+            IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
+            "Invalid _encodedMigrationArgs"
+        );
+
         // Ensure the migration we're using is approved
         require(
             migrationRegistry.isApproved(
@@ -154,10 +159,6 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = _migration;
 
-        require(
-            IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
-            "Invalid _encodedMigrationArgs"
-        );
         IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
 
         emit InitResubscribe(

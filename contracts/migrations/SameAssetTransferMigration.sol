@@ -8,12 +8,10 @@ import "../vaults/Vault.sol";
 import "../interfaces/IMigration.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
-/// @title Vault migrator from erc20 to erc20 (non-lp)
+/// @title Same asset vault migrator
 /// @author Carl Farterson (@carlfarterson)
-/// @notice create a vault that instantly swaps token A for token B
-///         when recollateralizing to a vault with a different base token
-/// @dev This contract moves the pooled/locked balances from
-///      one erc20 to another
+/// @notice create a vault to hold an asset if a meToken is resubscribing
+///         to a different hub with the same asset
 contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     struct SameAssetMigration {
         // if migration is active
