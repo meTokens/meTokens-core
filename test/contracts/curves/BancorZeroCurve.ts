@@ -53,12 +53,7 @@ describe("BancorABDK", () => {
       WeightedAverage: weightedAverage.address,
     });
     hub = await deploy<Hub>("Hub");
-    bancorABDK = await deploy<BancorABDK>(
-      "BancorABDK",
-      undefined,
-      hub.address,
-      foundry.address
-    );
+    bancorABDK = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
     ({ token } = await hubSetup(
       encodedCurveDetails,
@@ -378,8 +373,7 @@ describe("BancorABDK", () => {
       newBancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({ token } = await hubSetup(

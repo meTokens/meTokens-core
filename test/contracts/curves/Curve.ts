@@ -63,12 +63,7 @@ describe("Generic Curve", () => {
       WeightedAverage: weightedAverage.address,
     });
     hub = await deploy<Hub>("Hub");
-    _curve = await deploy<BancorABDK>(
-      "BancorABDK",
-      undefined,
-      hub.address,
-      foundry.address
-    );
+    _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
     ({
       token,
       tokenHolder,

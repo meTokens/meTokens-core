@@ -61,28 +61,24 @@ const setup = async () => {
   const bancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
 
   const newBancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
 
   const bancorPower = await deploy<BancorPower>(
     "BancorPower",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
   const stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
     "StepwiseCurveABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
   // Setting up curve info to test
 

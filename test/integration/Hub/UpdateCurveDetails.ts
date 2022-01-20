@@ -84,8 +84,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
       ({
         token,
@@ -185,8 +184,7 @@ const setup = async () => {
         updatedBancorABDK = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
 
         await curveRegistry.approve(updatedBancorABDK.address);

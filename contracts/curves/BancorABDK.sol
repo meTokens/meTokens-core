@@ -25,14 +25,12 @@ contract BancorABDK is ICurve {
     bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
     address public hub;
-    address public foundry;
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Bancor) private _bancors;
 
-    constructor(address _hub, address _foundry) {
+    constructor(address _hub) {
         hub = _hub;
-        foundry = _foundry;
     }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)

@@ -48,8 +48,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({ meTokenFactory, meTokenRegistry, account0, account1 } = await hubSetup(

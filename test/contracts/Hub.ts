@@ -81,12 +81,7 @@ const setup = async () => {
         WeightedAverage: weightedAverage.address,
       });
       hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
@@ -397,8 +392,7 @@ const setup = async () => {
         const newCurve = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
         await curveRegistry.approve(newCurve.address);
         const tx = hub.initUpdate(
@@ -414,8 +408,7 @@ const setup = async () => {
         newCurve = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
         await curveRegistry.approve(newCurve.address);
         const tx = await hub.initUpdate(

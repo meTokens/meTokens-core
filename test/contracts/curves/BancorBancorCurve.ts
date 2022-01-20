@@ -57,8 +57,7 @@ const setup = async () => {
       bancorPower = await deploy<BancorPower>(
         "BancorPower",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({ token } = await hubSetup(
@@ -384,8 +383,7 @@ const setup = async () => {
         newbancorPower = await deploy<BancorPower>(
           "BancorPower",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
 
         ({ token } = await hubSetup(

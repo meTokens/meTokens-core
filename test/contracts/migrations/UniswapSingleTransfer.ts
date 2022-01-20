@@ -102,12 +102,7 @@ const setup = async () => {
         WeightedAverage: weightedAverage.address,
       });
       hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         migrationRegistry,

@@ -19,18 +19,16 @@ contract StepwiseCurveABDK is ICurve {
     }
 
     uint256 public constant PRECISION = 10**18;
-    bytes16 private immutable _PRECISION = uint256(PRECISION).fromUInt();
+    bytes16 private immutable _precision = uint256(PRECISION).fromUInt();
     bytes16 private immutable _one = uint256(1).fromUInt();
     address public hub;
-    address public foundry;
     bytes16 private immutable _two = (2 * PRECISION).fromUInt();
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
 
-    constructor(address _hub, address _foundry) {
+    constructor(address _hub) {
         hub = _hub;
-        foundry = _foundry;
     }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
@@ -214,12 +212,12 @@ contract StepwiseCurveABDK is ICurve {
         if (stepBalance.cmp(totalBalancePooled_) > 0) {
             bytes16 intres = (stepBalance.sub(totalBalancePooled_))
                 .div(stepY_.mul(steps))
-                .mul(_PRECISION);
+                .mul(_precision);
             supplyAfterMint = stepX_.mul(steps).sub(intres);
         } else {
             supplyAfterMint = stepX_.mul(steps).add(
                 (totalBalancePooled_.sub(stepBalance)).div(
-                    stepY_.div(_PRECISION).mul(steps.add(_one))
+                    stepY_.div(_precision).mul(steps.add(_one))
                 )
             );
         }
@@ -265,9 +263,9 @@ contract StepwiseCurveABDK is ICurve {
         bytes16 newSupplyInStep = supply_
             .sub(meTokensBurned_)
             .sub(newSteps.mul(stepX_))
-            .div(_PRECISION);
+            .div(_precision);
         bytes16 newCollateralInBalance = (
-            newSteps.mul(stepX_).mul(stepY_).div(_PRECISION)
+            newSteps.mul(stepX_).mul(stepY_).div(_precision)
         ).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stepY_));
         return _balancePooled - newCollateralInBalance.toUInt();
     }
