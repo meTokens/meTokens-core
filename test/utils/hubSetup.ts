@@ -28,7 +28,7 @@ export async function hubSetup(
   encodedCurveDetails: string,
   encodedVaultArgs: string,
   refundRatio: number,
-  hub: Hub,
+  hub: HubFacet,
   foundry: Foundry,
   curve: ICurve,
   fees?: number[],
@@ -88,6 +88,8 @@ export async function hubSetup(
     encodedVaultArgs
   );
   return {
+    foundry,
+    hub,
     tokenAddr,
     meTokenRegistry,
     meTokenFactory,
@@ -105,8 +107,9 @@ export async function hubSetup(
     tokenWhale,
   };
 }
+
 export async function hubSetupWithoutRegister(
-  hub: Hub,
+  hub: HubFacet,
   foundry: Foundry,
   curve: ICurve,
   fees?: number[],
@@ -139,7 +142,7 @@ export async function hubSetupWithoutRegister(
   let migrationRegistry: MigrationRegistry;
   let singleAssetVault: SingleAssetVault;
   let fee: Fees;
-  let hub: HubFacet;
+  // let hub: HubFacet;
   let token: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -266,6 +269,8 @@ export async function hubSetupWithoutRegister(
   await vaultRegistry.approve(singleAssetVault.address);
 
   return {
+    hub,
+    foundry,
     tokenAddr,
     meTokenRegistry,
     meTokenFactory,
