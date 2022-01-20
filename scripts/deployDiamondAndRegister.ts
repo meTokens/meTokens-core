@@ -173,7 +173,8 @@ async function main() {
     ["address"],
     [DAI]
   );
-  await hubFacet.register(
+  const hub = await ethers.getContractAt("HubFacet", diamond.address);
+  await hub.register(
     deployerAddr,
     tokenAddr,
     singleAssetVault.address,
@@ -184,7 +185,7 @@ async function main() {
   );
 
   console.log("hub registered");
-  const hubId = (await hubFacet.count()).toNumber();
+  const hubId = (await hub.count()).toNumber();
   console.log("hubId: ", hubId);
 }
 
