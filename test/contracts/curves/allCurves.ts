@@ -577,8 +577,8 @@ const setup = async () => {
     [one.mul(stepX), one.mul(stepY)]
   );
 
-  targetStepX = 12345000000000;
-  targetStepY = 956;
+  targetStepX = 12345000000001;
+  targetStepY = 957;
 
   hubDetails = await addHubSetup(...hubArgs);
 
