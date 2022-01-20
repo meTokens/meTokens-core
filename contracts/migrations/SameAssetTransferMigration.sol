@@ -51,7 +51,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        require(usts_.isMigrating, "!migrating");
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
