@@ -16,13 +16,7 @@ import "../interfaces/ISingleAssetVault.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract SameAssetTransferMigration is
-    Initializable,
-    Ownable,
-    ReentrancyGuard,
-    Vault,
-    IMigration
-{
+contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     struct SameAssetMigration {
         // if migration is active
         bool isMigrating;
