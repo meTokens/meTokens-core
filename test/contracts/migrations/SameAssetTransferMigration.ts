@@ -14,8 +14,6 @@ import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
 import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { Fees } from "../../../artifacts/types/Fees";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 const setup = async () => {
@@ -56,7 +54,6 @@ const setup = async () => {
 
     let encodedCurveDetails: string;
     let encodedMigrationArgs: string;
-    let badEncodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
     let block;
     let migrationDetails: [boolean, boolean] & {
@@ -106,17 +103,6 @@ const setup = async () => {
         foundry,
         curve
       ));
-
-      // targetVault = await deploy<SingleAssetVault>(
-      //   "SingleAssetVault",
-      //   undefined, //no libs
-      //   account0.address, // DAO
-      //   foundry.address, // foundry
-      //   hub.address, // hub
-      //   meTokenRegistry.address, //IMeTokenRegistry
-      //   migrationRegistry.address //IMigrationRegistry
-      // );
-      // await vaultRegistry.approve(targetVault.address);
 
       // Register 2nd hub to which we'll migrate to
       await hub.register(
@@ -170,11 +156,6 @@ const setup = async () => {
     });
 
     describe("isValid()", () => {
-      // TODO checks when metoken do not have a hub
-      // it("Returns false for invalid encoding", async () => {
-      //   const isValid = await migration.isValid(meToken.address, "0x");
-      //   expect(isValid).to.be.false;
-      // });
       it("Returns true for valid encoding", async () => {
         const isValid = await migration.isValid(
           meToken.address,
@@ -182,35 +163,13 @@ const setup = async () => {
         );
         expect(isValid).to.be.true;
       });
-      // it("Returns false for start time before current time", async () => {
-      //   badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-      //     ["uint256", "uint24"],
-      //     [earliestSwapTime - 720 * 60, fees] // 2 hours beforehand
-      //   );
-      //   const isValid = await migration.isValid(
-      //     meToken.address,
-      //     badEncodedMigrationArgs
-      //   );
-      //   expect(isValid).to.be.false;
-      // });
-      // it("Returns false for nonexistent meToken", async () => {
-      //   const isValid = await migration.isValid(
-      //     account0.address,
-      //     encodedMigrationArgs
-      //   );
-      //   expect(isValid).to.be.false;
-      // });
-      // it("Returns false for invalid fee", async () => {
-      //   badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-      //     ["uint256", "uint24"],
-      //     [earliestSwapTime, 2999]
-      //   );
-      //   const isValid = await migration.isValid(
-      //     meToken.address,
-      //     badEncodedMigrationArgs
-      //   );
-      //   expect(isValid).to.be.false;
-      // });
+      it("Returns false for nonexistent meToken", async () => {
+        const isValid = await migration.isValid(
+          account0.address,
+          encodedMigrationArgs
+        );
+        expect(isValid).to.be.false;
+      });
     });
 
     describe("initMigration()", () => {
@@ -219,18 +178,6 @@ const setup = async () => {
           migration.initMigration(meToken.address, encodedMigrationArgs)
         ).to.be.revertedWith("!meTokenRegistry");
       });
-      // it("Fails from bad encodings", async () => {
-      //   await expect(
-      //     meTokenRegistry
-      //       .connect(account1)
-      //       .initResubscribe(
-      //         meToken.address,
-      //         hubId2,
-      //         migration.address,
-      //         badEncodedMigrationArgs
-      //       )
-      //   ).to.be.revertedWith("Invalid _encodedMigrationArgs");
-      // });
       it("should revert when try to approve already approved vaults", async () => {
         await expect(
           migrationRegistry.approve(
@@ -302,18 +249,6 @@ const setup = async () => {
 
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
-      // it("should be able to call before soonest, but wont run startMigration()", async () => {
-      //   migrationDetails = await migration.getDetails(meToken.address);
-      //   block = await ethers.provider.getBlock("latest");
-      //   expect(migrationDetails.soonest).to.be.gt(block.timestamp);
-
-      //   const tx = await migration.poke(meToken.address);
-      //   await tx.wait();
-
-      //   await expect(tx).to.not.emit(initialVault, "StartMigration");
-      //   migrationDetails = await migration.getDetails(meToken.address);
-      //   expect(migrationDetails.started).to.be.equal(false);
-      // });
       it("Triggers startMigration()", async () => {
         const meTokenDetails = await meTokenRegistry.getDetails(
           meToken.address
@@ -328,7 +263,6 @@ const setup = async () => {
         await expect(tx)
           .to.emit(initialVault, "StartMigration")
           .withArgs(meToken.address);
-        // .to.emit(meTokenRegistry, "UpdateBalances");
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
       });
@@ -369,50 +303,9 @@ const setup = async () => {
           .to.not.emit(initialVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
-        // expect(migrationDetails.fee).to.equal(0);
-        // expect(migrationDetails.soonest).to.equal(0);
         expect(migrationDetails.isMigrating).to.equal(false);
         expect(migrationDetails.started).to.equal(false);
-        // expect(migrationDetails.swapped).to.equal(false);
       });
-      // it("should revert before soonest", async () => {
-      //   // await migrationRegistry.approve(
-      //   //   initialVault.address,
-      //   //   initialVault.address,
-      //   //   migration.address
-      //   // );
-
-      //   block = await ethers.provider.getBlock("latest");
-      //   earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-
-      //   encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-      //     ["uint256", "uint24"],
-      //     [earliestSwapTime, fees]
-      //   );
-
-      //   await meTokenRegistry
-      //     .connect(account1)
-      //     .initResubscribe(
-      //       meToken.address,
-      //       hubId1,
-      //       migration.address,
-      //       encodedMigrationArgs
-      //     );
-      //   migrationDetails = await migration.getDetails(meToken.address);
-      //   // expect(migrationDetails.fee).to.equal(fees);
-      //   // expect(migrationDetails.soonest).to.equal(earliestSwapTime);
-
-      //   const meTokenRegistryDetails = await meTokenRegistry.getDetails(
-      //     meToken.address
-      //   );
-      //   await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
-      //   block = await ethers.provider.getBlock("latest");
-      //   expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
-
-      //   await expect(
-      //     meTokenRegistry.finishResubscribe(meToken.address)
-      //   ).to.be.revertedWith("timestamp < soonest");
-      // });
       it("Triggers startsMigration() if it hasn't already started", async () => {
         block = await ethers.provider.getBlock("latest");
         earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
@@ -444,7 +337,6 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(initialVault, "StartMigration")
           .withArgs(meToken.address)
-          // TODO check updated balance here
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -453,13 +345,9 @@ const setup = async () => {
               meTokenRegistryDetails.balanceLocked
             )
           );
-        // .to.emit(meTokenRegistry, "UpdateBalances");
         migrationDetails = await migration.getDetails(meToken.address);
-        // expect(migrationDetails.fee).to.equal(0);
-        // expect(migrationDetails.soonest).to.equal(0);
         expect(migrationDetails.isMigrating).to.equal(false);
         expect(migrationDetails.started).to.equal(false);
-        // expect(migrationDetails.swapped).to.equal(false);
       });
 
       describe("During resubscribe", () => {
@@ -493,8 +381,6 @@ const setup = async () => {
               encodedMigrationArgs
             );
           migrationDetails = await migration.getDetails(meToken.address);
-          // expect(migrationDetails.fee).to.equal(fees);
-          // expect(migrationDetails.soonest).to.equal(earliestSwapTime);
         });
 
         it("From warmup => startTime: assets transferred to/from initial vault", async () => {
@@ -549,8 +435,6 @@ const setup = async () => {
           expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(
             amount.mul(2)
           );
-          // TODO fix with swap balance
-          // expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
         });
         it("After endTime: assets transferred to/from target vault", async () => {
           const meTokenDetails = await meTokenRegistry.getDetails(
