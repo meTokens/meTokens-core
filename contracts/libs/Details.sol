@@ -39,15 +39,22 @@ library Details {
 
 struct AppStorage {
     uint256 MAX_REFUND_RATIO;
+    uint256 PRECISION;
+    uint256 meTokenWarmup;
+    uint256 meTokenDuration;
+    uint256 meTokenCooldown;
     uint256 hubWarmup;
     uint256 hubDuration;
     uint256 hubCooldown;
     uint256 hubCount;
     address foundry;
+    address meTokenFactory;
     IRegistry vaultRegistry;
     IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
     mapping(address => Details.MeToken) meTokens;
+    mapping(address => address) meTokenOwners;
+    mapping(address => address) pendingMeTokenOwners;
     mapping(uint256 => Details.Hub) hubs;
 }
 
