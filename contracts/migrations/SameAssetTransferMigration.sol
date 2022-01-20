@@ -44,17 +44,15 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         require(hub_.asset == targetHub_.asset, "asset different");
 
-        SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
-        usts_.isMigrating = true;
+        _sameAssetMigration[_meToken].isMigrating = true;
     }
 
     function poke(address _meToken) external override nonReentrant {
-        // Make sure meToken is in a state of resubscription
-        // TODO can add a require that checks if _meToken is resubscribing
         SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        if (usts_.isMigrating && !usts_.started) {
+        require(usts_.isMigrating, "!migrating");
+        if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
         }
@@ -68,6 +66,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
         SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
+        require(usts_.isMigrating, "!migrating");
 
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
@@ -76,7 +75,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
-            // amountOut = _swap(_meToken);
         }
         amountOut = meToken_.balancePooled + meToken_.balanceLocked;
 
