@@ -7,6 +7,16 @@ import { HubFacet } from "../artifacts/types/HubFacet";
 import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
+import {
+  BancorABDK,
+  CurveRegistry,
+  Fees,
+  Foundry,
+  MigrationRegistry,
+  SingleAssetVault,
+  VaultRegistry,
+  WeightedAverage,
+} from "../artifacts/types";
 
 /**
  deploy diamond steps:
@@ -32,9 +42,11 @@ const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  const [deployer, DAO] = await ethers.getSigners();
   const deployerAddr = await deployer.getAddress();
+  const { DAI } = await getNamedAccounts();
 
+  const tokenAddr = DAI;
   const address = await deployer.getAddress();
   if (!deployer.provider) {
     process.exit(1);
@@ -57,6 +69,51 @@ async function main() {
     diamondCutFacet.address
   );
   console.log("Diamond deployed at:", diamond.address);
+  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+  console.log("weightedAverage deployed at:", weightedAverage.address);
+  const fee = await deploy<Fees>("Fees");
+  console.log("Fees deployed at:", fee.address);
+  const foundry = await deploy<Foundry>("Foundry", {
+    WeightedAverage: weightedAverage.address,
+  });
+  console.log("foundry deployed at:", foundry.address);
+  let feeInitialization = [0, 0, 0, 0, 0, 0];
+
+  await fee.initialize(
+    feeInitialization[0],
+    feeInitialization[1],
+    feeInitialization[2],
+    feeInitialization[3],
+    feeInitialization[4],
+    feeInitialization[5]
+  );
+  await foundry.initialize(diamond.address, fee.address, diamond.address);
+
+  const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+  console.log("curveRegistry deployed at:", curveRegistry.address);
+  const migrationRegistry = await deploy<MigrationRegistry>(
+    "MigrationRegistry"
+  );
+  console.log("migrationRegistry deployed at:", migrationRegistry.address);
+  const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+  console.log("vaultRegistry deployed at:", vaultRegistry.address);
+  const singleAssetVault = await deploy<SingleAssetVault>(
+    "SingleAssetVault",
+    undefined, //no libs
+    DAO.address, // DAO
+    foundry.address, // foundry
+    diamond.address, // hub
+    diamond.address, //IMeTokenRegistry
+    migrationRegistry.address //IMigrationRegistry
+  );
+
+  console.log("singleAssetVault deployed at:", singleAssetVault.address);
+  const curve = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    diamond.address
+  );
+  console.log("curve deployed at:", curve.address);
 
   const diamondInit = await deploy<DiamondInit>("DiamondInit");
   console.log("DiamondInit deployed at:", diamondInit.address);
@@ -89,10 +146,10 @@ async function main() {
   let receipt;
   let args: any = [
     {
-      foundry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
-      vaultRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
-      curveRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
-      migrationRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      foundry: foundry.address,
+      vaultRegistry: vaultRegistry.address,
+      curveRegistry: curveRegistry.address,
+      migrationRegistry: migrationRegistry.address,
     },
   ];
   // call to init function
@@ -103,6 +160,32 @@ async function main() {
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
+  await curveRegistry.approve(curve.address);
+  await vaultRegistry.approve(singleAssetVault.address);
+  console.log("curve and singleAssetVault approved");
+  let baseY = ethers.utils.parseEther("1");
+  let reserveWeight = 250000;
+  let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint32"],
+    [baseY, reserveWeight]
+  );
+  let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+    ["address"],
+    [DAI]
+  );
+  await hubFacet.register(
+    deployerAddr,
+    tokenAddr,
+    singleAssetVault.address,
+    curve.address,
+    50000, //refund ratio
+    encodedCurveDetails,
+    encodedVaultArgs
+  );
+
+  console.log("hub registered");
+  const hubId = (await hubFacet.count()).toNumber();
+  console.log("hubId: ", hubId);
 }
 
 main()

@@ -8,6 +8,7 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
+import "hardhat/console.sol";
 
 contract HubFacet {
     event Register(
@@ -51,6 +52,11 @@ contract HubFacet {
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
+        console.log(
+            "## s.curveRegistry:%s vaultRegistry:%s",
+            address(s.curveRegistry),
+            address(s.vaultRegistry)
+        );
         require(
             s.curveRegistry.isApproved(address(_curve)),
             "_curve !approved"

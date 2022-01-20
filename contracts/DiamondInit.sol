@@ -9,6 +9,7 @@ import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import "./libs/Details.sol";
+import "hardhat/console.sol";
 
 contract DiamondInit {
     struct Args {
@@ -25,6 +26,11 @@ contract DiamondInit {
         s.foundry = _args.foundry;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
+        console.log(
+            "## DiamondInit s.curveRegistry:%s vaultRegistry:%s",
+            address(s.curveRegistry),
+            address(s.vaultRegistry)
+        );
         s.migrationRegistry = _args.migrationRegistry;
 
         s.MAX_REFUND_RATIO = 10e6;
