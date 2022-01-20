@@ -125,12 +125,6 @@ export const curvesTestsHelper = async ({
     let balancedPooled = one.mul(balancedPooledNum);
     let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
     let supplyNum = toETHNumber(supply);
-
-    console.log(`
-supplyNum:${supplyNum}
-balancedPooled:${toETHNumber(balancedPooled)}
-
-`);
     let estimate = await curve.viewMeTokensMinted(
       amount,
       hubId,
@@ -143,11 +137,6 @@ balancedPooled:${toETHNumber(balancedPooled)}
       balancedPooledNum
     );
 
-    console.log(`
-    calculatedRes:${calculatedRes}
-    estimate:${toETHNumber(estimate)}
-    
-    `);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision //* 3
@@ -186,15 +175,13 @@ balancedPooled:${toETHNumber(balancedPooled)}
     );
   });
   it("should be able to calculate asset needed from zero supply", async () => {
-    const amountNum = 200;
-    let amount = ethers.utils.parseEther(amountNum.toString());
-
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 7568;
     let balancedPooled = one.mul(balancedPooledNum);
     let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
     let supplyNum = toETHNumber(supply);
-
+    const amountNum = supplyNum / 2;
+    let amount = ethers.utils.parseEther(amountNum.toFixed(18));
     let estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
@@ -206,23 +193,16 @@ balancedPooled:${toETHNumber(balancedPooled)}
       supplyNum,
       balancedPooledNum
     );
-    console.log(`
-    calculatedRes:${calculatedRes}
-    estimate:${toETHNumber(estimate)}
-    
-    `);
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
   it("should be able to calculate asset needed", async () => {
-    let amountNum = 585.786437626904952;
-    let amount = ethers.utils.parseEther(amountNum.toString());
-
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 600000;
     let balancedPooled = one.mul(balancedPooledNum);
     let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
     let supplyNum = toETHNumber(supply);
-
+    let amountNum = supplyNum / 700;
+    let amount = ethers.utils.parseEther(amountNum.toFixed(18));
     let estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
@@ -238,22 +218,15 @@ balancedPooled:${toETHNumber(balancedPooled)}
       calculatedRes,
       precision * 30000
     );
-    console.log(`-1-
-    calculatedRes:${calculatedRes}
-    estimate:${toETHNumber(estimate)}
-    
-    `);
-    amountNum = 1171.572875253809903;
-    amount = ethers.utils.parseEther(amountNum.toString());
+
+    amountNum = supplyNum - supplyNum / 100;
+
+    amount = ethers.utils.parseEther(amountNum.toFixed(18));
     // we need to have the right balancedPooled for supply
     balancedPooledNum = 400000000;
     balancedPooled = one.mul(balancedPooledNum);
     supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
     supplyNum = toETHNumber(supply);
-    console.log(`-1-
-    supplyNum:${supplyNum} 
-    
-    `);
     estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
@@ -265,34 +238,30 @@ balancedPooled:${toETHNumber(balancedPooled)}
       supplyNum,
       balancedPooledNum
     );
-    console.log(`-2-
-    calculatedRes:${calculatedRes}
-    estimate:${toETHNumber(estimate)}
-    
-    `);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision * 100000
     );
-  }); /*
+  });
   it("should be able to calculate asset needed with a max of 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
-
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 999999999999999;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    let supplyNum = toETHNumber(supply);
     let estimate = await curve.viewAssetsReturned(
       amount,
       hubId,
-      ethers.utils.parseEther("999999999999998999.99999999999999744"),
-      one.mul(999999999999999)
+      supply,
+      balancedPooled
     );
     const calculatedRes = calculateCollateralReturned(
       1,
-      999999999999998999.999999,
-      999999999999999
+      supplyNum,
+      balancedPooledNum
     );
-    expect(toETHNumber(estimate)).to.be.approximately(
-      calculatedRes,
-      0.000000000001
-    );
+    expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, 0.2);
   });
 
   it("initReconfigure() should work", async () => {
@@ -307,66 +276,104 @@ balancedPooled:${toETHNumber(balancedPooled)}
     verifyCurveDetails(detail);
   });
   it("viewTargetMeTokensMinted() from zero should work", async () => {
-    const detail = await curve.getDetails(hubId);
+    //  const detail = await curve.getDetails(hubId);
     let amount = one.mul(2);
-
     let estimate = await curve.viewTargetMeTokensMinted(amount, hubId, 0, 0);
-
-    const calculatedRes = calculateTargetTokenReturnedFromZero(2);
-
+    const calculatedRes = calculateTargetTokenReturnedFromZero(2, 0, 0);
     expect(toETHNumber(estimate)).to.be.approximately(
       calculatedRes,
       precision * 100
     );
   });
   it("viewTargetMeTokensMinted() should work", async () => {
-    let amount = one.mul(2);
-
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 2;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewTargetMeTokensMinted(
+      balancedPooled,
+      hubId,
+      0,
+      0
+    );
+    let supplyNum = toETHNumber(supply);
+    const amountNum = supplyNum / 2;
+    let amount = ethers.utils.parseEther(amountNum.toFixed(18));
     let estimate = await curve.viewTargetMeTokensMinted(
       amount,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      supply,
+      balancedPooled
     );
-    const calculatedRes = calculateTargetTokenReturned(2, 2000, 2);
+    const calculatedRes = calculateTargetTokenReturned(
+      amountNum,
+      supplyNum,
+      balancedPooledNum
+    );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
   it("viewTargetAssetsReturned()  to zero supply should work", async () => {
-    let amount = ethers.utils.parseEther("2000");
-    let estimate = await curve.viewTargetAssetsReturned(
-      amount,
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 2;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewTargetMeTokensMinted(
+      balancedPooled,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      0,
+      0
     );
-
-    const calculatedRes = calculateTargetCollateralReturned(2000, 2000, 2);
-    expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
+    let supplyNum = toETHNumber(supply);
+    let estimate = await curve.viewTargetAssetsReturned(
+      supply,
+      hubId,
+      supply,
+      balancedPooled
+    );
+    const calculatedRes = calculateTargetCollateralReturned(
+      supplyNum,
+      supplyNum,
+      balancedPooledNum
+    );
+    expect(toETHNumber(estimate)).to.be.equal(calculatedRes);
   });
-  it("viewAssetsReturned() should work", async () => {
-    let amount = ethers.utils.parseEther("1944.930817973436691629");
+  it("viewTargetAssetsReturned() should work", async () => {
+    // we need to have the right balancedPooled for supply
+    const balancedPooledNum = 4;
+    const balancedPooled = one.mul(balancedPooledNum);
+    const supply = await curve.viewTargetMeTokensMinted(
+      balancedPooled,
+      hubId,
+      0,
+      0
+    );
+    const supplyNum = toETHNumber(supply);
+
+    const amountNum = supplyNum / 2;
+    let amount = ethers.utils.parseEther(amountNum.toFixed(18));
     let estimate = await curve.viewTargetAssetsReturned(
       amount,
       hubId,
-      ethers.utils.parseEther("3944.930817973436691629"),
-      one.mul(4)
+      supply,
+      balancedPooled
     );
     let calculatedRes = calculateTargetCollateralReturned(
-      1944.930817973436691629,
-      3944.930817973436691629,
-      4
+      amountNum,
+      supplyNum,
+      balancedPooledNum
     );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
-
-    amount = one.mul(1000);
-
+    const amountNum2 = supplyNum - supplyNum / 1000;
+    let amount2 = ethers.utils.parseEther(amountNum2.toFixed(18));
     estimate = await curve.viewTargetAssetsReturned(
-      amount,
+      amount2,
       hubId,
-      one.mul(2000),
-      one.mul(2)
+      supply,
+      balancedPooled
     );
-    calculatedRes = calculateTargetCollateralReturned(1000, 2000, 2);
+    calculatedRes = calculateTargetCollateralReturned(
+      amountNum2,
+      supplyNum,
+      balancedPooledNum
+    );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
-  }); */
+  });
 };

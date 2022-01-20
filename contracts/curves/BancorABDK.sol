@@ -320,7 +320,8 @@ contract BancorABDK is ICurve {
                 _balancePooled > 0 &&
                 _reserveWeight > 0 &&
                 _reserveWeight <= MAX_WEIGHT &&
-                _meTokensBurned <= _supply
+                _meTokensBurned <= _supply,
+            "!valid"
         );
         // special case for 0 sell amount
         if (_meTokensBurned == 0) {

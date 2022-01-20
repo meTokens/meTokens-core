@@ -79,7 +79,10 @@ const setup = async () => {
     foundry.address
   );
   const stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
-    "StepwiseCurveABDK"
+    "StepwiseCurveABDK",
+    undefined,
+    hub.address,
+    foundry.address
   );
   // Setting up curve info to test
 
@@ -186,9 +189,10 @@ const setup = async () => {
     signers: [account0, account1, account2],
     curve: bancorABDK as ICurve,
     newCurve: newBancorABDK as ICurve,
+    hub,
     precision: 0.000000000001,
   };
-  /*
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
@@ -301,14 +305,14 @@ const setup = async () => {
   });
 
   // Bancor Power
-  testCurve.curve = bancorPower;
+  /*   testCurve.curve = bancorPower;
   hubArgs[10] = bancorPower;
-
+ 
   // First Power curve
   hubArgs[7] = encodedCurveDetails1;
   hubDetails = await addHubSetup(...hubArgs);
 
-  curves.push({
+   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
     ...getCalculationFuncsForBancorCurves(
@@ -321,7 +325,7 @@ const setup = async () => {
       ["uint32"],
       [targetReserveWeight1.toString()]
     ),
-  });
+  }); 
 
   // Second Power curve
   hubArgs[7] = encodedCurveDetails2;
@@ -341,7 +345,7 @@ const setup = async () => {
       [targetReserveWeight2.toString()]
     ),
   });
-
+  
   // third power curve
   hubArgs[7] = encodedCurveDetails3;
   hubDetails = await addHubSetup(...hubArgs);
@@ -416,14 +420,15 @@ const setup = async () => {
       ["uint32"],
       [targetReserveWeight6.toString()]
     ),
-  });*/
+  });
+*/
 
   // stepwise ABDK curves
 
   testCurve.curve = stepwiseCurveABDK;
   hubArgs[10] = stepwiseCurveABDK;
 
-  // First Power curve
+  // First stepwise curve
   let stepX = 4;
   let stepY = 2;
 
@@ -452,8 +457,8 @@ const setup = async () => {
     ),
   });
 
-  // Second Power curve
-  /* stepX = 5;
+  // Second stepwise curve
+  stepX = 5;
   stepY = 6;
   hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint256"],
@@ -478,7 +483,119 @@ const setup = async () => {
       ["uint256", "uint256"],
       [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
-  }); */
+  });
+
+  // third stepwise curve
+  stepX = 4568;
+  stepY = 600;
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 40000;
+  targetStepY = 2;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
+  });
+
+  // fourth stepwise curve
+  stepX = 468;
+  stepY = 60;
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345;
+  targetStepY = 256;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
+  });
+
+  // fifth stepwise curve
+  stepX = 468;
+  stepY = 600;
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345;
+  targetStepY = 956;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
+  });
+
+  // sixth stepwise curve
+  stepX = 12345000000000;
+  stepY = 956;
+  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345000000000;
+  targetStepY = 956;
+
+  hubDetails = await addHubSetup(...hubArgs);
+
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
+    ),
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ),
+  });
 
   /*   let stepX = one.mul(5);
   let stepY = one.mul(6);

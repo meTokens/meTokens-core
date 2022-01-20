@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../interfaces/ICurve.sol";
 import "../libs/WeightedAverage.sol";
 import "../utils/ABDKMathQuad.sol";
-import "hardhat/console.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
@@ -45,12 +44,6 @@ contract StepwiseCurveABDK is ICurve {
             _encodedDetails,
             (uint256, uint256)
         );
-        console.log(
-            "## stepX:%s stepY:%s precision;%s",
-            stepX,
-            stepY,
-            PRECISION
-        );
         require(stepX > 0 && stepX > PRECISION, "stepX not in range");
         require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
@@ -73,17 +66,10 @@ contract StepwiseCurveABDK is ICurve {
             (uint256, uint256)
         );
         Stepwise storage stepwiseDetails = _stepwises[_hubId];
-
-        require(
-            targetStepX > 0 && targetStepX < PRECISION,
-            "stepX not in range"
-        );
+        require(targetStepX > 0 && targetStepX > PRECISION, "!targetStepX");
         require(targetStepX != stepwiseDetails.stepX, "targeStepX == stepX");
 
-        require(
-            targetStepY > 0 && targetStepY < PRECISION,
-            "stepY not in range"
-        );
+        require(targetStepY > 0 && targetStepY > PRECISION, "!targetStepY");
         require(targetStepY != stepwiseDetails.stepY, "targeStepY == stepY");
 
         stepwiseDetails.targetStepY = targetStepY;
@@ -200,12 +186,6 @@ contract StepwiseCurveABDK is ICurve {
         uint256 _supply, // current supply
         uint256 _balancePooled // current collateral amount
     ) private view returns (uint256) {
-        console.log(
-            "## _viewMeTokensMinted _assetsDeposited:%s _supply:%s _balancePooled:%s",
-            _assetsDeposited,
-            _supply,
-            _balancePooled
-        );
         // special case for 0 deposit amount
         if (_assetsDeposited == 0) {
             return 0;
@@ -218,76 +198,30 @@ contract StepwiseCurveABDK is ICurve {
         bytes16 totalBalancePooled_ = (_balancePooled + _assetsDeposited)
             .fromUInt();
 
-        // Note: _calculateSupply() without the method (use if we don't need a dedicated _viewMeTokensMintedFromZero() function)
-        // .toUInt().fromUInt() is used to round down
-        bytes16 stepsAfterMint = (totalBalancePooled_.mul(stepX_).mul(stepX_))
-            .div((stepX_).mul(stepY_).div(_two))
+        // Note:  .toUInt().fromUInt() is used to round down
+        bytes16 steps = (_two.mul(totalBalancePooled_).mul(stepX_).mul(stepX_))
+            .div((stepX_).mul(stepY_))
             .sqrt()
-            .div(stepY_)
+            .div(stepX_)
             .toUInt()
             .fromUInt();
-
-        // uint256 stepsAfterMint_ = interm.sqrt().div(stepY_).toUInt();
-        // convert back to uint256 to round down
-        // bytes16 stepsAfterMint = stepsAfterMint_.fromUInt();
-
-        console.log("## stepsAfterMint:%s   ", stepsAfterMint.toUInt());
-        bytes16 balancePooledAtCurrentSteps = (
-            stepsAfterMint.mul(stepsAfterMint).add(stepsAfterMint)
-        ).div(_two).mul(stepX_).mul(stepY_);
+        bytes16 stepBalance = (steps.mul(steps).add(steps))
+            .div(_two)
+            .mul(stepX_)
+            .mul(stepY_);
 
         bytes16 supplyAfterMint;
-        console.log(
-            "## balancePooledAtCurrentSteps:%s  balancePooled_.add(assetsDeposited_):%s",
-            balancePooledAtCurrentSteps.toUInt(),
-            totalBalancePooled_.toUInt()
-        );
-        if (balancePooledAtCurrentSteps.cmp(totalBalancePooled_) > 0) {
-            console.log(
-                "## balancePooledAtCurrentSteps GREATER than totalBalancePooled_"
-            );
-
-            supplyAfterMint = stepX_.mul(stepsAfterMint).sub(
-                (balancePooledAtCurrentSteps.sub(totalBalancePooled_))
-                    .div(stepY_.mul(stepsAfterMint))
-                    .mul(_PRECISION)
-            );
-            uint256 intres = (
-                balancePooledAtCurrentSteps.sub(totalBalancePooled_)
-            ).div(stepY_.mul(stepsAfterMint)).toUInt();
-            console.log(
-                "## stepX_:%s stepsAfterMint:%s intres:%s   ",
-                stepX_.toUInt(),
-                stepsAfterMint.toUInt(),
-                intres
-            );
-            console.log(
-                "## supplyAfterMint:%s supply:%s   when >  ",
-                supplyAfterMint.toUInt(),
-                _supply
-            );
+        if (stepBalance.cmp(totalBalancePooled_) > 0) {
+            bytes16 intres = (stepBalance.sub(totalBalancePooled_))
+                .div(stepY_.mul(steps))
+                .mul(_PRECISION);
+            supplyAfterMint = stepX_.mul(steps).sub(intres);
         } else {
-            console.log(
-                "## balancePooledAtCurrentSteps less than totalBalancePooled_"
-            );
-            supplyAfterMint = stepX_.mul(stepsAfterMint).add(
-                (totalBalancePooled_.sub(balancePooledAtCurrentSteps)).div(
-                    stepY_.div(_PRECISION).mul(stepsAfterMint.add(_one))
+            supplyAfterMint = stepX_.mul(steps).add(
+                (totalBalancePooled_.sub(stepBalance)).div(
+                    stepY_.div(_PRECISION).mul(steps.add(_one))
                 )
             );
-            console.log(
-                "## supplyAfterMint:%s supply:%s  ",
-                supplyAfterMint.toUInt(),
-                _supply
-            );
-            /* supplyAfterMint = stepX_
-                .mul(stepsAfterMint)
-                .add(
-                    (balancePooled_.add(assetsDeposited_)).sub(
-                        balancePooledAtCurrentSteps
-                    )
-                )
-                .div(stepY_.mul(stepsAfterMint.add(_one))); */
         }
 
         return supplyAfterMint.toUInt() - _supply;
@@ -310,7 +244,8 @@ contract StepwiseCurveABDK is ICurve {
     ) private view returns (uint256) {
         // validate input
         require(
-            _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply
+            _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply,
+            "!valid"
         );
         // special case for 0 sell amount
         if (_meTokensBurned == 0) {
@@ -322,54 +257,18 @@ contract StepwiseCurveABDK is ICurve {
         bytes16 stepY_ = _stepY.fromUInt();
         bytes16 supply_ = _supply.fromUInt();
         // .toUInt().fromUInt() is used to round down
-        bytes16 steps = supply_.div(stepX_).toUInt().fromUInt();
-        bytes16 supplyAtCurrentStep = supply_.sub(steps.mul(stepX_));
-        bytes16 stepsAfterBurn = (supply_.sub(meTokensBurned_))
+        bytes16 newSteps = supply_
+            .sub(meTokensBurned_)
             .div(stepX_)
             .toUInt()
             .fromUInt();
-        bytes16 supplyAtStepAfterBurn = supply_
+        bytes16 newSupplyInStep = supply_
             .sub(meTokensBurned_)
-            .sub(stepsAfterBurn.mul(stepX_))
+            .sub(newSteps.mul(stepX_))
             .div(_PRECISION);
-        console.log(
-            "##  _viewAssetsReturned supplyAtStepAfterBurn:%s   ",
-            supplyAtStepAfterBurn.toUInt()
-        );
-        console.log(
-            "##  _viewAssetsReturned stepsAfterBurn:%s   ",
-            stepsAfterBurn.toUInt()
-        );
-        console.log(
-            "##  _viewAssetsReturned steps.mul(stepX_):%s stepx:%s steps:%s ",
-            steps.mul(stepX_).toUInt(),
-            _stepX,
-            steps.toUInt()
-        );
-        console.log(
-            "##  _viewAssetsReturned steps:%s supply:%s supplyAtCurrentStep:%s  ",
-            steps.toUInt(),
-            _supply,
-            supplyAtCurrentStep.toUInt()
-        );
-        /*   bytes16 balancePooledAtCurrentSteps = (
-            (steps.mul(steps).add(steps)).div(_two)
-        ).mul(stepX_).mul(stepY_); */
-
-        bytes16 balancePooledAtStepsAfterBurn = (
-            (stepsAfterBurn.mul(stepsAfterBurn).add(stepsAfterBurn)).div(_two)
-        ).mul(stepX_).mul(stepY_).add(supplyAtStepAfterBurn.mul(stepY_));
-        console.log(
-            "##  _viewAssetsReturned balancePooledAtStepsAfterBurn:%s _balancePooled:%s ",
-            balancePooledAtStepsAfterBurn.toUInt(),
-            _balancePooled
-        );
-        /*  bytes16 res = balancePooledAtCurrentSteps
-            .add(supplyAtCurrentStep)
-            .mul(stepY_)
-            .sub(balancePooledAtStepsAfterBurn)
-            .sub(supplyAtStepAfterBurn)
-            .mul(stepY_); */
-        return _balancePooled - balancePooledAtStepsAfterBurn.toUInt();
+        bytes16 newCollateralInBalance = (
+            newSteps.mul(stepX_).mul(stepY_).div(_PRECISION)
+        ).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stepY_));
+        return _balancePooled - newCollateralInBalance.toUInt();
     }
 }

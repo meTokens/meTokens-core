@@ -567,10 +567,10 @@ export const getCalculationFuncsForStepwiseCurves = (
     verifyCurveDetails: (
       detail: [BigNumber, BigNumber, BigNumber, BigNumber]
     ) => {
-      expect(detail[0]).to.equal(stepX);
-      expect(detail[1]).to.equal(stepY);
-      expect(detail[2]).to.equal(targetStepX);
-      expect(detail[3]).to.equal(targetStepY);
+      expect(toETHNumber(detail[0])).to.equal(stepX);
+      expect(toETHNumber(detail[1])).to.equal(stepY);
+      expect(toETHNumber(detail[2])).to.equal(targetStepX);
+      expect(toETHNumber(detail[3])).to.equal(targetStepY);
     },
   };
 };
@@ -590,10 +590,6 @@ export const calculateStepwiseTokenReturned = (
     stepY
   );
   const res = calc.steps.mul(calc.x).add(calc.supplyInStep);
-  console.log(`
-  calculateStepwiseTokenReturned amount:${collateralAmount} x:${stepX} y:${stepY}
-                 res:${res.toString()}
-  `);
   return res.minus(totalSupply).toNumber();
 };
 
@@ -611,43 +607,34 @@ export const calculateStepwiseCollateralReturned = (
   const _meTokenBurned = new Decimal(meTokenBurned);
   const _meTokenSupply = new Decimal(meTokenSupply);
   Decimal.set({ rounding: Decimal.ROUND_DOWN });
-  const remainingToken = _meTokenSupply.minus(_meTokenBurned);
-  const step = remainingToken.div(_stepX).round();
-  const stepSupply = remainingToken.minus(step.mul(_stepX));
-
-  const stepBalance = step
-    .mul(step)
-    .add(step)
-    .div(two)
-    .mul(stepX)
-    .mul(stepY)
-    .add(stepSupply.mul(_stepY));
-  const res = _balancePooled.minus(stepBalance);
-  console.log(`
-  calculateStepwiseCollateralReturned 
-        meTokenBurned:${meTokenBurned} meTokenSupply:${meTokenSupply} 
-        balancePooled:${balancePooled} x:${stepX} y:${stepY}
-        step:${step.toString()} stepSupply:${stepSupply.toString()} stepBalance:${stepBalance.toString()}
-                 res:${res.toString()}
-  `);
+  const newSteps = _meTokenSupply.sub(_meTokenBurned).div(_stepX).round();
+  const newSupplyInStep = _meTokenSupply
+    .sub(_meTokenBurned)
+    .sub(newSteps.mul(_stepX));
+  const newCollateralBal = newSteps
+    .mul(_stepX)
+    .mul(_stepY)
+    .add(newSteps.add(1).mul(newSupplyInStep).mul(_stepY));
+  const res = _balancePooled.minus(newCollateralBal);
   return res.toNumber();
 };
 
 const two = new Decimal(2);
+
+// calculate ROUNDDOWN((((2*DepositAmount*StepX^2)/(StepX*StepY))^(1/2))/StepX
 const calculateSteps = (
   collateralAmount: Decimal,
   balancePooled: Decimal,
   stepX: Decimal,
   stepY: Decimal
 ): Decimal => {
-  const num = balancePooled.add(collateralAmount).mul(stepX).mul(stepX);
-  const denom = stepX.mul(stepY.div(two));
+  const num = two
+    .mul(balancePooled.add(collateralAmount))
+    .mul(stepX)
+    .mul(stepX);
+  const denom = stepX.mul(stepY);
   Decimal.set({ rounding: Decimal.ROUND_DOWN });
-  const res = num.div(denom).squareRoot().div(stepY).round();
-  console.log(`
-  Steps collateralAmount:${collateralAmount} balancePooled:${balancePooled} x:${stepX} y:${stepY}
-                 res:${res.toString()}
-  `);
+  const res = num.div(denom).squareRoot().div(stepX).round();
   return res;
 };
 
@@ -657,10 +644,6 @@ const calculateStepBalance = (
   stepY: Decimal
 ): Decimal => {
   const res = steps.mul(steps).add(steps).div(two).mul(stepX).mul(stepY);
-  console.log(`
-  Step balance steps:${steps.toString()} x:${stepX.toString()} y:${stepY.toString()}
-                 res:${res.toString()}
-  `);
   return res;
 };
 
@@ -699,10 +682,5 @@ const calculateSupplyInStep = (
     const denom = _stepY.mul(steps.add(one));
     supplyInStep = num.div(denom);
   }
-
-  console.log(`
-  calculateSupplyInStep amount:${collateralAmount} x:${stepX} y:${stepY} steps:${steps.toString()} stepBal:${stepBalance.toString()}
-                 res:${supplyInStep.toString()}
-  `);
   return { steps, stepBalance, supplyInStep, x: _stepX, y: _stepY };
 };
