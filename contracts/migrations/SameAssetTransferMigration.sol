@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
@@ -20,7 +18,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     struct SameAssetMigration {
         // if migration is active
         bool isMigrating;
-        // if migration is active and startMigration() has not been triggered
+        // if startMigration() has been triggered
         bool started;
     }
 
