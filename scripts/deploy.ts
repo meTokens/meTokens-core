@@ -203,6 +203,36 @@ async function main() {
   );
   await tx.wait();
   const receipt = await deployer.provider.getTransactionReceipt(tx.hash);
+  printLog("Deployment done !");
+
+  const deploymentInfo = {
+    network: network.name,
+    "Hub Contract Address": hub.address,
+    "VaultRegistry Contract Address": vaultRegistry.address,
+    "Migration Registry Contract Address": migrationRegistry.address,
+    "SingleAsset Vault Contract Address": singleAssetVault.address,
+    "Fee Contract Address": fees.address,
+    "Curve Registry Contract Address": curveRegistry.address,
+    "Bancor Curve Contract Address": BancorABDK.address,
+    "Foundry Contract Address": foundry.address,
+    "MeToken Factory Contract Address": meTokenFactory.address,
+    "MeToken Registry Contract Address": meTokenRegistry.address,
+    "WeightedAverage Contract Address": weightedAverage.address,
+    "Block Number": receipt.blockNumber.toString(),
+  };
+
+  if (!fs.existsSync(deployDir)) {
+    fs.mkdirSync(deployDir);
+  }
+
+  fs.writeFileSync(
+    `${deployDir}/script-${network.name}.json`,
+    JSON.stringify(deploymentInfo)
+  );
+  console.log(
+    `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
+  );
+
   const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
   if (isEtherscan) {
     printLog(`Waiting for Etherscan  to index Contracts...`);
@@ -248,35 +278,6 @@ async function main() {
 
     console.log("\nVerified Contracts.");
   }
-  printLog("Deployment done !");
-
-  const deploymentInfo = {
-    network: network.name,
-    "Hub Contract Address": hub.address,
-    "VaultRegistry Contract Address": vaultRegistry.address,
-    "Migration Registry Contract Address": migrationRegistry.address,
-    "SingleAsset Vault Contract Address": singleAssetVault.address,
-    "Fee Contract Address": fees.address,
-    "Curve Registry Contract Address": curveRegistry.address,
-    "Bancor Curve Contract Address": BancorABDK.address,
-    "Foundry Contract Address": foundry.address,
-    "MeToken Factory Contract Address": meTokenFactory.address,
-    "MeToken Registry Contract Address": meTokenRegistry.address,
-    "WeightedAverage Contract Address": weightedAverage.address,
-    "Block Number": receipt.blockNumber.toString(),
-  };
-
-  if (!fs.existsSync(deployDir)) {
-    fs.mkdirSync(deployDir);
-  }
-
-  fs.writeFileSync(
-    `${deployDir}/script-${network.name}.json`,
-    JSON.stringify(deploymentInfo)
-  );
-  console.log(
-    `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
-  );
 }
 
 main()
