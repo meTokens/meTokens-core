@@ -164,7 +164,6 @@ async function main() {
   printLog("Deploying fees Contract...");
   const fees = await deploy<Fees>("Fees");
   contracts.push({
-    name: "Fees",
     address: fees.address,
   });
 
