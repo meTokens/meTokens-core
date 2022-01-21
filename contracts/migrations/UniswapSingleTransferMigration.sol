@@ -10,7 +10,7 @@ import "../interfaces/IMigration.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
 /// @notice create a vault that instantly swaps token A for token B
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
