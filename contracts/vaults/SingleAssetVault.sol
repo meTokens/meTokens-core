@@ -36,13 +36,10 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         emit StartMigration(_meToken);
     }
 
-    // solhint-disable-next-line
-    function isValid(address _asset, bytes memory _encodedArgs)
-        public
-        pure
-        override
-        returns (bool)
-    {
+    function isValid(
+        address _asset,
+        bytes memory /* _encodedArgs */
+    ) public pure override returns (bool) {
         if (_asset == address(0)) {
             return false;
         }

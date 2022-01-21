@@ -545,15 +545,14 @@ const setup = async () => {
           )
         ).to.be.revertedWith("Invalid _encodedMigrationArgs");
       });
-      it("Fails when current and target hub has same asset", async () => {
-        await expect(
-          meTokenRegistry.initResubscribe(
-            meToken,
-            hubId3,
-            migration.address,
-            encodedMigrationArgs
-          )
-        ).to.be.revertedWith("asset same");
+      it("Passes when current and target hub have same asset", async () => {
+        const tx = meTokenRegistry.callStatic.initResubscribe(
+          meToken,
+          hubId3,
+          migration.address,
+          encodedMigrationArgs
+        );
+        await expect(tx).to.not.be.revertedWith("asset same");
       });
       it("Fails when migration address is 0", async () => {
         await expect(

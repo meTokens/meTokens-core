@@ -3,8 +3,6 @@ pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "../libs/Details.sol";
 import "../vaults/Vault.sol";
@@ -17,13 +15,7 @@ import "../interfaces/ISingleAssetVault.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransferMigration is
-    Initializable,
-    Ownable,
-    ReentrancyGuard,
-    Vault,
-    IMigration
-{
+contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     struct UniswapSingleTransfer {
         // The earliest time that the swap can occur
         uint256 soonest;
