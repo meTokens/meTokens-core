@@ -13,6 +13,8 @@ import { WeightedAverage } from "../artifacts/types/WeightedAverage";
 import { BigNumber } from "ethers";
 import { MigrationRegistry } from "../artifacts/types/MigrationRegistry";
 import { Fees } from "../artifacts/types/Fees";
+import { verifyContract } from "./utils";
+
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
 const deployDir = "deployment";
@@ -117,7 +119,6 @@ async function main() {
     hub.address,
     foundry.address
   );
-  contracts.push(BancorABDK.address);
 
   printLog("Deploying MeTokenFactory Contract...");
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
@@ -227,7 +228,7 @@ async function main() {
 
   fs.writeFileSync(
     `${deployDir}/script-${network.name}.json`,
-    JSON.stringify(deploymentInfo)
+    JSON.stringify(deploymentInfo, undefined, 2)
   );
   console.log(
     `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
@@ -241,29 +242,23 @@ async function main() {
 
     const TASK_VERIFY = "verify";
 
-    try {
-      await run(TASK_VERIFY, {
-        address: singleAssetVault.address,
-        constructorArgsParams: [
-          DAO.address, // DAO
-          foundry.address, // foundry
-          hub.address, // hub
-          meTokenRegistry.address, //IMeTokenRegistry
-          migrationRegistry.address, //IMigrationRegistry
-        ],
-      });
-      await run(TASK_VERIFY, {
-        address: meTokenRegistry.address,
-        constructorArgsParams: [
-          foundry.address,
-          hub.address,
-          meTokenFactory.address,
-          migrationRegistry.address,
-        ],
-      });
-    } catch (error) {
-      console.error(`Error verifying ${singleAssetVault.address}: `, error);
-    }
+    await verifyContract("singleAssetVault", singleAssetVault.address, [
+      DAO.address, // DAO
+      foundry.address, // foundry
+      hub.address, // hub
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address, //IMigrationRegistry
+    ]);
+    await verifyContract("meTokenRegistry", meTokenRegistry.address, [
+      foundry.address,
+      hub.address,
+      meTokenFactory.address,
+      migrationRegistry.address,
+    ]);
+    await verifyContract("BancorABDK", BancorABDK.address, [
+      hub.address,
+      foundry.address,
+    ]);
 
     for (let i = 0; i < contracts.length; ++i) {
       try {
