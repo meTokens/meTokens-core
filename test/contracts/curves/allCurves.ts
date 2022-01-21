@@ -147,7 +147,7 @@ const setup = async () => {
     5000,
     hub,
     foundry,
-    bancorABDK
+    bancorABDK as unknown as ICurve
   ));
 
   let hubArgs: [
@@ -174,7 +174,7 @@ const setup = async () => {
     encodedCurveDetails1,
     encodedVaultArgs,
     5000,
-    bancorABDK,
+    bancorABDK as unknown as ICurve,
     account0.address,
   ];
   let hubDetails = await addHubSetup(...hubArgs);
@@ -183,8 +183,8 @@ const setup = async () => {
 
   let testCurve = {
     signers: [account0, account1, account2],
-    curve: bancorABDK as ICurve,
-    newCurve: newBancorABDK as ICurve,
+    curve: bancorABDK as unknown as ICurve,
+    newCurve: newBancorABDK as unknown as ICurve,
     hub,
     precision: 0.000000000001,
   };
@@ -421,8 +421,8 @@ const setup = async () => {
 
   // stepwise ABDK curves
 
-  testCurve.curve = stepwiseCurveABDK;
-  hubArgs[10] = stepwiseCurveABDK;
+  testCurve.curve = stepwiseCurveABDK as unknown as ICurve;
+  hubArgs[10] = stepwiseCurveABDK as unknown as ICurve;
 
   // First stepwise curve
   let stepX = 4;

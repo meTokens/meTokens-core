@@ -31,6 +31,7 @@ import { hubSetup } from "../utils/hubSetup";
 import { text } from "stream/consumers";
 import { clearConfigCache } from "prettier";
 import Decimal from "decimal.js";
+import { ICurve } from "../../artifacts/types";
 
 const setup = async () => {
   describe("Foundry.sol", () => {
@@ -109,7 +110,7 @@ const setup = async () => {
         initRefundRatio,
         hub,
         foundry,
-        _curve
+        _curve as unknown as ICurve
       ));
 
       // Prefund owner/buyer w/ DAI

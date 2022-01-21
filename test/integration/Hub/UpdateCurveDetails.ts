@@ -102,7 +102,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
       dai = token;
       const detail = await bancorABDK.getBancorDetails(firstHubId);

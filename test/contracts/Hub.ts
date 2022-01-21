@@ -11,10 +11,11 @@ import { hubSetupWithoutRegister } from "../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
-import { Signer } from "@ethersproject/abstract-signer";
+import { Signer } from "ethers";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../artifacts/types";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -93,7 +94,11 @@ const setup = async () => {
         vaultRegistry,
         curveRegistry,
         singleAssetVault,
-      } = await hubSetupWithoutRegister(hub, foundry, curve));
+      } = await hubSetupWithoutRegister(
+        hub,
+        foundry,
+        curve as unknown as ICurve
+      ));
     });
 
     describe("Initial state", () => {

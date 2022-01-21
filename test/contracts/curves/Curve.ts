@@ -13,6 +13,7 @@ import { expect } from "chai";
 import { hubSetup } from "../../utils/hubSetup";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 
 describe("Generic Curve", () => {
   let DAI: string;
@@ -78,7 +79,7 @@ describe("Generic Curve", () => {
       5000,
       hub,
       foundry,
-      _curve
+      _curve as unknown as ICurve
     ));
 
     // Prefund owner/buyer w/ DAI

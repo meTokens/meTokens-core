@@ -22,6 +22,7 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { ICurve } from "../../../artifacts/types";
 
 describe("BancorABDK", () => {
   let bancorABDK: BancorABDK;
@@ -61,7 +62,7 @@ describe("BancorABDK", () => {
       5000,
       hub,
       foundry,
-      bancorABDK
+      bancorABDK as unknown as ICurve
     ));
   });
 
@@ -382,7 +383,7 @@ describe("BancorABDK", () => {
         5000,
         hub,
         foundry,
-        newBancorABDK
+        newBancorABDK as unknown as ICurve
       ));
     });
     it("viewMeTokensMinted() from zero should work", async () => {

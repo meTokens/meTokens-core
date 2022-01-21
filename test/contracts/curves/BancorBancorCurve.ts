@@ -22,6 +22,7 @@ import { expect } from "chai";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { ContractFunctionVisibility } from "hardhat/internal/hardhat-network/stack-traces/model";
+import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("BancorPowerCurve", () => {
     let bancorPower: BancorPower;
@@ -66,7 +67,7 @@ const setup = async () => {
         5000,
         hub,
         foundry,
-        bancorPower
+        bancorPower as unknown as ICurve
       ));
       dai = token;
     });
@@ -392,7 +393,7 @@ const setup = async () => {
           5000,
           hub,
           foundry,
-          newbancorPower
+          newbancorPower as unknown as ICurve
         ));
         dai = token;
       });

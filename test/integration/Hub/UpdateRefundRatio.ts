@@ -26,6 +26,7 @@ import {
   setAutomine,
 } from "../../utils/hardhatNode";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("Hub - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistry;
@@ -87,7 +88,7 @@ const setup = async () => {
         firstRefundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
 
       // Pre-load owner and buyer w/ DAI
