@@ -13,10 +13,12 @@ import { WeightedAverage } from "../artifacts/types/WeightedAverage";
 import { BigNumber } from "ethers";
 import { MigrationRegistry } from "../artifacts/types/MigrationRegistry";
 import { Fees } from "../artifacts/types/Fees";
+import { verifyContract } from "./utils";
+
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
 const deployDir = "deployment";
-const contracts: any[] = [];
+const contracts: { name?: string; address: string }[] = [];
 const REFUND_RATIO = 800000;
 const MAX_WEIGHT = 1000000;
 const RESERVE_WEIGHT = BigNumber.from(MAX_WEIGHT).div(2).toString();
@@ -84,31 +86,45 @@ async function main() {
 
   printLog("Deploying weightedAverage Contract...");
   const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  contracts.push(weightedAverage.address);
+  contracts.push({
+    address: weightedAverage.address,
+  });
 
   printLog("Deploying CurveRegistry Contract...");
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-  contracts.push(curveRegistry.address);
+  contracts.push({
+    name: "contracts/registries/CurveRegistry.sol:CurveRegistry",
+    address: curveRegistry.address,
+  });
 
   printLog("Deploying VaultRegistry Contract...");
   const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-  contracts.push(vaultRegistry.address);
+  contracts.push({
+    name: "contracts/registries/VaultRegistry.sol:VaultRegistry",
+    address: vaultRegistry.address,
+  });
 
-  printLog("Deploing MigrationRegistry Contract...");
+  printLog("Deploying MigrationRegistry Contract...");
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"
   );
-  contracts.push(migrationRegistry.address);
+  contracts.push({
+    address: migrationRegistry.address,
+  });
 
   printLog("Deploying Foundry Contract...");
   const foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   });
-  contracts.push(foundry.address);
+  contracts.push({
+    address: foundry.address,
+  });
 
   printLog("Deploying Hub Contract...");
   const hub = await deploy<Hub>("Hub");
-  contracts.push(hub.address);
+  contracts.push({
+    address: hub.address,
+  });
 
   printLog("Deploying BancorABDK Contract...");
   const BancorABDK = await deploy<BancorABDK>(
@@ -117,11 +133,12 @@ async function main() {
     hub.address,
     foundry.address
   );
-  contracts.push(BancorABDK.address);
 
   printLog("Deploying MeTokenFactory Contract...");
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-  contracts.push(meTokenFactory.address);
+  contracts.push({
+    address: meTokenFactory.address,
+  });
 
   printLog("Deploying MeTokenRegistry Contract...");
   const meTokenRegistry = await deploy<MeTokenRegistry>(
@@ -146,7 +163,9 @@ async function main() {
 
   printLog("Deploying fees Contract...");
   const fees = await deploy<Fees>("Fees");
-  contracts.push(fees.address);
+  contracts.push({
+    address: fees.address,
+  });
 
   printLog("Registering Bancor Curve to curve registry...");
   let tx = await curveRegistry.approve(BancorABDK.address);
@@ -203,51 +222,6 @@ async function main() {
   );
   await tx.wait();
   const receipt = await deployer.provider.getTransactionReceipt(tx.hash);
-  const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
-  if (isEtherscan) {
-    printLog(`Waiting for Etherscan  to index Contracts...`);
-    await tx.wait(5);
-    printLog("Verifying Contracts...\n");
-
-    const TASK_VERIFY = "verify";
-
-    try {
-      await run(TASK_VERIFY, {
-        address: singleAssetVault.address,
-        constructorArgsParams: [
-          DAO.address, // DAO
-          foundry.address, // foundry
-          hub.address, // hub
-          meTokenRegistry.address, //IMeTokenRegistry
-          migrationRegistry.address, //IMigrationRegistry
-        ],
-      });
-      await run(TASK_VERIFY, {
-        address: meTokenRegistry.address,
-        constructorArgsParams: [
-          foundry.address,
-          hub.address,
-          meTokenFactory.address,
-          migrationRegistry.address,
-        ],
-      });
-    } catch (error) {
-      console.error(`Error verifying ${singleAssetVault.address}: `, error);
-    }
-
-    for (let i = 0; i < contracts.length; ++i) {
-      try {
-        await run(TASK_VERIFY, {
-          address: contracts[i],
-          constructorArguments: [],
-        });
-      } catch (error) {
-        console.error(`Error verifying ${contracts[i]}: `, error);
-      }
-    }
-
-    console.log("\nVerified Contracts.");
-  }
   printLog("Deployment done !");
 
   const deploymentInfo = {
@@ -272,11 +246,52 @@ async function main() {
 
   fs.writeFileSync(
     `${deployDir}/script-${network.name}.json`,
-    JSON.stringify(deploymentInfo)
+    JSON.stringify(deploymentInfo, undefined, 2)
   );
   console.log(
     `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
   );
+
+  const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
+  if (isEtherscan) {
+    printLog(`Waiting for Etherscan  to index Contracts...`);
+    await tx.wait(5);
+    printLog("Verifying Contracts...\n");
+
+    const TASK_VERIFY = "verify";
+
+    await verifyContract("singleAssetVault", singleAssetVault.address, [
+      DAO.address, // DAO
+      foundry.address, // foundry
+      hub.address, // hub
+      meTokenRegistry.address, //IMeTokenRegistry
+      migrationRegistry.address, //IMigrationRegistry
+    ]);
+    await verifyContract("meTokenRegistry", meTokenRegistry.address, [
+      foundry.address,
+      hub.address,
+      meTokenFactory.address,
+      migrationRegistry.address,
+    ]);
+    await verifyContract("BancorABDK", BancorABDK.address, [
+      hub.address,
+      foundry.address,
+    ]);
+
+    for (let i = 0; i < contracts.length; ++i) {
+      try {
+        await run(TASK_VERIFY, {
+          contract: contracts[i].name || undefined,
+          address: contracts[i].address,
+          constructorArguments: [],
+        });
+      } catch (error) {
+        console.error(`Error verifying ${contracts[i].address}: `, error);
+      }
+    }
+
+    console.log("\nVerified Contracts.");
+  }
 }
 
 main()
