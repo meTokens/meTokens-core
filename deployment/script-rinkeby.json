@@ -1,15 +1,15 @@
 {
   "network": "rinkeby",
-  "Hub Contract Address": "0xAA9f1e237f4792dFf3E24e3A0edf34C721dE192e",
-  "VaultRegistry Contract Address": "0x3dcBC30EBe2eBF5deed6D1CDbfC58B7f65FFCE38",
-  "Migration Registry Contract Address": "0x6862b26dC8419745aE43Ac8B1086d1A102cf525A",
-  "SingleAsset Vault Contract Address": "0x4DA473919ce7497d899d35191Da3fd90814431e7",
-  "Fee Contract Address": "0xC8bE8B231c9cc7410B889E853C34AF6A0675f25e",
-  "Curve Registry Contract Address": "0xFF662a00B94663A3dcB64C5D512AEFeF1341D9F3",
-  "Bancor Curve Contract Address": "0xd9265A1D564111C23F291305dcdDf92735fCDA2C",
-  "Foundry Contract Address": "0x1b2355d28482FDe9531097E306b2D266bf094317",
-  "MeToken Factory Contract Address": "0xD9c8fd49b3A5c2f97fcd6818c05fa56D0Dcd01De",
-  "MeToken Registry Contract Address": "0xb6A300693B914e9C2547063A364fD00F67043c42",
-  "WeightedAverage Contract Address": "0x50B829f9f0e825CAD753b249B960Caa4562eaD0F",
-  "Block Number": "10028123"
+  "Hub Contract Address": "0x179C3360FB84ABffe0a8B1B1e6a34f5c8ABbC11D",
+  "VaultRegistry Contract Address": "0xcB6E6b3397BfB9924A95EE61A9D4Fd1cc212A44c",
+  "Migration Registry Contract Address": "0x79C2fBf56FBcC8fC07644AcfDc0bf1b6b95941D9",
+  "SingleAsset Vault Contract Address": "0x87C4814e062d3b20E9ADA606015A534852a25903",
+  "Fee Contract Address": "0x27FaC8c1AfBC1d59af397eC767C08Febd193C4e4",
+  "Curve Registry Contract Address": "0x85044092D586328Be1BA51B1DA8f4bA7a622e7d2",
+  "Bancor Curve Contract Address": "0x336921185BcC47F721C1c95a890b21dcC06C4C0D",
+  "Foundry Contract Address": "0x08119868fcac3CDC2801EA5d844120695e4c29Ab",
+  "MeToken Factory Contract Address": "0x09ca2d1bD89CC50D48468f0e23CC82dc24751F73",
+  "MeToken Registry Contract Address": "0x8CC8a609fc1354e2bE475545036090e562e4546f",
+  "WeightedAverage Contract Address": "0x723eC9Cb2471accF91CC23b433053F28aac3463a",
+  "Block Number": "10028920"
 }
