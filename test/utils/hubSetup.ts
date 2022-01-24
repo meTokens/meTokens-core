@@ -218,7 +218,6 @@ export async function hubSetupWithoutRegister(
 
   // Deploy contracts depending on hubFacet address,
   // which is actually the address of the diamond
-  foundry.initialize(diamond.address, fee.address, diamond.address);
   meTokenRegistry = await deploy<MeTokenRegistry>(
     "MeTokenRegistry",
     undefined,
@@ -236,11 +235,9 @@ export async function hubSetupWithoutRegister(
     meTokenRegistry.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
   );
-  // deploy curve
-  // const curveFactory = await ethers.getContractFactory(curveStr);
-  // curve = (await curveFactory.deploy(curveStr)) as unknown as BancorABDK;
-  // await (curve as unknown as Contract).deployed();
+
   curve = await deploy<BancorABDK>("BancorABDK", undefined, diamond.address);
+  foundry.initialize(diamond.address, fee.address, meTokenRegistry.address);
 
   // Deploying facets
   const hubFacet = await deploy<HubFacet>("HubFacet");
