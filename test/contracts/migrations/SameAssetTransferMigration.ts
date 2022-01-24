@@ -15,6 +15,7 @@ import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTr
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types/ICurve";
 
 const setup = async () => {
   describe("SameAssetTransferMigration.sol", () => {
@@ -81,12 +82,7 @@ const setup = async () => {
         WeightedAverage: weightedAverage.address,
       });
       hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         migrationRegistry,
@@ -101,7 +97,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        curve
+        curve as unknown as ICurve
       ));
 
       // Register 2nd hub to which we'll migrate to

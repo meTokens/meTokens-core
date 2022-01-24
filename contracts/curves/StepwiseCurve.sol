@@ -21,14 +21,12 @@ contract StepwiseCurve is ICurve {
 
     uint256 public constant PRECISION = 10**18;
     address public hub;
-    address public foundry;
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
 
-    constructor(address _hub, address _foundry) {
+    constructor(address _hub) {
         hub = _hub;
-        foundry = _foundry;
     }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
@@ -36,14 +34,13 @@ contract StepwiseCurve is ICurve {
         override
     {
         require(msg.sender == hub, "!hub");
-        require(_encodedDetails.length > 0, "_encodedDetails empty");
-
+        require(_encodedDetails.length > 0, "!_encodedDetails");
         (uint256 stepX, uint256 stepY) = abi.decode(
             _encodedDetails,
             (uint256, uint256)
         );
-        require(stepX > 0 && stepX < PRECISION, "stepX not in range");
-        require(stepY > 0 && stepY < PRECISION, "stepY not in range");
+        require(stepX > 0 && stepX > PRECISION, "stepX not in range");
+        require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepX;

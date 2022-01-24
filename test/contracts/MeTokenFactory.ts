@@ -2,6 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
+import { ICurve } from "../../artifacts/types";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { Hub } from "../../artifacts/types/Hub";
@@ -48,8 +49,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({ meTokenFactory, meTokenRegistry, account0, account1 } = await hubSetup(
@@ -58,7 +58,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
     });
     it("create() with same params always produce different MeTokens", async () => {

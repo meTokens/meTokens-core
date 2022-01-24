@@ -10,9 +10,9 @@ import "../interfaces/IHub.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMigrationRegistry.sol";
 
-/// @title Vault
-/// @author Carl Farterson (@carlfarterson)
-/// @notice Implementation contract for SingleAssetFactory.sol
+/// @title meTokens basic Vault
+/// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
+/// @notice Most basic vault implementation to be inherited by meToken vaults
 abstract contract Vault is Ownable, IVault {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;

@@ -84,8 +84,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
       ({
         token,
@@ -103,7 +102,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
       dai = token;
       const detail = await bancorABDK.getBancorDetails(firstHubId);
@@ -185,8 +184,7 @@ const setup = async () => {
         updatedBancorABDK = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
 
         await curveRegistry.approve(updatedBancorABDK.address);

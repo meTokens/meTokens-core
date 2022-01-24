@@ -13,7 +13,7 @@ import "./interfaces/IFoundry.sol";
 import "./libs/Details.sol";
 
 /// @title meToken hub
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213), @zgorizzo69
 /// @notice This contract tracks all combinations of vaults and curves,
 ///     and their respective subscribed meTokens
 contract Hub is IHub, Ownable, Initializable {

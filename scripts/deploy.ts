@@ -130,8 +130,7 @@ async function main() {
   const BancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
 
   printLog("Deploying MeTokenFactory Contract...");

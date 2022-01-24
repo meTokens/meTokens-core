@@ -5,7 +5,7 @@ import "./Vault.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
 /// @title Vault
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;
@@ -36,9 +36,10 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         emit StartMigration(_meToken);
     }
 
+    // solhint-disable-next-line
     function isValid(
         address _asset,
-        bytes memory /* _encodedArgs */
+        bytes memory /*_encodedArgs */
     ) public pure override returns (bool) {
         if (_asset == address(0)) {
             return false;

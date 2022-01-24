@@ -19,6 +19,7 @@ import { expect } from "chai";
 import { Fees } from "../../../artifacts/types/Fees";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
@@ -102,12 +103,7 @@ const setup = async () => {
         WeightedAverage: weightedAverage.address,
       });
       hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         migrationRegistry,
@@ -124,7 +120,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        curve
+        curve as unknown as ICurve
       ));
 
       targetVault = await deploy<SingleAssetVault>(

@@ -16,6 +16,9 @@ import "./interfaces/IFoundry.sol";
 import "./libs/WeightedAverage.sol";
 import "./libs/Details.sol";
 
+/// @title meTokens Foundry
+/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213), @zgorizzo69
+/// @notice Mint and burn meTokens for other assets
 contract Foundry is IFoundry, Ownable, Initializable {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
