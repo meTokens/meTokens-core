@@ -89,14 +89,11 @@ async function main() {
   );
   await foundry.initialize(diamond.address, fee.address, diamond.address);
 
-  const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-  console.log("curveRegistry deployed at:", curveRegistry.address);
-  const migrationRegistry = await deploy<MigrationRegistry>(
-    "MigrationRegistry"
-  );
-  console.log("migrationRegistry deployed at:", migrationRegistry.address);
-  const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
-  console.log("vaultRegistry deployed at:", vaultRegistry.address);
+  // const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+  // const migrationRegistry = await deploy<MigrationRegistry>(
+  //   "MigrationRegistry"
+  // );
+  // const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
