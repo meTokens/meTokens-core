@@ -593,7 +593,9 @@ export const calculateStepwiseTokenReturned = (
   return res.minus(totalSupply).toNumber();
 };
 
-//   return balancePooled - stepBalance
+// calculate balancePooled - (New_Steps * stepY * stepX + (New_Steps+1) * New_Supply_in_Step *stepY)
+// New_Steps=ROUNDDOWN(Supply- token_Burn)/B2)
+// New_Supply_in_Step=Supply - token_Burn - New_Steps*stepX
 export const calculateStepwiseCollateralReturned = (
   stepX: number,
   stepY: number,

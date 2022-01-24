@@ -3,7 +3,6 @@ import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { Hub } from "../../artifacts/types/Hub";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
@@ -18,19 +17,14 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../artifacts/types/ERC20";
-import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../utils/hardhatNode";
-import { Fees } from "../../artifacts/types/Fees";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
-import { text } from "stream/consumers";
-import { clearConfigCache } from "prettier";
-import Decimal from "decimal.js";
 import { ICurve } from "../../artifacts/types";
 
 const setup = async () => {
