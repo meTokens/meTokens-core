@@ -55,7 +55,7 @@ const setup = async () => {
   foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   }); */
-  hub = await deploy<HubFacet>("HubFacet");
+  // hub = await deploy<HubFacet>("HubFacet");
 
   // Setting up curve info to test
 
@@ -113,6 +113,7 @@ const setup = async () => {
     token,
     curveRegistry,
     tokenAddr,
+    hub,
     foundry,
     diamond,
     migrationRegistry,
