@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
+import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../MeToken.sol";
 import "../interfaces/IMigration.sol";
@@ -20,33 +21,21 @@ import "../libs/Details.sol";
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
 contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
-    uint256 public constant PRECISION = 10**18;
-
-    address public foundry;
-    IHub public hub;
-    IMeTokenFactory public meTokenFactory;
-    IMigrationRegistry public migrationRegistry;
+    // address public foundry;
+    // IHub public hub;
+    // IMeTokenFactory public meTokenFactory;
+    // IMigrationRegistry public migrationRegistry;
 
     AppStorage internal s; // solhint-disable-line
 
     /// @dev key: address of meToken, value: meToken Details struct
-    mapping(address => Details.MeToken) private _meTokens;
+    // mapping(address => Details.MeToken) private _meTokens;
     /// @dev key: address of meToken owner, value: address of meToken
-    mapping(address => address) private _owners;
+    // mapping(address => address) private s.meTokenOwners;
     /// @dev key: address of meToken owner, value: address to transfer meToken ownership to
-    mapping(address => address) private _pendingOwners;
+    // mapping(address => address) private _pendingOwners;
 
-    constructor(
-        address _foundry,
-        IHub _hub,
-        IMeTokenFactory _meTokenFactory,
-        IMigrationRegistry _migrationRegistry
-    ) {
-        foundry = _foundry;
-        hub = _hub;
-        meTokenFactory = _meTokenFactory;
-        migrationRegistry = _migrationRegistry;
-    }
+    constructor() {}
 
     /// @inheritdoc IMeTokenRegistry
     function subscribe(
@@ -56,7 +45,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         uint256 _assetsDeposited
     ) external override {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        Details.Hub memory hub_ = hub.getDetails(_hubId);
+        HubInfo memory hub_ = LibHub.getHub(_hubId);
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
@@ -72,10 +61,10 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         }
 
         // Create meToken erc20 contract
-        address meTokenAddr = meTokenFactory.create(
+        address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
             _name,
             _symbol,
-            foundry,
+            s.foundry,
             address(this)
         );
 
@@ -92,10 +81,10 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         }
 
         // Register the address which created a meToken
-        _owners[msg.sender] = meTokenAddr;
+        s.meTokenOwners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeToken storage meToken_ = _meTokens[meTokenAddr];
+        Details.MeToken storage meToken_ = s.meTokens[meTokenAddr];
         meToken_.owner = msg.sender;
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
@@ -119,9 +108,9 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         address _migration,
         bytes memory _encodedMigrationArgs
     ) external override {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
+        Details.MeToken storage meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = LibHub.getHub(meToken_.hubId);
+        HubInfo memory targetHub_ = LibHub.getHub(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -140,7 +129,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
 
         // Ensure the migration we're using is approved
         require(
-            migrationRegistry.isApproved(
+            s.migrationRegistry.isApproved(
                 hub_.vault,
                 targetHub_.vault,
                 _migration
@@ -176,7 +165,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
     }
 
     function cancelResubscribe(address _meToken) external override {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        Details.MeToken storage meToken_ = s.meTokens[_meToken];
         require(msg.sender == meToken_.owner, "!owner");
         require(meToken_.targetHubId != 0, "!resubscribing");
         require(
@@ -198,7 +187,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         override
         returns (Details.MeToken memory)
     {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        Details.MeToken storage meToken_ = s.meTokens[_meToken];
 
         require(meToken_.targetHubId != 0, "No targetHubId");
         require(
@@ -227,17 +216,18 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         external
         override
     {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-        require(msg.sender == meToken_.migration, "!migration");
+        require(msg.sender == s.meTokens[_meToken].migration, "!migration");
+        uint256 balancePooled = s.meTokens[_meToken].balancePooled;
+        uint256 balanceLocked = s.meTokens[_meToken].balanceLocked;
+        uint256 oldBalance = balancePooled + balanceLocked;
+        uint256 p = s.PRECISION;
 
-        uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
-
-        meToken_.balancePooled =
-            (meToken_.balancePooled * (s.PRECISION * _newBalance)) /
-            (oldBalance * s.PRECISION);
-        meToken_.balanceLocked =
-            (meToken_.balanceLocked * s.PRECISION * _newBalance) /
-            (oldBalance * s.PRECISION);
+        s.meTokens[_meToken].balancePooled =
+            (balancePooled * p * _newBalance) /
+            (oldBalance * p);
+        s.meTokens[_meToken].balanceLocked =
+            (balanceLocked * p * _newBalance) /
+            (oldBalance * p);
 
         emit UpdateBalances(_meToken, _newBalance);
     }
@@ -248,12 +238,11 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         address _meToken,
         uint256 _amount
     ) external override {
-        require(msg.sender == foundry, "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        require(msg.sender == s.foundry, "!foundry");
         if (add) {
-            meToken_.balancePooled += _amount;
+            s.meTokens[_meToken].balancePooled += _amount;
         } else {
-            meToken_.balancePooled -= _amount;
+            s.meTokens[_meToken].balancePooled -= _amount;
         }
 
         emit UpdateBalancePooled(add, _meToken, _amount);
@@ -265,13 +254,12 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         address _meToken,
         uint256 _amount
     ) external override {
-        require(msg.sender == foundry, "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        require(msg.sender == s.foundry, "!foundry");
 
         if (add) {
-            meToken_.balanceLocked += _amount;
+            s.meTokens[_meToken].balanceLocked += _amount;
         } else {
-            meToken_.balanceLocked -= _amount;
+            s.meTokens[_meToken].balanceLocked -= _amount;
         }
 
         emit UpdateBalanceLocked(add, _meToken, _amount);
@@ -280,45 +268,47 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
     /// @inheritdoc IMeTokenRegistry
     function transferMeTokenOwnership(address _newOwner) external override {
         require(
-            _pendingOwners[msg.sender] == address(0),
+            s.pendingMeTokenOwners[msg.sender] == address(0),
             "transfer ownership already pending"
         );
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
         require(_newOwner != address(0), "Cannot transfer to 0 address");
-        address meToken_ = _owners[msg.sender];
+        address meToken_ = s.meTokenOwners[msg.sender];
         require(meToken_ != address(0), "meToken does not exist");
-        _pendingOwners[msg.sender] = _newOwner;
+        s.pendingMeTokenOwners[msg.sender] = _newOwner;
 
         emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken_);
     }
 
     /// @inheritdoc IMeTokenRegistry
     function cancelTransferMeTokenOwnership() external override {
-        address _meToken = _owners[msg.sender];
+        address _meToken = s.meTokenOwners[msg.sender];
         require(_meToken != address(0), "meToken does not exist");
 
         require(
-            _pendingOwners[msg.sender] != address(0),
+            s.pendingMeTokenOwners[msg.sender] != address(0),
             "transferMeTokenOwnership() not initiated"
         );
 
-        delete _pendingOwners[msg.sender];
+        delete s.pendingMeTokenOwners[msg.sender];
         emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
     }
 
     /// @inheritdoc IMeTokenRegistry
     function claimMeTokenOwnership(address _oldOwner) external override {
         require(!isOwner(msg.sender), "Already owns a meToken");
-        require(msg.sender == _pendingOwners[_oldOwner], "!_pendingOwner");
+        require(
+            msg.sender == s.pendingMeTokenOwners[_oldOwner],
+            "!_pendingOwner"
+        );
 
-        address _meToken = _owners[_oldOwner];
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        address _meToken = s.meTokenOwners[_oldOwner];
 
-        meToken_.owner = msg.sender;
-        _owners[msg.sender] = _meToken;
+        s.meTokens[_meToken].owner = msg.sender;
+        s.meTokenOwners[msg.sender] = _meToken;
 
-        delete _owners[_oldOwner];
-        delete _pendingOwners[_oldOwner];
+        delete s.meTokenOwners[_oldOwner];
+        delete s.pendingMeTokenOwners[_oldOwner];
 
         emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
@@ -361,7 +351,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         override
         returns (address)
     {
-        return _owners[_owner];
+        return s.meTokenOwners[_owner];
     }
 
     /// @inheritdoc IMeTokenRegistry
@@ -371,7 +361,7 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         override
         returns (address)
     {
-        return _pendingOwners[_oldOwner];
+        return s.pendingMeTokenOwners[_oldOwner];
     }
 
     function getDetails(address _meToken)
@@ -380,11 +370,11 @@ contract MeTokenRegistryFacet is Ownable, IMeTokenRegistry {
         override
         returns (Details.MeToken memory)
     {
-        return _meTokens[_meToken];
+        return s.meTokens[_meToken];
     }
 
     /// @inheritdoc IMeTokenRegistry
     function isOwner(address _owner) public view override returns (bool) {
-        return _owners[_owner] != address(0);
+        return s.meTokenOwners[_owner] != address(0);
     }
 }
