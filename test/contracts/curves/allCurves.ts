@@ -21,6 +21,7 @@ import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ICurve } from "../../../artifacts/types/ICurve";
+import { Diamond } from "../../../artifacts/types";
 
 describe("All curves", () => {
   before("setup curves instance", async () => {});
@@ -34,6 +35,7 @@ const setup = async () => {
   let migrationRegistry: MigrationRegistry;
   let foundry: Foundry;
   let hub: HubFacet;
+  let diamond: Diamond;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -49,24 +51,21 @@ const setup = async () => {
     ["address"],
     [DAI]
   );
-
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
+  /* const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
   foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
-  });
-  hub = await deploy<HubFacet>("HubFacet");
-  const bancorABDK = await deploy<BancorABDK>(
+  }); */
+  //hub = await deploy<HubFacet>("HubFacet");
+  /*  const bancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
 
   const newBancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
-    hub.address,
-    foundry.address
+    hub.address
   );
 
   const bancorPower = await deploy<BancorPower>(
@@ -74,8 +73,7 @@ const setup = async () => {
     undefined,
     hub.address,
     foundry.address
-  );
-
+  ); */
   // Setting up curve info to test
 
   let baseY1 = one.mul(1000);
@@ -85,7 +83,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY1, reserveWeight1]
   );
-
+  /* 
   let baseY2 = one.mul(100);
   let reserveWeight2 = MAX_WEIGHT / 10;
   let targetReserveWeight2 = reserveWeight2 + 20000;
@@ -124,13 +122,20 @@ const setup = async () => {
   let encodedCurveDetails6 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
-  );
-
+  ); */
+  console.log("8888888888");
   // Create hub and register first hub
-  ({
+  ({ token, tokenAddr, account0, account1 } = await hubSetup(
+    encodedCurveDetails1,
+    encodedVaultArgs,
+    5000,
+    "bancorABDK"
+  ));
+  /*   ({
     token,
     curveRegistry,
     tokenAddr,
+    diamond,
     migrationRegistry,
     vaultRegistry,
     account0,
@@ -141,36 +146,36 @@ const setup = async () => {
     encodedCurveDetails1,
     encodedVaultArgs,
     5000,
-    hub,
-    foundry,
-    bancorABDK
-  ));
-
-  let hubArgs: [
+    "bancorABDK"
+  )); */
+  console.log("99999999999");
+  /*   let hubArgs: [
+    string,
     HubFacet,
+    Diamond,
     Foundry,
+    string,
     MeTokenRegistry,
     CurveRegistry,
-    string,
     MigrationRegistry,
     VaultRegistry,
     string,
     string,
     number,
-    ICurve,
     string
   ] = [
+    tokenAddr,
     hub,
+    diamond,
     foundry,
+    "bancorABDK",
     meTokenRegistry,
     curveRegistry,
-    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails1,
     encodedVaultArgs,
     5000,
-    bancorABDK,
     account0.address,
   ];
   let hubDetails = await addHubSetup(...hubArgs);
@@ -194,7 +199,7 @@ const setup = async () => {
   curves.push(curve);
 
   // Second ABDK Curve
-  hubArgs[7] = encodedCurveDetails2;
+  hubArgs[9] = encodedCurveDetails2;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -205,7 +210,7 @@ const setup = async () => {
   });
 
   // Third ABDK curve
-  hubArgs[7] = encodedCurveDetails3;
+  hubArgs[9] = encodedCurveDetails3;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -216,7 +221,7 @@ const setup = async () => {
   });
 
   // Fourth ABDK curve
-  hubArgs[7] = encodedCurveDetails4;
+  hubArgs[9] = encodedCurveDetails4;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -227,7 +232,7 @@ const setup = async () => {
   });
 
   // fifth ABDK curve
-  hubArgs[7] = encodedCurveDetails5;
+  hubArgs[9] = encodedCurveDetails5;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -238,7 +243,7 @@ const setup = async () => {
   });
 
   // sixth ABDK curve
-  hubArgs[7] = encodedCurveDetails6;
+  hubArgs[9] = encodedCurveDetails6;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -252,7 +257,7 @@ const setup = async () => {
   hubArgs[-2] = bancorPower;
 
   // First Power curve
-  hubArgs[7] = encodedCurveDetails1;
+  hubArgs[9] = encodedCurveDetails1;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -263,7 +268,7 @@ const setup = async () => {
   });
 
   // Second Power curve
-  hubArgs[7] = encodedCurveDetails2;
+  hubArgs[9] = encodedCurveDetails2;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -274,7 +279,7 @@ const setup = async () => {
   });
 
   // third power curve
-  hubArgs[7] = encodedCurveDetails3;
+  hubArgs[9] = encodedCurveDetails3;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -285,7 +290,7 @@ const setup = async () => {
   });
 
   // fourth power curve
-  hubArgs[7] = encodedCurveDetails4;
+  hubArgs[9] = encodedCurveDetails4;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -296,7 +301,7 @@ const setup = async () => {
   });
 
   // fifth power curve
-  hubArgs[7] = encodedCurveDetails5;
+  hubArgs[9] = encodedCurveDetails5;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -307,7 +312,7 @@ const setup = async () => {
   });
 
   // sixth power curve
-  hubArgs[7] = encodedCurveDetails6;
+  hubArgs[9] = encodedCurveDetails6;
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
@@ -315,7 +320,7 @@ const setup = async () => {
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
     targetReserveWeight: targetReserveWeight6,
-  });
+  }); */
   return curves;
 };
 setup().then((tests) => {
