@@ -55,25 +55,8 @@ const setup = async () => {
   foundry = await deploy<Foundry>("Foundry", {
     WeightedAverage: weightedAverage.address,
   }); */
-  //hub = await deploy<HubFacet>("HubFacet");
-  /*  const bancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  );
+  hub = await deploy<HubFacet>("HubFacet");
 
-  const newBancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  );
-
-  const bancorPower = await deploy<BancorPower>(
-    "BancorPower",
-    undefined,
-    hub.address,
-    foundry.address
-  ); */
   // Setting up curve info to test
 
   let baseY1 = one.mul(1000);
@@ -83,7 +66,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY1, reserveWeight1]
   );
-  /* 
+
   let baseY2 = one.mul(100);
   let reserveWeight2 = MAX_WEIGHT / 10;
   let targetReserveWeight2 = reserveWeight2 + 20000;
@@ -122,19 +105,15 @@ const setup = async () => {
   let encodedCurveDetails6 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
-  ); */
+  );
   console.log("8888888888");
   // Create hub and register first hub
-  ({ token, tokenAddr, account0, account1 } = await hubSetup(
-    encodedCurveDetails1,
-    encodedVaultArgs,
-    5000,
-    "bancorABDK"
-  ));
-  /*   ({
+
+  ({
     token,
     curveRegistry,
     tokenAddr,
+    foundry,
     diamond,
     migrationRegistry,
     vaultRegistry,
@@ -147,9 +126,9 @@ const setup = async () => {
     encodedVaultArgs,
     5000,
     "bancorABDK"
-  )); */
+  ));
   console.log("99999999999");
-  /*   let hubArgs: [
+  let hubArgs: [
     string,
     HubFacet,
     Diamond,
@@ -179,6 +158,19 @@ const setup = async () => {
     account0.address,
   ];
   let hubDetails = await addHubSetup(...hubArgs);
+  const bancorABDK = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    hub.address
+  );
+
+  const newBancorABDK = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    hub.address
+  );
+
+  /*  */
   await curveRegistry.approve(newBancorABDK.address);
   let curve = {
     signers: [account0, account1, account2],
@@ -254,7 +246,7 @@ const setup = async () => {
   });
 
   // Bancor Power
-  hubArgs[-2] = bancorPower;
+  hubArgs[4] = "BancorPower";
 
   // First Power curve
   hubArgs[9] = encodedCurveDetails1;
@@ -320,7 +312,7 @@ const setup = async () => {
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
     targetReserveWeight: targetReserveWeight6,
-  }); */
+  });
   return curves;
 };
 setup().then((tests) => {
