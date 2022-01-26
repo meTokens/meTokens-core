@@ -21,14 +21,11 @@ contract StepwiseCurve is ICurve {
 
     uint256 public constant PRECISION = 10**18;
     address public hub;
-    address public foundry;
-
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
 
-    constructor(address _hub, address _foundry) {
+    constructor(address _hub) {
         hub = _hub;
-        foundry = _foundry;
     }
 
     function register(uint256 _hubId, bytes calldata _encodedDetails)
