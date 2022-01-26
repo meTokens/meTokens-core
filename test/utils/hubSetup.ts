@@ -46,7 +46,7 @@ export async function hubSetup(
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
   singleAssetVault: SingleAssetVault;
-  curve: ICurve;
+  hubCurve: ICurve;
   meTokenRegistry: MeTokenRegistry;
   curveRegistry: CurveRegistry;
   vaultRegistry: VaultRegistry;
@@ -67,7 +67,7 @@ export async function hubSetup(
     diamond,
     meTokenFactory,
     singleAssetVault,
-    curve,
+    hubCurve,
     meTokenRegistry,
     curveRegistry,
     vaultRegistry,
@@ -93,7 +93,7 @@ export async function hubSetup(
     account0.address,
     tokenAddr,
     singleAssetVault.address,
-    curve.address,
+    hubCurve.address,
     refundRatio, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
@@ -105,7 +105,7 @@ export async function hubSetup(
     diamond,
     meTokenFactory,
     singleAssetVault,
-    curve,
+    hubCurve,
     meTokenRegistry,
     curveRegistry,
     vaultRegistry,
@@ -162,7 +162,7 @@ export async function hubSetupWithoutRegister(
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
   singleAssetVault: SingleAssetVault;
-  curve: ICurve;
+  hubCurve: ICurve;
   meTokenRegistry: MeTokenRegistry;
   vaultRegistry: VaultRegistry;
   curveRegistry: CurveRegistry;
@@ -181,7 +181,7 @@ export async function hubSetupWithoutRegister(
   let hub: HubFacet;
   let meTokenFactory: MeTokenFactory;
   let singleAssetVault: SingleAssetVault;
-  let curve: ICurve;
+  let hubCurve: ICurve;
   let meTokenRegistry: MeTokenRegistry;
   let vaultRegistry: VaultRegistry;
   let curveRegistry: CurveRegistry;
@@ -285,8 +285,8 @@ export async function hubSetupWithoutRegister(
     migrationRegistry.address //IMigrationRegistry
   );
 
-  curve = await getCurve(curveStr, diamond.address);
-  console.log(`----inside curve:${curve.address}  `);
+  hubCurve = await getCurve(curveStr, diamond.address);
+  console.log(`----inside curve:${hubCurve.address}  `);
   await foundry.initialize(
     diamond.address,
     fee.address,
@@ -341,7 +341,7 @@ export async function hubSetupWithoutRegister(
   // NOTE: end diamond deploy
   //
 
-  await curveRegistry.approve(curve.address);
+  await curveRegistry.approve(hubCurve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   console.log(`----FFFIIIIIINNNIIIII  `);
   return {
@@ -351,7 +351,7 @@ export async function hubSetupWithoutRegister(
     diamond,
     meTokenFactory,
     singleAssetVault,
-    curve,
+    hubCurve,
     meTokenRegistry,
     vaultRegistry,
     curveRegistry,
@@ -383,15 +383,16 @@ export async function addHubSetup(
   daoAddress?: string
 ): Promise<{
   hubId: number;
+  hubCurve: ICurve;
 }> {
   let singleAssetVault: SingleAssetVault;
   let account0: SignerWithAddress;
-  const curve = await getCurve(curveType, diamond.address);
-  const isCurveApproved = await curveRegistry.isApproved(curve.address);
+  const hubCurve = await getCurve(curveType, diamond.address);
+  const isCurveApproved = await curveRegistry.isApproved(hubCurve.address);
   if (!isCurveApproved) {
-    await curveRegistry.approve(curve.address);
+    await curveRegistry.approve(hubCurve.address);
   }
-  const isCurveApprovedAfter = await curveRegistry.isApproved(curve.address);
+  const isCurveApprovedAfter = await curveRegistry.isApproved(hubCurve.address);
   expect(isCurveApprovedAfter).to.be.true;
   let dao = daoAddress;
   [account0] = await ethers.getSigners();
@@ -415,7 +416,7 @@ export async function addHubSetup(
     account0.address,
     tokenAddr,
     singleAssetVault.address,
-    curve.address,
+    hubCurve.address,
     refundRatio, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
@@ -423,5 +424,6 @@ export async function addHubSetup(
   const hubId = (await hub.count()).toNumber();
   return {
     hubId,
+    hubCurve,
   };
 }

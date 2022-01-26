@@ -108,9 +108,10 @@ const setup = async () => {
   );
   console.log("8888888888");
   // Create hub and register first hub
-
+  let hubCurve: ICurve;
   ({
     token,
+    hubCurve,
     curveRegistry,
     tokenAddr,
     hub,
@@ -128,6 +129,7 @@ const setup = async () => {
     5000,
     "bancorABDK"
   ));
+  const firstHubId = await hub.count();
   console.log("99999999999");
   let hubArgs: [
     string,
@@ -159,7 +161,7 @@ const setup = async () => {
     account0.address,
   ];
   let hubDetails = await addHubSetup(...hubArgs);
-  const bancorABDK = await deploy<BancorABDK>(
+  /* const bancorABDK = await deploy<BancorABDK>(
     "BancorABDK",
     undefined,
     hub.address
@@ -169,14 +171,21 @@ const setup = async () => {
     "BancorABDK",
     undefined,
     hub.address
+  ); 
+ 
+  await curveRegistry.approve(bancorABDK.address);
+  await curveRegistry.approve(newBancorABDK.address);*/
+  console.log(
+    `
+    
+    curve:${hubCurve.address} for hubid:${firstHubId}  newCurve:${hubDetails.hubCurve.address} for hubid:${hubDetails.hubId}
+    
+    `
   );
-
-  /*  */
-  await curveRegistry.approve(newBancorABDK.address);
   let curve = {
     signers: [account0, account1, account2],
-    curve: bancorABDK,
-    newCurve: newBancorABDK,
+    curve: hubDetails.hubCurve,
+    newCurve: hubCurve,
     baseY: toETHNumber(baseY1),
     reserveWeight: reserveWeight1,
     MAX_WEIGHT: MAX_WEIGHT,
@@ -196,6 +205,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY2),
     reserveWeight: reserveWeight2,
@@ -207,6 +217,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY3),
     reserveWeight: reserveWeight3,
@@ -218,6 +229,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY4),
     reserveWeight: reserveWeight4,
@@ -229,6 +241,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY5),
     reserveWeight: reserveWeight5,
@@ -240,6 +253,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
@@ -254,6 +268,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY1),
     reserveWeight: reserveWeight1,
@@ -265,6 +280,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY2),
     reserveWeight: reserveWeight2,
@@ -276,6 +292,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY3),
     reserveWeight: reserveWeight3,
@@ -287,6 +304,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY4),
     reserveWeight: reserveWeight4,
@@ -298,6 +316,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY5),
     reserveWeight: reserveWeight5,
@@ -309,6 +328,7 @@ const setup = async () => {
   hubDetails = await addHubSetup(...hubArgs);
   curves.push({
     ...curve,
+    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
