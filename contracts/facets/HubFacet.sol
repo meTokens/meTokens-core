@@ -8,7 +8,6 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
-import "hardhat/console.sol";
 
 contract HubFacet {
     event Register(
@@ -52,11 +51,6 @@ contract HubFacet {
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
-        console.log(
-            "## s.curveRegistry:%s vaultRegistry:%s",
-            address(s.curveRegistry),
-            address(s.vaultRegistry)
-        );
         require(
             s.curveRegistry.isApproved(address(_curve)),
             "_curve !approved"
@@ -108,35 +102,14 @@ contract HubFacet {
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
     ) external {
-        console.log(
-            "## initUpdate id:%s target:%s _targetRefundRatio:%s",
-            _id,
-            _targetCurve,
-            _targetRefundRatio
-        );
         Details.Hub storage hub_ = s.hubs[_id];
-        console.log(
-            "## initUpdate msg.sender:%s Details hub_owner:%s",
-            msg.sender,
-            hub_.owner
-        );
         require(msg.sender == hub_.owner, "!owner");
-        console.log(
-            "## initUpdate hub_.updating:%s hub_.endTime:%s",
-            hub_.updating,
-            hub_.endTime
-        );
         if (hub_.updating && block.timestamp > hub_.endTime) {
             this.finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
 
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
-        console.log(
-            "## initUpdate block.timestamp:%s _encodedCurveDetails.length :%s",
-            block.timestamp,
-            _encodedCurveDetails.length
-        );
         // Make sure at least one of the values is different
         require(
             (_targetRefundRatio != 0) || (_encodedCurveDetails.length > 0),
@@ -164,12 +137,6 @@ contract HubFacet {
                 require(
                     s.curveRegistry.isApproved(_targetCurve),
                     "_targetCurve !approved"
-                );
-                console.log(
-                    "## 2 initUpdate s.curveRegistry :%s _targetCurve:%s hub_.curve:%s",
-                    address(s.curveRegistry),
-                    _targetCurve,
-                    hub_.curve
                 );
                 require(_targetCurve != hub_.curve, "targetCurve==curve");
                 ICurve(_targetCurve).register(_id, _encodedCurveDetails);

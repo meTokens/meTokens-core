@@ -51,11 +51,6 @@ const setup = async () => {
     ["address"],
     [DAI]
   );
-  /* const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  }); */
-  // hub = await deploy<HubFacet>("HubFacet");
 
   // Setting up curve info to test
 
@@ -106,8 +101,7 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
   );
-  console.log("8888888888");
-  // Create hub and register first hub
+  // Create and register first hub we also link the hubCurve of type "bancorABDK" to this hub (hubID = 1)
   let hubCurve: ICurve;
   ({
     token,
@@ -129,9 +123,7 @@ const setup = async () => {
     5000,
     "bancorABDK"
   ));
-  const firstHubId = await hub.count();
-  console.log("99999999999");
-  let hubArgs: [
+  let addArgs: [
     string,
     HubFacet,
     Diamond,
@@ -144,7 +136,8 @@ const setup = async () => {
     string,
     string,
     number,
-    string
+    string,
+    ICurve | undefined
   ] = [
     tokenAddr,
     hub,
@@ -159,29 +152,13 @@ const setup = async () => {
     encodedVaultArgs,
     5000,
     account0.address,
+    undefined,
   ];
-  let hubDetails = await addHubSetup(...hubArgs);
-  /* const bancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  );
 
-  const newBancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  ); 
- 
-  await curveRegistry.approve(bancorABDK.address);
-  await curveRegistry.approve(newBancorABDK.address);*/
-  console.log(
-    `
-    
-    curve:${hubCurve.address} for hubid:${firstHubId}  newCurve:${hubDetails.hubCurve.address} for hubid:${hubDetails.hubId}
-    
-    `
-  );
+  // we create a new curve of type "bancorABDK" and register it to a new hub (hubID = 2)
+  // along with encoded details for the curve and the vault
+  let hubDetails = await addHubSetup(...addArgs);
+
   let curve = {
     signers: [account0, account1, account2],
     curve: hubDetails.hubCurve,
@@ -201,11 +178,13 @@ const setup = async () => {
   curves.push(curve);
 
   // Second ABDK Curve
-  hubArgs[9] = encodedCurveDetails2;
-  hubDetails = await addHubSetup(...hubArgs);
+
+  addArgs[13] = hubDetails.hubCurve;
+  addArgs[9] = encodedCurveDetails2;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY2),
     reserveWeight: reserveWeight2,
@@ -213,11 +192,11 @@ const setup = async () => {
   });
 
   // Third ABDK curve
-  hubArgs[9] = encodedCurveDetails3;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails3;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY3),
     reserveWeight: reserveWeight3,
@@ -225,11 +204,11 @@ const setup = async () => {
   });
 
   // Fourth ABDK curve
-  hubArgs[9] = encodedCurveDetails4;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails4;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY4),
     reserveWeight: reserveWeight4,
@@ -237,11 +216,11 @@ const setup = async () => {
   });
 
   // fifth ABDK curve
-  hubArgs[9] = encodedCurveDetails5;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails5;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY5),
     reserveWeight: reserveWeight5,
@@ -249,11 +228,11 @@ const setup = async () => {
   });
 
   // sixth ABDK curve
-  hubArgs[9] = encodedCurveDetails6;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails6;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
@@ -261,14 +240,17 @@ const setup = async () => {
   });
 
   // Bancor Power
-  hubArgs[4] = "BancorPower";
+  addArgs[4] = "BancorPower";
 
   // First Power curve
-  hubArgs[9] = encodedCurveDetails1;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails1;
+  // we create a new curve of type "BancorPower" and register it to the hub
+  // along with encoded details for this curve
+  hubDetails = await addHubSetup(...addArgs);
+  // we set this new curve as the default curve
+  curve = { ...curve, curve: hubDetails.hubCurve };
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY1),
     reserveWeight: reserveWeight1,
@@ -276,11 +258,12 @@ const setup = async () => {
   });
 
   // Second Power curve
-  hubArgs[9] = encodedCurveDetails2;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[13] = curve.curve;
+  addArgs[9] = encodedCurveDetails2;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY2),
     reserveWeight: reserveWeight2,
@@ -288,11 +271,11 @@ const setup = async () => {
   });
 
   // third power curve
-  hubArgs[9] = encodedCurveDetails3;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails3;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY3),
     reserveWeight: reserveWeight3,
@@ -300,11 +283,11 @@ const setup = async () => {
   });
 
   // fourth power curve
-  hubArgs[9] = encodedCurveDetails4;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails4;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY4),
     reserveWeight: reserveWeight4,
@@ -312,11 +295,11 @@ const setup = async () => {
   });
 
   // fifth power curve
-  hubArgs[9] = encodedCurveDetails5;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails5;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY5),
     reserveWeight: reserveWeight5,
@@ -324,11 +307,11 @@ const setup = async () => {
   });
 
   // sixth power curve
-  hubArgs[9] = encodedCurveDetails6;
-  hubDetails = await addHubSetup(...hubArgs);
+  addArgs[9] = encodedCurveDetails6;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...curve,
-    curve: hubDetails.hubCurve,
     hubId: hubDetails.hubId,
     baseY: toETHNumber(baseY6),
     reserveWeight: reserveWeight6,
