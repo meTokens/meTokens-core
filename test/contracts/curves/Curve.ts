@@ -63,39 +63,39 @@ describe("Generic Curve", () => {
     foundry = await deploy<Foundry>("Foundry", {
       WeightedAverage: weightedAverage.address,
     });
-    hub = await deploy<Hub>("Hub");
-    _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
-    ({
-      token,
-      tokenHolder,
-      account0,
-      account1,
-      account2,
-      meTokenRegistry,
-      singleAssetVault,
-    } = await hubSetup(
-      encodedCurveDetails,
-      encodedVaultArgs,
-      5000,
-      hub,
-      foundry,
-      _curve as unknown as ICurve
-    ));
+    // hub = await deploy<Hub>("Hub");
+    // _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
+    // ({
+    //   token,
+    //   tokenHolder,
+    //   account0,
+    //   account1,
+    //   account2,
+    //   meTokenRegistry,
+    //   singleAssetVault,
+    // } = await hubSetup(
+    //   encodedCurveDetails,
+    //   encodedVaultArgs,
+    //   5000,
+    //   hub,
+    //   foundry,
+    //   _curve as unknown as ICurve
+    // ));
 
     // Prefund owner/buyer w/ DAI
-    dai = token;
-    await dai
-      .connect(tokenHolder)
-      .transfer(account1.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(tokenHolder)
-      .transfer(account2.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
+    //   dai = token;
+    //   await dai
+    //     .connect(tokenHolder)
+    //     .transfer(account1.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(tokenHolder)
+    //     .transfer(account2.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(account1)
+    //     .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(account1)
+    //     .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
   describe("getDetails()", () => {

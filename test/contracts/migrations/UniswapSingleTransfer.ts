@@ -5,20 +5,15 @@ import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { Fees } from "../../../artifacts/types/Fees";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -37,14 +32,13 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
-    let curve: BancorABDK;
+    let hubCurve: ICurve;
     let meTokenRegistry: MeTokenRegistry;
     let initialVault: SingleAssetVault;
     let targetVault: SingleAssetVault;
     let foundry: Foundry;
     let meToken: MeToken;
     let hub: HubFacet;
-    let fee: Fees;
     let vaultRegistry: VaultRegistry;
 
     const hubId1 = 1;
@@ -98,14 +92,11 @@ const setup = async () => {
         ["uint256", "uint24"],
         [earliestSwapTime, fees]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
+        hub,
+        hubCurve,
+        foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
         account0,
@@ -113,14 +104,11 @@ const setup = async () => {
         account2,
         meTokenRegistry,
         vaultRegistry,
-        fee,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        hub,
-        foundry,
-        curve as unknown as ICurve
+        "bancorABDK"
       ));
 
       targetVault = await deploy<SingleAssetVault>(
@@ -139,7 +127,7 @@ const setup = async () => {
         account0.address,
         WETH,
         targetVault.address,
-        curve.address,
+        hubCurve.address,
         refundRatio,
         encodedCurveDetails,
         encodedVaultWETHArgs

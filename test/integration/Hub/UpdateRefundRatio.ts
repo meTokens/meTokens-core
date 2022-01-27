@@ -30,7 +30,7 @@ import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("HubFacet - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let hubCurve: ICurve;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
     let hub: HubFacet;
@@ -64,19 +64,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
       ({
         token,
         tokenHolder,
+        hub,
+        foundry,
+        hubCurve,
         singleAssetVault,
         account0,
         account1,
@@ -86,9 +79,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         firstRefundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Pre-load owner and buyer w/ DAI
@@ -146,7 +137,7 @@ const setup = async () => {
       before(async () => {
         await hub.initUpdate(
           firstHubId,
-          bancorABDK.address,
+          hubCurve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -159,7 +150,7 @@ const setup = async () => {
         //await hub.setWarmup(172801);
         lastBlock = await ethers.provider.getBlock("latest");
         await expect(
-          hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, hubCurve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
       });
 
@@ -246,7 +237,7 @@ const setup = async () => {
       it("initUpdate() cannot be called", async () => {
         // TODO: fast to active duration
         await expect(
-          hub.initUpdate(1, bancorABDK.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, hubCurve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
       });
 
@@ -400,7 +391,7 @@ const setup = async () => {
         await expect(
           hub.initUpdate(
             1,
-            bancorABDK.address,
+            hubCurve.address,
             1000,
             ethers.utils.toUtf8Bytes("")
           )
@@ -550,7 +541,7 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          bancorABDK.address,
+          hubCurve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveDetails,
           encodedVaultArgs
@@ -576,7 +567,7 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          bancorABDK.address,
+          hubCurve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -622,7 +613,7 @@ const setup = async () => {
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
         await hub.initUpdate(
           1,
-          bancorABDK.address,
+          hubCurve.address,
           1000,
           ethers.utils.toUtf8Bytes("")
         );
@@ -639,7 +630,7 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          bancorABDK.address,
+          hubCurve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveDetails,
           encodedVaultArgs
@@ -661,7 +652,7 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          bancorABDK.address,
+          hubCurve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -676,7 +667,7 @@ const setup = async () => {
         expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
         await hub.initUpdate(
           hubId,
-          bancorABDK.address,
+          hubCurve.address,
           1000,
           ethers.utils.toUtf8Bytes("")
         );

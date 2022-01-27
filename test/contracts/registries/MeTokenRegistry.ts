@@ -90,7 +90,7 @@ const setup = async () => {
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
     let tokenWhale: string;
-    let bancorABDK: BancorABDK;
+    let hubCurve: ICurve;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
     let meToken: Address;
@@ -122,19 +122,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
 
       ({
         tokenAddr: DAI,
+        hub,
+        hubCurve,
+        foundry,
         meTokenRegistry,
         meTokenFactory,
         curveRegistry,
@@ -153,16 +146,14 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
 
       await hub.register(
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        hubCurve.address,
         refundRatio, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -171,7 +162,7 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        bancorABDK.address,
+        hubCurve.address,
         refundRatio, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -192,7 +183,7 @@ const setup = async () => {
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, bancorABDK.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, hubCurve.address, refundRatio / 2, "0x");
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -220,7 +211,7 @@ const setup = async () => {
         await tx.wait();
 
         meTokenAddr0 = await meTokenRegistry.getOwnerMeToken(account0.address);
-        const meTokensMinted = await bancorABDK.viewMeTokensMinted(
+        const meTokensMinted = await hubCurve.viewMeTokensMinted(
           assetsDeposited,
           hubId,
           0,
@@ -309,7 +300,7 @@ const setup = async () => {
         );
 
         let estimateCalculateTokenReturnedFromZero =
-          await bancorABDK.viewMeTokensMinted(assetsDeposited, hubId, 0, 0);
+          await hubCurve.viewMeTokensMinted(assetsDeposited, hubId, 0, 0);
 
         expect(
           toETHNumber(estimateCalculateTokenReturnedFromZero)
@@ -487,7 +478,7 @@ const setup = async () => {
       });
       it("Fails if current hub currently updating", async () => {
         await (
-          await hub.initUpdate(hubId, bancorABDK.address, refundRatio / 2, "0x")
+          await hub.initUpdate(hubId, hubCurve.address, refundRatio / 2, "0x")
         ).wait();
 
         const tx = meTokenRegistry.initResubscribe(
@@ -501,12 +492,7 @@ const setup = async () => {
       });
       it("Fails if target hub currently updating", async () => {
         await (
-          await hub.initUpdate(
-            hubId2,
-            bancorABDK.address,
-            refundRatio / 2,
-            "0x"
-          )
+          await hub.initUpdate(hubId2, hubCurve.address, refundRatio / 2, "0x")
         ).wait();
 
         const tx = meTokenRegistry.initResubscribe(

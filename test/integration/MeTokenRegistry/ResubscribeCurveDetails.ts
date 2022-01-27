@@ -1,7 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  calculateTokenReturned,
   calculateCollateralReturned,
   deploy,
   getContractAt,
@@ -12,9 +11,7 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
@@ -26,14 +23,13 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 import { Fees } from "../../../artifacts/types/Fees";
 import Decimal from "decimal.js";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let tx: ContractTransaction;
     let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let hubCurve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -96,20 +92,13 @@ const setup = async () => {
       );
 
       // Register first and second hub
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
 
       ({
         token,
         tokenHolder,
+        hub,
+        foundry,
+        hubCurve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -120,9 +109,7 @@ const setup = async () => {
         encodedCurveDetails1,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -132,7 +119,7 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        hubCurve.address,
         refundRatio,
         encodedCurveDetails2,
         encodedVaultArgs

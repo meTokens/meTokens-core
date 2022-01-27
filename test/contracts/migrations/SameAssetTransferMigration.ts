@@ -4,17 +4,15 @@ import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types/ICurve";
 
 const setup = async () => {
@@ -29,13 +27,13 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: SameAssetTransferMigration;
-    let curve: BancorABDK;
+    let curve: ICurve;
     let meTokenRegistry: MeTokenRegistry;
     let initialVault: SingleAssetVault;
     // let targetVault: SingleAssetVault;
     let foundry: Foundry;
     let meToken: MeToken;
-    let hub: Hub;
+    let hub: HubFacet;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -77,14 +75,10 @@ const setup = async () => {
       earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
       encodedMigrationArgs = "0x";
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
+        hub,
+        foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
         account0,
@@ -95,9 +89,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        hub,
-        foundry,
-        curve as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Register 2nd hub to which we'll migrate to

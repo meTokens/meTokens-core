@@ -24,7 +24,7 @@ import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let hubCurve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: Foundry;
@@ -66,19 +66,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
       ({
         token: dai,
         tokenHolder,
+        hub,
+        foundry,
+        hubCurve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -89,9 +82,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Deploy uniswap migration and approve it to the registry
@@ -133,7 +124,7 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        hubCurve.address,
         targetRefundRatio,
         encodedCurveDetails,
         encodedVaultArgs

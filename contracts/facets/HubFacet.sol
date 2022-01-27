@@ -165,6 +165,10 @@ contract HubFacet {
         );
     }
 
+    function finishUpdate(uint256 id) external {
+        LibHub.finishUpdate(id);
+    }
+
     function cancelUpdate(uint256 _id) external {
         Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");

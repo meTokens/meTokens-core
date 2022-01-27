@@ -8,13 +8,10 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { Fees } from "../../../artifacts/types/Fees";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("Vault.sol", () => {
@@ -29,7 +26,6 @@ const setup = async () => {
     let foundry: Foundry;
     let hub: HubFacet;
     let meTokenRegistry: MeTokenRegistry;
-    let curve: BancorABDK;
     let tokenHolder: Signer;
     let meToken: MeToken;
     let fees: Fees;
@@ -60,15 +56,11 @@ const setup = async () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
+        hub,
+        foundry,
         tokenHolder,
         account0,
         account1,
@@ -81,9 +73,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initRefundRatio,
-        hub,
-        foundry,
-        curve as unknown as ICurve
+        "bancorABDK"
       ));
 
       await fees.setMintFee(1e8);

@@ -2,20 +2,15 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
-import { ICurve } from "../../artifacts/types";
-import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { Foundry } from "../../artifacts/types/Foundry";
-import { HubFacet } from "../../artifacts/types/HubFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { mineBlock, setAutomine } from "../utils/hardhatNode";
 import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetup } from "../utils/hubSetup";
 
 const setup = async () => {
-  let bancorABDK: BancorABDK;
   let meTokenFactory: MeTokenFactory;
   let meTokenRegistry: MeTokenRegistry;
   let foundry: Foundry;
@@ -41,24 +36,11 @@ const setup = async () => {
         [DAI]
       );
 
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      const hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
-
       ({ meTokenFactory, meTokenRegistry, account0, account1 } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
     });
     it("create() with same params always produce different MeTokens", async () => {

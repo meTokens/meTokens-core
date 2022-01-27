@@ -2,7 +2,6 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { Foundry } from "../../artifacts/types/Foundry";
 import { HubFacet } from "../../artifacts/types/HubFacet";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
@@ -30,13 +29,11 @@ import { ICurve } from "../../artifacts/types";
 const setup = async () => {
   describe("Foundry.sol", () => {
     let DAI: string;
-    let DAIWhale: string;
-    let daiHolder: Signer;
     let dai: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: BancorABDK;
+    let hubCurve: ICurve;
     let meTokenRegistry: MeTokenRegistry;
     let foundry: Foundry;
     let token: ERC20;
@@ -50,12 +47,10 @@ const setup = async () => {
     const hubId = 1;
     const name = "Carl meToken";
     const symbol = "CARL";
-    const refundRatio = 240000;
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount = ethers.utils.parseEther("10");
     const amount1 = ethers.utils.parseEther("100");
-    const amount2 = ethers.utils.parseEther("6.9");
     const tokenDepositedInETH = 10;
     const tokenDeposited = ethers.utils.parseEther(
       tokenDepositedInETH.toString()
@@ -72,7 +67,7 @@ const setup = async () => {
     // weight at 50% linear curve
     // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     before(async () => {
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      ({ DAI } = await getNamedAccounts());
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -82,36 +77,22 @@ const setup = async () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      // foundry = await deploy<Foundry>("Foundry", {
-      //   WeightedAverage: weightedAverage.address,
-      // });
-      // hub = await deploy<HubFacet>("HubFacet");
-      // curve_ = await deploy<BancorABDK>(
-      //   "BancorABDK",
-      //   undefined,
-      //   hub.address,
-      //   foundry.address
-      // );
       ({
         token,
-        foundry,
-        hub,
-        singleAssetVault,
-        curve,
-        meTokenRegistry,
+        hubCurve,
         curveRegistry,
+        hub,
+        foundry,
         migrationRegistry,
         account0,
         account1,
         account2,
-        tokenHolder,
+        meTokenRegistry,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
-        initRefundRatio,
-        // BancorABDK,
-        "BancorABDK"
-        // curve
+        5000,
+        "bancorABDK"
       ));
 
       // Prefund owner/buyer w/ DAI
@@ -153,7 +134,7 @@ const setup = async () => {
       const totalSupply = await meToken.totalSupply();
 
       // mint
-      const meTokensMinted = await curve.viewMeTokensMinted(
+      const meTokensMinted = await hubCurve.viewMeTokensMinted(
         amount,
         hubId,
         totalSupply,
@@ -625,7 +606,7 @@ const setup = async () => {
 
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
-        let expectedMeTokensMinted = await curve.viewMeTokensMinted(
+        let expectedMeTokensMinted = await hubCurve.viewMeTokensMinted(
           amount1,
           hubId,
           0,
@@ -637,7 +618,7 @@ const setup = async () => {
         let vaultDaiBalanceBefore = await dai.balanceOf(
           singleAssetVault.address
         );
-        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
+        // let expectedAssetsDeposited = await hubCurve.viewAssetsDeposited(
         //   expectedMeTokensMinted,
         //   hubId,
         //   0,
@@ -694,13 +675,13 @@ const setup = async () => {
       });
 
       it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
-        let expectedMeTokensMinted = await curve.viewMeTokensMinted(
+        let expectedMeTokensMinted = await hubCurve.viewMeTokensMinted(
           amount1,
           hubId,
           0,
           0
         );
-        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
+        // let expectedAssetsDeposited = await hubCurve.viewAssetsDeposited(
         //   expectedMeTokensMinted,
         //   hubId,
         //   0,
