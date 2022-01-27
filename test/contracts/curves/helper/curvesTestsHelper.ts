@@ -108,7 +108,6 @@ export const curvesTestsHelper = async ({
   it("should be able to calculate Mint Return from zero", async () => {
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
-
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
     const calculatedReturn = calculateTokenReturnedFromZero(etherAmount, 0, 0);
     expect(toETHNumber(estimate)).to.be.approximately(

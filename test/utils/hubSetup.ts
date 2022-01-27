@@ -207,7 +207,6 @@ export async function hubSetupWithoutRegister(
   [account0, account1, account2, account3] = await ethers.getSigners();
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
-  const yolo = await token.connect(tokenHolder).balanceOf(account1.address);
   await token
     .connect(tokenHolder)
     .transfer(account1.address, ethers.utils.parseEther("1000"));
@@ -402,63 +401,3 @@ export async function addHubSetup(
     hubCurve,
   };
 }
-
-/* export async function addHubSetupWithExistingCurve(
-  tokenAddr: string,
-  hub: HubFacet,
-  foundry: Foundry,
-  hubCurve: ICurve,
-  meTokenRegistry: MeTokenRegistry,
-  curveRegistry: CurveRegistry,
-  migrationRegistry: MigrationRegistry,
-  vaultRegistry: VaultRegistry,
-  encodedCurveDetails: string,
-  encodedVaultArgs: string,
-  refundRatio: number,
-  daoAddress?: string
-): Promise<{
-  hubId: number;
-  hubCurve: ICurve;
-}> {
-  let singleAssetVault: SingleAssetVault;
-  let account0: SignerWithAddress;
-  //const hubCurve = await getCurve(curveType, diamond.address);
-  const isCurveApproved = await curveRegistry.isApproved(hubCurve.address);
-  if (!isCurveApproved) {
-    await curveRegistry.approve(hubCurve.address);
-  }
-  const isCurveApprovedAfter = await curveRegistry.isApproved(hubCurve.address);
-  expect(isCurveApprovedAfter).to.be.true;
-  let dao = daoAddress;
-  [account0] = await ethers.getSigners();
-  if (!dao) {
-    dao = account0.address;
-  }
-
-  singleAssetVault = await deploy<SingleAssetVault>(
-    "SingleAssetVault",
-    undefined, //no libs
-    dao, // DAO
-    foundry.address, // foundry
-    hub.address, // hub
-    meTokenRegistry.address, //IMeTokenRegistry
-    migrationRegistry.address //IMigrationRegistry
-  );
-
-  await vaultRegistry.approve(singleAssetVault.address);
-
-  await hub.register(
-    account0.address,
-    tokenAddr,
-    singleAssetVault.address,
-    hubCurve.address,
-    refundRatio, //refund ratio
-    encodedCurveDetails,
-    encodedVaultArgs
-  );
-  const hubId = (await hub.count()).toNumber();
-  return {
-    hubId,
-    hubCurve,
-  };
-} */

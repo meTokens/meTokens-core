@@ -12,6 +12,7 @@ import {
   calculateTokenReturned,
   calculateTokenReturnedFromZero,
   deploy,
+  getCalculationFuncsForBancorCurves,
   toETHNumber,
 } from "../../utils/helpers";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
@@ -155,24 +156,27 @@ const setup = async () => {
   // we create a new curve of type "bancorABDK" and register it to a new hub (hubID = 2)
   // along with encoded details for the curve and the vault
   let hubDetails = await addHubSetup(...addArgs);
-
-  let curve = {
+  let testCurve = {
     signers: [account0, account1, account2],
     curve: hubDetails.hubCurve,
     newCurve: hubCurve,
-    baseY: toETHNumber(baseY1),
-    reserveWeight: reserveWeight1,
-    MAX_WEIGHT: MAX_WEIGHT,
-    targetReserveWeight: targetReserveWeight1,
-    hubId: hubDetails.hubId,
     hub,
-    calculateCollateralReturned: calculateCollateralReturned,
-    calculateTokenReturned: calculateTokenReturned,
-    calculateTokenReturnedFromZero: calculateTokenReturnedFromZero,
     precision: 0.000000000001,
   };
-
-  curves.push(curve);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight1.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY1,
+      reserveWeight1,
+      targetReserveWeight1,
+      MAX_WEIGHT
+    ),
+  });
 
   // Second ABDK Curve
 
@@ -180,12 +184,20 @@ const setup = async () => {
   addArgs[9] = encodedCurveDetails2;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
+
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY2),
-    reserveWeight: reserveWeight2,
-    targetReserveWeight: targetReserveWeight2,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight2.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY2,
+      reserveWeight2,
+      targetReserveWeight2,
+      MAX_WEIGHT
+    ),
   });
 
   // Third ABDK curve
@@ -193,49 +205,73 @@ const setup = async () => {
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY3),
-    reserveWeight: reserveWeight3,
-    targetReserveWeight: targetReserveWeight3,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight3.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY3,
+      reserveWeight3,
+      targetReserveWeight3,
+      MAX_WEIGHT
+    ),
   });
-
   // Fourth ABDK curve
   addArgs[9] = encodedCurveDetails4;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY4),
-    reserveWeight: reserveWeight4,
-    targetReserveWeight: targetReserveWeight4,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight4.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY4,
+      reserveWeight4,
+      targetReserveWeight4,
+      MAX_WEIGHT
+    ),
   });
-
   // fifth ABDK curve
   addArgs[9] = encodedCurveDetails5;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY5),
-    reserveWeight: reserveWeight5,
-    targetReserveWeight: targetReserveWeight5,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight5.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY5,
+      reserveWeight5,
+      targetReserveWeight5,
+      MAX_WEIGHT
+    ),
   });
-
   // sixth ABDK curve
   addArgs[9] = encodedCurveDetails6;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY6),
-    reserveWeight: reserveWeight6,
-    targetReserveWeight: targetReserveWeight6,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight6.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY6,
+      reserveWeight6,
+      targetReserveWeight6,
+      MAX_WEIGHT
+    ),
   });
-
   // Bancor Power
   addArgs[4] = "BancorPower";
 
@@ -245,74 +281,111 @@ const setup = async () => {
   // along with encoded details for this curve
   hubDetails = await addHubSetup(...addArgs);
   // we set this new curve as the default curve
-  curve = { ...curve, curve: hubDetails.hubCurve };
+  testCurve = { ...testCurve, curve: hubDetails.hubCurve };
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY1),
-    reserveWeight: reserveWeight1,
-    targetReserveWeight: targetReserveWeight1,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight1.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY1,
+      reserveWeight1,
+      targetReserveWeight1,
+      MAX_WEIGHT
+    ),
   });
-
   // Second Power curve
-  addArgs[13] = curve.curve;
+  addArgs[13] = testCurve.curve;
   addArgs[9] = encodedCurveDetails2;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY2),
-    reserveWeight: reserveWeight2,
-    targetReserveWeight: targetReserveWeight2,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight2.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY2,
+      reserveWeight2,
+      targetReserveWeight2,
+      MAX_WEIGHT
+    ),
   });
-
   // third power curve
   addArgs[9] = encodedCurveDetails3;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY3),
-    reserveWeight: reserveWeight3,
-    targetReserveWeight: targetReserveWeight3,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight3.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY3,
+      reserveWeight3,
+      targetReserveWeight3,
+      MAX_WEIGHT
+    ),
   });
-
   // fourth power curve
   addArgs[9] = encodedCurveDetails4;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY4),
-    reserveWeight: reserveWeight4,
-    targetReserveWeight: targetReserveWeight4,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight4.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY4,
+      reserveWeight4,
+      targetReserveWeight4,
+      MAX_WEIGHT
+    ),
   });
-
   // fifth power curve
   addArgs[9] = encodedCurveDetails5;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY5),
-    reserveWeight: reserveWeight5,
-    targetReserveWeight: targetReserveWeight5,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight5.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY5,
+      reserveWeight5,
+      targetReserveWeight5,
+      MAX_WEIGHT
+    ),
   });
-
   // sixth power curve
   addArgs[9] = encodedCurveDetails6;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
   curves.push({
-    ...curve,
+    ...testCurve,
     hubId: hubDetails.hubId,
-    baseY: toETHNumber(baseY6),
-    reserveWeight: reserveWeight6,
-    targetReserveWeight: targetReserveWeight6,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight6.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY6,
+      reserveWeight6,
+      targetReserveWeight6,
+      MAX_WEIGHT
+    ),
   });
   return curves;
 };
