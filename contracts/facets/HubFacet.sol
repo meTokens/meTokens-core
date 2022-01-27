@@ -32,7 +32,6 @@ contract HubFacet {
     );
     event CancelUpdate(uint256 _id);
     event TransferHubOwnership(uint256 _id, address _newOwner);
-    event FinishUpdate(uint256 _id);
 
     AppStorage internal s; // solhint-disable-line
 
@@ -105,9 +104,10 @@ contract HubFacet {
         Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            this.finishUpdate(_id);
+            LibHub.finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
+
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
@@ -126,6 +126,7 @@ contract HubFacet {
             );
             hub_.targetRefundRatio = _targetRefundRatio;
         }
+
         bool reconfigure;
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
@@ -223,31 +224,5 @@ contract HubFacet {
 
     function cooldown() external view returns (uint256) {
         return s.hubCooldown;
-    }
-
-    function finishUpdate(uint256 id) external returns (Details.Hub memory) {
-        Details.Hub storage hub_ = s.hubs[id];
-        require(block.timestamp > hub_.endTime, "Still updating");
-
-        if (hub_.targetRefundRatio != 0) {
-            hub_.refundRatio = hub_.targetRefundRatio;
-            hub_.targetRefundRatio = 0;
-        }
-
-        if (hub_.reconfigure) {
-            ICurve(hub_.curve).finishReconfigure(id);
-            hub_.reconfigure = false;
-        }
-        if (hub_.targetCurve != address(0)) {
-            hub_.curve = hub_.targetCurve;
-            hub_.targetCurve = address(0);
-        }
-
-        hub_.updating = false;
-        hub_.startTime = 0;
-        hub_.endTime = 0;
-
-        emit FinishUpdate(id);
-        return hub_;
     }
 }

@@ -38,24 +38,36 @@ library Details {
 }
 
 struct AppStorage {
+    // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
-    uint256 meTokenWarmup;
-    uint256 meTokenDuration;
-    uint256 meTokenCooldown;
-    uint256 hubWarmup;
-    uint256 hubDuration;
-    uint256 hubCooldown;
-    uint256 hubCount;
+    uint256 MAX_FEE;
+    // Widely-used addresses/interfaces
     address foundry;
     address meTokenFactory;
     IRegistry vaultRegistry;
     IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
+    // MeTokenRegistry-specific
+    uint256 meTokenWarmup;
+    uint256 meTokenDuration;
+    uint256 meTokenCooldown;
     mapping(address => Details.MeToken) meTokens;
     mapping(address => address) meTokenOwners;
     mapping(address => address) pendingMeTokenOwners;
+    // Hub-specific
+    uint256 hubWarmup;
+    uint256 hubDuration;
+    uint256 hubCooldown;
+    uint256 hubCount;
     mapping(uint256 => Details.Hub) hubs;
+    // Fees-specific
+    uint256 mintFee;
+    uint256 burnBuyerFee;
+    uint256 burnOwnerFee;
+    uint256 transferFee;
+    uint256 interestFee;
+    uint256 yieldFee;
 }
 
 library LibAppStorage {

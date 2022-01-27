@@ -56,17 +56,14 @@ const setup = async () => {
       bancorPower = await deploy<BancorPower>(
         "BancorPower",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({ token } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
         5000,
-        hub,
-        foundry,
-        bancorPower
+        "BancorPower"
       ));
       dai = token;
     });
@@ -383,8 +380,7 @@ const setup = async () => {
         newbancorPower = await deploy<BancorPower>(
           "BancorPower",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
 
         ({ token } = await hubSetup(
