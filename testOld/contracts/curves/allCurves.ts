@@ -52,8 +52,8 @@ const setup = async () => {
     ["address"],
     [DAI]
   );
-  const bancorABDK = await deploy<BancorABDK>("BancorABDK");
-  const bancorPower = await deploy<BancorPower>("BancorPower");
+  /*  const bancorABDK = await deploy<BancorABDK>("BancorABDK");
+  const bancorPower = await deploy<BancorPower>("BancorPower"); */
 
   // Setting up curve info to test
 
@@ -118,7 +118,7 @@ const setup = async () => {
     account1,
     account2,
     meTokenRegistry,
-  } = await hubSetup(encodedCurveDetails1, encodedVaultArgs, 5000, bancorABDK));
+  } = await hubSetup(encodedCurveDetails1, encodedVaultArgs, 5000));
 
   let hubArgs: [
     Hub,
@@ -165,7 +165,7 @@ const setup = async () => {
 
   curves.push(curve);
 
-  // Second ABDK Curve
+  /*   // Second ABDK Curve
   hubArgs[7] = encodedCurveDetails2;
   hubDetails = await addHubSetup(...hubArgs);
 
@@ -277,7 +277,7 @@ const setup = async () => {
   curve.reserveWeight = reserveWeight6;
   curve.targetReserveWeight = targetReserveWeight6;
   curves.push(curve);
-
+ */
   return curves;
 };
 setup().then((tests) => {

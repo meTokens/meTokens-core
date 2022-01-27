@@ -8,7 +8,6 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
-import "hardhat/console.sol";
 
 contract HubFacet {
     event Register(
@@ -51,11 +50,6 @@ contract HubFacet {
         bytes memory _encodedVaultArgs
     ) external {
         // TODO: access control
-        console.log(
-            "## s.curveRegistry:%s vaultRegistry:%s",
-            address(s.curveRegistry),
-            address(s.vaultRegistry)
-        );
         require(
             s.curveRegistry.isApproved(address(_curve)),
             "_curve !approved"
@@ -113,6 +107,7 @@ contract HubFacet {
             LibHub.finishUpdate(_id);
         }
         require(!hub_.updating, "already updating");
+
         require(block.timestamp >= hub_.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
@@ -131,6 +126,7 @@ contract HubFacet {
             );
             hub_.targetRefundRatio = _targetRefundRatio;
         }
+
         bool reconfigure;
         if (_encodedCurveDetails.length > 0) {
             if (_targetCurve == address(0)) {
