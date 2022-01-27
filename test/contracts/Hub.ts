@@ -11,10 +11,11 @@ import { hubSetupWithoutRegister } from "../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
-import { Signer } from "@ethersproject/abstract-signer";
+import { Signer } from "ethers";
 import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../artifacts/types";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
@@ -80,13 +81,8 @@ const setup = async () => {
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      hub = await deploy<HubFacet>("HubFacet");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      hub = await deploy<Hub>("Hub");
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
@@ -98,7 +94,11 @@ const setup = async () => {
         vaultRegistry,
         curveRegistry,
         singleAssetVault,
-      } = await hubSetupWithoutRegister(hub, foundry, curve));
+      } = await hubSetupWithoutRegister(
+        hub,
+        foundry,
+        curve as unknown as ICurve
+      ));
     });
 
     describe("Initial state", () => {
@@ -108,6 +108,7 @@ const setup = async () => {
         expect(await hub.warmup()).to.be.equal(0);
         expect(await hub.duration()).to.be.equal(0);
         expect(await hub.cooldown()).to.be.equal(0);
+        expect(await hub.registerer()).to.be.equal(account0.address);
         const details = await hub.getDetails(0);
         expect(details.active).to.be.equal(false);
         expect(details.owner).to.be.equal(ethers.constants.AddressZero);
@@ -126,6 +127,22 @@ const setup = async () => {
     });
 
     describe("register()", () => {
+      it("should revert from invalid sender (onlyRegisterer)", async () => {
+        // account1 is not Registerer, hence should revert
+        await expect(
+          hub
+            .connect(account1)
+            .register(
+              account0.address,
+              DAI,
+              singleAssetVault.address,
+              curve.address,
+              refundRatio1,
+              encodedCurveDetails,
+              encodedVaultDAIArgs
+            )
+        ).to.be.revertedWith("!registerer");
+      });
       it("should revert from invalid address arguments", async () => {
         // Un-approved curve
         let tx = hub.register(
@@ -399,8 +416,7 @@ const setup = async () => {
         const newCurve = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
         await curveRegistry.approve(newCurve.address);
         const tx = hub.initUpdate(
@@ -416,8 +432,7 @@ const setup = async () => {
         newCurve = await deploy<BancorABDK>(
           "BancorABDK",
           undefined,
-          hub.address,
-          foundry.address
+          hub.address
         );
         await curveRegistry.approve(newCurve.address);
         const tx = await hub.initUpdate(
@@ -854,6 +869,31 @@ const setup = async () => {
       });
       it("should revert when hub already inactive", async () => {
         await expect(hub.deactivate(hubId)).to.be.revertedWith("!active");
+      });
+    });
+
+    describe("setRegisterer()", () => {
+      it("should revert when sender is not registerer", async () => {
+        await expect(
+          hub.connect(account1).setRegisterer(account1.address)
+        ).to.be.revertedWith("!registerer");
+      });
+      it("should revert when new registerer is same as old", async () => {
+        await expect(hub.setRegisterer(account0.address)).to.be.revertedWith(
+          "_registerer == registerer"
+        );
+      });
+      it("should be able to change registerer", async () => {
+        await hub.setRegisterer(account1.address);
+        expect(await hub.registerer()).to.be.equal(account1.address);
+      });
+      after(async () => {
+        await expect(
+          hub.connect(account0).setRegisterer(account0.address)
+        ).to.be.revertedWith("!registerer");
+        // set registerer back to account0
+        await hub.connect(account1).setRegisterer(account0.address);
+        expect(await hub.registerer()).to.be.equal(account0.address);
       });
     });
   });

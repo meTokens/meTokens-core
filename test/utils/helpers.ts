@@ -1,8 +1,10 @@
-import { BigNumber } from "@ethersproject/bignumber";
+import { BigNumber } from "ethers";
 import { Decimal } from "decimal.js";
 import { Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
+import { expect } from "chai";
+import { ICurve } from "../../artifacts/types/ICurve";
 
 export async function deploy<Type>(
   typeName: string,
@@ -318,6 +320,103 @@ export const maxValArray = [
   /* 127 */ "0x16b3160a3c604c6667ff40ff1882b0fcf",
 ];
 
+export const toETHNumber = (num: BigNumber | string): number => {
+  return typeof num == "string"
+    ? Number.parseFloat(num as string)
+    : Number.parseFloat(ethers.utils.formatEther(num));
+};
+
+export const fromETHNumber = (num: number): BigNumber => {
+  return ethers.utils.parseEther(num.toString());
+};
+
+/** Bancor curve calculation */
+
+export const getCalculationFuncsForBancorCurves = (
+  baseY: BigNumber,
+  reserveWeight: number,
+  targetReserveWeight: number,
+  MAX_WEIGHT: number
+) => {
+  return {
+    calculateCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateCollateralReturned(
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled,
+        reserveWeight / MAX_WEIGHT
+      ),
+    calculateTargetCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateCollateralReturned(
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled,
+        targetReserveWeight / MAX_WEIGHT
+      ),
+    calculateTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateTokenReturned(
+        collateralAmount,
+        meTokenSupply,
+        balancePooled,
+        reserveWeight / MAX_WEIGHT
+      ),
+    calculateTargetTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateTokenReturned(
+        collateralAmount,
+        meTokenSupply,
+        balancePooled,
+        targetReserveWeight / MAX_WEIGHT
+      ),
+    calculateTokenReturnedFromZero: (
+      depositAmount: number,
+      balancePooled: number,
+      meTokenSupply: number
+    ) =>
+      calculateTokenReturnedFromZero(
+        depositAmount,
+        toETHNumber(baseY),
+        reserveWeight / MAX_WEIGHT
+      ),
+    calculateTargetTokenReturnedFromZero: (
+      depositAmount: number,
+      balancePooled: number,
+      meTokenSupply: number
+    ) => {
+      const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
+
+      return calculateTokenReturnedFromZero(
+        depositAmount,
+        toETHNumber(targetBaseY),
+        targetReserveWeight / MAX_WEIGHT
+      );
+    },
+    verifyCurveDetails: (
+      detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+    ) => {
+      const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
+
+      expect(detail[2]).to.equal(targetBaseY);
+      expect(detail[3]).to.equal(targetReserveWeight);
+    },
+  };
+};
+
 const one = new Decimal(1);
 // ( assetsDeposited * _baseX ^(1/reserveWeight ) / _baseX  * _baseY *  reserveWeight ) ^reserveWeight
 export const calculateTokenReturnedFromZero = (
@@ -384,12 +483,206 @@ export const calculateCollateralToDepositFromZero = (
   return res.toNumber();
 };
 
-export const toETHNumber = (num: BigNumber | string): number => {
-  return typeof num == "string"
-    ? Number.parseFloat(num as string)
-    : Number.parseFloat(ethers.utils.formatEther(num));
+/** Stepwise curve calculation */
+
+export const getCalculationFuncsForStepwiseCurves = (
+  stepX: number,
+  stepY: number,
+  targetStepX: number,
+  targetStepY: number
+) => {
+  return {
+    calculateCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateStepwiseCollateralReturned(
+        stepX,
+        stepY,
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled
+      ),
+    calculateTargetCollateralReturned: (
+      meTokenBurned: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateStepwiseCollateralReturned(
+        targetStepX,
+        targetStepY,
+        meTokenBurned,
+        meTokenSupply,
+        balancePooled
+      ),
+    calculateTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateStepwiseTokenReturned(
+        collateralAmount,
+        balancePooled,
+        meTokenSupply,
+        stepX,
+        stepY
+      ),
+    calculateTargetTokenReturned: (
+      collateralAmount: number,
+      meTokenSupply: number,
+      balancePooled: number
+    ) =>
+      calculateStepwiseTokenReturned(
+        collateralAmount,
+        balancePooled,
+        meTokenSupply,
+        targetStepX,
+        targetStepY
+      ),
+    calculateTokenReturnedFromZero: (
+      depositAmount: number,
+      balancePooled: number,
+      meTokenSupply: number
+    ) =>
+      calculateStepwiseTokenReturned(
+        depositAmount,
+        balancePooled,
+        meTokenSupply,
+        stepX,
+        stepY
+      ),
+    calculateTargetTokenReturnedFromZero: (
+      depositAmount: number,
+      balancePooled: number,
+      meTokenSupply: number
+    ) =>
+      calculateStepwiseTokenReturned(
+        depositAmount,
+        balancePooled,
+        meTokenSupply,
+        targetStepX,
+        targetStepY
+      ),
+    verifyCurveDetails: (
+      detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+    ) => {
+      expect(toETHNumber(detail[0])).to.equal(stepX);
+      expect(toETHNumber(detail[1])).to.equal(stepY);
+      expect(toETHNumber(detail[2])).to.equal(targetStepX);
+      expect(toETHNumber(detail[3])).to.equal(targetStepY);
+    },
+  };
 };
 
-export const fromETHNumber = (num: number): BigNumber => {
-  return ethers.utils.parseEther(num.toString());
+// Return = steps * X + supply in steps
+export const calculateStepwiseTokenReturned = (
+  collateralAmount: number,
+  balancePooled: number,
+  totalSupply: number,
+  stepX: number,
+  stepY: number
+) => {
+  const calc = calculateSupplyInStep(
+    collateralAmount,
+    balancePooled,
+    stepX,
+    stepY
+  );
+  const res = calc.steps.mul(calc.x).add(calc.supplyInStep);
+  return res.minus(totalSupply).toNumber();
+};
+
+// calculate balancePooled - (New_Steps * stepY * stepX + (New_Steps+1) * New_Supply_in_Step *stepY)
+// New_Steps=ROUNDDOWN(Supply- token_Burn)/B2)
+// New_Supply_in_Step=Supply - token_Burn - New_Steps*stepX
+export const calculateStepwiseCollateralReturned = (
+  stepX: number,
+  stepY: number,
+  meTokenBurned: number,
+  meTokenSupply: number,
+  balancePooled: number
+) => {
+  const _balancePooled = new Decimal(balancePooled);
+  const _stepX = new Decimal(stepX);
+  const _stepY = new Decimal(stepY);
+  const _meTokenBurned = new Decimal(meTokenBurned);
+  const _meTokenSupply = new Decimal(meTokenSupply);
+  Decimal.set({ rounding: Decimal.ROUND_DOWN });
+  const newSteps = _meTokenSupply.sub(_meTokenBurned).div(_stepX).round();
+  const newSupplyInStep = _meTokenSupply
+    .sub(_meTokenBurned)
+    .sub(newSteps.mul(_stepX));
+  const newCollateralBal = newSteps
+    .mul(_stepX)
+    .mul(_stepY)
+    .add(newSteps.add(1).mul(newSupplyInStep).mul(_stepY));
+  const res = _balancePooled.minus(newCollateralBal);
+  return res.toNumber();
+};
+
+const two = new Decimal(2);
+
+// calculate ROUNDDOWN((((2*DepositAmount*StepX^2)/(StepX*StepY))^(1/2))/StepX
+const calculateSteps = (
+  collateralAmount: Decimal,
+  balancePooled: Decimal,
+  stepX: Decimal,
+  stepY: Decimal
+): Decimal => {
+  const num = two
+    .mul(balancePooled.add(collateralAmount))
+    .mul(stepX)
+    .mul(stepX);
+  const denom = stepX.mul(stepY);
+  Decimal.set({ rounding: Decimal.ROUND_DOWN });
+  const res = num.div(denom).squareRoot().div(stepX).round();
+  return res;
+};
+
+const calculateStepBalance = (
+  steps: Decimal,
+  stepX: Decimal,
+  stepY: Decimal
+): Decimal => {
+  const res = steps.mul(steps).add(steps).div(two).mul(stepX).mul(stepY);
+  return res;
+};
+
+const calculateSupplyInStep = (
+  collateralAmount: number,
+  balancePooled: number,
+  stepX: number,
+  stepY: number
+): {
+  steps: Decimal;
+  supplyInStep: Decimal;
+  stepBalance: Decimal;
+  x: Decimal;
+  y: Decimal;
+} => {
+  const _collateralAmount = new Decimal(collateralAmount);
+  const _balancePooled = new Decimal(balancePooled);
+  const _stepX = new Decimal(stepX);
+  const _stepY = new Decimal(stepY);
+  const steps = calculateSteps(
+    _collateralAmount,
+    _balancePooled,
+    _stepX,
+    _stepY
+  );
+  const stepBalance = calculateStepBalance(steps, _stepX, _stepY);
+  let supplyInStep = new Decimal(0);
+  const minusOne = new Decimal(-1);
+  const totalCollateral = _collateralAmount.add(_balancePooled);
+  if (stepBalance.greaterThan(totalCollateral)) {
+    const num = stepBalance.minus(totalCollateral);
+    const denom = _stepY.mul(steps);
+    supplyInStep = minusOne.mul(num.div(denom));
+  } else {
+    const num = totalCollateral.minus(stepBalance);
+    const denom = _stepY.mul(steps.add(one));
+    supplyInStep = num.div(denom);
+  }
+  return { steps, stepBalance, supplyInStep, x: _stepX, y: _stepY };
 };

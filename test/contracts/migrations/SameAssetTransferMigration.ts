@@ -4,48 +4,38 @@ import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { Hub } from "../../../artifacts/types/Hub";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
+import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { Fees } from "../../../artifacts/types/Fees";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import { ICurve } from "../../../artifacts/types";
+import { ICurve } from "../../../artifacts/types/ICurve";
 
 const setup = async () => {
-  describe("UniswapSingleTransferMigration.sol", () => {
+  describe("SameAssetTransferMigration.sol", () => {
     let earliestSwapTime: number;
     let DAI: string;
-    let WETH: string;
     let DAIWhale: string;
-    let WETHWhale: string;
     let daiHolder: Signer;
-    let wethHolder: Signer;
     let dai: ERC20;
-    let weth: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
-    let migration: UniswapSingleTransferMigration;
+    let migration: SameAssetTransferMigration;
     let curve: BancorABDK;
     let meTokenRegistry: MeTokenRegistry;
     let initialVault: SingleAssetVault;
-    let targetVault: SingleAssetVault;
+    // let targetVault: SingleAssetVault;
     let foundry: Foundry;
     let meToken: MeToken;
-    let hub: HubFacet;
-    let fee: Fees;
-    let vaultRegistry: VaultRegistry;
+    let hub: Hub;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -65,19 +55,15 @@ const setup = async () => {
 
     let encodedCurveDetails: string;
     let encodedMigrationArgs: string;
-    let badEncodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
-    let encodedVaultWETHArgs: string;
     let block;
-    let migrationDetails: [BigNumber, number, boolean, boolean] & {
-      soonest: BigNumber;
-      fee: number;
+    let migrationDetails: [boolean, boolean] & {
+      isMigrating: boolean;
       started: boolean;
-      swapped: boolean;
     };
 
     before(async () => {
-      ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
+      ({ DAI, DAIWhale } = await getNamedAccounts());
       encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
@@ -86,18 +72,11 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedVaultWETHArgs = ethers.utils.defaultAbiCoder.encode(
-        ["address"],
-        [WETH]
-      );
 
       const block = await ethers.provider.getBlock("latest");
       earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
-      encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint24"],
-        [earliestSwapTime, fees]
-      );
+      encodedMigrationArgs = "0x";
       const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
@@ -112,8 +91,6 @@ const setup = async () => {
         account1,
         account2,
         meTokenRegistry,
-        vaultRegistry,
-        fee,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultDAIArgs,
@@ -123,30 +100,19 @@ const setup = async () => {
         curve as unknown as ICurve
       ));
 
-      targetVault = await deploy<SingleAssetVault>(
-        "SingleAssetVault",
-        undefined, //no libs
-        account0.address, // DAO
-        foundry.address, // foundry
-        hub.address, // hub
-        meTokenRegistry.address, //IMeTokenRegistry
-        migrationRegistry.address //IMigrationRegistry
-      );
-      await vaultRegistry.approve(targetVault.address);
-
       // Register 2nd hub to which we'll migrate to
       await hub.register(
         account0.address,
-        WETH,
-        targetVault.address,
+        DAI,
+        initialVault.address,
         curve.address,
         refundRatio,
         encodedCurveDetails,
-        encodedVaultWETHArgs
+        encodedVaultDAIArgs
       );
       // Deploy uniswap migration and approve it to the registry
-      migration = await deploy<UniswapSingleTransferMigration>(
-        "UniswapSingleTransferMigration",
+      migration = await deploy<SameAssetTransferMigration>(
+        "SameAssetTransferMigration",
         undefined,
         account0.address,
         foundry.address,
@@ -156,31 +122,23 @@ const setup = async () => {
       );
       await migrationRegistry.approve(
         initialVault.address,
-        targetVault.address,
+        initialVault.address,
         migration.address
       );
-      // Pre fund owner & buyer w/ DAI & WETH
+      // Pre fund owner & buyer w/ DAI
       dai = await getContractAt<ERC20>("ERC20", DAI);
-      weth = await getContractAt<ERC20>("ERC20", WETH);
       daiHolder = await impersonate(DAIWhale);
-      wethHolder = await impersonate(WETHWhale);
       dai
         .connect(daiHolder)
         .transfer(account0.address, ethers.utils.parseEther("100"));
       dai
         .connect(daiHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
-      weth
-        .connect(wethHolder)
-        .transfer(account0.address, ethers.utils.parseEther("10"));
-      weth
-        .connect(wethHolder)
-        .transfer(account2.address, ethers.utils.parseEther("1000"));
+
       let max = ethers.constants.MaxUint256;
       await dai.connect(account1).approve(meTokenRegistry.address, max);
       await dai.connect(account2).approve(initialVault.address, max);
-      await weth.connect(account2).approve(migration.address, max);
-      await weth.connect(account2).approve(targetVault.address, max);
+      await dai.connect(account2).approve(migration.address, max);
 
       // Create meToken
       await meTokenRegistry
@@ -194,10 +152,6 @@ const setup = async () => {
     });
 
     describe("isValid()", () => {
-      it("Returns false for invalid encoding", async () => {
-        const isValid = await migration.isValid(meToken.address, "0x");
-        expect(isValid).to.be.false;
-      });
       it("Returns true for valid encoding", async () => {
         const isValid = await migration.isValid(
           meToken.address,
@@ -205,32 +159,10 @@ const setup = async () => {
         );
         expect(isValid).to.be.true;
       });
-      it("Returns false for start time before current time", async () => {
-        badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime - 720 * 60, fees] // 2 hours beforehand
-        );
-        const isValid = await migration.isValid(
-          meToken.address,
-          badEncodedMigrationArgs
-        );
-        expect(isValid).to.be.false;
-      });
       it("Returns false for nonexistent meToken", async () => {
         const isValid = await migration.isValid(
           account0.address,
           encodedMigrationArgs
-        );
-        expect(isValid).to.be.false;
-      });
-      it("Returns false for invalid fee", async () => {
-        badEncodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, 2999]
-        );
-        const isValid = await migration.isValid(
-          meToken.address,
-          badEncodedMigrationArgs
         );
         expect(isValid).to.be.false;
       });
@@ -242,23 +174,11 @@ const setup = async () => {
           migration.initMigration(meToken.address, encodedMigrationArgs)
         ).to.be.revertedWith("!meTokenRegistry");
       });
-      it("Fails from bad encodings", async () => {
-        await expect(
-          meTokenRegistry
-            .connect(account1)
-            .initResubscribe(
-              meToken.address,
-              hubId2,
-              migration.address,
-              badEncodedMigrationArgs
-            )
-        ).to.be.revertedWith("Invalid _encodedMigrationArgs");
-      });
       it("should revert when try to approve already approved vaults", async () => {
         await expect(
           migrationRegistry.approve(
             initialVault.address,
-            targetVault.address,
+            initialVault.address,
             migration.address
           )
         ).to.be.revertedWith("migration already approved");
@@ -266,7 +186,7 @@ const setup = async () => {
       it("should be able to unapprove migration vaults", async () => {
         let tx = await migrationRegistry.unapprove(
           initialVault.address,
-          targetVault.address,
+          initialVault.address,
           migration.address
         );
         await tx.wait();
@@ -287,19 +207,23 @@ const setup = async () => {
         await expect(
           migrationRegistry.unapprove(
             initialVault.address,
-            targetVault.address,
+            initialVault.address,
             migration.address
           )
         ).to.be.revertedWith("migration not approved");
 
         // approve vaults again
-        const tx = await migrationRegistry.approve(
+        await migrationRegistry.approve(
           initialVault.address,
-          targetVault.address,
+          initialVault.address,
           migration.address
         );
       });
       it("Set correct _ust values", async () => {
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.isMigrating).to.equal(false);
+        expect(migrationDetails.started).to.equal(false);
+
         await meTokenRegistry
           .connect(account1)
           .initResubscribe(
@@ -308,9 +232,9 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        const migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.fee).to.equal(fees);
-        expect(migrationDetails.soonest).to.equal(earliestSwapTime);
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.isMigrating).to.equal(true);
+        expect(migrationDetails.started).to.equal(false);
       });
     });
 
@@ -321,34 +245,22 @@ const setup = async () => {
 
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
-      it("should be able to call before soonest, but wont run startMigration()", async () => {
-        migrationDetails = await migration.getDetails(meToken.address);
-        block = await ethers.provider.getBlock("latest");
-        expect(migrationDetails.soonest).to.be.gt(block.timestamp);
-
-        const tx = await migration.poke(meToken.address);
-        await tx.wait();
-
-        await expect(tx).to.not.emit(initialVault, "StartMigration");
-        migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.started).to.be.equal(false);
-      });
       it("Triggers startMigration()", async () => {
-        await mineBlock(migrationDetails.soonest.toNumber() + 1);
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        await mineBlock(meTokenDetails.startTime.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
-        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
+        expect(meTokenDetails.startTime).to.be.lt(block.timestamp);
 
         const tx = await migration.poke(meToken.address);
         await tx.wait();
 
         await expect(tx)
           .to.emit(initialVault, "StartMigration")
-          .withArgs(meToken.address)
-          // TODO check updated balance here
-          .to.emit(meTokenRegistry, "UpdateBalances");
+          .withArgs(meToken.address);
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
-        expect(migrationDetails.swapped).to.be.equal(true);
       });
       it("should be able to call when migration already started, but wont run startMigration()", async () => {
         const tx = await migration.poke(meToken.address);
@@ -376,10 +288,10 @@ const setup = async () => {
 
         await expect(tx)
           .to.emit(meTokenRegistry, "FinishResubscribe")
-          .to.emit(weth, "Transfer")
+          .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
-            targetVault.address,
+            initialVault.address,
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
@@ -387,18 +299,10 @@ const setup = async () => {
           .to.not.emit(initialVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.fee).to.equal(0);
-        expect(migrationDetails.soonest).to.equal(0);
+        expect(migrationDetails.isMigrating).to.equal(false);
         expect(migrationDetails.started).to.equal(false);
-        expect(migrationDetails.swapped).to.equal(false);
       });
-      it("should revert before soonest", async () => {
-        await migrationRegistry.approve(
-          targetVault.address,
-          initialVault.address,
-          migration.address
-        );
-
+      it("Triggers startsMigration() if it hasn't already started", async () => {
         block = await ethers.provider.getBlock("latest");
         earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
@@ -415,30 +319,9 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.fee).to.equal(fees);
-        expect(migrationDetails.soonest).to.equal(earliestSwapTime);
-
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
-          meToken.address
-        );
-        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
-
-        await expect(
-          meTokenRegistry.finishResubscribe(meToken.address)
-        ).to.be.revertedWith("timestamp < soonest");
-      });
-      it("Triggers startsMigration() if it hasn't already started", async () => {
         let meTokenRegistryDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
-        migrationDetails = await migration.getDetails(meToken.address);
-
-        await mineBlock(migrationDetails.soonest.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
@@ -448,9 +331,8 @@ const setup = async () => {
         );
         await expect(tx)
           .to.emit(meTokenRegistry, "FinishResubscribe")
-          .to.emit(targetVault, "StartMigration")
+          .to.emit(initialVault, "StartMigration")
           .withArgs(meToken.address)
-          // TODO check updated balance here
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -458,13 +340,10 @@ const setup = async () => {
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
-          )
-          .to.emit(meTokenRegistry, "UpdateBalances");
+          );
         migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.fee).to.equal(0);
-        expect(migrationDetails.soonest).to.equal(0);
+        expect(migrationDetails.isMigrating).to.equal(false);
         expect(migrationDetails.started).to.equal(false);
-        expect(migrationDetails.swapped).to.equal(false);
       });
 
       describe("During resubscribe", () => {
@@ -498,8 +377,6 @@ const setup = async () => {
               encodedMigrationArgs
             );
           migrationDetails = await migration.getDetails(meToken.address);
-          expect(migrationDetails.fee).to.equal(fees);
-          expect(migrationDetails.soonest).to.equal(earliestSwapTime);
         });
 
         it("From warmup => startTime: assets transferred to/from initial vault", async () => {
@@ -522,7 +399,7 @@ const setup = async () => {
             initialVaultBalanceAfter.sub(initialVaultBalanceBefore)
           ).to.equal(amount);
         });
-        it("From soonest => endTime: assets transferred to/from migration vault", async () => {
+        it("From startTime => endTime: assets transferred to/from migration vault", async () => {
           const meTokenDetails = await meTokenRegistry.getDetails(
             meToken.address
           );
@@ -534,11 +411,7 @@ const setup = async () => {
           const initialVaultDAIBefore = await dai.balanceOf(
             initialVault.address
           );
-          const initialVaultWETHBefore = await weth.balanceOf(
-            initialVault.address
-          );
           const migrationDAIBefore = await dai.balanceOf(migration.address);
-          const migrationWETHBefore = await weth.balanceOf(migration.address);
 
           const tx = await foundry
             .connect(account2)
@@ -550,21 +423,14 @@ const setup = async () => {
           const initialVaultDAIAfter = await dai.balanceOf(
             initialVault.address
           );
-          const initialVaultWETHAfter = await weth.balanceOf(
-            initialVault.address
-          );
           const migrationDAIAfter = await dai.balanceOf(migration.address);
-          const migrationWETHAfter = await weth.balanceOf(migration.address);
 
-          expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
-            0
-          ); // initial vault weth balance has no change
           expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
             amount
           ); // amount deposited before start time
-          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
-          // TODO fix with swap balance
-          expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
+          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(
+            amount.mul(2)
+          );
         });
         it("After endTime: assets transferred to/from target vault", async () => {
           const meTokenDetails = await meTokenRegistry.getDetails(
@@ -578,46 +444,26 @@ const setup = async () => {
           const initialVaultDAIBefore = await dai.balanceOf(
             initialVault.address
           );
-          const initialVaultWETHBefore = await weth.balanceOf(
-            initialVault.address
-          );
           const migrationDAIBefore = await dai.balanceOf(migration.address);
-          const migrationWETHBefore = await weth.balanceOf(migration.address);
-          const targetVaultDAIBefore = await dai.balanceOf(targetVault.address);
-          const targetVaultWETHBefore = await weth.balanceOf(
-            targetVault.address
-          );
 
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
           await tx.wait();
 
-          await expect(tx).to.be.emit(weth, "Transfer");
+          await expect(tx).to.be.emit(dai, "Transfer");
 
           const initialVaultDAIAfter = await dai.balanceOf(
             initialVault.address
           );
-          const initialVaultWETHAfter = await weth.balanceOf(
-            initialVault.address
-          );
           const migrationDAIAfter = await dai.balanceOf(migration.address);
-          const migrationWETHAfter = await weth.balanceOf(migration.address);
-          const targetVaultDAIAfter = await dai.balanceOf(targetVault.address);
-          const targetVaultWETHAfter = await weth.balanceOf(
-            targetVault.address
-          );
 
-          expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
-            0
-          ); // initial vault weth balance has no change
-          expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(0); // initial vault dai balance has no change
-          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
-          expect(migrationWETHAfter).to.be.equal(0); // migration balance goes to target vault
-          expect(targetVaultDAIAfter.sub(targetVaultDAIBefore)).to.be.equal(0); // no change
-          expect(targetVaultWETHAfter.sub(targetVaultWETHBefore)).to.be.equal(
-            amount.add(migrationWETHBefore)
-          ); // newly minted amount + migration weth balance
+          expect(initialVaultDAIAfter.sub(initialVaultDAIBefore)).to.equal(
+            amount.mul(3)
+          );
+          expect(migrationDAIBefore.sub(migrationDAIAfter)).to.be.equal(
+            amount.mul(2)
+          );
         });
       });
     });

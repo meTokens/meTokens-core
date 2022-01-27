@@ -14,6 +14,7 @@ import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { Fees } from "../../../artifacts/types/Fees";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("Vault.sol", () => {
@@ -63,13 +64,8 @@ const setup = async () => {
       foundry = await deploy<Foundry>("Foundry", {
         WeightedAverage: weightedAverage.address,
       });
-      hub = await deploy<HubFacet>("HubFacet");
-      curve = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address,
-        foundry.address
-      );
+      hub = await deploy<Hub>("Hub");
+      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
@@ -87,7 +83,7 @@ const setup = async () => {
         initRefundRatio,
         hub,
         foundry,
-        curve
+        curve as unknown as ICurve
       ));
 
       await fees.setMintFee(1e8);

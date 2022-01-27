@@ -27,6 +27,7 @@ import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 import { Fees } from "../../../artifacts/types/Fees";
 import Decimal from "decimal.js";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
@@ -103,8 +104,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({
@@ -122,7 +122,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);

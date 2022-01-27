@@ -19,6 +19,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../../utils/hardhatNode";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
+import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
@@ -73,8 +74,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
       ({
         token: dai,
@@ -91,7 +91,7 @@ const setup = async () => {
         initialRefundRatio.toNumber(),
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
 
       // Deploy uniswap migration and approve it to the registry

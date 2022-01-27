@@ -6,9 +6,10 @@ import "../libs/WeightedAverage.sol";
 import "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
-/// @author Carl Farterson (@carlfarterson) & Chris Robison (@CBobRobison)
-contract StepwiseCurve is ICurve {
+/// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
+contract StepwiseCurveABDK is ICurve {
     using ABDKMathQuad for uint256;
+    using ABDKMathQuad for int256;
     using ABDKMathQuad for bytes16;
     struct Stepwise {
         uint256 stepX;
@@ -18,10 +19,10 @@ contract StepwiseCurve is ICurve {
     }
 
     uint256 public constant PRECISION = 10**18;
+    bytes16 private immutable _precision = uint256(PRECISION).fromUInt();
     bytes16 private immutable _one = uint256(1).fromUInt();
-    bytes16 private immutable _two = uint256(2).fromUInt();
     address public hub;
-    address public foundry;
+    bytes16 private immutable _two = (2 * PRECISION).fromUInt();
 
     // NOTE: keys are their respective hubId
     mapping(uint256 => Stepwise) private _stepwises;
@@ -35,14 +36,14 @@ contract StepwiseCurve is ICurve {
         override
     {
         require(msg.sender == hub, "!hub");
-        require(_encodedDetails.length > 0, "_encodedDetails empty");
+        require(_encodedDetails.length > 0, "!_encodedDetails");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
             _encodedDetails,
             (uint256, uint256)
         );
-        require(stepX > 0 && stepX < PRECISION, "stepX not in range");
-        require(stepY > 0 && stepY < PRECISION, "stepY not in range");
+        require(stepX > 0 && stepX > PRECISION, "stepX not in range");
+        require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
         Stepwise storage stepwise_ = _stepwises[_hubId];
         stepwise_.stepX = stepX;
@@ -63,17 +64,10 @@ contract StepwiseCurve is ICurve {
             (uint256, uint256)
         );
         Stepwise storage stepwiseDetails = _stepwises[_hubId];
-
-        require(
-            targetStepX > 0 && targetStepX < PRECISION,
-            "stepX not in range"
-        );
+        require(targetStepX > 0 && targetStepX > PRECISION, "!targetStepX");
         require(targetStepX != stepwiseDetails.stepX, "targeStepX == stepX");
 
-        require(
-            targetStepY > 0 && targetStepY < PRECISION,
-            "stepY not in range"
-        );
+        require(targetStepY > 0 && targetStepY > PRECISION, "!targetStepY");
         require(targetStepY != stepwiseDetails.stepY, "targeStepY == stepY");
 
         stepwiseDetails.targetStepY = targetStepY;
@@ -195,48 +189,40 @@ contract StepwiseCurve is ICurve {
             return 0;
         }
 
-        bytes16 assetsDeposited_ = _assetsDeposited.fromUInt();
+        // bytes16 assetsDeposited_ = _assetsDeposited.fromUInt();
         bytes16 stepX_ = _stepX.fromUInt();
         bytes16 stepY_ = _stepY.fromUInt();
-        bytes16 supply_ = _supply.fromUInt();
-        bytes16 balancePooled_ = _balancePooled.fromUInt();
 
-        // Note: _calculateSupply() without the method (use if we don't need a dedicated _viewMeTokensMintedFromZero() function)
-        bytes16 stepsAfterMint = (
-            (
-                (balancePooled_.add(assetsDeposited_).mul(stepX_).mul(stepX_))
-                    .div((stepX_).mul(stepY_).div(_two))
-            )
-        ).sqrt();
+        bytes16 totalBalancePooled_ = (_balancePooled + _assetsDeposited)
+            .fromUInt();
 
-        bytes16 balancePooledAtCurrentSteps = (
-            (stepsAfterMint.mul(stepsAfterMint).add(stepsAfterMint)).div(_two)
-        ).mul(stepX_).mul(stepY_);
+        // Note:  .toUInt().fromUInt() is used to round down
+        bytes16 steps = (_two.mul(totalBalancePooled_).mul(stepX_).mul(stepX_))
+            .div((stepX_).mul(stepY_))
+            .sqrt()
+            .div(stepX_)
+            .toUInt()
+            .fromUInt();
+        bytes16 stepBalance = (steps.mul(steps).add(steps))
+            .div(_two)
+            .mul(stepX_)
+            .mul(stepY_);
 
         bytes16 supplyAfterMint;
-        if (
-            balancePooledAtCurrentSteps > balancePooled_.add(assetsDeposited_)
-        ) {
-            supplyAfterMint = stepX_
-                .mul(stepsAfterMint)
-                .sub(
-                    balancePooledAtCurrentSteps.sub(
-                        balancePooled_.add(assetsDeposited_)
-                    )
-                )
-                .div(stepY_.mul(stepsAfterMint));
+        if (stepBalance.cmp(totalBalancePooled_) > 0) {
+            bytes16 intres = (stepBalance.sub(totalBalancePooled_))
+                .div(stepY_.mul(steps))
+                .mul(_precision);
+            supplyAfterMint = stepX_.mul(steps).sub(intres);
         } else {
-            supplyAfterMint = stepX_
-                .mul(stepsAfterMint)
-                .add(
-                    (balancePooled_.add(assetsDeposited_)).sub(
-                        balancePooledAtCurrentSteps
-                    )
+            supplyAfterMint = stepX_.mul(steps).add(
+                (totalBalancePooled_.sub(stepBalance)).div(
+                    stepY_.div(_precision).mul(steps.add(_one))
                 )
-                .div(stepY_.mul(stepsAfterMint.add(_one)));
+            );
         }
 
-        return supplyAfterMint.sub(supply_).toUInt();
+        return supplyAfterMint.toUInt() - _supply;
     }
 
     /// @notice Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
@@ -256,7 +242,8 @@ contract StepwiseCurve is ICurve {
     ) private view returns (uint256) {
         // validate input
         require(
-            _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply
+            _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply,
+            "!valid"
         );
         // special case for 0 sell amount
         if (_meTokensBurned == 0) {
@@ -267,26 +254,19 @@ contract StepwiseCurve is ICurve {
         bytes16 stepX_ = _stepX.fromUInt();
         bytes16 stepY_ = _stepY.fromUInt();
         bytes16 supply_ = _supply.fromUInt();
-
-        bytes16 steps = supply_.div(stepX_);
-        bytes16 supplyAtCurrentStep = supply_.sub(steps.mul(stepX_));
-        bytes16 stepsAfterBurn = (supply_.sub(meTokensBurned_)).div(stepX_);
-        bytes16 supplyAtStepAfterBurn = supply_.sub(stepsAfterBurn.mul(stepX_));
-
-        bytes16 balancePooledAtCurrentSteps = (
-            (steps.mul(steps).add(steps)).div(_two)
-        ).mul(stepX_).mul(stepY_);
-
-        bytes16 balancePooledAtStepsAfterBurn = (
-            (stepsAfterBurn.mul(stepsAfterBurn).add(stepsAfterBurn)).div(_two)
-        ).mul(stepX_).mul(stepY_);
-
-        bytes16 res = balancePooledAtCurrentSteps
-            .add(supplyAtCurrentStep)
-            .mul(stepY_)
-            .sub(balancePooledAtStepsAfterBurn)
-            .sub(supplyAtStepAfterBurn)
-            .mul(stepY_);
-        return res.toUInt();
+        // .toUInt().fromUInt() is used to round down
+        bytes16 newSteps = supply_
+            .sub(meTokensBurned_)
+            .div(stepX_)
+            .toUInt()
+            .fromUInt();
+        bytes16 newSupplyInStep = supply_
+            .sub(meTokensBurned_)
+            .sub(newSteps.mul(stepX_))
+            .div(_precision);
+        bytes16 newCollateralInBalance = (
+            newSteps.mul(stepX_).mul(stepY_).div(_precision)
+        ).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stepY_));
+        return _balancePooled - newCollateralInBalance.toUInt();
     }
 }

@@ -31,6 +31,7 @@ import { Fees } from "../../../artifacts/types/Fees";
 import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
+import { ICurve } from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
   DAI: string,
@@ -129,8 +130,7 @@ const setup = async () => {
       bancorABDK = await deploy<BancorABDK>(
         "BancorABDK",
         undefined,
-        hub.address,
-        foundry.address
+        hub.address
       );
 
       ({
@@ -155,7 +155,7 @@ const setup = async () => {
         refundRatio,
         hub,
         foundry,
-        bancorABDK
+        bancorABDK as unknown as ICurve
       ));
 
       await hub.register(
@@ -545,15 +545,14 @@ const setup = async () => {
           )
         ).to.be.revertedWith("Invalid _encodedMigrationArgs");
       });
-      it("Fails when current and target hub has same asset", async () => {
-        await expect(
-          meTokenRegistry.initResubscribe(
-            meToken,
-            hubId3,
-            migration.address,
-            encodedMigrationArgs
-          )
-        ).to.be.revertedWith("asset same");
+      it("Passes when current and target hub have same asset", async () => {
+        const tx = meTokenRegistry.callStatic.initResubscribe(
+          meToken,
+          hubId3,
+          migration.address,
+          encodedMigrationArgs
+        );
+        await expect(tx).to.not.be.revertedWith("asset same");
       });
       it("Fails when migration address is 0", async () => {
         await expect(
