@@ -283,7 +283,7 @@ export async function hubSetupWithoutRegister(
     cut.push({
       facetAddress: facet.address,
       action: FacetCutAction.Add,
-      functionSelectors: getSelectors(facet),
+      functionSelectors: getSelectors(facet as unknown as Contract),
     });
   }
 
