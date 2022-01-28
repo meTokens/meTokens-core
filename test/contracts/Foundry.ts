@@ -30,9 +30,9 @@ import { ICurve, SameAssetTransferMigration } from "../../artifacts/types";
 const setup = async () => {
   describe("Foundry.sol", () => {
     let DAI: string;
-    let DAIWhale: string;
-    let daiHolder: Signer;
+    let WETH: string;
     let dai: ERC20;
+    let weth: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -62,6 +62,7 @@ const setup = async () => {
     const tokenDeposited = ethers.utils.parseEther(
       tokenDepositedInETH.toString()
     );
+    const fee = 3000;
 
     // TODO: pass in curve arguments to function
     // TODO: then loop over array of set of curve arguments
@@ -74,7 +75,7 @@ const setup = async () => {
     // weight at 50% linear curve
     // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     before(async () => {
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      ({ DAI, WETH } = await getNamedAccounts());
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -111,7 +112,11 @@ const setup = async () => {
 
       // Prefund owner/buyer w/ DAI
       dai = token;
+      weth = await getContractAt<ERC20>("ERC20", WETH);
       await dai
+        .connect(tokenHolder)
+        .transfer(account0.address, amount1.mul(10));
+      await weth
         .connect(tokenHolder)
         .transfer(account0.address, amount1.mul(10));
       await dai
@@ -122,6 +127,7 @@ const setup = async () => {
         .transfer(account2.address, amount1.mul(10));
       const max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(singleAssetVault.address, max);
+      await weth.connect(account0).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(singleAssetVault.address, max);
       await dai.connect(account2).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
@@ -1085,7 +1091,7 @@ const setup = async () => {
         expect(newDetails.updating).to.be.equal(false);
       });
     });
-    describe("donate", () => {
+    describe("donate with same asset migration", () => {
       let migration: SameAssetTransferMigration;
       before(async () => {
         await hub.register(
@@ -1178,6 +1184,123 @@ const setup = async () => {
           newMeTokenDetails.balancePooled
         );
         expect(oldVaultBalance.add(assetsDeposited)).to.equal(newVaultBalance);
+        expect(oldAccountBalance.sub(assetsDeposited)).to.equal(
+          newAccountBalance
+        );
+        expect(oldAccruedFee).to.equal(newAccruedFee);
+      });
+    });
+
+    describe("donate with same UniswapSingleTransfer migration", () => {
+      let migration: UniswapSingleTransferMigration;
+      before(async () => {
+        await hub.register(
+          account0.address,
+          WETH,
+          singleAssetVault.address,
+          _curve.address,
+          refundRatio,
+          encodedCurveDetails,
+          encodedVaultArgs
+        );
+        migration = await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined,
+          account0.address,
+          foundry.address,
+          hub.address,
+          meTokenRegistry.address,
+          migrationRegistry.address
+        );
+
+        await migrationRegistry.approve(
+          singleAssetVault.address,
+          singleAssetVault.address,
+          migration.address
+        );
+
+        let block = await ethers.provider.getBlock("latest");
+        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint24"],
+          [earliestSwapTime, fee]
+        );
+
+        await meTokenRegistry
+          .connect(account2)
+          .initResubscribe(
+            meToken.address,
+            3,
+            migration.address,
+            encodedMigrationArgs
+          );
+        expect(
+          (await meTokenRegistry.getDetails(meToken.address)).migration
+        ).to.equal(migration.address);
+        const migrationDetails = await migration.getDetails(meToken.address);
+        await mineBlock(migrationDetails.soonest.toNumber() + 2);
+
+        block = await ethers.provider.getBlock("latest");
+        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
+      });
+      it("should revert when meToken is resubscribing", async () => {
+        await expect(foundry.donate(meToken.address, 10)).to.be.revertedWith(
+          "metoken resubscribing"
+        );
+      });
+      it("should be able to donate", async () => {
+        await meTokenRegistry.finishResubscribe(meToken.address);
+
+        const oldDAIVaultBalance = await dai.balanceOf(
+          singleAssetVault.address
+        );
+        const oldWETHVaultBalance = await weth.balanceOf(
+          singleAssetVault.address
+        );
+        const oldAccountBalance = await weth.balanceOf(account0.address);
+        const oldMeTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const oldAccruedFee = await singleAssetVault.accruedFees(weth.address);
+
+        const assetsDeposited = 10;
+        const tx = await foundry.donate(meToken.address, assetsDeposited);
+
+        await expect(tx)
+          .to.emit(foundry, "Donate")
+          .withArgs(
+            meToken.address,
+            weth.address,
+            account0.address,
+            assetsDeposited
+          )
+          .to.emit(singleAssetVault, "HandleDeposit")
+          .withArgs(account0.address, weth.address, assetsDeposited, 0)
+          .to.emit(meTokenRegistry, "UpdateBalanceLocked")
+          .withArgs(true, meToken.address, assetsDeposited);
+
+        const newMeTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const newDAIVaultBalance = await dai.balanceOf(
+          singleAssetVault.address
+        );
+        const newWETHVaultBalance = await weth.balanceOf(
+          singleAssetVault.address
+        );
+        const newAccountBalance = await weth.balanceOf(account0.address);
+        const newAccruedFee = await singleAssetVault.accruedFees(weth.address);
+
+        expect(oldMeTokenDetails.balanceLocked.add(assetsDeposited)).to.equal(
+          newMeTokenDetails.balanceLocked
+        );
+        expect(oldMeTokenDetails.balancePooled).to.equal(
+          newMeTokenDetails.balancePooled
+        );
+        expect(oldDAIVaultBalance).to.equal(newDAIVaultBalance);
+        expect(oldWETHVaultBalance.add(assetsDeposited)).to.equal(
+          newWETHVaultBalance
+        );
         expect(oldAccountBalance.sub(assetsDeposited)).to.equal(
           newAccountBalance
         );
