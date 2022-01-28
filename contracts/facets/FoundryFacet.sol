@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IFees.sol";
@@ -18,7 +17,7 @@ import "../libs/Details.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 
-contract FoundryFacet is IFoundry, Ownable, Initializable {
+contract FoundryFacet is IFoundry, Initializable {
     using SafeERC20 for IERC20;
 
     AppStorage internal s; // solihint-disable-line

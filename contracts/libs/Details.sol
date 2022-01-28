@@ -81,14 +81,33 @@ library LibAppStorage {
 contract Modifiers {
     AppStorage internal s;
 
-    modifier onlyOwner() {
-        LibDiamond.enforceIsContractOwner();
+    modifier onlyDiamondController() {
+        LibDiamond.enforceIsDiamondController();
         _;
     }
 
-    modifier onlyFoundry() {
-        address sender = LibMeta.msgSender();
-        require(sender == s.foundry, "LibAppStorage: msg.sender != foundry");
+    modifier onlyFeesController() {
+        LibDiamond.enforceIsFeesController();
+        _;
+    }
+
+    modifier onlyDurationsController() {
+        LibDiamond.enforceIsDurationsController();
+        _;
+    }
+
+    modifier onlyMeTokenRegistryController() {
+        LibDiamond.enforceIsMeTokenRegistryController();
+        _;
+    }
+
+    modifier onlyRegisterController() {
+        LibDiamond.enforceIsRegisterController();
+        _;
+    }
+
+    modifier onlyDeactivateController() {
+        LibDiamond.enforceIsDeactivateController();
         _;
     }
 

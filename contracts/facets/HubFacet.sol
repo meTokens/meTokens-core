@@ -3,13 +3,14 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
+import {Modifiers} from "../libs/Details.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IVault.sol";
 import "../interfaces/IRegistry.sol";
 import "../interfaces/ICurve.sol";
 import "../interfaces/IFoundry.sol";
 
-contract HubFacet {
+contract HubFacet is Modifiers {
     event Register(
         address _owner,
         address _asset,
@@ -33,13 +34,6 @@ contract HubFacet {
     event CancelUpdate(uint256 _id);
     event TransferHubOwnership(uint256 _id, address _newOwner);
 
-    AppStorage internal s; // solhint-disable-line
-
-    modifier onlyOwner() {
-        LibDiamond.enforceIsContractOwner();
-        _;
-    }
-
     function register(
         address _owner,
         address _asset,
@@ -48,8 +42,7 @@ contract HubFacet {
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
-    ) external {
-        // TODO: access control
+    ) external onlyRegisterController {
         require(
             s.curveRegistry.isApproved(address(_curve)),
             "_curve !approved"
@@ -89,7 +82,11 @@ contract HubFacet {
 
     function deactivate(uint256 _id) external {
         Details.Hub storage hub_ = s.hubs[_id];
-        require(msg.sender == hub_.owner, "!owner");
+        require(
+            msg.sender == hub_.owner ||
+                msg.sender == LibDiamond.deactivateController(),
+            "!owner && !deactivateController"
+        );
         require(hub_.active, "!active");
         hub_.active = false;
         emit Deactivate(_id);
@@ -199,17 +196,17 @@ contract HubFacet {
         emit TransferHubOwnership(_id, _newOwner);
     }
 
-    function setWarmup(uint256 _warmup) external onlyOwner {
+    function setWarmup(uint256 _warmup) external onlyDurationsController {
         require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
         s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyOwner {
+    function setDuration(uint256 _duration) external onlyDurationsController {
         require(_duration != s.hubDuration, "_duration == s.hubDuration");
         s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyOwner {
+    function setCooldown(uint256 _cooldown) external onlyDurationsController {
         require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
         s.hubCooldown = _cooldown;
     }

@@ -12,8 +12,8 @@ import {LibDiamond} from "./libs/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 
 contract Diamond {
-    constructor(address _contractOwner, address _diamondCutFacet) payable {
-        LibDiamond.setContractOwner(_contractOwner);
+    constructor(address _firstController, address _diamondCutFacet) payable {
+        LibDiamond.initControllers(_firstController);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);

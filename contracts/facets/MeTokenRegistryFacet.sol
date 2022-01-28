@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "../MeToken.sol";
 import "../interfaces/IMigration.sol";
 import "../interfaces/IMigrationRegistry.sol";
@@ -20,7 +19,7 @@ import "../libs/Details.sol";
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistryFacet is Ownable {
+contract MeTokenRegistryFacet is Modifiers {
     event Subscribe(
         address indexed _meToken,
         address indexed _owner,
@@ -49,8 +48,6 @@ contract MeTokenRegistryFacet is Ownable {
     event ClaimMeTokenOwnership(address _from, address _to, address _meToken);
     event UpdateBalancePooled(bool _add, address _meToken, uint256 _amount);
     event UpdateBalanceLocked(bool _add, address _meToken, uint256 _amount);
-
-    AppStorage internal s; // solhint-disable-line
 
     constructor() {}
 
@@ -289,17 +286,17 @@ contract MeTokenRegistryFacet is Ownable {
         emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
-    function setWarmup(uint256 _warmup) external onlyOwner {
+    function setWarmup(uint256 _warmup) external onlyDurationsController {
         require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
         s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyOwner {
+    function setDuration(uint256 _duration) external onlyDurationsController {
         require(_duration != s.hubDuration, "_duration == s.hubDuration");
         s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyOwner {
+    function setCooldown(uint256 _cooldown) external onlyDurationsController {
         require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
         s.hubCooldown = _cooldown;
     }
