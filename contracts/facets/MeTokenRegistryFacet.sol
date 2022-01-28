@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-import "../MeToken.sol";
-import "../interfaces/IMigration.sol";
-import "../interfaces/IMigrationRegistry.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMeTokenFactory.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/ICurve.sol";
-import "../interfaces/IMeToken.sol";
+import {MeToken} from "../MeToken.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
 

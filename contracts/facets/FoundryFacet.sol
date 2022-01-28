@@ -2,24 +2,19 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/IFees.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMeToken.sol";
-import "../interfaces/ICurve.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IMigration.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IFoundry.sol";
-import "../libs/WeightedAverage.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
+import {IFoundry} from "../interfaces/IFoundry.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+
+import {LibMeToken} from "../libs/LibMeToken.sol";
+import {LibHub} from "../libs/LibHub.sol";
+import {WeightedAverage} from "../libs/WeightedAverage.sol";
 import "../libs/Details.sol";
-import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-import {LibHub, HubInfo} from "../libs/LibHub.sol";
 
-contract FoundryFacet is IFoundry, Initializable {
-    using SafeERC20 for IERC20;
-
+contract FoundryFacet is IFoundry {
     AppStorage internal s; // solihint-disable-line
 
     // MINT FLOW CHART
