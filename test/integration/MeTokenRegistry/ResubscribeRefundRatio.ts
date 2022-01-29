@@ -114,11 +114,11 @@ const setup = async () => {
       // Pre-load owner and buyer w/ DAI
       await dai
         .connect(tokenHolder)
-        .transfer(account2.address, ethers.utils.parseEther("500"));
+        .transfer(account2.address, ethers.utils.parseEther("250"));
 
       await weth
         .connect(tokenHolder)
-        .transfer(account2.address, ethers.utils.parseEther("500"));
+        .transfer(account2.address, ethers.utils.parseEther("250"));
 
       // Create meToken and subscribe to Hub1
       await meTokenRegistry
@@ -155,7 +155,7 @@ const setup = async () => {
         migration.address,
         encodedMigrationArgs
       );
-      tokenDepositedInETH = 100;
+      tokenDepositedInETH = 50;
       tokenDeposited = ethers.utils.parseEther(tokenDepositedInETH.toString());
       await dai
         .connect(account2)
