@@ -1135,7 +1135,7 @@ const setup = async () => {
       });
       it("should revert when meToken is resubscribing", async () => {
         await expect(foundry.donate(meToken.address, 10)).to.be.revertedWith(
-          "metoken resubscribing"
+          "meToken resubscribing"
         );
       });
       it("should be able to donate", async () => {

@@ -249,7 +249,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
     {
         Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
         Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        require(meToken_.migration == address(0), "metoken resubscribing");
+        require(meToken_.migration == address(0), "meToken resubscribing");
 
         IVault vault = IVault(hub_.vault);
         address asset = hub_.asset;
