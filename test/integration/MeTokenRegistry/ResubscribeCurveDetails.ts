@@ -21,7 +21,7 @@ import { MeToken } from "../../../artifacts/types/MeToken";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
-import { Fees } from "../../../artifacts/types/Fees";
+import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
 import { ICurve } from "../../../artifacts/types";
 
@@ -44,7 +44,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let encodedCurveDetails1: string;
     let encodedCurveDetails2: string;
-    let fees: Fees;
+    let fees: FeesFacet;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -126,10 +126,10 @@ const setup = async () => {
       );
 
       // set update/resubscribe times
-      await hub.setWarmup(hubWarmup);
-      await meTokenRegistry.setWarmup(warmup);
-      await meTokenRegistry.setDuration(duration);
-      await meTokenRegistry.setCooldown(coolDown);
+      await hub.setHubWarmup(hubWarmup);
+      await meTokenRegistry.setMeTokenWarmup(warmup);
+      await meTokenRegistry.setMeTokenDuration(duration);
+      await meTokenRegistry.setMeTokenCooldown(coolDown);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 

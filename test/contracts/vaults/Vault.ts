@@ -11,7 +11,7 @@ import { hubSetup } from "../../utils/hubSetup";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { Fees } from "../../../artifacts/types/Fees";
+import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 
 const setup = async () => {
   describe("Vault.sol", () => {
@@ -28,7 +28,7 @@ const setup = async () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let tokenHolder: Signer;
     let meToken: MeToken;
-    let fees: Fees;
+    let fees: FeesFacet;
     let accruedFee: BigNumber;
     let tx: ContractTransaction;
 

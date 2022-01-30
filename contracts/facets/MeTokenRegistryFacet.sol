@@ -177,6 +177,13 @@ contract MeTokenRegistryFacet is Modifiers {
         );
     }
 
+    function finishResubscribe(address _meToken)
+        external
+        returns (Details.MeToken memory)
+    {
+        return LibMeToken.finishResubscribe(_meToken);
+    }
+
     function cancelResubscribe(address _meToken) external {
         Details.MeToken storage meToken_ = s.meTokens[_meToken];
         require(msg.sender == meToken_.owner, "!owner");
@@ -192,6 +199,22 @@ contract MeTokenRegistryFacet is Modifiers {
         meToken_.migration = address(0);
 
         emit CancelResubscribe(_meToken);
+    }
+
+    function updateBalancePooled(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external {
+        return LibMeToken.updateBalancePooled(add, _meToken, _amount);
+    }
+
+    function updateBalanceLocked(
+        bool add,
+        address _meToken,
+        uint256 _amount
+    ) external {
+        return LibMeToken.updateBalancePooled(add, _meToken, _amount);
     }
 
     function updateBalances(address _meToken, uint256 _newBalance) external {

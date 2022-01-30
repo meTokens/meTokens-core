@@ -178,7 +178,7 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      await hub.setWarmup(hubWarmup);
+      await hub.setHubWarmup(hubWarmup);
     });
 
     describe("isValid()", () => {
@@ -457,9 +457,9 @@ const setup = async () => {
 
       describe("During resubscribe", () => {
         before(async () => {
-          await meTokenRegistry.setWarmup(warmup);
-          await meTokenRegistry.setDuration(duration);
-          await meTokenRegistry.setCooldown(coolDown);
+          await meTokenRegistry.setMeTokenWarmup(warmup);
+          await meTokenRegistry.setMeTokenDuration(duration);
+          await meTokenRegistry.setMeTokenCooldown(coolDown);
 
           await meTokenRegistry
             .connect(account2)

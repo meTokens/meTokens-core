@@ -129,10 +129,10 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs
       );
-      await hub.setWarmup(7 * 60 * 24 * 24); // 1 week
-      await meTokenRegistry.setWarmup(2 * 60 * 24 * 24); // 2 days
-      await meTokenRegistry.setDuration(4 * 60 * 24 * 24); // 4 days
-      await meTokenRegistry.setCooldown(5 * 60 * 24 * 24); // 5 days
+      await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week
+      await meTokenRegistry.setMeTokenWarmup(2 * 60 * 24 * 24); // 2 days
+      await meTokenRegistry.setMeTokenDuration(4 * 60 * 24 * 24); // 4 days
+      await meTokenRegistry.setMeTokenCooldown(5 * 60 * 24 * 24); // 5 days
 
       const block = await ethers.provider.getBlock("latest");
       const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future

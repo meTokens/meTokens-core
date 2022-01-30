@@ -27,7 +27,7 @@ import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { Fees } from "../../../artifacts/types/Fees";
+import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
@@ -83,7 +83,7 @@ const setup = async () => {
     let foundry: FoundryFacet;
     let hub: HubFacet;
     let token: ERC20;
-    let fee: Fees;
+    let fee: FeesFacet;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -167,7 +167,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs
       );
-      await hub.setWarmup(hubWarmup);
+      await hub.setHubWarmup(hubWarmup);
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
@@ -369,62 +369,66 @@ const setup = async () => {
       });
     });
 
-    describe("setWarmup()", () => {
-      it("should revert to setWarmup if not owner", async () => {
-        const tx = meTokenRegistry.connect(account1).setWarmup(warmup);
+    describe("setMeTokenWarmup()", () => {
+      it("should revert to setMeTokenWarmup if not owner", async () => {
+        const tx = meTokenRegistry.connect(account1).setMeTokenWarmup(warmup);
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
-      it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.warmup();
-        const tx = meTokenRegistry.setWarmup(oldWarmup);
+      it("should revert to setMeTokenWarmup if same as before", async () => {
+        const oldWarmup = await meTokenRegistry.meTokenWarmup();
+        const tx = meTokenRegistry.setMeTokenWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("warmup_ == _warmup");
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
-        const tx = meTokenRegistry.setWarmup(hubWarmup);
+        const tx = meTokenRegistry.setMeTokenWarmup(hubWarmup);
         await expect(tx).to.be.revertedWith("too long");
       });
-      it("should be able to setWarmup", async () => {
-        tx = await meTokenRegistry.setWarmup(warmup);
+      it("should be able to setMeTokenWarmup", async () => {
+        tx = await meTokenRegistry.setMeTokenWarmup(warmup);
         await tx.wait();
-        expect(await meTokenRegistry.warmup()).to.be.equal(warmup);
+        expect(await meTokenRegistry.meTokenWarmup()).to.be.equal(warmup);
       });
     });
 
-    describe("setDuration()", () => {
-      it("should revert to setDuration if not owner", async () => {
-        const tx = meTokenRegistry.connect(account1).setDuration(duration);
+    describe("setMeTokenDuration()", () => {
+      it("should revert to setMeTokenDuration if not owner", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenDuration(duration);
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
-      it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.duration();
-        const tx = meTokenRegistry.setDuration(oldWarmup);
+      it("should revert to setMeTokenDuration if same as before", async () => {
+        const oldWarmup = await meTokenRegistry.meTokenDuration();
+        const tx = meTokenRegistry.setMeTokenDuration(oldWarmup);
         await expect(tx).to.be.revertedWith("duration_ == _duration");
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
-        const tx = meTokenRegistry.setDuration(hubWarmup);
+        const tx = meTokenRegistry.setMeTokenDuration(hubWarmup);
         await expect(tx).to.be.revertedWith("too long");
       });
-      it("should be able to setDuration", async () => {
-        tx = await meTokenRegistry.setDuration(duration);
+      it("should be able to setMeTokenDuration", async () => {
+        tx = await meTokenRegistry.setMeTokenDuration(duration);
         await tx.wait();
-        expect(await meTokenRegistry.duration()).to.be.equal(duration);
+        expect(await meTokenRegistry.meTokenDuration()).to.be.equal(duration);
       });
     });
 
-    describe("setCooldown()", () => {
-      it("should revert to setCooldown if not owner", async () => {
-        const tx = meTokenRegistry.connect(account1).setCooldown(coolDown);
+    describe("setMeTokenCooldown()", () => {
+      it("should revert to setMeTokenCooldown if not owner", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenCooldown(coolDown);
         await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
       });
-      it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.cooldown();
-        const tx = meTokenRegistry.setCooldown(oldWarmup);
+      it("should revert to setMeTokenCooldown if same as before", async () => {
+        const oldWarmup = await meTokenRegistry.meTokenCooldown();
+        const tx = meTokenRegistry.setMeTokenCooldown(oldWarmup);
         await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
       });
-      it("should be able to setCooldown", async () => {
-        tx = await meTokenRegistry.setCooldown(coolDown);
+      it("should be able to setMeTokenCooldown", async () => {
+        tx = await meTokenRegistry.setMeTokenCooldown(coolDown);
         await tx.wait();
-        expect(await meTokenRegistry.cooldown()).to.be.equal(coolDown);
+        expect(await meTokenRegistry.meTokenCooldown()).to.be.equal(coolDown);
       });
     });
 

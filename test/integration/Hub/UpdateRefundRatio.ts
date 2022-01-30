@@ -112,24 +112,24 @@ const setup = async () => {
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //setWarmup for 2 days
-      let warmup = await hub.warmup();
+      let warmup = await hub.hubWarmup();
       expect(warmup).to.equal(0);
-      await hub.setWarmup(172800);
+      await hub.setHubWarmup(172800);
 
-      warmup = await hub.warmup();
+      warmup = await hub.hubWarmup();
       expect(warmup).to.equal(172800);
-      let cooldown = await hub.cooldown();
+      let cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(0);
       //setCooldown for 1 day
-      await hub.setCooldown(86400);
-      cooldown = await hub.cooldown();
+      await hub.setHubCooldown(86400);
+      cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(86400);
 
-      let duration = await hub.duration();
+      let duration = await hub.hubDuration();
       expect(duration).to.equal(0);
       //setDuration for 1 week
-      await hub.setDuration(604800);
-      duration = await hub.duration();
+      await hub.setHubDuration(604800);
+      duration = await hub.hubDuration();
       expect(duration).to.equal(604800);
     });
 
@@ -147,7 +147,7 @@ const setup = async () => {
         let lastBlock = await ethers.provider.getBlock("latest");
         await passDays(1);
         lastBlock = await ethers.provider.getBlock("latest");
-        //await hub.setWarmup(172801);
+        //await hub.setHubWarmup(172801);
         lastBlock = await ethers.provider.getBlock("latest");
         await expect(
           hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
@@ -543,17 +543,17 @@ const setup = async () => {
         );
         const hubId = (await hub.count()).toNumber();
         expect(hubId).to.be.equal(firstHubId + 1);
-        await hub.setWarmup(0);
-        await hub.setCooldown(0);
-        await hub.setDuration(0);
+        await hub.setHubWarmup(0);
+        await hub.setHubCooldown(0);
+        await hub.setHubDuration(0);
 
-        let warmup = await hub.warmup();
+        let warmup = await hub.hubWarmup();
         expect(warmup).to.equal(0);
 
-        let cooldown = await hub.cooldown();
+        let cooldown = await hub.hubCooldown();
         expect(cooldown).to.equal(0);
 
-        let duration = await hub.duration();
+        let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
         const detBefore = await hub.getDetails(hubId);
 
@@ -633,13 +633,13 @@ const setup = async () => {
         const hubId = (await hub.count()).toNumber();
         expect(hubId).to.be.equal(firstHubId + 2);
 
-        let warmup = await hub.warmup();
+        let warmup = await hub.hubWarmup();
         expect(warmup).to.equal(0);
 
-        let cooldown = await hub.cooldown();
+        let cooldown = await hub.hubCooldown();
         expect(cooldown).to.equal(0);
 
-        let duration = await hub.duration();
+        let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
         const detBefore = await hub.getDetails(hubId);
         expect(detBefore.active).to.be.true;

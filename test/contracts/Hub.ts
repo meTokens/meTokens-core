@@ -88,9 +88,9 @@ const setup = async () => {
       it("Check initial values", async () => {
         // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
-        expect(await hub.warmup()).to.be.equal(0);
-        expect(await hub.duration()).to.be.equal(0);
-        expect(await hub.cooldown()).to.be.equal(0);
+        expect(await hub.hubWarmup()).to.be.equal(0);
+        expect(await hub.hubDuration()).to.be.equal(0);
+        expect(await hub.hubCooldown()).to.be.equal(0);
         // expect(await hub.registerer()).to.be.equal(account0.address);
         const details = await hub.getDetails(0);
         expect(details.active).to.be.equal(false);
@@ -256,7 +256,7 @@ const setup = async () => {
       });
     });
 
-    describe("setWarmup()", () => {
+    describe("setHubWarmup()", () => {
       before(async () => {
         // required in later testing
 
@@ -279,53 +279,53 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       });
-      it("should revert to setWarmup if not owner", async () => {
-        const tx = hub.connect(account1).setWarmup(duration);
+      it("should revert to setHubWarmup if not owner", async () => {
+        const tx = hub.connect(account1).setHubWarmup(duration);
         await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
-      it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await hub.warmup();
-        const tx = hub.setWarmup(oldWarmup);
+      it("should revert to setHubWarmup if same as before", async () => {
+        const oldWarmup = await hub.hubWarmup();
+        const tx = hub.setHubWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("_warmup == s.hubWarmup");
       });
-      it("should be able to setWarmup", async () => {
-        const tx = await hub.setWarmup(duration);
+      it("should be able to setHubWarmup", async () => {
+        const tx = await hub.setHubWarmup(duration);
         await tx.wait();
-        expect(await hub.warmup()).to.be.equal(duration);
+        expect(await hub.hubWarmup()).to.be.equal(duration);
       });
     });
 
-    describe("setDuration()", () => {
-      it("should revert to setDuration if not owner", async () => {
-        const tx = hub.connect(account1).setDuration(duration);
+    describe("setHubDuration()", () => {
+      it("should revert to setHubDuration if not owner", async () => {
+        const tx = hub.connect(account1).setHubDuration(duration);
         await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
-      it("should revert to setDuration if same as before", async () => {
-        const oldDuration = await hub.duration();
-        const tx = hub.setDuration(oldDuration);
+      it("should revert to setHubDuration if same as before", async () => {
+        const oldDuration = await hub.hubDuration();
+        const tx = hub.setHubDuration(oldDuration);
         await expect(tx).to.be.revertedWith("_duration == s.hubDuration");
       });
-      it("should be able to setDuration", async () => {
-        const tx = await hub.setDuration(duration);
+      it("should be able to setHubDuration", async () => {
+        const tx = await hub.setHubDuration(duration);
         await tx.wait();
-        expect(await hub.duration()).to.be.equal(duration);
+        expect(await hub.hubDuration()).to.be.equal(duration);
       });
     });
 
-    describe("setCooldown()", () => {
-      it("should revert to setCooldown if not owner", async () => {
-        const tx = hub.connect(account1).setCooldown(duration);
+    describe("setHubCooldown()", () => {
+      it("should revert to setHubCooldown if not owner", async () => {
+        const tx = hub.connect(account1).setHubCooldown(duration);
         await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
-      it("should revert to setCooldown if same as before", async () => {
-        const oldCooldown = await hub.cooldown();
-        const tx = hub.setCooldown(oldCooldown);
+      it("should revert to setHubCooldown if same as before", async () => {
+        const oldCooldown = await hub.hubCooldown();
+        const tx = hub.setHubCooldown(oldCooldown);
         await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
       });
-      it("should be able to setCooldown", async () => {
-        const tx = await hub.setCooldown(duration);
+      it("should be able to setHubCooldown", async () => {
+        const tx = await hub.setHubCooldown(duration);
         await tx.wait();
-        expect(await hub.cooldown()).to.be.equal(duration);
+        expect(await hub.hubCooldown()).to.be.equal(duration);
       });
     });
 
@@ -857,12 +857,12 @@ const setup = async () => {
       //   ).to.be.revertedWith("!registerer");
       // });
       // it("should revert when new registerer is same as old", async () => {
-      //   await expect(hub.setRegisterer(account0.address)).to.be.revertedWith(
+      //   await expect(hub.setHubRegisterer(account0.address)).to.be.revertedWith(
       //     "_registerer == registerer"
       //   );
       // });
       // it("should be able to change registerer", async () => {
-      //   await hub.setRegisterer(account1.address);
+      //   await hub.setHubRegisterer(account1.address);
       //   expect(await hub.registerer()).to.be.equal(account1.address);
       // });
       // after(async () => {

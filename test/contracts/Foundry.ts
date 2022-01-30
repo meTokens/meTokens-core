@@ -964,9 +964,9 @@ const setup = async () => {
           [earliestSwapTime]
         );
         // 10 hour
-        await hub.setDuration(600 * 60);
-        await hub.setWarmup(60 * 60);
-        await hub.setCooldown(60 * 60);
+        await hub.setHubDuration(600 * 60);
+        await hub.setHubWarmup(60 * 60);
+        await hub.setHubCooldown(60 * 60);
         // vault stays the same
         await hub.initUpdate(
           hubId,

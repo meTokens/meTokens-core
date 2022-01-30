@@ -125,25 +125,25 @@ const setup = async () => {
       const balAfter = await meToken.balanceOf(account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
-      //setWarmup for 2 days
-      let warmup = await hub.warmup();
+      //setHubWarmup for 2 days
+      let warmup = await hub.hubWarmup();
       expect(warmup).to.equal(0);
-      await hub.setWarmup(172800);
+      await hub.setHubWarmup(172800);
 
-      warmup = await hub.warmup();
+      warmup = await hub.hubWarmup();
       expect(warmup).to.equal(172800);
-      let cooldown = await hub.cooldown();
+      let cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(0);
       //setCooldown for 1 day
-      await hub.setCooldown(86400);
-      cooldown = await hub.cooldown();
+      await hub.setHubCooldown(86400);
+      cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(86400);
 
-      let duration = await hub.duration();
+      let duration = await hub.hubDuration();
       expect(duration).to.equal(0);
       //setDuration for 1 week
-      await hub.setDuration(604800);
-      duration = await hub.duration();
+      await hub.setHubDuration(604800);
+      duration = await hub.hubDuration();
       expect(duration).to.equal(604800);
     });
 

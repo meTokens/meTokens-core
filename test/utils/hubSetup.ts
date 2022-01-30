@@ -32,9 +32,6 @@ export async function hubSetup(
   encodedCurveDetails: string,
   encodedVaultArgs: string,
   refundRatio: number,
-  // hub: HubFacet,
-  // foundry: Foundry,
-  // curve: ICurve,
   curveStr: string,
   fees?: number[],
   erc20Address?: string,
@@ -297,7 +294,17 @@ export async function hubSetupWithoutRegister(
     functionCall
   );
   const receipt = await tx.wait();
+
   hub = (await ethers.getContractAt("HubFacet", diamond.address)) as HubFacet;
+  foundry = (await ethers.getContractAt(
+    "FoundryFacet",
+    diamond.address
+  )) as FoundryFacet;
+  fee = (await ethers.getContractAt("FeesFacet", diamond.address)) as FeesFacet;
+  meTokenRegistry = (await ethers.getContractAt(
+    "MeTokenRegistryFacet",
+    diamond.address
+  )) as MeTokenRegistryFacet;
 
   //
   // NOTE: end diamond deploy
@@ -330,9 +337,9 @@ export async function addHubSetup(
   tokenAddr: string,
   hub: HubFacet,
   diamond: Diamond,
-  foundry: Foundry,
+  foundry: FoundryFacet,
   curveType: string,
-  meTokenRegistry: MeTokenRegistry,
+  meTokenRegistry: MeTokenRegistryFacet,
   curveRegistry: CurveRegistry,
   migrationRegistry: MigrationRegistry,
   vaultRegistry: VaultRegistry,
@@ -347,7 +354,6 @@ export async function addHubSetup(
 }> {
   let singleAssetVault: SingleAssetVault;
   let account0: SignerWithAddress;
-  let curve: ICurve;
   if (curve) {
     curve = curve;
   } else {
