@@ -1,6 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../artifacts/types/HubFacet";
 import {
   calculateCollateralReturned,
@@ -16,7 +16,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../artifacts/types/ERC20";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../utils/hardhatNode";
@@ -27,15 +27,15 @@ import { hubSetup } from "../utils/hubSetup";
 import { ICurve } from "../../artifacts/types";
 
 const setup = async () => {
-  describe("Foundry.sol", () => {
+  describe("FoundryFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let hubCurve: ICurve;
-    let meTokenRegistry: MeTokenRegistry;
-    let foundry: Foundry;
+    let curve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let foundry: FoundryFacet;
     let token: ERC20;
     let meToken: MeToken;
     let tokenHolder: Signer;
@@ -79,11 +79,14 @@ const setup = async () => {
       );
       ({
         token,
-        hubCurve,
-        curveRegistry,
+        tokenHolder,
         hub,
+        curve,
         foundry,
+        singleAssetVault,
+        curveRegistry,
         migrationRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
@@ -91,7 +94,7 @@ const setup = async () => {
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
-        5000,
+        initRefundRatio,
         "bancorABDK"
       ));
 
@@ -134,7 +137,7 @@ const setup = async () => {
       const totalSupply = await meToken.totalSupply();
 
       // mint
-      const meTokensMinted = await hubCurve.viewMeTokensMinted(
+      const meTokensMinted = await curve.viewMeTokensMinted(
         amount,
         hubId,
         totalSupply,
@@ -606,7 +609,7 @@ const setup = async () => {
 
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
-        let expectedMeTokensMinted = await hubCurve.viewMeTokensMinted(
+        let expectedMeTokensMinted = await curve.viewMeTokensMinted(
           amount1,
           hubId,
           0,
@@ -618,7 +621,7 @@ const setup = async () => {
         let vaultDaiBalanceBefore = await dai.balanceOf(
           singleAssetVault.address
         );
-        // let expectedAssetsDeposited = await hubCurve.viewAssetsDeposited(
+        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
         //   expectedMeTokensMinted,
         //   hubId,
         //   0,
@@ -675,13 +678,13 @@ const setup = async () => {
       });
 
       it("balanceLocked = 0, balancePooled = 0, mint after meToken creation", async () => {
-        let expectedMeTokensMinted = await hubCurve.viewMeTokensMinted(
+        let expectedMeTokensMinted = await curve.viewMeTokensMinted(
           amount1,
           hubId,
           0,
           0
         );
-        // let expectedAssetsDeposited = await hubCurve.viewAssetsDeposited(
+        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
         //   expectedMeTokensMinted,
         //   hubId,
         //   0,

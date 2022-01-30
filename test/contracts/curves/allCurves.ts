@@ -2,9 +2,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import {
@@ -27,11 +27,11 @@ describe("All curves", () => {
 const setup = async () => {
   let curves = new Array();
   let DAI: string;
-  let meTokenRegistry: MeTokenRegistry;
+  let meTokenRegistry: MeTokenRegistryFacet;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
-  let foundry: Foundry;
+  let foundry: FoundryFacet;
   let hub: HubFacet;
   let diamond: Diamond;
   let dai: ERC20;
@@ -99,11 +99,11 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
   );
-  // Create and register first hub we also link the hubCurve of type "bancorABDK" to this hub (hubID = 1)
-  let hubCurve: ICurve;
+  // Create and register first hub we also link the curve of type "bancorABDK" to this hub (hubID = 1)
+  let curve: ICurve;
   ({
     token,
-    hubCurve,
+    curve,
     curveRegistry,
     tokenAddr,
     hub,
@@ -158,8 +158,8 @@ const setup = async () => {
   let hubDetails = await addHubSetup(...addArgs);
   let testCurve = {
     signers: [account0, account1, account2],
-    curve: hubDetails.hubCurve,
-    newCurve: hubCurve,
+    curve: hubDetails.curve,
+    newCurve: curve,
     hub,
     precision: 0.000000000001,
   };
@@ -180,7 +180,7 @@ const setup = async () => {
 
   // Second ABDK Curve
 
-  addArgs[13] = hubDetails.hubCurve;
+  addArgs[13] = hubDetails.curve;
   addArgs[9] = encodedCurveDetails2;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubDetails = await addHubSetup(...addArgs);
@@ -281,7 +281,7 @@ const setup = async () => {
   // along with encoded details for this curve
   hubDetails = await addHubSetup(...addArgs);
   // we set this new curve as the default curve
-  testCurve = { ...testCurve, curve: hubDetails.hubCurve };
+  testCurve = { ...testCurve, curve: hubDetails.curve };
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,

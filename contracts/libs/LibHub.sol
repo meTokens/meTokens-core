@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
 import {LibAppStorage, AppStorage, Details} from "./Details.sol";
@@ -39,11 +40,9 @@ library LibHub {
         hub_.targetRefundRatio = s.hubs[_id].targetRefundRatio;
     }
 
-    function finishUpdate(uint256 id)
-        internal
-        returns (Details.Hub memory hub_)
-    {
+    function finishUpdate(uint256 id) internal returns (Details.Hub memory) {
         AppStorage storage s = LibAppStorage.diamondStorage();
+        Details.Hub storage hub_ = s.hubs[id];
         require(block.timestamp > hub_.endTime, "Still updating");
 
         if (hub_.targetRefundRatio != 0) {
@@ -67,5 +66,25 @@ library LibHub {
 
         emit FinishUpdate(id);
         return hub_;
+    }
+
+    function count() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.hubCount;
+    }
+
+    function warmup() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.hubWarmup;
+    }
+
+    function duration() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.hubDuration;
+    }
+
+    function cooldown() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.hubCooldown;
     }
 }

@@ -3,9 +3,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -28,10 +28,10 @@ const setup = async () => {
     let migrationRegistry: MigrationRegistry;
     let migration: SameAssetTransferMigration;
     let curve: ICurve;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     // let targetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let meToken: MeToken;
     let hub: HubFacet;
 
@@ -78,13 +78,14 @@ const setup = async () => {
 
       ({
         hub,
+        curve,
         foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultDAIArgs,

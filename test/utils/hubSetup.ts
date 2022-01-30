@@ -1,18 +1,19 @@
 import { Contract } from "@ethersproject/contracts";
 import { ethers, getNamedAccounts } from "hardhat";
 import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { Foundry } from "../../artifacts/types/Foundry";
 import { DiamondCutFacet } from "../../artifacts/types/DiamondCutFacet";
 import { Diamond } from "../../artifacts/types/Diamond";
 import { DiamondInit } from "../../artifacts/types/DiamondInit";
 import { HubFacet } from "../../artifacts/types/HubFacet";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
+import { FeesFacet } from "../../artifacts/types/FeesFacet";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { DiamondLoupeFacet } from "../../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../../artifacts/types/OwnershipFacet";
 import { getSelectors } from "../../scripts/libraries/helpers";
@@ -22,7 +23,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
-import { Fees } from "../../artifacts/types/Fees";
 import { expect } from "chai";
 
 import { text } from "stream/consumers";
@@ -40,81 +40,74 @@ export async function hubSetup(
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
-  tokenAddr: string;
-  foundry: Foundry;
+  foundry: FoundryFacet;
   hub: HubFacet;
+  fee: FeesFacet;
+  meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
   singleAssetVault: SingleAssetVault;
-  hubCurve: ICurve;
-  meTokenRegistry: MeTokenRegistry;
+  curve: ICurve;
   curveRegistry: CurveRegistry;
   vaultRegistry: VaultRegistry;
   migrationRegistry: MigrationRegistry;
-  fee: Fees;
-  token: ERC20;
   account0: SignerWithAddress;
   account1: SignerWithAddress;
   account2: SignerWithAddress;
   account3: SignerWithAddress;
+  token: ERC20;
+  tokenAddr: string;
   tokenHolder: Signer;
   tokenWhale: string;
 }> {
   const {
-    tokenAddr,
     foundry,
     hub,
+    fee,
+    meTokenRegistry,
     diamond,
     meTokenFactory,
     singleAssetVault,
-    hubCurve,
-    meTokenRegistry,
+    curve,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,
-    fee,
-    token,
     account0,
     account1,
     account2,
     account3,
+    token,
+    tokenAddr,
     tokenHolder,
     tokenWhale,
-  } = await hubSetupWithoutRegister(
-    // hub,
-    // foundry,
-    curveStr,
-    fees,
-    erc20Address,
-    erc20Whale
-  );
+  } = await hubSetupWithoutRegister(curveStr, fees, erc20Address, erc20Whale);
   await hub.register(
     account0.address,
     tokenAddr,
     singleAssetVault.address,
-    hubCurve.address,
+    curve.address,
     refundRatio, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
   );
   return {
-    tokenAddr,
     foundry,
     hub,
+    fee,
+    meTokenRegistry,
     diamond,
     meTokenFactory,
     singleAssetVault,
-    hubCurve,
-    meTokenRegistry,
+    curve,
     curveRegistry,
     vaultRegistry,
     migrationRegistry,
-    fee,
-    token,
     account0,
     account1,
     account2,
     account3,
+    token,
+    tokenAddr,
     tokenHolder,
     tokenWhale,
   };
@@ -148,25 +141,23 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
   }
 }
 export async function hubSetupWithoutRegister(
-  // hub: HubFacet,
-  // foundry: Foundry,
   curveStr: string,
   fees?: number[],
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
   tokenAddr: string;
-  foundry: Foundry;
+  foundry: FoundryFacet;
   hub: HubFacet;
+  meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
   singleAssetVault: SingleAssetVault;
-  hubCurve: ICurve;
-  meTokenRegistry: MeTokenRegistry;
+  curve: ICurve;
   vaultRegistry: VaultRegistry;
   curveRegistry: CurveRegistry;
   migrationRegistry: MigrationRegistry;
-  fee: Fees;
+  fee: FeesFacet;
   token: ERC20;
   account0: SignerWithAddress;
   account1: SignerWithAddress;
@@ -176,16 +167,16 @@ export async function hubSetupWithoutRegister(
   tokenWhale: string;
 }> {
   let tokenAddr: string;
-  let foundry: Foundry;
+  let foundry: FoundryFacet;
   let hub: HubFacet;
   let meTokenFactory: MeTokenFactory;
   let singleAssetVault: SingleAssetVault;
-  let hubCurve: ICurve;
-  let meTokenRegistry: MeTokenRegistry;
+  let curve: ICurve;
+  let meTokenRegistry: MeTokenRegistryFacet;
   let vaultRegistry: VaultRegistry;
   let curveRegistry: CurveRegistry;
   let migrationRegistry: MigrationRegistry;
-  let fee: Fees;
+  let fee: FeesFacet;
   let token: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -213,24 +204,12 @@ export async function hubSetupWithoutRegister(
   curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  });
   meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-  fee = await deploy<Fees>("Fees");
   let feeInitialization = fees;
   if (!feeInitialization) {
     feeInitialization = [0, 0, 0, 0, 0, 0];
   }
-  const txa = await fee.initialize(
-    feeInitialization[0],
-    feeInitialization[1],
-    feeInitialization[2],
-    feeInitialization[3],
-    feeInitialization[4],
-    feeInitialization[5]
-  );
+
   //
   // NOTE: start diamond deploy
   //
@@ -244,38 +223,45 @@ export async function hubSetupWithoutRegister(
   );
   // Deploy contracts depending on hubFacet address,
   // which is actually the address of the diamond
-  meTokenRegistry = await deploy<MeTokenRegistry>(
-    "MeTokenRegistry",
-    undefined,
-    foundry.address,
-    diamond.address,
-    meTokenFactory.address,
-    migrationRegistry.address
-  );
+  // meTokenRegistry = await deploy<MeTokenRegistry>(
+  //   "MeTokenRegistry",
+  //   undefined,
+  //   foundry.address,
+  //   diamond.address,
+  //   meTokenFactory.address,
+  //   migrationRegistry.address
+  // );
   singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
     account0.address, // DAO
-    foundry.address, // foundry
+    diamond.address, // foundry
     diamond.address, // hub
-    meTokenRegistry.address, //IMeTokenRegistry
+    diamond.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
   );
 
-  hubCurve = await getCurve(curveStr, diamond.address);
-  await foundry.initialize(
-    diamond.address,
-    fee.address,
-    meTokenRegistry.address
-  );
+  curve = await getCurve(curveStr, diamond.address);
 
   // Deploying facets
   const hubFacet = await deploy<HubFacet>("HubFacet");
+  const foundryFacet = await deploy<FoundryFacet>("FoundryFacet");
+  const feesFacet = await deploy<FeesFacet>("FeesFacet");
+  const meTokenRegistryFacet = await deploy<MeTokenRegistryFacet>(
+    "MeTokenRegistryFacet"
+  );
   const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
     "DiamondLoupeFacet"
   );
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
-  const facets = [hubFacet, diamondLoupeFacet, ownershipFacet];
+  const facets = [
+    hubFacet,
+    foundryFacet,
+    feesFacet,
+    meTokenRegistryFacet,
+    diamondLoupeFacet,
+    ownershipFacet,
+  ];
   const cut = [];
   const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
   for (const facet of facets) {
@@ -290,10 +276,16 @@ export async function hubSetupWithoutRegister(
   const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
   let args: any = [
     {
-      foundry: foundry.address,
+      // foundry: foundry.address,
       vaultRegistry: vaultRegistry.address,
       curveRegistry: curveRegistry.address,
       migrationRegistry: migrationRegistry.address,
+      mintFee: feeInitialization[0],
+      burnBuyerFee: feeInitialization[1],
+      burnOwnerFee: feeInitialization[2],
+      transferFee: feeInitialization[3],
+      interestFee: feeInitialization[4],
+      yieldFee: feeInitialization[5],
     },
   ];
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier
@@ -310,7 +302,7 @@ export async function hubSetupWithoutRegister(
   //
   // NOTE: end diamond deploy
   //
-  await curveRegistry.approve(hubCurve.address);
+  await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   return {
     tokenAddr,
@@ -319,7 +311,7 @@ export async function hubSetupWithoutRegister(
     diamond,
     meTokenFactory,
     singleAssetVault,
-    hubCurve,
+    curve,
     meTokenRegistry,
     vaultRegistry,
     curveRegistry,
@@ -351,22 +343,22 @@ export async function addHubSetup(
   curve?: ICurve
 ): Promise<{
   hubId: number;
-  hubCurve: ICurve;
+  curve: ICurve;
 }> {
   let singleAssetVault: SingleAssetVault;
   let account0: SignerWithAddress;
-  let hubCurve: ICurve;
+  let curve: ICurve;
   if (curve) {
-    hubCurve = curve;
+    curve = curve;
   } else {
-    hubCurve = await getCurve(curveType, diamond.address);
+    curve = await getCurve(curveType, diamond.address);
   }
 
-  const isCurveApproved = await curveRegistry.isApproved(hubCurve.address);
+  const isCurveApproved = await curveRegistry.isApproved(curve.address);
   if (!isCurveApproved) {
-    await curveRegistry.approve(hubCurve.address);
+    await curveRegistry.approve(curve.address);
   }
-  const isCurveApprovedAfter = await curveRegistry.isApproved(hubCurve.address);
+  const isCurveApprovedAfter = await curveRegistry.isApproved(curve.address);
   expect(isCurveApprovedAfter).to.be.true;
   let dao = daoAddress;
   [account0] = await ethers.getSigners();
@@ -390,7 +382,7 @@ export async function addHubSetup(
     account0.address,
     tokenAddr,
     singleAssetVault.address,
-    hubCurve.address,
+    curve.address,
     refundRatio, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
@@ -398,6 +390,6 @@ export async function addHubSetup(
   const hubId = (await hub.count()).toNumber();
   return {
     hubId,
-    hubCurve,
+    curve,
   };
 }

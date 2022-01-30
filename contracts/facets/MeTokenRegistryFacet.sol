@@ -211,36 +211,37 @@ contract MeTokenRegistryFacet is Modifiers {
         emit UpdateBalances(_meToken, _newBalance);
     }
 
-    function updateBalancePooled(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        require(msg.sender == s.foundry, "!foundry");
-        if (add) {
-            s.meTokens[_meToken].balancePooled += _amount;
-        } else {
-            s.meTokens[_meToken].balancePooled -= _amount;
-        }
+    // function updateBalancePooled(
+    //     bool add,
+    //     address _meToken,
+    //     uint256 _amount
+    // ) external {
+    //     // require(msg.sender == s.foundry, "!foundry");
+    //     require(msg.sender == s.foundry, "!foundry");
+    //     if (add) {
+    //         s.meTokens[_meToken].balancePooled += _amount;
+    //     } else {
+    //         s.meTokens[_meToken].balancePooled -= _amount;
+    //     }
 
-        emit UpdateBalancePooled(add, _meToken, _amount);
-    }
+    //     emit UpdateBalancePooled(add, _meToken, _amount);
+    // }
 
-    function updateBalanceLocked(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        require(msg.sender == s.foundry, "!foundry");
+    // function updateBalanceLocked(
+    //     bool add,
+    //     address _meToken,
+    //     uint256 _amount
+    // ) external {
+    //     require(msg.sender == s.foundry, "!foundry");
 
-        if (add) {
-            s.meTokens[_meToken].balanceLocked += _amount;
-        } else {
-            s.meTokens[_meToken].balanceLocked -= _amount;
-        }
+    //     if (add) {
+    //         s.meTokens[_meToken].balanceLocked += _amount;
+    //     } else {
+    //         s.meTokens[_meToken].balanceLocked -= _amount;
+    //     }
 
-        emit UpdateBalanceLocked(add, _meToken, _amount);
-    }
+    //     emit UpdateBalanceLocked(add, _meToken, _amount);
+    // }
 
     function transferMeTokenOwnership(address _newOwner) external {
         require(
@@ -287,35 +288,40 @@ contract MeTokenRegistryFacet is Modifiers {
         emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
-    function setWarmup(uint256 _warmup) external onlyDurationsController {
-        require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
+    function setMeTokenWarmup(uint256 _warmup)
+        external
+        onlyDurationsController
+    {
+        require(_warmup != s.meTokenWarmup, "_warmup == s.hubWarmup");
         s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyDurationsController {
-        require(_duration != s.hubDuration, "_duration == s.hubDuration");
+    function setMeTokenDuration(uint256 _duration)
+        external
+        onlyDurationsController
+    {
+        require(_duration != s.meTokenDuration, "_duration == s.hubDuration");
         s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyDurationsController {
-        require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
+    function setMeTokenCooldown(uint256 _cooldown)
+        external
+        onlyDurationsController
+    {
+        require(_cooldown != s.meTokenCooldown, "_cooldown == s.hubCooldown");
         s.hubCooldown = _cooldown;
     }
 
-    function count() external view returns (uint256) {
-        return s.hubCount;
+    function meTokenWarmup() external view returns (uint256) {
+        return LibMeToken.warmup();
     }
 
-    function warmup() external view returns (uint256) {
-        return s.hubWarmup;
+    function meTokenDuration() external view returns (uint256) {
+        return LibMeToken.duration();
     }
 
-    function duration() external view returns (uint256) {
-        return s.hubDuration;
-    }
-
-    function cooldown() external view returns (uint256) {
-        return s.hubCooldown;
+    function meTokenCooldown() external view returns (uint256) {
+        return LibMeToken.cooldown();
     }
 
     function getOwnerMeToken(address _owner) external view returns (address) {
@@ -333,9 +339,9 @@ contract MeTokenRegistryFacet is Modifiers {
     function getDetails(address _meToken)
         external
         view
-        returns (Details.MeToken memory)
+        returns (MeTokenInfo memory)
     {
-        return s.meTokens[_meToken];
+        return LibMeToken.getMeToken(_meToken);
     }
 
     function isOwner(address _owner) public view returns (bool) {

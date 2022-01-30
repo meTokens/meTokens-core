@@ -12,9 +12,9 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -28,12 +28,12 @@ import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let tx: ContractTransaction;
-    let meTokenRegistry: MeTokenRegistry;
-    let hubCurve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let tokenHolder: Signer;
     let dai: ERC20;
@@ -98,7 +98,7 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        hubCurve,
+        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -119,7 +119,7 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        hubCurve.address,
+        curve.address,
         refundRatio,
         encodedCurveDetails2,
         encodedVaultArgs

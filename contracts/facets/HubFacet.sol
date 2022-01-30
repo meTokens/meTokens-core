@@ -12,6 +12,7 @@ import {IFoundry} from "../interfaces/IFoundry.sol";
 
 contract HubFacet is Modifiers {
     event Register(
+        uint256 _id,
         address _owner,
         address _asset,
         address _vault,
@@ -31,6 +32,7 @@ contract HubFacet is Modifiers {
         uint256 _endTime,
         uint256 _endCooldown
     );
+    event FinishUpdate(uint256 _id);
     event CancelUpdate(uint256 _id);
     event TransferHubOwnership(uint256 _id, address _newOwner);
 
@@ -59,7 +61,8 @@ contract HubFacet is Modifiers {
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(++s.hubCount, _encodedCurveDetails);
+        uint256 id = ++s.hubCount;
+        _curve.register(id, _encodedCurveDetails);
 
         // Save the hub to the registry
         Details.Hub storage hub_ = s.hubs[s.hubCount];
@@ -70,6 +73,7 @@ contract HubFacet is Modifiers {
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
         emit Register(
+            id,
             _owner,
             _asset,
             address(_vault),
@@ -196,17 +200,23 @@ contract HubFacet is Modifiers {
         emit TransferHubOwnership(_id, _newOwner);
     }
 
-    function setWarmup(uint256 _warmup) external onlyDurationsController {
+    function setHubWarmup(uint256 _warmup) external onlyDurationsController {
         require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
         s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyDurationsController {
+    function setHubDuration(uint256 _duration)
+        external
+        onlyDurationsController
+    {
         require(_duration != s.hubDuration, "_duration == s.hubDuration");
         s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyDurationsController {
+    function setHubCooldown(uint256 _cooldown)
+        external
+        onlyDurationsController
+    {
         require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
         s.hubCooldown = _cooldown;
     }
@@ -215,15 +225,15 @@ contract HubFacet is Modifiers {
         return s.hubCount;
     }
 
-    function warmup() external view returns (uint256) {
-        return s.hubWarmup;
+    function hubWarmup() external view returns (uint256) {
+        return LibHub.warmup();
     }
 
-    function duration() external view returns (uint256) {
-        return s.hubDuration;
+    function hubDuration() external view returns (uint256) {
+        return LibHub.duration();
     }
 
-    function cooldown() external view returns (uint256) {
-        return s.hubCooldown;
+    function hubCooldown() external view returns (uint256) {
+        return LibHub.cooldown();
     }
 }

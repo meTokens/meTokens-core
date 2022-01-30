@@ -6,7 +6,7 @@ import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Foundry } from "../../../artifacts/types/Foundry";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
@@ -24,7 +24,7 @@ describe("Generic Curve", () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let _curve: BancorABDK;
-  let meTokenRegistry: MeTokenRegistry;
+  let meTokenRegistry: MeTokenRegistryFacet;
   let foundry: Foundry;
   let token: ERC20;
   let meToken: MeToken;
@@ -60,9 +60,9 @@ describe("Generic Curve", () => {
     );
 
     const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
+    // foundry = await deploy<Foundry>("Foundry", {
+    //   WeightedAverage: weightedAverage.address,
+    // });
     // hub = await deploy<Hub>("Hub");
     // _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
     // ({

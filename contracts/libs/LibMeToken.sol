@@ -99,4 +99,19 @@ library LibMeToken {
         emit FinishResubscribe(_meToken);
         return meToken_;
     }
+
+    function warmup() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.meTokenWarmup;
+    }
+
+    function duration() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.meTokenDuration;
+    }
+
+    function cooldown() internal view returns (uint256) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.meTokenCooldown;
+    }
 }

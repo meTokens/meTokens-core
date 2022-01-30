@@ -1,5 +1,5 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
@@ -26,7 +26,7 @@ import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { Fees } from "../../../artifacts/types/Fees";
 import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
@@ -65,11 +65,11 @@ export const checkUniswapPoolLiquidity = async (
   expect(await uniswapV3Pool.liquidity()).to.be.gt(0);
 };
 const setup = async () => {
-  describe("MeTokenRegistry.sol", () => {
+  describe("MeTokenRegistryFacet.sol", () => {
     let meTokenAddr0: string;
     let meTokenAddr1: string;
     let tx: ContractTransaction;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let refundRatio = 50000;
 
     let DAI: string;
@@ -80,7 +80,7 @@ const setup = async () => {
     let vaultRegistry: VaultRegistry;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let token: ERC20;
     let fee: Fees;
@@ -90,7 +90,7 @@ const setup = async () => {
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
     let tokenWhale: string;
-    let hubCurve: ICurve;
+    let curve: ICurve;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
     let meToken: Address;
@@ -126,7 +126,7 @@ const setup = async () => {
       ({
         tokenAddr: DAI,
         hub,
-        hubCurve,
+        curve,
         foundry,
         meTokenRegistry,
         meTokenFactory,
@@ -153,7 +153,7 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        hubCurve.address,
+        curve.address,
         refundRatio, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -162,7 +162,7 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        hubCurve.address,
+        curve.address,
         refundRatio, //refund ratio
         encodedCurveDetails,
         encodedVaultArgs
@@ -183,7 +183,7 @@ const setup = async () => {
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, hubCurve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -211,7 +211,7 @@ const setup = async () => {
         await tx.wait();
 
         meTokenAddr0 = await meTokenRegistry.getOwnerMeToken(account0.address);
-        const meTokensMinted = await hubCurve.viewMeTokensMinted(
+        const meTokensMinted = await curve.viewMeTokensMinted(
           assetsDeposited,
           hubId,
           0,
@@ -300,7 +300,7 @@ const setup = async () => {
         );
 
         let estimateCalculateTokenReturnedFromZero =
-          await hubCurve.viewMeTokensMinted(assetsDeposited, hubId, 0, 0);
+          await curve.viewMeTokensMinted(assetsDeposited, hubId, 0, 0);
 
         expect(
           toETHNumber(estimateCalculateTokenReturnedFromZero)
@@ -398,7 +398,7 @@ const setup = async () => {
       it("should revert to setDuration if same as before", async () => {
         const oldWarmup = await meTokenRegistry.duration();
         const tx = meTokenRegistry.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("_duration == s.hubDuration");
+        await expect(tx).to.be.revertedWith("duration_ == _duration");
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setDuration(hubWarmup);
@@ -419,7 +419,7 @@ const setup = async () => {
       it("should revert to setCooldown if same as before", async () => {
         const oldWarmup = await meTokenRegistry.cooldown();
         const tx = meTokenRegistry.setCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
+        await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
       });
       it("should be able to setCooldown", async () => {
         tx = await meTokenRegistry.setCooldown(coolDown);
@@ -478,7 +478,7 @@ const setup = async () => {
       });
       it("Fails if current hub currently updating", async () => {
         await (
-          await hub.initUpdate(hubId, hubCurve.address, refundRatio / 2, "0x")
+          await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x")
         ).wait();
 
         const tx = meTokenRegistry.initResubscribe(
@@ -492,7 +492,7 @@ const setup = async () => {
       });
       it("Fails if target hub currently updating", async () => {
         await (
-          await hub.initUpdate(hubId2, hubCurve.address, refundRatio / 2, "0x")
+          await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x")
         ).wait();
 
         const tx = meTokenRegistry.initResubscribe(

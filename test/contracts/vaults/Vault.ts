@@ -1,9 +1,9 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -23,9 +23,9 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let dao: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let tokenHolder: Signer;
     let meToken: MeToken;
     let fees: Fees;

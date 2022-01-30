@@ -2,18 +2,18 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { mineBlock, setAutomine } from "../utils/hardhatNode";
 import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetup } from "../utils/hubSetup";
 
 const setup = async () => {
   let meTokenFactory: MeTokenFactory;
-  let meTokenRegistry: MeTokenRegistry;
-  let foundry: Foundry;
+  let meTokenRegistry: MeTokenRegistryFacet;
+  let foundry: FoundryFacet;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
 
@@ -36,12 +36,13 @@ const setup = async () => {
         [DAI]
       );
 
-      ({ meTokenFactory, meTokenRegistry, account0, account1 } = await hubSetup(
-        encodedCurveDetails,
-        encodedVaultArgs,
-        refundRatio,
-        "bancorABDK"
-      ));
+      ({ foundry, meTokenFactory, meTokenRegistry, account0, account1 } =
+        await hubSetup(
+          encodedCurveDetails,
+          encodedVaultArgs,
+          refundRatio,
+          "bancorABDK"
+        ));
     });
     it("create() with same params always produce different MeTokens", async () => {
       const name = "ABCD";

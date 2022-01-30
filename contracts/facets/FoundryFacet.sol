@@ -11,7 +11,7 @@ import {ICurve} from "../interfaces/ICurve.sol";
 
 import {LibMeToken} from "../libs/LibMeToken.sol";
 import {LibHub} from "../libs/LibHub.sol";
-import {WeightedAverage} from "../libs/WeightedAverage.sol";
+import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import "../libs/Details.sol";
 
 contract FoundryFacet is IFoundry {
@@ -262,7 +262,7 @@ contract FoundryFacet is IFoundry {
                         meToken_.balancePooled
                     );
             }
-            meTokensMinted = WeightedAverage.calculate(
+            meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
                 hub_.startTime,
@@ -277,7 +277,7 @@ contract FoundryFacet is IFoundry {
                     totalSupply_,
                     meToken_.balancePooled
                 );
-            meTokensMinted = WeightedAverage.calculate(
+            meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
                 meToken_.startTime,
@@ -329,7 +329,7 @@ contract FoundryFacet is IFoundry {
                         meToken_.balancePooled
                     );
             }
-            rawAssetsReturned = WeightedAverage.calculate(
+            rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
                 hub_.startTime,
@@ -344,7 +344,7 @@ contract FoundryFacet is IFoundry {
                     totalSupply_,
                     meToken_.balancePooled
                 );
-            rawAssetsReturned = WeightedAverage.calculate(
+            rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
                 meToken_.startTime,
@@ -383,7 +383,7 @@ contract FoundryFacet is IFoundry {
                     // Hub is updating
                     actualAssetsReturned =
                         (rawAssetsReturned *
-                            WeightedAverage.calculate(
+                            LibWeightedAverage.calculate(
                                 hub_.refundRatio,
                                 hub_.targetRefundRatio,
                                 hub_.startTime,
@@ -394,7 +394,7 @@ contract FoundryFacet is IFoundry {
                     // meToken is resubscribing
                     actualAssetsReturned =
                         (rawAssetsReturned *
-                            WeightedAverage.calculate(
+                            LibWeightedAverage.calculate(
                                 hub_.refundRatio,
                                 s.hubs[meToken_.targetHubId].refundRatio,
                                 meToken_.startTime,

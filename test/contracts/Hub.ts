@@ -1,6 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { HubFacet } from "../../artifacts/types/HubFacet";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
@@ -11,7 +11,7 @@ import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
 import { Signer } from "ethers";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
 import { ICurve } from "../../artifacts/types";
 
@@ -31,9 +31,9 @@ const setup = async () => {
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let hubCurve: ICurve;
+    let curve: ICurve;
     let newCurve: BancorABDK;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
@@ -42,7 +42,7 @@ const setup = async () => {
     let token: ERC20;
     let dai: ERC20;
     let tokenHolder: Signer;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let meToken: MeToken;
 
     const hubId = 1;
@@ -71,14 +71,16 @@ const setup = async () => {
 
       ({
         token,
-        hubCurve,
-        curveRegistry,
+        tokenHolder,
         hub,
+        curve,
         foundry,
+        singleAssetVault,
+        curveRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
       } = await hubSetupWithoutRegister("bancorABDK"));
     });
 
@@ -117,12 +119,12 @@ const setup = async () => {
               account0.address,
               DAI,
               singleAssetVault.address,
-              hubCurve.address,
+              curve.address,
               refundRatio1,
               encodedCurveDetails,
               encodedVaultDAIArgs
             )
-        ).to.be.revertedWith("!registerer");
+        ).to.be.revertedWith("!registerController");
       });
       it("should revert from invalid address arguments", async () => {
         // Un-approved curve
@@ -142,7 +144,7 @@ const setup = async () => {
           account0.address,
           DAI,
           account0.address, // random unapproved address
-          hubCurve.address,
+          curve.address,
           refundRatio1,
           encodedCurveDetails,
           encodedVaultDAIArgs
@@ -156,7 +158,7 @@ const setup = async () => {
             account0.address,
             DAI,
             singleAssetVault.address,
-            hubCurve.address,
+            curve.address,
             refundRatio1,
             "0x", // invalid _encodedCurveDetails
             encodedVaultDAIArgs
@@ -167,7 +169,7 @@ const setup = async () => {
             account0.address,
             DAI,
             singleAssetVault.address,
-            hubCurve.address,
+            curve.address,
             refundRatio1,
             ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveDetails
             encodedVaultDAIArgs
@@ -180,7 +182,7 @@ const setup = async () => {
           account0.address,
           ethers.constants.AddressZero,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           refundRatio1,
           encodedCurveDetails,
           encodedVaultDAIArgs // invalid _encodedVaultArgs
@@ -193,7 +195,7 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           10 ** 7,
           encodedCurveDetails,
           encodedVaultDAIArgs
@@ -205,7 +207,7 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           0,
           encodedCurveDetails,
           encodedVaultDAIArgs
@@ -217,7 +219,7 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           refundRatio1,
           encodedCurveDetails,
           encodedVaultDAIArgs
@@ -231,7 +233,7 @@ const setup = async () => {
             account0.address,
             DAI,
             singleAssetVault.address,
-            hubCurve.address,
+            curve.address,
             refundRatio1,
             encodedCurveDetails,
             encodedVaultDAIArgs
@@ -242,7 +244,7 @@ const setup = async () => {
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
         expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(hubCurve.address);
+        expect(details.curve).to.be.equal(curve.address);
         expect(details.refundRatio).to.be.equal(refundRatio1);
         expect(details.updating).to.be.equal(false);
         expect(details.startTime).to.be.equal(0);
@@ -279,9 +281,7 @@ const setup = async () => {
       });
       it("should revert to setWarmup if not owner", async () => {
         const tx = hub.connect(account1).setWarmup(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
       it("should revert to setWarmup if same as before", async () => {
         const oldWarmup = await hub.warmup();
@@ -298,14 +298,12 @@ const setup = async () => {
     describe("setDuration()", () => {
       it("should revert to setDuration if not owner", async () => {
         const tx = hub.connect(account1).setDuration(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
       it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await hub.duration();
-        const tx = hub.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("_duration_ == s.hubDuration");
+        const oldDuration = await hub.duration();
+        const tx = hub.setDuration(oldDuration);
+        await expect(tx).to.be.revertedWith("_duration == s.hubDuration");
       });
       it("should be able to setDuration", async () => {
         const tx = await hub.setDuration(duration);
@@ -317,13 +315,11 @@ const setup = async () => {
     describe("setCooldown()", () => {
       it("should revert to setCooldown if not owner", async () => {
         const tx = hub.connect(account1).setCooldown(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
       });
       it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await hub.cooldown();
-        const tx = hub.setCooldown(oldWarmup);
+        const oldCooldown = await hub.cooldown();
+        const tx = hub.setCooldown(oldCooldown);
         await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
       });
       it("should be able to setCooldown", async () => {
@@ -337,30 +333,27 @@ const setup = async () => {
       it("should revert when sender is not owner", async () => {
         const tx = hub
           .connect(account1)
-          .initUpdate(
-            hubId,
-            hubCurve.address,
-            refundRatio2,
-            encodedCurveDetails
-          );
+          .initUpdate(hubId, curve.address, refundRatio2, encodedCurveDetails);
         await expect(tx).to.be.revertedWith("!owner");
       });
 
       it("should revert when nothing to update", async () => {
-        const tx = hub.initUpdate(hubId, hubCurve.address, 0, "0x");
+        const tx = hub
+          .connect(account0)
+          .initUpdate(hubId, curve.address, 0, "0x");
         await expect(tx).to.be.revertedWith("Nothing to update");
       });
 
       it("should revert from invalid _refundRatio", async () => {
         const tx1 = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           10 ** 7,
           encodedCurveDetails
         );
         const tx2 = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio1,
           encodedCurveDetails
         );
@@ -451,7 +444,7 @@ const setup = async () => {
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
         expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(hubCurve.address);
+        expect(details.curve).to.be.equal(curve.address);
         expect(details.refundRatio).to.be.equal(refundRatio1);
         expect(details.updating).to.be.equal(true);
         expect(details.startTime).to.be.equal(expectedStartTime);
@@ -466,7 +459,7 @@ const setup = async () => {
         // calling initUpdate() to revert
         const txBeforeStartTime = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio2,
           encodedCurveDetails
         );
@@ -479,7 +472,7 @@ const setup = async () => {
         await mineBlock(details.startTime.toNumber() + 1);
         const txAfterStartTime = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio2,
           encodedCurveDetails
         );
@@ -491,7 +484,7 @@ const setup = async () => {
         await mineBlock(details.endTime.toNumber() - 1);
         const txBeforeEndTime = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio2,
           encodedCurveDetails
         );
@@ -503,7 +496,7 @@ const setup = async () => {
         await mineBlock(details.endTime.toNumber() + 1);
         const txAfterEndTime = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio2,
           encodedCurveDetails
         );
@@ -515,7 +508,7 @@ const setup = async () => {
         await mineBlock(details.endCooldown.toNumber() - 2);
         const txBeforeEndCooldown = hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           refundRatio2,
           encodedCurveDetails
         );
@@ -812,10 +805,9 @@ const setup = async () => {
         ).to.be.revertedWith("Same owner");
       });
       it("should transfers hub ownership", async () => {
-        const transferHubOwnershipTx = await hub.transferHubOwnership(
-          hubId,
-          account1.address
-        );
+        const transferHubOwnershipTx = await hub
+          .connect(account0)
+          .transferHubOwnership(hubId, account1.address);
         await transferHubOwnershipTx.wait();
 
         await expect(transferHubOwnershipTx)

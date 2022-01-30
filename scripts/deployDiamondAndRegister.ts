@@ -1,9 +1,13 @@
+import { Contract } from "@ethersproject/contracts";
 import { deploy } from "../test/utils/helpers";
 import { network, run, ethers, getNamedAccounts } from "hardhat";
 import { DiamondCutFacet } from "../artifacts/types/DiamondCutFacet";
 import { Diamond } from "../artifacts/types/Diamond";
 import { DiamondInit } from "../artifacts/types/DiamondInit";
 import { HubFacet } from "../artifacts/types/HubFacet";
+import { FoundryFacet } from "../artifacts/types/FoundryFacet";
+import { FeesFacet } from "../artifacts/types/FeesFacet";
+import { MeTokenRegistryFacet } from "../artifacts/types/MeTokenRegistryFacet";
 import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
@@ -22,14 +26,11 @@ import {
  deploy diamond steps:
 diamondCutFacet
 diamond
---- deploy weightedAverage
---- deploy fee
---- deploy foundry 
 --- deploy registries (curve, migration and vault)
 --- deploy a vault 
 --- deploy curves
 diamondInit
-diamond facets (hub, metoken registry, ownership)
+diamond facets (hub, metoken registry, foundry, fees, ownership)
  internal call diamond init (foundry, registries)
  call approve curves
  call approve vaults
@@ -69,25 +70,7 @@ async function main() {
     diamondCutFacet.address
   );
   console.log("Diamond deployed at:", diamond.address);
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  console.log("weightedAverage deployed at:", weightedAverage.address);
-  const fee = await deploy<Fees>("Fees");
-  console.log("Fees deployed at:", fee.address);
-  const foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  });
-  console.log("foundry deployed at:", foundry.address);
   let feeInitialization = [0, 0, 0, 0, 0, 0];
-
-  await fee.initialize(
-    feeInitialization[0],
-    feeInitialization[1],
-    feeInitialization[2],
-    feeInitialization[3],
-    feeInitialization[4],
-    feeInitialization[5]
-  );
-  await foundry.initialize(diamond.address, fee.address, diamond.address);
 
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   console.log("curveRegistry deployed at:", curveRegistry.address);
@@ -100,8 +83,8 @@ async function main() {
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
-    DAO.address, // DAO
-    foundry.address, // foundry
+    deployer.address, // DAO
+    diamond.address, // foundry
     diamond.address, // hub
     diamond.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
@@ -122,6 +105,17 @@ async function main() {
   console.log("\nDeploying Facets...");
   const hubFacet = await deploy<HubFacet>("HubFacet");
   console.log("HubFacet deployed at:", hubFacet.address);
+  const foundryFacet = await deploy<FoundryFacet>("FoundryFacet");
+  console.log("FoundryFacet deployed at:", foundryFacet.address);
+  const feesFacet = await deploy<FeesFacet>("FeesFacet");
+  console.log("FeesFacet deployed at:", feesFacet.address);
+  const meTokenRegistryFacet = await deploy<MeTokenRegistryFacet>(
+    "MeTokenRegistryFacet"
+  );
+  console.log(
+    "MeTokenRegistryFacet deployed at:",
+    meTokenRegistryFacet.address
+  );
   const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
     "DiamondLoupeFacet"
   );
@@ -129,13 +123,20 @@ async function main() {
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
   console.log("OwnershipFacet deployed at:", ownershipFacet.address);
 
-  const facets = [hubFacet, diamondLoupeFacet, ownershipFacet];
+  const facets = [
+    hubFacet,
+    foundryFacet,
+    feesFacet,
+    meTokenRegistryFacet,
+    diamondLoupeFacet,
+    ownershipFacet,
+  ];
   const cut = [];
   for (const facet of facets) {
     cut.push({
       facetAddress: facet.address,
       action: FacetCutAction.Add,
-      functionSelectors: getSelectors(facet),
+      functionSelectors: getSelectors(facet as unknown as Contract),
     });
   }
 
@@ -146,10 +147,16 @@ async function main() {
   let receipt;
   let args: any = [
     {
-      foundry: foundry.address,
+      // foundry: foundry.address,
       vaultRegistry: vaultRegistry.address,
       curveRegistry: curveRegistry.address,
       migrationRegistry: migrationRegistry.address,
+      mintFee: feeInitialization[0],
+      burnBuyerFee: feeInitialization[1],
+      burnOwnerFee: feeInitialization[2],
+      transferFee: feeInitialization[3],
+      interestFee: feeInitialization[4],
+      yieldFee: feeInitialization[5],
     },
   ];
   // call to init function
@@ -173,7 +180,11 @@ async function main() {
     ["address"],
     [DAI]
   );
+
+  // Set facets to their proxies
   const hub = await ethers.getContractAt("HubFacet", diamond.address);
+
+  // register first hub
   await hub.register(
     deployerAddr,
     tokenAddr,

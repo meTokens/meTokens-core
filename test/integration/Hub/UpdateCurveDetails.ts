@@ -13,9 +13,9 @@ import { BigNumber, Signer } from "ethers";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
@@ -29,12 +29,12 @@ import {
 import { ICurve } from "../../../artifacts/types/ICurve";
 const setup = async () => {
   describe("HubFacet - update CurveDetails", () => {
-    let meTokenRegistry: MeTokenRegistry;
-    let hubCurve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let updatedBancorABDK: BancorABDK;
     let curveRegistry: CurveRegistry;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let token: ERC20;
     let dai: ERC20;
@@ -77,6 +77,7 @@ const setup = async () => {
       ({
         token,
         hub,
+        curve,
         foundry,
         curveRegistry,
         singleAssetVault,
@@ -155,7 +156,7 @@ const setup = async () => {
         await expect(
           hub.initUpdate(
             firstHubId,
-            hubCurve.address,
+            curve.address,
             0,
             updatedEncodedCurveDetails
           )
@@ -606,12 +607,7 @@ const setup = async () => {
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
         await expect(
-          hub.initUpdate(
-            1,
-            hubCurve.address,
-            1000,
-            ethers.utils.toUtf8Bytes("")
-          )
+          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
         ).to.be.revertedWith("Still cooling down");
       });
 
@@ -1306,12 +1302,7 @@ const setup = async () => {
           // move forward to cooldown
           await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
           await expect(
-            hub.initUpdate(
-              1,
-              hubCurve.address,
-              1000,
-              ethers.utils.toUtf8Bytes("")
-            )
+            hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
           ).to.be.revertedWith("Still cooling down");
         });
         it("burn() and mint() by owner should use the targetCurve", async () => {

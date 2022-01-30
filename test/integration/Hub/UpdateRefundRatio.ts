@@ -11,9 +11,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { hubSetup } from "../../utils/hubSetup";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
@@ -29,10 +29,10 @@ import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("HubFacet - update RefundRatio", () => {
-    let meTokenRegistry: MeTokenRegistry;
-    let hubCurve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let token: ERC20;
     let meToken: MeToken;
@@ -69,12 +69,12 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        hubCurve,
+        curve,
         singleAssetVault,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
@@ -137,7 +137,7 @@ const setup = async () => {
       before(async () => {
         await hub.initUpdate(
           firstHubId,
-          hubCurve.address,
+          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -150,7 +150,7 @@ const setup = async () => {
         //await hub.setWarmup(172801);
         lastBlock = await ethers.provider.getBlock("latest");
         await expect(
-          hub.initUpdate(1, hubCurve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
       });
 
@@ -237,7 +237,7 @@ const setup = async () => {
       it("initUpdate() cannot be called", async () => {
         // TODO: fast to active duration
         await expect(
-          hub.initUpdate(1, hubCurve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
       });
 
@@ -389,12 +389,7 @@ const setup = async () => {
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
         await expect(
-          hub.initUpdate(
-            1,
-            hubCurve.address,
-            1000,
-            ethers.utils.toUtf8Bytes("")
-          )
+          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
         ).to.be.revertedWith("Still cooling down");
       });
 
@@ -541,7 +536,7 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveDetails,
           encodedVaultArgs
@@ -567,7 +562,7 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -613,7 +608,7 @@ const setup = async () => {
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
         await hub.initUpdate(
           1,
-          hubCurve.address,
+          curve.address,
           1000,
           ethers.utils.toUtf8Bytes("")
         );
@@ -630,7 +625,7 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          hubCurve.address,
+          curve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveDetails,
           encodedVaultArgs
@@ -652,7 +647,7 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -667,7 +662,7 @@ const setup = async () => {
         expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
         await hub.initUpdate(
           hubId,
-          hubCurve.address,
+          curve.address,
           1000,
           ethers.utils.toUtf8Bytes("")
         );
