@@ -78,7 +78,6 @@ contract MeTokenRegistryFacet is Modifiers {
         address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
             _name,
             _symbol,
-            s.foundry,
             address(this)
         );
 

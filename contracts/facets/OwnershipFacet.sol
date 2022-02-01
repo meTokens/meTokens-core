@@ -6,34 +6,6 @@ import {IERC173} from "../interfaces/IERC173.sol";
 
 // TODO: IERC173
 contract OwnershipFacet {
-    function diamondController() external view returns (address owner_) {
-        owner_ = LibDiamond.diamondController();
-    }
-
-    function feesController() external view returns (address owner_) {
-        owner_ = LibDiamond.feesController();
-    }
-
-    function durationsController() external view returns (address owner_) {
-        owner_ = LibDiamond.durationsController();
-    }
-
-    function meTokenRegistryController()
-        external
-        view
-        returns (address owner_)
-    {
-        owner_ = LibDiamond.meTokenRegistryController();
-    }
-
-    function registerController() external view returns (address owner_) {
-        owner_ = LibDiamond.registerController();
-    }
-
-    function deactivateController() external view returns (address owner_) {
-        owner_ = LibDiamond.deactivateController();
-    }
-
     function setDiamondController(address _newController) external {
         LibDiamond.enforceIsDiamondController();
         LibDiamond.setDiamondController(_newController);
@@ -62,5 +34,33 @@ contract OwnershipFacet {
     function setDeactivateController(address _newController) external {
         LibDiamond.enforceIsDeactivateController();
         LibDiamond.setDeactivateController(_newController);
+    }
+
+    function diamondController() external view returns (address owner_) {
+        owner_ = LibDiamond.diamondController();
+    }
+
+    function feesController() external view returns (address owner_) {
+        owner_ = LibDiamond.feesController();
+    }
+
+    function durationsController() external view returns (address owner_) {
+        owner_ = LibDiamond.durationsController();
+    }
+
+    function meTokenRegistryController()
+        external
+        view
+        returns (address owner_)
+    {
+        owner_ = LibDiamond.meTokenRegistryController();
+    }
+
+    function registerController() external view returns (address owner_) {
+        owner_ = LibDiamond.registerController();
+    }
+
+    function deactivateController() external view returns (address owner_) {
+        owner_ = LibDiamond.deactivateController();
     }
 }

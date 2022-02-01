@@ -187,10 +187,6 @@ contract HubFacet is Modifiers {
         emit CancelUpdate(_id);
     }
 
-    function getDetails(uint256 _id) external view returns (HubInfo memory) {
-        return LibHub.getHub(_id);
-    }
-
     function transferHubOwnership(uint256 _id, address _newOwner) external {
         Details.Hub storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
@@ -219,6 +215,10 @@ contract HubFacet is Modifiers {
     {
         require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
         s.hubCooldown = _cooldown;
+    }
+
+    function getDetails(uint256 _id) external view returns (HubInfo memory) {
+        return LibHub.getHub(_id);
     }
 
     function count() external view returns (uint256) {

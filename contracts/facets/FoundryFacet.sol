@@ -14,9 +14,7 @@ import {LibHub} from "../libs/LibHub.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import "../libs/Details.sol";
 
-contract FoundryFacet is IFoundry {
-    AppStorage internal s; // solihint-disable-line
-
+contract FoundryFacet is IFoundry, Modifiers {
     // MINT FLOW CHART
     /****************************************************************************
     //                                                                         //

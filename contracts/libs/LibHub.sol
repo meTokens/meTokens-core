@@ -23,23 +23,6 @@ struct HubInfo {
 library LibHub {
     event FinishUpdate(uint256 _id);
 
-    function getHub(uint256 _id) internal view returns (HubInfo memory hub_) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        hub_.active = s.hubs[_id].active;
-        hub_.owner = s.hubs[_id].owner;
-        hub_.vault = s.hubs[_id].vault;
-        hub_.asset = s.hubs[_id].asset;
-        hub_.curve = s.hubs[_id].curve;
-        hub_.refundRatio = s.hubs[_id].refundRatio;
-        hub_.updating = s.hubs[_id].updating;
-        hub_.startTime = s.hubs[_id].startTime;
-        hub_.endTime = s.hubs[_id].endTime;
-        hub_.endCooldown = s.hubs[_id].endCooldown;
-        hub_.reconfigure = s.hubs[_id].reconfigure;
-        hub_.targetCurve = s.hubs[_id].targetCurve;
-        hub_.targetRefundRatio = s.hubs[_id].targetRefundRatio;
-    }
-
     function finishUpdate(uint256 id) internal returns (Details.Hub memory) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         Details.Hub storage hub_ = s.hubs[id];
@@ -66,6 +49,23 @@ library LibHub {
 
         emit FinishUpdate(id);
         return hub_;
+    }
+
+    function getHub(uint256 _id) internal view returns (HubInfo memory hub_) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        hub_.active = s.hubs[_id].active;
+        hub_.owner = s.hubs[_id].owner;
+        hub_.vault = s.hubs[_id].vault;
+        hub_.asset = s.hubs[_id].asset;
+        hub_.curve = s.hubs[_id].curve;
+        hub_.refundRatio = s.hubs[_id].refundRatio;
+        hub_.updating = s.hubs[_id].updating;
+        hub_.startTime = s.hubs[_id].startTime;
+        hub_.endTime = s.hubs[_id].endTime;
+        hub_.endCooldown = s.hubs[_id].endCooldown;
+        hub_.reconfigure = s.hubs[_id].reconfigure;
+        hub_.targetCurve = s.hubs[_id].targetCurve;
+        hub_.targetRefundRatio = s.hubs[_id].targetRefundRatio;
     }
 
     function count() internal view returns (uint256) {
