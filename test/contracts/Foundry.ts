@@ -115,9 +115,6 @@ const setup = async () => {
       await dai.connect(account1).approve(singleAssetVault.address, max);
       await dai.connect(account2).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
-      console.log(
-        `--diamond:${diamond.address} meTokenRegistry:${meTokenRegistry.address}`
-      );
       // account0 is registering a metoken
       await meTokenRegistry.connect(account0).subscribe(name, symbol, hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
