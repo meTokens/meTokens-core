@@ -27,7 +27,7 @@ library LibMeToken {
         uint256 _amount
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        require(msg.sender == s.foundry, "!foundry");
+
         if (add) {
             s.meTokens[_meToken].balancePooled += _amount;
         } else {
@@ -43,7 +43,6 @@ library LibMeToken {
         uint256 _amount
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        require(msg.sender == s.foundry, "!foundry");
 
         if (add) {
             s.meTokens[_meToken].balanceLocked += _amount;

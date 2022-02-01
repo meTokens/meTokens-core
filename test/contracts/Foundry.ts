@@ -24,12 +24,13 @@ import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
-import { ICurve } from "../../artifacts/types";
+import { Diamond, ICurve } from "../../artifacts/types";
 
 const setup = async () => {
   describe("FoundryFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
+    let diamond: Diamond;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -82,6 +83,7 @@ const setup = async () => {
         tokenHolder,
         hub,
         curve,
+        diamond,
         foundry,
         singleAssetVault,
         curveRegistry,
@@ -90,7 +92,6 @@ const setup = async () => {
         account0,
         account1,
         account2,
-        meTokenRegistry,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
@@ -114,6 +115,9 @@ const setup = async () => {
       await dai.connect(account1).approve(singleAssetVault.address, max);
       await dai.connect(account2).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
+      console.log(
+        `--diamond:${diamond.address} meTokenRegistry:${meTokenRegistry.address}`
+      );
       // account0 is registering a metoken
       await meTokenRegistry.connect(account0).subscribe(name, symbol, hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(

@@ -16,6 +16,7 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
+import "hardhat/console.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
@@ -73,7 +74,12 @@ contract MeTokenRegistryFacet is Modifiers {
                 "transfer failed"
             );
         }
-
+        console.log(
+            "## subscribe  s.meTokenFactory:%s _symbol:%s  address(this):%s",
+            s.meTokenFactory,
+            _symbol,
+            address(this)
+        );
         // Create meToken erc20 contract
         address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
             _name,

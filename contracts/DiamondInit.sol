@@ -12,17 +12,17 @@ import "./libs/Details.sol";
 
 contract DiamondInit {
     struct Args {
-        address diamond;
-        address foundry;
-        IRegistry vaultRegistry;
-        IRegistry curveRegistry;
-        IMigrationRegistry migrationRegistry;
         uint256 mintFee;
         uint256 burnBuyerFee;
         uint256 burnOwnerFee;
         uint256 transferFee;
         uint256 interestFee;
         uint256 yieldFee;
+        address diamond;
+        IRegistry vaultRegistry;
+        IRegistry curveRegistry;
+        IMigrationRegistry migrationRegistry;
+        address meTokenFactory;
     }
 
     AppStorage internal s; // solhint-disable-line
@@ -30,10 +30,10 @@ contract DiamondInit {
     // TODO: access control?
     function init(Args memory _args) external {
         s.diamond = _args.diamond;
-        s.foundry = _args.foundry;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;
+        s.meTokenFactory = _args.meTokenFactory;
         s.mintFee = _args.mintFee;
         s.burnBuyerFee = _args.burnBuyerFee;
         s.burnOwnerFee = _args.burnOwnerFee;

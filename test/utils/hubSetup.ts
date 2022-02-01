@@ -273,17 +273,17 @@ export async function hubSetupWithoutRegister(
   const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
   let args: any = [
     {
-      diamond: diamond.address,
-      foundry: foundryFacet.address,
-      vaultRegistry: vaultRegistry.address,
-      curveRegistry: curveRegistry.address,
-      migrationRegistry: migrationRegistry.address,
       mintFee: feeInitialization[0],
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
       transferFee: feeInitialization[3],
       interestFee: feeInitialization[4],
       yieldFee: feeInitialization[5],
+      diamond: diamond.address,
+      vaultRegistry: vaultRegistry.address,
+      curveRegistry: curveRegistry.address,
+      migrationRegistry: migrationRegistry.address,
+      meTokenFactory: meTokenFactory.address,
     },
   ];
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier

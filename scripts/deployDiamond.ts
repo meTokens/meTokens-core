@@ -7,6 +7,7 @@ import { HubFacet } from "../artifacts/types/HubFacet";
 import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
+import { Contract } from "@ethersproject/contracts";
 
 const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
@@ -38,7 +39,7 @@ async function main() {
     diamondCutFacet.address
   );
   console.log("Diamond deployed at:", diamond.address);
-
+  let feeInitialization = [0, 0, 0, 0, 0, 0];
   const diamondInit = await deploy<DiamondInit>("DiamondInit");
   console.log("DiamondInit deployed at:", diamondInit.address);
 
@@ -59,7 +60,7 @@ async function main() {
     cut.push({
       facetAddress: facet.address,
       action: FacetCutAction.Add,
-      functionSelectors: getSelectors(facet),
+      functionSelectors: getSelectors(facet as unknown as Contract),
     });
   }
 
@@ -70,14 +71,22 @@ async function main() {
   let receipt;
   let args: any = [
     {
-      foundry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      mintFee: feeInitialization[0],
+      burnBuyerFee: feeInitialization[1],
+      burnOwnerFee: feeInitialization[2],
+      transferFee: feeInitialization[3],
+      interestFee: feeInitialization[4],
+      yieldFee: feeInitialization[5],
+      diamond: diamond.address,
       vaultRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
       curveRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
       migrationRegistry: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
+      meTokenFactory: "0x00000000005dbcB0d0513FcDa746382Fe8a53468",
     },
   ];
   // call to init function
   let functionCall = diamondInit.interface.encodeFunctionData("init", args);
+
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
   console.log("Diamond cut tx: ", tx.hash);
   receipt = await tx.wait();

@@ -16,6 +16,7 @@ import {
   CurveRegistry,
   Fees,
   Foundry,
+  MeTokenFactory,
   MigrationRegistry,
   SingleAssetVault,
   VaultRegistry,
@@ -122,7 +123,8 @@ async function main() {
   console.log("DiamondLoupeFacet deployed at:", diamondLoupeFacet.address);
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
   console.log("OwnershipFacet deployed at:", ownershipFacet.address);
-
+  const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+  console.log("MeTokenFactory deployed at:", meTokenFactory.address);
   const facets = [
     hubFacet,
     foundryFacet,
@@ -147,18 +149,20 @@ async function main() {
   let receipt;
   let args: any = [
     {
-      // foundry: foundry.address,
-      vaultRegistry: vaultRegistry.address,
-      curveRegistry: curveRegistry.address,
-      migrationRegistry: migrationRegistry.address,
       mintFee: feeInitialization[0],
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
       transferFee: feeInitialization[3],
       interestFee: feeInitialization[4],
       yieldFee: feeInitialization[5],
+      diamond: diamond.address,
+      vaultRegistry: vaultRegistry.address,
+      curveRegistry: curveRegistry.address,
+      migrationRegistry: migrationRegistry.address,
+      meTokenFactory: meTokenFactory.address,
     },
   ];
+
   // call to init function
   let functionCall = diamondInit.interface.encodeFunctionData("init", args);
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
