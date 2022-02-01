@@ -41,7 +41,7 @@ contract DiamondInit {
         s.interestFee = _args.interestFee;
         s.yieldFee = _args.yieldFee;
 
-        s.MAX_REFUND_RATIO = 10e6;
+        s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 10e18;
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
