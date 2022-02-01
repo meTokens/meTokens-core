@@ -12,7 +12,8 @@ import "./libs/Details.sol";
 
 contract DiamondInit {
     struct Args {
-        // address foundry;
+        address diamond;
+        address foundry;
         IRegistry vaultRegistry;
         IRegistry curveRegistry;
         IMigrationRegistry migrationRegistry;
@@ -28,7 +29,8 @@ contract DiamondInit {
 
     // TODO: access control?
     function init(Args memory _args) external {
-        // s.foundry = _args.foundry;
+        s.diamond = _args.diamond;
+        s.foundry = _args.foundry;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;

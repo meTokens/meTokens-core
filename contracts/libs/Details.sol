@@ -50,6 +50,7 @@ struct AppStorage {
     address registerController;
     address deactivateController;
     // Widely-used addresses/interfaces
+    address diamond;
     address foundry;
     address meTokenFactory;
     IRegistry vaultRegistry;

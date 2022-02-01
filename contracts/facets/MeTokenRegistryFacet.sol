@@ -233,38 +233,6 @@ contract MeTokenRegistryFacet is Modifiers {
         emit UpdateBalances(_meToken, _newBalance);
     }
 
-    // function updateBalancePooled(
-    //     bool add,
-    //     address _meToken,
-    //     uint256 _amount
-    // ) external {
-    //     // require(msg.sender == s.foundry, "!foundry");
-    //     require(msg.sender == s.foundry, "!foundry");
-    //     if (add) {
-    //         s.meTokens[_meToken].balancePooled += _amount;
-    //     } else {
-    //         s.meTokens[_meToken].balancePooled -= _amount;
-    //     }
-
-    //     emit UpdateBalancePooled(add, _meToken, _amount);
-    // }
-
-    // function updateBalanceLocked(
-    //     bool add,
-    //     address _meToken,
-    //     uint256 _amount
-    // ) external {
-    //     require(msg.sender == s.foundry, "!foundry");
-
-    //     if (add) {
-    //         s.meTokens[_meToken].balanceLocked += _amount;
-    //     } else {
-    //         s.meTokens[_meToken].balanceLocked -= _amount;
-    //     }
-
-    //     emit UpdateBalanceLocked(add, _meToken, _amount);
-    // }
-
     function transferMeTokenOwnership(address _newOwner) external {
         require(
             s.pendingMeTokenOwners[msg.sender] == address(0),
