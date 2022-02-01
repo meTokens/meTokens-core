@@ -29,13 +29,6 @@ library LibDiamond {
         // Used to query if a contract implements an interface.
         // Used to implement ERC-165.
         mapping(bytes4 => bool) supportedInterfaces;
-        // owner of the Diamond
-        address diamondController;
-        address feesController;
-        address durationsController;
-        address meTokenRegistryController;
-        address registerController;
-        address deactivateController;
     }
 
     bytes32 public constant DIAMOND_STORAGE_POSITION =
@@ -46,70 +39,6 @@ library LibDiamond {
         address _init,
         bytes _calldata
     );
-
-    function initControllers(address _firstController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        ds.diamondController = _firstController;
-        ds.feesController = _firstController;
-        ds.durationsController = _firstController;
-        ds.meTokenRegistryController = _firstController;
-        ds.registerController = _firstController;
-        ds.deactivateController = _firstController;
-    }
-
-    function setDiamondController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.diamondController,
-            "LibDiamond: _newController == diamondController"
-        );
-        ds.diamondController = _newController;
-    }
-
-    function setFeesController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.diamondController,
-            "LibDiamond: _newController == diamondController"
-        );
-        ds.diamondController = _newController;
-    }
-
-    function setDurationsController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.durationsController,
-            "LibDurations: _newController == durationsController"
-        );
-        ds.durationsController = _newController;
-    }
-
-    function setMeTokenRegistryController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.meTokenRegistryController,
-            "LibDiamond: _newController == meTokenRegistryController"
-        );
-        ds.meTokenRegistryController = _newController;
-    }
-
-    function setRegisterController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.registerController,
-            "LibDiamond: _newController == registerController"
-        );
-        ds.registerController = _newController;
-    }
-
-    function setDeactivateController(address _newController) internal {
-        DiamondStorage storage ds = diamondStorage();
-        require(
-            _newController != ds.deactivateController,
-            "LibDiamond: _newController == deactivateController"
-        );
-        ds.deactivateController = _newController;
-    }
 
     // Internal function version of diamondCut
     function diamondCut(
@@ -368,76 +297,6 @@ library LibDiamond {
                 }
             }
         }
-    }
-
-    function diamondController() internal view returns (address owner_) {
-        owner_ = diamondStorage().diamondController;
-    }
-
-    function enforceIsDiamondController() internal view {
-        require(
-            msg.sender == diamondStorage().diamondController,
-            "LibDiamond: !diamondController"
-        );
-    }
-
-    function feesController() internal view returns (address owner_) {
-        owner_ = diamondStorage().feesController;
-    }
-
-    function enforceIsFeesController() internal view {
-        require(
-            msg.sender == diamondStorage().feesController,
-            "LibDiamond: !feesController"
-        );
-    }
-
-    function durationsController() internal view returns (address owner_) {
-        owner_ = diamondStorage().durationsController;
-    }
-
-    function enforceIsDurationsController() internal view {
-        require(
-            msg.sender == diamondStorage().durationsController,
-            "LibDiamond: !durationsController"
-        );
-    }
-
-    function meTokenRegistryController()
-        internal
-        view
-        returns (address owner_)
-    {
-        owner_ = diamondStorage().meTokenRegistryController;
-    }
-
-    function enforceIsMeTokenRegistryController() internal view {
-        require(
-            msg.sender == diamondStorage().meTokenRegistryController,
-            "LibDiamond: !meTokenRegistryController"
-        );
-    }
-
-    function registerController() internal view returns (address owner_) {
-        owner_ = diamondStorage().registerController;
-    }
-
-    function enforceIsRegisterController() internal view {
-        require(
-            msg.sender == diamondStorage().registerController,
-            "LibDiamond: !registerController"
-        );
-    }
-
-    function deactivateController() internal view returns (address owner_) {
-        owner_ = diamondStorage().deactivateController;
-    }
-
-    function enforceIsDeactivateController() internal view {
-        require(
-            msg.sender == diamondStorage().deactivateController,
-            "LibDiamond: !deactivateController"
-        );
     }
 
     function enforceHasContractCode(

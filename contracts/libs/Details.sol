@@ -42,6 +42,13 @@ struct AppStorage {
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
     uint256 MAX_FEE;
+    // Controllers
+    address diamondController;
+    address feesController;
+    address durationsController;
+    address meTokenRegistryController;
+    address registerController;
+    address deactivateController;
     // Widely-used addresses/interfaces
     address foundry;
     address meTokenFactory;
@@ -76,64 +83,68 @@ library LibAppStorage {
             ds.slot := 0
         }
     }
+
+    function initControllers(address _firstController) internal {
+        AppStorage storage s = diamondStorage();
+        s.diamondController = _firstController;
+        s.feesController = _firstController;
+        s.durationsController = _firstController;
+        s.meTokenRegistryController = _firstController;
+        s.registerController = _firstController;
+        s.deactivateController = _firstController;
+    }
 }
 
 contract Modifiers {
     AppStorage internal s;
 
     modifier onlyDiamondController() {
-        LibDiamond.enforceIsDiamondController();
+        require(msg.sender == s.diamondController, "!diamondController");
         _;
     }
 
     modifier onlyFeesController() {
-        LibDiamond.enforceIsFeesController();
+        require(msg.sender == s.feesController, "!feesController");
         _;
     }
 
     modifier onlyDurationsController() {
-        LibDiamond.enforceIsDurationsController();
+        require(msg.sender == s.durationsController, "!durationsController");
         _;
     }
 
     modifier onlyMeTokenRegistryController() {
-        LibDiamond.enforceIsMeTokenRegistryController();
+        require(
+            msg.sender == s.meTokenRegistryController,
+            "!meTokenRegistryController"
+        );
         _;
     }
 
     modifier onlyRegisterController() {
-        LibDiamond.enforceIsRegisterController();
+        require(msg.sender == s.registerController, "!registerController");
         _;
     }
 
     modifier onlyDeactivateController() {
-        LibDiamond.enforceIsDeactivateController();
+        require(msg.sender == s.deactivateController, "!deactivateController");
         _;
     }
 
     modifier onlyVaultRegistry() {
-        address sender = LibMeta.msgSender();
-        require(
-            sender == address(s.vaultRegistry),
-            "LibAppStorage: msg.sender != vaultRegistry"
-        );
+        require(msg.sender == address(s.vaultRegistry), "!vaultRegistry");
         _;
     }
 
     modifier onlyCurveRegistry() {
-        address sender = LibMeta.msgSender();
-        require(
-            sender == address(s.curveRegistry),
-            "LibAppStorage: msg.sender != curveRegistry"
-        );
+        require(msg.sender == address(s.curveRegistry), "!curveRegistry");
         _;
     }
 
     modifier onlyMigrationRegistry() {
-        address sender = LibMeta.msgSender();
         require(
-            sender == address(s.migrationRegistry),
-            "LibAppStorage: msg.sender != migrationRegistry"
+            msg.sender == address(s.migrationRegistry),
+            "!migrationRegistry"
         );
         _;
     }

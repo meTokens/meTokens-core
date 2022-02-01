@@ -87,8 +87,7 @@ contract HubFacet is Modifiers {
     function deactivate(uint256 _id) external {
         Details.Hub storage hub_ = s.hubs[_id];
         require(
-            msg.sender == hub_.owner ||
-                msg.sender == LibDiamond.deactivateController(),
+            msg.sender == hub_.owner || msg.sender == s.deactivateController,
             "!owner && !deactivateController"
         );
         require(hub_.active, "!active");

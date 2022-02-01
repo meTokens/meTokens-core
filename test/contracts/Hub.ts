@@ -281,7 +281,7 @@ const setup = async () => {
       });
       it("should revert to setHubWarmup if not owner", async () => {
         const tx = hub.connect(account1).setHubWarmup(duration);
-        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
       it("should revert to setHubWarmup if same as before", async () => {
         const oldWarmup = await hub.hubWarmup();
@@ -298,7 +298,7 @@ const setup = async () => {
     describe("setHubDuration()", () => {
       it("should revert to setHubDuration if not owner", async () => {
         const tx = hub.connect(account1).setHubDuration(duration);
-        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
       it("should revert to setHubDuration if same as before", async () => {
         const oldDuration = await hub.hubDuration();
@@ -315,7 +315,7 @@ const setup = async () => {
     describe("setHubCooldown()", () => {
       it("should revert to setHubCooldown if not owner", async () => {
         const tx = hub.connect(account1).setHubCooldown(duration);
-        await expect(tx).to.be.revertedWith("LibDiamond: !durationsController");
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
       it("should revert to setHubCooldown if same as before", async () => {
         const oldCooldown = await hub.hubCooldown();

@@ -51,28 +51,24 @@ const setup = async () => {
       const expectedAddress1 = await meTokenFactory.callStatic.create(
         name,
         symbol,
-        foundry.address,
-        meTokenRegistry.address
+        foundry.address // diamond
       );
       const tx1 = await meTokenFactory.create(
         name,
         symbol,
-        foundry.address,
-        meTokenRegistry.address
+        foundry.address // diamond
       );
       await tx1.wait();
 
       const expectedAddress2 = await meTokenFactory.callStatic.create(
         name,
         symbol,
-        foundry.address,
-        meTokenRegistry.address
+        foundry.address // diamond
       );
       const tx2 = await meTokenFactory.create(
         name,
         symbol,
-        foundry.address,
-        meTokenRegistry.address
+        foundry.address // diamond
       );
       await tx2.wait();
 

@@ -10,10 +10,11 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import {LibAppStorage} from "./libs/Details.sol";
 
 contract Diamond {
     constructor(address _firstController, address _diamondCutFacet) payable {
-        LibDiamond.initControllers(_firstController);
+        LibAppStorage.initControllers(_firstController);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
