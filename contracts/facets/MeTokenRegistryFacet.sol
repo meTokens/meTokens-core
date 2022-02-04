@@ -211,16 +211,17 @@ contract MeTokenRegistryFacet is Modifiers {
     }
 
     function updateBalances(address _meToken, uint256 _newBalance) external {
-        require(msg.sender == s.meTokens[_meToken].migration, "!migration");
-        uint256 balancePooled = s.meTokens[_meToken].balancePooled;
-        uint256 balanceLocked = s.meTokens[_meToken].balanceLocked;
+        Details.MeToken storage meToken_ = s.meTokens[_meToken];
+        require(msg.sender == meToken_.migration, "!migration");
+        uint256 balancePooled = meToken_.balancePooled;
+        uint256 balanceLocked = meToken_.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
         uint256 p = s.PRECISION;
 
-        s.meTokens[_meToken].balancePooled =
+        meToken_.balancePooled =
             (balancePooled * p * _newBalance) /
             (oldBalance * p);
-        s.meTokens[_meToken].balanceLocked =
+        meToken_.balanceLocked =
             (balanceLocked * p * _newBalance) /
             (oldBalance * p);
 
