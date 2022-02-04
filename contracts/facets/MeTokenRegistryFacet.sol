@@ -132,12 +132,7 @@ contract MeTokenRegistryFacet is Modifiers {
         require(targetHub_.active, "targetHub inactive");
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
-
-        // TODO: what if asset is same?  Is a migration vault needed since it'll start/end
-        // at the same and not change to a different asset?
-        require(hub_.asset != targetHub_.asset, "asset same");
         require(_migration != address(0), "migration address(0)");
-
         // Ensure the migration we're using is approved
         require(
             s.migrationRegistry.isApproved(
@@ -147,12 +142,10 @@ contract MeTokenRegistryFacet is Modifiers {
             ),
             "!approved"
         );
-
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
         );
-        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
 
         meToken_.startTime = block.timestamp + s.meTokenWarmup;
         meToken_.endTime =
@@ -166,6 +159,8 @@ contract MeTokenRegistryFacet is Modifiers {
             s.meTokenCooldown;
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = _migration;
+
+        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
 
         emit InitResubscribe(
             _meToken,
