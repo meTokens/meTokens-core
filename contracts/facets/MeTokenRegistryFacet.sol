@@ -277,24 +277,30 @@ contract MeTokenRegistryFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(_warmup != s.meTokenWarmup, "_warmup == s.hubWarmup");
-        s.hubWarmup = _warmup;
+        require(_warmup != s.meTokenWarmup, "_warmup == s.meTokenWarmup");
+        s.meTokenWarmup = _warmup;
     }
 
     function setMeTokenDuration(uint256 _duration)
         external
         onlyDurationsController
     {
-        require(_duration != s.meTokenDuration, "_duration == s.hubDuration");
-        s.hubDuration = _duration;
+        require(
+            _duration != s.meTokenDuration,
+            "_duration == s.meTokenDuration"
+        );
+        s.meTokenDuration = _duration;
     }
 
     function setMeTokenCooldown(uint256 _cooldown)
         external
         onlyDurationsController
     {
-        require(_cooldown != s.meTokenCooldown, "_cooldown == s.hubCooldown");
-        s.hubCooldown = _cooldown;
+        require(
+            _cooldown != s.meTokenCooldown,
+            "_cooldown == s.meTokenCooldown"
+        );
+        s.meTokenCooldown = _cooldown;
     }
 
     function meTokenWarmup() external view returns (uint256) {
