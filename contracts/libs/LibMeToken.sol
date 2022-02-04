@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage, Details} from "./Details.sol";
+import {LibAppStorage, AppStorage} from "./Details.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 
 struct MeTokenInfo {
-    address owner;
     uint256 hubId;
     uint256 balancePooled;
     uint256 balanceLocked;
@@ -12,6 +12,7 @@ struct MeTokenInfo {
     uint256 endTime;
     uint256 endCooldown;
     uint256 targetHubId;
+    address owner;
     address migration;
 }
 
@@ -55,10 +56,10 @@ library LibMeToken {
 
     function finishResubscribe(address _meToken)
         internal
-        returns (Details.MeToken memory)
+        returns (MeTokenInfo memory)
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        Details.MeToken storage meToken_ = s.meTokens[_meToken];
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
 
         require(meToken_.targetHubId != 0, "No targetHubId");
         require(
@@ -67,9 +68,7 @@ library LibMeToken {
         );
         // Update balancePooled / balanceLocked
         // solhint-disable-next-line
-        uint256 newBalance = IMigration(meToken_.migration).finishMigration(
-            _meToken
-        );
+        IMigration(meToken_.migration).finishMigration(_meToken);
 
         // Finish updating metoken details
         meToken_.startTime = 0;

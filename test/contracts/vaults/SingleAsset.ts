@@ -32,14 +32,9 @@ describe("SingleAsset.sol", () => {
       WeightedAverage: weightedAverage.address,
     });
     const hub = await deploy<HubFacet>("HubFacet");
-    const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
     const meTokenRegistry = await deploy<MeTokenRegistryFacet>(
       "MeTokenRegistryFacet",
-      undefined,
-      foundry.address,
-      hub.address,
-      meTokenFactory.address,
-      migrationRegistry.address
+      undefined
     );
 
     vault = await deploy<SingleAssetVault>(

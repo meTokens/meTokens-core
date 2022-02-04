@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../libs/Details.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
 /// @title meToken registry interface
 /// @author Carl Farterson (@carlfarterson)
@@ -117,7 +118,7 @@ interface IMeTokenRegistry {
     /// @return details of meToken
     function finishResubscribe(address _meToken)
         external
-        returns (Details.MeToken memory);
+        returns (MeTokenInfo memory);
 
     /// @notice Update a meToken's balanceLocked and balancePooled
     /// @param _meToken     address of meToken
@@ -171,7 +172,7 @@ interface IMeTokenRegistry {
     function getDetails(address meToken)
         external
         view
-        returns (Details.MeToken memory meToken_);
+        returns (MeTokenInfo memory meToken_);
 
     /// @notice View to return if an address owns a meToken or not
     /// @param _owner   address to query

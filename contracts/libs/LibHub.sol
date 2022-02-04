@@ -1,31 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage, Details} from "./Details.sol";
+import {LibAppStorage, AppStorage} from "./Details.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 
 struct HubInfo {
-    bool active;
+    uint256 startTime;
+    uint256 endTime;
+    uint256 endCooldown;
+    uint256 refundRatio;
+    uint256 targetRefundRatio;
+    uint256 warmup;
+    uint256 duration;
+    uint256 cooldown;
+    address targetCurve;
     address owner;
     address vault;
     address asset;
     address curve;
-    uint256 refundRatio;
     bool updating;
-    uint256 startTime;
-    uint256 endTime;
-    uint256 endCooldown;
     bool reconfigure;
-    address targetCurve;
-    uint256 targetRefundRatio;
+    bool active;
 }
 
 library LibHub {
     event FinishUpdate(uint256 _id);
 
-    function finishUpdate(uint256 id) internal returns (Details.Hub memory) {
+    function finishUpdate(uint256 id) internal returns (HubInfo memory) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        Details.Hub storage hub_ = s.hubs[id];
+        HubInfo storage hub_ = s.hubs[id];
         require(block.timestamp > hub_.endTime, "Still updating");
 
         if (hub_.targetRefundRatio != 0) {

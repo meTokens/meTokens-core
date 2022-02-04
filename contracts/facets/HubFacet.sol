@@ -65,7 +65,7 @@ contract HubFacet is Modifiers {
         _curve.register(id, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = s.hubs[s.hubCount];
+        HubInfo storage hub_ = s.hubs[s.hubCount];
         hub_.active = true;
         hub_.owner = _owner;
         hub_.asset = _asset;
@@ -85,7 +85,7 @@ contract HubFacet is Modifiers {
     }
 
     function deactivate(uint256 _id) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(
             msg.sender == hub_.owner || msg.sender == s.deactivateController,
             "!owner && !deactivateController"
@@ -101,7 +101,7 @@ contract HubFacet is Modifiers {
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
     ) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             LibHub.finishUpdate(_id);
@@ -170,7 +170,7 @@ contract HubFacet is Modifiers {
     }
 
     function cancelUpdate(uint256 _id) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.updating, "!updating");
         require(block.timestamp < hub_.startTime, "Update has started");
@@ -187,7 +187,7 @@ contract HubFacet is Modifiers {
     }
 
     function transferHubOwnership(uint256 _id, address _newOwner) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
@@ -196,7 +196,7 @@ contract HubFacet is Modifiers {
     }
 
     function setHubWarmup(uint256 _warmup) external onlyDurationsController {
-        require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
+        require(_warmup != s.hubWarmup, "same warmup");
         s.hubWarmup = _warmup;
     }
 
@@ -204,7 +204,7 @@ contract HubFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(_duration != s.hubDuration, "_duration == s.hubDuration");
+        require(_duration != s.hubDuration, "same duration");
         s.hubDuration = _duration;
     }
 
@@ -212,7 +212,7 @@ contract HubFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
+        require(_cooldown != s.hubCooldown, "same cooldown");
         s.hubCooldown = _cooldown;
     }
 

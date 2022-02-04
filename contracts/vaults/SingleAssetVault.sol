@@ -21,8 +21,8 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
     function startMigration(address _meToken) external override {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
 
         require(msg.sender == (meToken_.migration), "!migration");
         uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;

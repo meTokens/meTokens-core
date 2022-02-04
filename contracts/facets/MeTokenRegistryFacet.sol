@@ -16,6 +16,7 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
+import "hardhat/console.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
@@ -59,7 +60,7 @@ contract MeTokenRegistryFacet is Modifiers {
         uint256 _assetsDeposited
     ) external {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        Details.Hub memory hub_ = s.hubs[_hubId];
+        HubInfo memory hub_ = s.hubs[_hubId];
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
@@ -96,7 +97,7 @@ contract MeTokenRegistryFacet is Modifiers {
         s.meTokenOwners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeToken storage meToken_ = s.meTokens[meTokenAddr];
+        MeTokenInfo storage meToken_ = s.meTokens[meTokenAddr];
         meToken_.owner = msg.sender;
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
@@ -119,9 +120,9 @@ contract MeTokenRegistryFacet is Modifiers {
         address _migration,
         bytes memory _encodedMigrationArgs
     ) external {
-        Details.MeToken storage meToken_ = s.meTokens[_meToken];
-        Details.Hub memory hub_ = s.hubs[meToken_.hubId];
-        Details.Hub memory targetHub_ = s.hubs[_targetHubId];
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
+        HubInfo memory targetHub_ = s.hubs[_targetHubId];
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -133,9 +134,6 @@ contract MeTokenRegistryFacet is Modifiers {
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
 
-        // TODO: what if asset is same?  Is a migration vault needed since it'll start/end
-        // at the same and not change to a different asset?
-        require(hub_.asset != targetHub_.asset, "asset same");
         require(_migration != address(0), "migration address(0)");
 
         // Ensure the migration we're using is approved
@@ -147,13 +145,11 @@ contract MeTokenRegistryFacet is Modifiers {
             ),
             "!approved"
         );
-
+        console.log("## meToken_.hubId:%s  ", meToken_.hubId);
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
         );
-        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
-
         meToken_.startTime = block.timestamp + s.meTokenWarmup;
         meToken_.endTime =
             block.timestamp +
@@ -167,6 +163,8 @@ contract MeTokenRegistryFacet is Modifiers {
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = _migration;
 
+        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
+
         emit InitResubscribe(
             _meToken,
             _targetHubId,
@@ -177,13 +175,13 @@ contract MeTokenRegistryFacet is Modifiers {
 
     function finishResubscribe(address _meToken)
         external
-        returns (Details.MeToken memory)
+        returns (MeTokenInfo memory)
     {
         return LibMeToken.finishResubscribe(_meToken);
     }
 
     function cancelResubscribe(address _meToken) external {
-        Details.MeToken storage meToken_ = s.meTokens[_meToken];
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
         require(msg.sender == meToken_.owner, "!owner");
         require(meToken_.targetHubId != 0, "!resubscribing");
         require(
@@ -216,16 +214,17 @@ contract MeTokenRegistryFacet is Modifiers {
     }
 
     function updateBalances(address _meToken, uint256 _newBalance) external {
-        require(msg.sender == s.meTokens[_meToken].migration, "!migration");
-        uint256 balancePooled = s.meTokens[_meToken].balancePooled;
-        uint256 balanceLocked = s.meTokens[_meToken].balanceLocked;
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
+        require(msg.sender == meToken_.migration, "!migration");
+        uint256 balancePooled = meToken_.balancePooled;
+        uint256 balanceLocked = meToken_.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
         uint256 p = s.PRECISION;
 
-        s.meTokens[_meToken].balancePooled =
+        meToken_.balancePooled =
             (balancePooled * p * _newBalance) /
             (oldBalance * p);
-        s.meTokens[_meToken].balanceLocked =
+        meToken_.balanceLocked =
             (balanceLocked * p * _newBalance) /
             (oldBalance * p);
 
@@ -281,24 +280,26 @@ contract MeTokenRegistryFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(_warmup != s.meTokenWarmup, "_warmup == s.hubWarmup");
-        s.hubWarmup = _warmup;
+        require(_warmup != s.meTokenWarmup, "same warmup");
+        require(_warmup + s.meTokenDuration < s.hubWarmup, "too long");
+        s.meTokenWarmup = _warmup;
     }
 
     function setMeTokenDuration(uint256 _duration)
         external
         onlyDurationsController
     {
-        require(_duration != s.meTokenDuration, "_duration == s.hubDuration");
-        s.hubDuration = _duration;
+        require(_duration != s.meTokenDuration, "same duration");
+        require(s.meTokenWarmup + _duration < s.hubWarmup, "too long");
+        s.meTokenDuration = _duration;
     }
 
     function setMeTokenCooldown(uint256 _cooldown)
         external
         onlyDurationsController
     {
-        require(_cooldown != s.meTokenCooldown, "_cooldown == s.hubCooldown");
-        s.hubCooldown = _cooldown;
+        require(_cooldown != s.meTokenCooldown, "same cooldown");
+        s.meTokenCooldown = _cooldown;
     }
 
     function meTokenWarmup() external view returns (uint256) {
