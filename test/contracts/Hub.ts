@@ -286,7 +286,7 @@ const setup = async () => {
       it("should revert to setHubWarmup if same as before", async () => {
         const oldWarmup = await hub.hubWarmup();
         const tx = hub.setHubWarmup(oldWarmup);
-        await expect(tx).to.be.revertedWith("_warmup == s.hubWarmup");
+        await expect(tx).to.be.revertedWith("same warmup");
       });
       it("should be able to setHubWarmup", async () => {
         const tx = await hub.setHubWarmup(duration);
@@ -303,7 +303,7 @@ const setup = async () => {
       it("should revert to setHubDuration if same as before", async () => {
         const oldDuration = await hub.hubDuration();
         const tx = hub.setHubDuration(oldDuration);
-        await expect(tx).to.be.revertedWith("_duration == s.hubDuration");
+        await expect(tx).to.be.revertedWith("same duration");
       });
       it("should be able to setHubDuration", async () => {
         const tx = await hub.setHubDuration(duration);
@@ -320,7 +320,7 @@ const setup = async () => {
       it("should revert to setHubCooldown if same as before", async () => {
         const oldCooldown = await hub.hubCooldown();
         const tx = hub.setHubCooldown(oldCooldown);
-        await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
+        await expect(tx).to.be.revertedWith("same cooldown");
       });
       it("should be able to setHubCooldown", async () => {
         const tx = await hub.setHubCooldown(duration);
