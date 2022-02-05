@@ -8,7 +8,6 @@ import "../libs/Details.sol";
 import "../vaults/Vault.sol";
 import "../interfaces/IMigration.sol";
 import "../interfaces/ISingleAssetVault.sol";
-import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -132,18 +131,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             _encodedArgs,
             (uint256, uint24)
         );
-        console.log("## soon:%s block:%s fee:%s", soon, block.timestamp, fee);
         // Too soon
         if (soon < block.timestamp) return false;
         MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
         // MeToken not subscribed to a hub
-        console.log("## meToken_.owner:%s  ", meToken_.owner);
-        console.log(
-            "## meToken_.hubId:%s _meToken:%s meTokenRegistry:%s",
-            meToken_.hubId,
-            _meToken,
-            address(meTokenRegistry)
-        );
         if (meToken_.hubId == 0) return false;
         // Invalid fee
         if (fee == MINFEE || fee == MIDFEE || fee == MAXFEE) {

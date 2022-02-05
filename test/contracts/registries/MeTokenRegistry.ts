@@ -552,12 +552,6 @@ const setup = async () => {
           migration.address,
           encodedMigrationArgs
         );
-        console.log(`
-        hubId3:${hubId3}
-        asset:${(await hub.getDetails(hubId3)).asset}
-        hubId:${hubId}
-        asset:${(await hub.getDetails(hubId)).asset}
-        `);
         await expect(tx).to.not.be.revertedWith("asset same");
       });
       it("Fails when migration address is 0", async () => {
@@ -578,23 +572,6 @@ const setup = async () => {
         expect(
           (await hub.getDetails(meTokenRegistryDetails.hubId)).active
         ).to.equal(true);
-        const firstMeToken = await getContractAt<MeToken>(
-          "MeToken",
-          meTokenAddr0
-        );
-        console.log(`
-        diamond:${diamond.address}
-        meTokenAddr0:${meTokenAddr0}
-meToken:${meToken} firstMeToken:${firstMeToken.address} 
-meTokenRegistryDetails.hubid:${meTokenRegistryDetails.hubId} meTokenRegistryDetails.owner:${meTokenRegistryDetails.owner}
-encodedMigrationArgs:${encodedMigrationArgs}
-meTokenRegistry:${meTokenRegistry.address}
-`);
-        //(uint256 soon, uint24 fee) = abi.decode(
-        /*  encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint24"],
-    [earliestSwapTime, fees]
-  ); */
         tx = await meTokenRegistry.initResubscribe(
           meToken,
           targetHubId,
@@ -603,7 +580,7 @@ meTokenRegistry:${meTokenRegistry.address}
         );
         receipt = await tx.wait();
       });
-      /*    it("Successfully sets meToken resubscription details", async () => {
+      it("Successfully sets meToken resubscription details", async () => {
         const block = await ethers.provider.getBlock(receipt.blockNumber);
         const expectedStartTime = block.timestamp + warmup;
         const expectedEndTime = block.timestamp + warmup + duration;
@@ -640,10 +617,10 @@ meTokenRegistry:${meTokenRegistry.address}
           encodedMigrationArgs
         );
         await expect(tx).to.be.revertedWith("Cooldown not complete");
-      }); */
+      });
     });
 
-    /*    describe("cancelResubscribe()", () => {
+    describe("cancelResubscribe()", () => {
       it("Fails if a called by non-owner", async () => {
         await expect(
           meTokenRegistry.connect(account1).cancelResubscribe(meTokenAddr0)
@@ -968,26 +945,6 @@ meTokenRegistry:${meTokenRegistry.address}
         expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
       });
     });
-    describe("balancePool", () => {
-      it("Fails updateBalancePooled() if not foundry", async () => {
-        await expect(
-          meTokenRegistry.updateBalancePooled(
-            true,
-            meTokenAddr1,
-            account2.address
-          )
-        ).to.revertedWith("!foundry");
-      });
-      it("Fails updateBalanceLocked() if not foundry", async () => {
-        await expect(
-          meTokenRegistry.updateBalanceLocked(
-            true,
-            meTokenAddr1,
-            account2.address
-          )
-        ).to.revertedWith("!foundry");
-      });
-    }); */
   });
 };
 

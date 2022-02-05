@@ -82,7 +82,6 @@ contract FoundryFacet is IFoundry, Modifiers {
 
         vault.handleDeposit(msg.sender, asset, _assetsDeposited, fee);
 
-        // s.meTokenRegistry.updateBalancePooled(
         LibMeToken.updateBalancePooled(
             true,
             _meToken,

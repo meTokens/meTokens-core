@@ -16,7 +16,6 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
-import "hardhat/console.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
@@ -145,7 +144,6 @@ contract MeTokenRegistryFacet is Modifiers {
             ),
             "!approved"
         );
-        console.log("## meToken_.hubId:%s  ", meToken_.hubId);
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
@@ -195,22 +193,6 @@ contract MeTokenRegistryFacet is Modifiers {
         meToken_.migration = address(0);
 
         emit CancelResubscribe(_meToken);
-    }
-
-    function updateBalancePooled(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        return LibMeToken.updateBalancePooled(add, _meToken, _amount);
-    }
-
-    function updateBalanceLocked(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        return LibMeToken.updateBalancePooled(add, _meToken, _amount);
     }
 
     function updateBalances(address _meToken, uint256 _newBalance) external {
