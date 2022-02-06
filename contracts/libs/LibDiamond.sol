@@ -14,8 +14,8 @@ library LibDiamond {
     }
 
     struct FacetFunctionSelectors {
-        bytes4[] functionSelectors;
         uint256 facetAddressPosition; // position of facetAddress in facetAddresses array
+        bytes4[] functionSelectors;
     }
 
     struct DiamondStorage {

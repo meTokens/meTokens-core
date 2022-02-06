@@ -15,8 +15,8 @@ contract BancorABDK is ICurve {
 
     struct Bancor {
         uint256 baseY;
-        uint32 reserveWeight;
         uint256 targetBaseY;
+        uint32 reserveWeight;
         uint32 targetReserveWeight;
     }
 
