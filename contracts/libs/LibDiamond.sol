@@ -14,8 +14,8 @@ library LibDiamond {
     }
 
     struct FacetFunctionSelectors {
-        bytes4[] functionSelectors;
         uint256 facetAddressPosition; // position of facetAddress in facetAddresses array
+        bytes4[] functionSelectors;
     }
 
     struct DiamondStorage {
@@ -29,30 +29,16 @@ library LibDiamond {
         // Used to query if a contract implements an interface.
         // Used to implement ERC-165.
         mapping(bytes4 => bool) supportedInterfaces;
-        // owner of the contract
-        address contractOwner;
     }
 
     bytes32 public constant DIAMOND_STORAGE_POSITION =
         keccak256("diamond.standard.diamond.storage");
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
 
     event DiamondCut(
         IDiamondCut.FacetCut[] _diamondCut,
         address _init,
         bytes _calldata
     );
-
-    function setContractOwner(address _newOwner) internal {
-        DiamondStorage storage ds = diamondStorage();
-        address previousOwner = ds.contractOwner;
-        ds.contractOwner = _newOwner;
-        emit OwnershipTransferred(previousOwner, _newOwner);
-    }
 
     // Internal function version of diamondCut
     function diamondCut(
@@ -311,17 +297,6 @@ library LibDiamond {
                 }
             }
         }
-    }
-
-    function contractOwner() internal view returns (address contractOwner_) {
-        contractOwner_ = diamondStorage().contractOwner;
-    }
-
-    function enforceIsContractOwner() internal view {
-        require(
-            msg.sender == diamondStorage().contractOwner,
-            "LibDiamond: Must be contract owner"
-        );
     }
 
     function enforceHasContractCode(

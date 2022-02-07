@@ -15,9 +15,9 @@ interface IDiamondCut {
     // Add=0, Replace=1, Remove=2
 
     struct FacetCut {
+        bytes4[] functionSelectors;
         address facetAddress;
         FacetCutAction action;
-        bytes4[] functionSelectors;
     }
 
     /// @notice Add/replace/remove any number of functions and optionally execute

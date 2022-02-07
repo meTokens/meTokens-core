@@ -1,8 +1,7 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { HubFacet } from "../../artifacts/types/HubFacet";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
@@ -12,9 +11,8 @@ import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
 import { Signer } from "ethers";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../artifacts/types";
 
 /*
@@ -30,24 +28,21 @@ const policyFactory = await ethers.getContractFactory("PolicyLib", {
 const setup = async () => {
   describe("HubFacet.sol", () => {
     let DAI: string;
-    let WETH: string;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: BancorABDK;
+    let curve: ICurve;
     let newCurve: BancorABDK;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
-    let vaultRegistry: VaultRegistry;
     let encodedVaultDAIArgs: string;
-    let encodedVaultWETHArgs: string;
     let encodedCurveDetails: string;
     let token: ERC20;
     let dai: ERC20;
     let tokenHolder: Signer;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let meToken: MeToken;
 
     const hubId = 1;
@@ -64,51 +59,39 @@ const setup = async () => {
     const symbol = "CARL";
 
     before(async () => {
-      ({ DAI, WETH } = await getNamedAccounts());
+      ({ DAI } = await getNamedAccounts());
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
-      );
-      encodedVaultWETHArgs = ethers.utils.defaultAbiCoder.encode(
-        ["address"],
-        [WETH]
       );
       encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
         tokenHolder,
+        hub,
+        curve,
+        foundry,
+        singleAssetVault,
+        curveRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
-        vaultRegistry,
-        curveRegistry,
-        singleAssetVault,
-      } = await hubSetupWithoutRegister(
-        hub,
-        foundry,
-        curve as unknown as ICurve
-      ));
+      } = await hubSetupWithoutRegister("bancorABDK"));
     });
 
     describe("Initial state", () => {
       it("Check initial values", async () => {
         // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
-        expect(await hub.warmup()).to.be.equal(0);
-        expect(await hub.duration()).to.be.equal(0);
-        expect(await hub.cooldown()).to.be.equal(0);
-        expect(await hub.registerer()).to.be.equal(account0.address);
+        expect(await hub.hubWarmup()).to.be.equal(0);
+        expect(await hub.hubDuration()).to.be.equal(0);
+        expect(await hub.hubCooldown()).to.be.equal(0);
+        // expect(await hub.registerer()).to.be.equal(account0.address);
         const details = await hub.getDetails(0);
         expect(details.active).to.be.equal(false);
         expect(details.owner).to.be.equal(ethers.constants.AddressZero);
@@ -141,7 +124,7 @@ const setup = async () => {
               encodedCurveDetails,
               encodedVaultDAIArgs
             )
-        ).to.be.revertedWith("!registerer");
+        ).to.be.revertedWith("!registerController");
       });
       it("should revert from invalid address arguments", async () => {
         // Un-approved curve
@@ -273,7 +256,7 @@ const setup = async () => {
       });
     });
 
-    describe("setWarmup()", () => {
+    describe("setHubWarmup()", () => {
       before(async () => {
         // required in later testing
 
@@ -296,59 +279,53 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       });
-      it("should revert to setWarmup if not owner", async () => {
-        const tx = hub.connect(account1).setWarmup(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+      it("should revert to setHubWarmup if not owner", async () => {
+        const tx = hub.connect(account1).setHubWarmup(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await hub.warmup();
-        const tx = hub.setWarmup(oldWarmup);
-        await expect(tx).to.be.revertedWith("_warmup == s.hubWarmup");
+      it("should revert to setHubWarmup if same as before", async () => {
+        const oldWarmup = await hub.hubWarmup();
+        const tx = hub.setHubWarmup(oldWarmup);
+        await expect(tx).to.be.revertedWith("same warmup");
       });
-      it("should be able to setWarmup", async () => {
-        const tx = await hub.setWarmup(duration);
+      it("should be able to setHubWarmup", async () => {
+        const tx = await hub.setHubWarmup(duration);
         await tx.wait();
-        expect(await hub.warmup()).to.be.equal(duration);
+        expect(await hub.hubWarmup()).to.be.equal(duration);
       });
     });
 
-    describe("setDuration()", () => {
-      it("should revert to setDuration if not owner", async () => {
-        const tx = hub.connect(account1).setDuration(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+    describe("setHubDuration()", () => {
+      it("should revert to setHubDuration if not owner", async () => {
+        const tx = hub.connect(account1).setHubDuration(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await hub.duration();
-        const tx = hub.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("_duration_ == s.hubDuration");
+      it("should revert to setHubDuration if same as before", async () => {
+        const oldDuration = await hub.hubDuration();
+        const tx = hub.setHubDuration(oldDuration);
+        await expect(tx).to.be.revertedWith("same duration");
       });
-      it("should be able to setDuration", async () => {
-        const tx = await hub.setDuration(duration);
+      it("should be able to setHubDuration", async () => {
+        const tx = await hub.setHubDuration(duration);
         await tx.wait();
-        expect(await hub.duration()).to.be.equal(duration);
+        expect(await hub.hubDuration()).to.be.equal(duration);
       });
     });
 
-    describe("setCooldown()", () => {
-      it("should revert to setCooldown if not owner", async () => {
-        const tx = hub.connect(account1).setCooldown(duration);
-        await expect(tx).to.be.revertedWith(
-          "LibDiamond: Must be contract owner"
-        );
+    describe("setHubCooldown()", () => {
+      it("should revert to setHubCooldown if not owner", async () => {
+        const tx = hub.connect(account1).setHubCooldown(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await hub.cooldown();
-        const tx = hub.setCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("_cooldown == s.hubCooldown");
+      it("should revert to setHubCooldown if same as before", async () => {
+        const oldCooldown = await hub.hubCooldown();
+        const tx = hub.setHubCooldown(oldCooldown);
+        await expect(tx).to.be.revertedWith("same cooldown");
       });
-      it("should be able to setCooldown", async () => {
-        const tx = await hub.setCooldown(duration);
+      it("should be able to setHubCooldown", async () => {
+        const tx = await hub.setHubCooldown(duration);
         await tx.wait();
-        expect(await hub.cooldown()).to.be.equal(duration);
+        expect(await hub.hubCooldown()).to.be.equal(duration);
       });
     });
 
@@ -361,7 +338,9 @@ const setup = async () => {
       });
 
       it("should revert when nothing to update", async () => {
-        const tx = hub.initUpdate(hubId, curve.address, 0, "0x");
+        const tx = hub
+          .connect(account0)
+          .initUpdate(hubId, curve.address, 0, "0x");
         await expect(tx).to.be.revertedWith("Nothing to update");
       });
 
@@ -826,10 +805,9 @@ const setup = async () => {
         ).to.be.revertedWith("Same owner");
       });
       it("should transfers hub ownership", async () => {
-        const transferHubOwnershipTx = await hub.transferHubOwnership(
-          hubId,
-          account1.address
-        );
+        const transferHubOwnershipTx = await hub
+          .connect(account0)
+          .transferHubOwnership(hubId, account1.address);
         await transferHubOwnershipTx.wait();
 
         await expect(transferHubOwnershipTx)
@@ -872,29 +850,29 @@ const setup = async () => {
       });
     });
 
-    describe("setRegisterer()", () => {
-      it("should revert when sender is not registerer", async () => {
-        await expect(
-          hub.connect(account1).setRegisterer(account1.address)
-        ).to.be.revertedWith("!registerer");
-      });
-      it("should revert when new registerer is same as old", async () => {
-        await expect(hub.setRegisterer(account0.address)).to.be.revertedWith(
-          "_registerer == registerer"
-        );
-      });
-      it("should be able to change registerer", async () => {
-        await hub.setRegisterer(account1.address);
-        expect(await hub.registerer()).to.be.equal(account1.address);
-      });
-      after(async () => {
-        await expect(
-          hub.connect(account0).setRegisterer(account0.address)
-        ).to.be.revertedWith("!registerer");
-        // set registerer back to account0
-        await hub.connect(account1).setRegisterer(account0.address);
-        expect(await hub.registerer()).to.be.equal(account0.address);
-      });
+    describe("setRegisterer() [TODO]", () => {
+      // it("should revert when sender is not registerer", async () => {
+      //   await expect(
+      //     hub.connect(account1).setRegisterer(account1.address)
+      //   ).to.be.revertedWith("!registerer");
+      // });
+      // it("should revert when new registerer is same as old", async () => {
+      //   await expect(hub.setHubRegisterer(account0.address)).to.be.revertedWith(
+      //     "_registerer == registerer"
+      //   );
+      // });
+      // it("should be able to change registerer", async () => {
+      //   await hub.setHubRegisterer(account1.address);
+      //   expect(await hub.registerer()).to.be.equal(account1.address);
+      // });
+      // after(async () => {
+      //   await expect(
+      //     hub.connect(account0).setRegisterer(account0.address)
+      //   ).to.be.revertedWith("!registerer");
+      //   // set registerer back to account0
+      //   await hub.connect(account1).setRegisterer(account0.address);
+      //   expect(await hub.registerer()).to.be.equal(account0.address);
+      // });
     });
   });
 };

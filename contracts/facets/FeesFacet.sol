@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {AppStorage} from "../libs/Details.sol";
+import {AppStorage, Modifiers} from "../libs/Details.sol";
 
-contract FeesFacet {
+contract FeesFacet is Modifiers {
     event SetMintFee(uint256 rate);
     event SetBurnBuyerFee(uint256 rate);
     event SetBurnOwnerFee(uint256 rate);
@@ -11,40 +11,37 @@ contract FeesFacet {
     event SetInterestFee(uint256 rate);
     event SetYieldFee(uint256 rate);
 
-    AppStorage internal s; // solhint-disable-line
-
-    // TODO: access control on this shiz
-    function setMintFee(uint256 rate) external {
+    function setMintFee(uint256 rate) external onlyFeesController {
         require(rate != s.mintFee && rate < s.PRECISION, "out of range");
         s.mintFee = rate;
         emit SetMintFee(rate);
     }
 
-    function setBurnBuyerFee(uint256 rate) external {
+    function setBurnBuyerFee(uint256 rate) external onlyFeesController {
         require(rate != s.burnBuyerFee && rate < s.PRECISION, "out of range");
         s.burnBuyerFee = rate;
         emit SetBurnBuyerFee(rate);
     }
 
-    function setBurnOwnerFee(uint256 rate) external {
+    function setBurnOwnerFee(uint256 rate) external onlyFeesController {
         require(rate != s.burnOwnerFee && rate < s.PRECISION, "out of range");
         s.burnOwnerFee = rate;
         emit SetBurnOwnerFee(rate);
     }
 
-    function setTransferFee(uint256 rate) external {
+    function setTransferFee(uint256 rate) external onlyFeesController {
         require(rate != s.transferFee && rate < s.PRECISION, "out of range");
         s.transferFee = rate;
         emit SetTransferFee(rate);
     }
 
-    function setInterestFee(uint256 rate) external {
+    function setInterestFee(uint256 rate) external onlyFeesController {
         require(rate != s.interestFee && rate < s.PRECISION, "out of range");
         s.interestFee = rate;
         emit SetInterestFee(rate);
     }
 
-    function setYieldFee(uint256 rate) external {
+    function setYieldFee(uint256 rate) external onlyFeesController {
         require(rate != s.yieldFee && rate < s.PRECISION, "out of range");
         s.yieldFee = rate;
         emit SetYieldFee(rate);

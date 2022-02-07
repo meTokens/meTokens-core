@@ -105,7 +105,7 @@ export const curvesTestsHelper = async ({
     ).to.be.reverted;
   });
 
-  it("should be able to calculate Mint Return from zero", async () => {
+  it("viewMeTokensMinted() from 0 supply should work", async () => {
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
@@ -115,7 +115,7 @@ export const curvesTestsHelper = async ({
       precision
     );
   });
-  it("should be able to calculate Mint Return", async () => {
+  it("viewMeTokensMinted from non-zero supply should work", async () => {
     const amountNum = 2;
     let amount = one.mul(amountNum);
 
@@ -164,7 +164,7 @@ export const curvesTestsHelper = async ({
       precision // *4
     );
   });
-  it("should be able to calculate Mint Return with a max of 1414213562 supply should work", async () => {
+  it("viewMeTokensMinted() from 999999999999999 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
     const calculatedRes = calculateTokenReturnedFromZero(999999999999999, 0, 0);
@@ -173,7 +173,7 @@ export const curvesTestsHelper = async ({
       precision // *4
     );
   });
-  it("should be able to calculate asset needed from zero supply", async () => {
+  it("viewAssetsReturned() from 0 supply should work", async () => {
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 7568;
     let balancedPooled = one.mul(balancedPooledNum);
@@ -194,7 +194,7 @@ export const curvesTestsHelper = async ({
     );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
-  it("should be able to calculate asset needed", async () => {
+  it("viewAssetsReturned() from non-zero supply should work", async () => {
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 600000;
     let balancedPooled = one.mul(balancedPooledNum);
@@ -242,7 +242,7 @@ export const curvesTestsHelper = async ({
       precision * 100000
     );
   });
-  it("should be able to calculate asset needed with a max of 999999999999999000000000000000000 supply should work", async () => {
+  it("viewAssetsReturned() from 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 999999999999999;
@@ -274,7 +274,7 @@ export const curvesTestsHelper = async ({
     const detail = await curve.getDetails(hubId);
     verifyCurveDetails(detail);
   });
-  it("viewTargetMeTokensMinted() from zero should work", async () => {
+  it("viewTargetMeTokensMinted() from 0 supply should work", async () => {
     //  const detail = await curve.getDetails(hubId);
     let amount = one.mul(2);
     let estimate = await curve.viewTargetMeTokensMinted(amount, hubId, 0, 0);
@@ -284,7 +284,7 @@ export const curvesTestsHelper = async ({
       precision * 100
     );
   });
-  it("viewTargetMeTokensMinted() should work", async () => {
+  it("viewTargetMeTokensMinted() from non-zero supply should work", async () => {
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 2;
     let balancedPooled = one.mul(balancedPooledNum);
@@ -310,7 +310,7 @@ export const curvesTestsHelper = async ({
     );
     expect(toETHNumber(estimate)).to.be.approximately(calculatedRes, precision);
   });
-  it("viewTargetAssetsReturned()  to zero supply should work", async () => {
+  it("viewTargetAssetsReturned() to 0 supply should work", async () => {
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 2;
     let balancedPooled = one.mul(balancedPooledNum);

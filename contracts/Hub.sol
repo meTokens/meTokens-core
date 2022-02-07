@@ -12,6 +12,8 @@ import "./interfaces/IFoundry.sol";
 
 import "./libs/Details.sol";
 
+import {HubInfo} from "./libs/LibHub.sol";
+
 /// @title meToken hub
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213), @zgorizzo69
 /// @notice This contract tracks all combinations of vaults and curves,
@@ -28,7 +30,7 @@ contract Hub is IHub, Ownable, Initializable {
     IRegistry public vaultRegistry;
     IRegistry public curveRegistry;
 
-    mapping(uint256 => Details.Hub) private _hubs;
+    mapping(uint256 => HubInfo) private _hubs;
 
     modifier onlyRegisterer() {
         require(msg.sender == registerer, "!registerer");
@@ -70,7 +72,7 @@ contract Hub is IHub, Ownable, Initializable {
         _curve.register(++_count, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = _hubs[_count];
+        HubInfo storage hub_ = _hubs[_count];
         hub_.active = true;
         hub_.owner = _owner;
         hub_.asset = _asset;
@@ -91,7 +93,7 @@ contract Hub is IHub, Ownable, Initializable {
 
     /// @inheritdoc IHub
     function deactivate(uint256 _id) external override {
-        Details.Hub storage hub_ = _hubs[_id];
+        HubInfo storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.active, "!active");
         hub_.active = false;
@@ -105,7 +107,7 @@ contract Hub is IHub, Ownable, Initializable {
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
     ) external override {
-        Details.Hub storage hub_ = _hubs[_id];
+        HubInfo storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             finishUpdate(_id);
@@ -165,7 +167,7 @@ contract Hub is IHub, Ownable, Initializable {
 
     /// @inheritdoc IHub
     function cancelUpdate(uint256 _id) external override {
-        Details.Hub storage hub_ = _hubs[_id];
+        HubInfo storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.updating, "!updating");
         require(block.timestamp < hub_.startTime, "Update has started");
@@ -182,7 +184,7 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
     function transferHubOwnership(uint256 _id, address _newOwner) external {
-        Details.Hub storage hub_ = _hubs[_id];
+        HubInfo storage hub_ = _hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
@@ -223,7 +225,7 @@ contract Hub is IHub, Ownable, Initializable {
         external
         view
         override
-        returns (Details.Hub memory hub_)
+        returns (HubInfo memory hub_)
     {
         hub_ = _hubs[id];
     }
@@ -244,12 +246,8 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
     /// @inheritdoc IHub
-    function finishUpdate(uint256 id)
-        public
-        override
-        returns (Details.Hub memory)
-    {
-        Details.Hub storage hub_ = _hubs[id];
+    function finishUpdate(uint256 id) public override returns (HubInfo memory) {
+        HubInfo storage hub_ = _hubs[id];
         require(block.timestamp > hub_.endTime, "Still updating");
 
         if (hub_.targetRefundRatio != 0) {

@@ -66,8 +66,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     function poke(address _meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
         if (
             usts_.soonest != 0 &&
             block.timestamp > usts_.soonest &&
@@ -89,9 +89,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         require(usts_.soonest < block.timestamp, "timestamp < soonest");
 
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts_.started) {
@@ -133,7 +133,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
         // Too soon
         if (soon < block.timestamp) return false;
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
         // MeToken not subscribed to a hub
         if (meToken_.hubId == 0) return false;
         // Invalid fee
@@ -146,9 +146,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     function _swap(address _meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only swap if

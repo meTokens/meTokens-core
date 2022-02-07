@@ -3,22 +3,17 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { Fees } from "../../../artifacts/types/Fees";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -37,14 +32,13 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
-    let curve: BancorABDK;
-    let meTokenRegistry: MeTokenRegistry;
+    let curve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     let targetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let meToken: MeToken;
     let hub: HubFacet;
-    let fee: Fees;
     let vaultRegistry: VaultRegistry;
 
     const hubId1 = 1;
@@ -98,29 +92,23 @@ const setup = async () => {
         ["uint256", "uint24"],
         [earliestSwapTime, fees]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
+        hub,
+        curve,
+        foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
+        vaultRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
-        vaultRegistry,
-        fee,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        hub,
-        foundry,
-        curve as unknown as ICurve
+        "bancorABDK"
       ));
 
       targetVault = await deploy<SingleAssetVault>(
@@ -190,7 +178,7 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      await hub.setWarmup(hubWarmup);
+      await hub.setHubWarmup(hubWarmup);
     });
 
     describe("isValid()", () => {
@@ -469,9 +457,9 @@ const setup = async () => {
 
       describe("During resubscribe", () => {
         before(async () => {
-          await meTokenRegistry.setWarmup(warmup);
-          await meTokenRegistry.setDuration(duration);
-          await meTokenRegistry.setCooldown(coolDown);
+          await meTokenRegistry.setMeTokenWarmup(warmup);
+          await meTokenRegistry.setMeTokenDuration(duration);
+          await meTokenRegistry.setMeTokenCooldown(coolDown);
 
           await meTokenRegistry
             .connect(account2)

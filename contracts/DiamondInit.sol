@@ -12,35 +12,37 @@ import "./libs/Details.sol";
 
 contract DiamondInit {
     struct Args {
-        address foundry;
+        uint256 mintFee;
+        uint256 burnBuyerFee;
+        uint256 burnOwnerFee;
+        uint256 transferFee;
+        uint256 interestFee;
+        uint256 yieldFee;
+        address diamond;
         IRegistry vaultRegistry;
         IRegistry curveRegistry;
         IMigrationRegistry migrationRegistry;
-        // uint256 mintFee;
-        // uint256 burnBuyerFee;
-        // uint256 burnOwnerFee;
-        // uint256 transferFee;
-        // uint256 interestFee;
-        // uint256 yieldFee;
+        address meTokenFactory;
     }
 
     AppStorage internal s; // solhint-disable-line
 
-    // TODO: access control
+    // TODO: access control?
     function init(Args memory _args) external {
-        s.foundry = _args.foundry;
+        s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;
-        // s.mintFee = _args.mintFee;
-        // s.burnBuyerFee = _args.burnBuyerFee;
-        // s.burnOwnerFee = _args.burnOwnerFee;
-        // s.transferFee = _args.transferFee;
-        // s.interestFee = _args.interestFee;
-        // s.yieldFee = _args.yieldFee;
+        s.meTokenFactory = _args.meTokenFactory;
+        s.mintFee = _args.mintFee;
+        s.burnBuyerFee = _args.burnBuyerFee;
+        s.burnOwnerFee = _args.burnOwnerFee;
+        s.transferFee = _args.transferFee;
+        s.interestFee = _args.interestFee;
+        s.yieldFee = _args.yieldFee;
 
-        s.MAX_REFUND_RATIO = 10e6;
-        s.PRECISION = 10e18;
+        s.MAX_REFUND_RATIO = 1e6;
+        s.PRECISION = 1e18;
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 

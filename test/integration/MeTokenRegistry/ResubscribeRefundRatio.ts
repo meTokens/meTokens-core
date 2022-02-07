@@ -8,9 +8,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -23,11 +23,11 @@ import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
-    let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let dai: ERC20;
     let weth: ERC20;
@@ -66,19 +66,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
       ({
         token: dai,
         tokenHolder,
+        hub,
+        foundry,
+        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -89,9 +82,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Deploy uniswap migration and approve it to the registry
@@ -133,15 +124,15 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        curve.address,
         targetRefundRatio,
         encodedCurveDetails,
         encodedVaultArgs
       );
-      await hub.setWarmup(7 * 60 * 24 * 24); // 1 week
-      await meTokenRegistry.setWarmup(2 * 60 * 24 * 24); // 2 days
-      await meTokenRegistry.setDuration(4 * 60 * 24 * 24); // 4 days
-      await meTokenRegistry.setCooldown(5 * 60 * 24 * 24); // 5 days
+      await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week
+      await meTokenRegistry.setMeTokenWarmup(2 * 60 * 24 * 24); // 2 days
+      await meTokenRegistry.setMeTokenDuration(4 * 60 * 24 * 24); // 4 days
+      await meTokenRegistry.setMeTokenCooldown(5 * 60 * 24 * 24); // 5 days
 
       const block = await ethers.provider.getBlock("latest");
       const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future

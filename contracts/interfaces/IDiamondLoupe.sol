@@ -13,8 +13,8 @@ interface IDiamondLoupe {
     /// by tools.
 
     struct Facet {
-        address facetAddress;
         bytes4[] functionSelectors;
+        address facetAddress;
     }
 
     /// @notice Gets all facet addresses and their four byte function selectors.

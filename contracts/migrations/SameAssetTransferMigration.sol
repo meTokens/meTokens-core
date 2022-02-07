@@ -36,9 +36,9 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     ) external override {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
         require(hub_.asset == targetHub_.asset, "asset different");
 
@@ -47,8 +47,8 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     function poke(address _meToken) external override nonReentrant {
         SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
         if (usts_.isMigrating && !usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
             usts_.started = true;
@@ -65,9 +65,9 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
         require(usts_.isMigrating, "!migrating");
 
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
 
         if (!usts_.started) {
             ISingleAssetVault(hub_.vault).startMigration(_meToken);
@@ -95,7 +95,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         address _meToken,
         bytes memory /* _encodedArgs */
     ) public view override returns (bool) {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
         // MeToken not subscribed to a hub
         if (meToken_.hubId == 0) return false;
         return true;

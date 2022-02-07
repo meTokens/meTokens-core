@@ -29,7 +29,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     IMigrationRegistry public migrationRegistry;
 
     /// @dev key: address of meToken, value: meToken Details struct
-    mapping(address => Details.MeToken) private _meTokens;
+    mapping(address => MeTokenInfo) private _meTokens;
     /// @dev key: address of meToken owner, value: address of meToken
     mapping(address => address) private _owners;
     /// @dev key: address of meToken owner, value: address to transfer meToken ownership to
@@ -55,7 +55,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         uint256 _assetsDeposited
     ) external override {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        Details.Hub memory hub_ = hub.getDetails(_hubId);
+        HubInfo memory hub_ = hub.getDetails(_hubId);
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
@@ -71,12 +71,13 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         }
 
         // Create meToken erc20 contract
-        address meTokenAddr = meTokenFactory.create(
-            _name,
-            _symbol,
-            foundry,
-            address(this)
-        );
+        // address meTokenAddr = meTokenFactory.create(
+        //     _name,
+        //     _symbol,
+        //     foundry,
+        //     address(this)
+        // );
+        address meTokenAddr;
 
         // Mint meToken to user
         uint256 _meTokensMinted;
@@ -94,7 +95,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         _owners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeToken storage meToken_ = _meTokens[meTokenAddr];
+        MeTokenInfo storage meToken_ = _meTokens[meTokenAddr];
         meToken_.owner = msg.sender;
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
@@ -118,9 +119,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         address _migration,
         bytes memory _encodedMigrationArgs
     ) external override {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(_targetHubId);
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
+        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getDetails(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -170,7 +171,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     }
 
     function cancelResubscribe(address _meToken) external override {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
         require(msg.sender == meToken_.owner, "!owner");
         require(meToken_.targetHubId != 0, "!resubscribing");
         require(
@@ -190,9 +191,9 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     function finishResubscribe(address _meToken)
         external
         override
-        returns (Details.MeToken memory)
+        returns (MeTokenInfo memory)
     {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
 
         require(meToken_.targetHubId != 0, "No targetHubId");
         require(
@@ -219,7 +220,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         external
         override
     {
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
         require(msg.sender == meToken_.migration, "!migration");
 
         uint256 oldBalance = meToken_.balancePooled + meToken_.balanceLocked;
@@ -241,7 +242,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         uint256 _amount
     ) external override {
         require(msg.sender == foundry, "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
         if (add) {
             meToken_.balancePooled += _amount;
         } else {
@@ -258,7 +259,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         uint256 _amount
     ) external override {
         require(msg.sender == foundry, "!foundry");
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
 
         if (add) {
             meToken_.balanceLocked += _amount;
@@ -304,7 +305,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         require(msg.sender == _pendingOwners[_oldOwner], "!_pendingOwner");
 
         address _meToken = _owners[_oldOwner];
-        Details.MeToken storage meToken_ = _meTokens[_meToken];
+        MeTokenInfo storage meToken_ = _meTokens[_meToken];
 
         meToken_.owner = msg.sender;
         _owners[msg.sender] = _meToken;
@@ -357,7 +358,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         external
         view
         override
-        returns (Details.MeToken memory meToken_)
+        returns (MeTokenInfo memory meToken_)
     {
         meToken_ = _meTokens[_meToken];
     }

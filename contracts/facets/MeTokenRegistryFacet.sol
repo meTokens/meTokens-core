@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../MeToken.sol";
-import "../interfaces/IMigration.sol";
-import "../interfaces/IMigrationRegistry.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMeTokenFactory.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/ICurve.sol";
-import "../interfaces/IMeToken.sol";
+import {MeToken} from "../MeToken.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
 
 import "../libs/Details.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistryFacet is Ownable {
+contract MeTokenRegistryFacet is Modifiers {
     event Subscribe(
         address indexed _meToken,
         address indexed _owner,
@@ -50,8 +50,6 @@ contract MeTokenRegistryFacet is Ownable {
     event UpdateBalancePooled(bool _add, address _meToken, uint256 _amount);
     event UpdateBalanceLocked(bool _add, address _meToken, uint256 _amount);
 
-    AppStorage internal s; // solhint-disable-line
-
     constructor() {}
 
     function subscribe(
@@ -61,7 +59,7 @@ contract MeTokenRegistryFacet is Ownable {
         uint256 _assetsDeposited
     ) external {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        Details.Hub memory hub_ = s.hubs[_hubId];
+        HubInfo memory hub_ = s.hubs[_hubId];
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
@@ -75,12 +73,10 @@ contract MeTokenRegistryFacet is Ownable {
                 "transfer failed"
             );
         }
-
         // Create meToken erc20 contract
         address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
             _name,
             _symbol,
-            s.foundry,
             address(this)
         );
 
@@ -100,7 +96,7 @@ contract MeTokenRegistryFacet is Ownable {
         s.meTokenOwners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        Details.MeToken storage meToken_ = s.meTokens[meTokenAddr];
+        MeTokenInfo storage meToken_ = s.meTokens[meTokenAddr];
         meToken_.owner = msg.sender;
         meToken_.hubId = _hubId;
         meToken_.balancePooled = _assetsDeposited;
@@ -123,9 +119,9 @@ contract MeTokenRegistryFacet is Ownable {
         address _migration,
         bytes memory _encodedMigrationArgs
     ) external {
-        Details.MeToken storage meToken_ = s.meTokens[_meToken];
-        Details.Hub memory hub_ = s.hubs[meToken_.hubId];
-        Details.Hub memory targetHub_ = s.hubs[_targetHubId];
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
+        HubInfo memory targetHub_ = s.hubs[_targetHubId];
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -137,9 +133,6 @@ contract MeTokenRegistryFacet is Ownable {
         require(!hub_.updating, "hub updating");
         require(!targetHub_.updating, "targetHub updating");
 
-        // TODO: what if asset is same?  Is a migration vault needed since it'll start/end
-        // at the same and not change to a different asset?
-        require(hub_.asset != targetHub_.asset, "asset same");
         require(_migration != address(0), "migration address(0)");
 
         // Ensure the migration we're using is approved
@@ -151,13 +144,10 @@ contract MeTokenRegistryFacet is Ownable {
             ),
             "!approved"
         );
-
         require(
             IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
             "Invalid _encodedMigrationArgs"
         );
-        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
-
         meToken_.startTime = block.timestamp + s.meTokenWarmup;
         meToken_.endTime =
             block.timestamp +
@@ -171,6 +161,8 @@ contract MeTokenRegistryFacet is Ownable {
         meToken_.targetHubId = _targetHubId;
         meToken_.migration = _migration;
 
+        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
+
         emit InitResubscribe(
             _meToken,
             _targetHubId,
@@ -179,8 +171,15 @@ contract MeTokenRegistryFacet is Ownable {
         );
     }
 
+    function finishResubscribe(address _meToken)
+        external
+        returns (MeTokenInfo memory)
+    {
+        return LibMeToken.finishResubscribe(_meToken);
+    }
+
     function cancelResubscribe(address _meToken) external {
-        Details.MeToken storage meToken_ = s.meTokens[_meToken];
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
         require(msg.sender == meToken_.owner, "!owner");
         require(meToken_.targetHubId != 0, "!resubscribing");
         require(
@@ -197,51 +196,21 @@ contract MeTokenRegistryFacet is Ownable {
     }
 
     function updateBalances(address _meToken, uint256 _newBalance) external {
-        require(msg.sender == s.meTokens[_meToken].migration, "!migration");
-        uint256 balancePooled = s.meTokens[_meToken].balancePooled;
-        uint256 balanceLocked = s.meTokens[_meToken].balanceLocked;
+        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
+        require(msg.sender == meToken_.migration, "!migration");
+        uint256 balancePooled = meToken_.balancePooled;
+        uint256 balanceLocked = meToken_.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
         uint256 p = s.PRECISION;
 
-        s.meTokens[_meToken].balancePooled =
+        meToken_.balancePooled =
             (balancePooled * p * _newBalance) /
             (oldBalance * p);
-        s.meTokens[_meToken].balanceLocked =
+        meToken_.balanceLocked =
             (balanceLocked * p * _newBalance) /
             (oldBalance * p);
 
         emit UpdateBalances(_meToken, _newBalance);
-    }
-
-    function updateBalancePooled(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        require(msg.sender == s.foundry, "!foundry");
-        if (add) {
-            s.meTokens[_meToken].balancePooled += _amount;
-        } else {
-            s.meTokens[_meToken].balancePooled -= _amount;
-        }
-
-        emit UpdateBalancePooled(add, _meToken, _amount);
-    }
-
-    function updateBalanceLocked(
-        bool add,
-        address _meToken,
-        uint256 _amount
-    ) external {
-        require(msg.sender == s.foundry, "!foundry");
-
-        if (add) {
-            s.meTokens[_meToken].balanceLocked += _amount;
-        } else {
-            s.meTokens[_meToken].balanceLocked -= _amount;
-        }
-
-        emit UpdateBalanceLocked(add, _meToken, _amount);
     }
 
     function transferMeTokenOwnership(address _newOwner) external {
@@ -289,35 +258,42 @@ contract MeTokenRegistryFacet is Ownable {
         emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
-    function setWarmup(uint256 _warmup) external onlyOwner {
-        require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
-        s.hubWarmup = _warmup;
+    function setMeTokenWarmup(uint256 _warmup)
+        external
+        onlyDurationsController
+    {
+        require(_warmup != s.meTokenWarmup, "same warmup");
+        require(_warmup + s.meTokenDuration < s.hubWarmup, "too long");
+        s.meTokenWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyOwner {
-        require(_duration != s.hubDuration, "_duration == s.hubDuration");
-        s.hubDuration = _duration;
+    function setMeTokenDuration(uint256 _duration)
+        external
+        onlyDurationsController
+    {
+        require(_duration != s.meTokenDuration, "same duration");
+        require(s.meTokenWarmup + _duration < s.hubWarmup, "too long");
+        s.meTokenDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyOwner {
-        require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
-        s.hubCooldown = _cooldown;
+    function setMeTokenCooldown(uint256 _cooldown)
+        external
+        onlyDurationsController
+    {
+        require(_cooldown != s.meTokenCooldown, "same cooldown");
+        s.meTokenCooldown = _cooldown;
     }
 
-    function count() external view returns (uint256) {
-        return s.hubCount;
+    function meTokenWarmup() external view returns (uint256) {
+        return LibMeToken.warmup();
     }
 
-    function warmup() external view returns (uint256) {
-        return s.hubWarmup;
+    function meTokenDuration() external view returns (uint256) {
+        return LibMeToken.duration();
     }
 
-    function duration() external view returns (uint256) {
-        return s.hubDuration;
-    }
-
-    function cooldown() external view returns (uint256) {
-        return s.hubCooldown;
+    function meTokenCooldown() external view returns (uint256) {
+        return LibMeToken.cooldown();
     }
 
     function getOwnerMeToken(address _owner) external view returns (address) {
@@ -335,9 +311,9 @@ contract MeTokenRegistryFacet is Ownable {
     function getDetails(address _meToken)
         external
         view
-        returns (Details.MeToken memory)
+        returns (MeTokenInfo memory)
     {
-        return s.meTokens[_meToken];
+        return LibMeToken.getMeToken(_meToken);
     }
 
     function isOwner(address _owner) public view returns (bool) {

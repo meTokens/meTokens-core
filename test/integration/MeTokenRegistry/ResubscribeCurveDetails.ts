@@ -1,7 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  calculateTokenReturned,
   calculateCollateralReturned,
   deploy,
   getContractAt,
@@ -12,32 +11,29 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
-import { Fees } from "../../../artifacts/types/Fees";
+import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let tx: ContractTransaction;
-    let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let tokenHolder: Signer;
     let dai: ERC20;
@@ -48,7 +44,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let encodedCurveDetails1: string;
     let encodedCurveDetails2: string;
-    let fees: Fees;
+    let fees: FeesFacet;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -96,20 +92,13 @@ const setup = async () => {
       );
 
       // Register first and second hub
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
 
       ({
         token,
         tokenHolder,
+        hub,
+        foundry,
+        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -120,9 +109,7 @@ const setup = async () => {
         encodedCurveDetails1,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -132,17 +119,17 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        curve.address,
         refundRatio,
         encodedCurveDetails2,
         encodedVaultArgs
       );
 
       // set update/resubscribe times
-      await hub.setWarmup(hubWarmup);
-      await meTokenRegistry.setWarmup(warmup);
-      await meTokenRegistry.setDuration(duration);
-      await meTokenRegistry.setCooldown(coolDown);
+      await hub.setHubWarmup(hubWarmup);
+      await meTokenRegistry.setMeTokenWarmup(warmup);
+      await meTokenRegistry.setMeTokenDuration(duration);
+      await meTokenRegistry.setMeTokenCooldown(coolDown);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 

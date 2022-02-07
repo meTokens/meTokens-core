@@ -3,14 +3,16 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IRegistry.sol";
-import "../interfaces/ICurve.sol";
-import "../interfaces/IFoundry.sol";
+import "../libs/Details.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IRegistry} from "../interfaces/IRegistry.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {IFoundry} from "../interfaces/IFoundry.sol";
 
-contract HubFacet {
+contract HubFacet is Modifiers {
     event Register(
+        uint256 _id,
         address _owner,
         address _asset,
         address _vault,
@@ -30,15 +32,9 @@ contract HubFacet {
         uint256 _endTime,
         uint256 _endCooldown
     );
+    event FinishUpdate(uint256 _id);
     event CancelUpdate(uint256 _id);
     event TransferHubOwnership(uint256 _id, address _newOwner);
-
-    AppStorage internal s; // solhint-disable-line
-
-    modifier onlyOwner() {
-        LibDiamond.enforceIsContractOwner();
-        _;
-    }
 
     function register(
         address _owner,
@@ -48,8 +44,7 @@ contract HubFacet {
         uint256 _refundRatio,
         bytes memory _encodedCurveDetails,
         bytes memory _encodedVaultArgs
-    ) external {
-        // TODO: access control
+    ) external onlyRegisterController {
         require(
             s.curveRegistry.isApproved(address(_curve)),
             "_curve !approved"
@@ -66,10 +61,11 @@ contract HubFacet {
         require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
-        _curve.register(++s.hubCount, _encodedCurveDetails);
+        uint256 id = ++s.hubCount;
+        _curve.register(id, _encodedCurveDetails);
 
         // Save the hub to the registry
-        Details.Hub storage hub_ = s.hubs[s.hubCount];
+        HubInfo storage hub_ = s.hubs[s.hubCount];
         hub_.active = true;
         hub_.owner = _owner;
         hub_.asset = _asset;
@@ -77,6 +73,7 @@ contract HubFacet {
         hub_.curve = address(_curve);
         hub_.refundRatio = _refundRatio;
         emit Register(
+            id,
             _owner,
             _asset,
             address(_vault),
@@ -88,8 +85,11 @@ contract HubFacet {
     }
 
     function deactivate(uint256 _id) external {
-        Details.Hub storage hub_ = s.hubs[_id];
-        require(msg.sender == hub_.owner, "!owner");
+        HubInfo storage hub_ = s.hubs[_id];
+        require(
+            msg.sender == hub_.owner || msg.sender == s.deactivateController,
+            "!owner && !deactivateController"
+        );
         require(hub_.active, "!active");
         hub_.active = false;
         emit Deactivate(_id);
@@ -101,7 +101,7 @@ contract HubFacet {
         uint256 _targetRefundRatio,
         bytes memory _encodedCurveDetails
     ) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             LibHub.finishUpdate(_id);
@@ -165,8 +165,12 @@ contract HubFacet {
         );
     }
 
+    function finishUpdate(uint256 id) external {
+        LibHub.finishUpdate(id);
+    }
+
     function cancelUpdate(uint256 _id) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(hub_.updating, "!updating");
         require(block.timestamp < hub_.startTime, "Update has started");
@@ -182,12 +186,8 @@ contract HubFacet {
         emit CancelUpdate(_id);
     }
 
-    function getDetails(uint256 _id) external view returns (HubInfo memory) {
-        return LibHub.getHub(_id);
-    }
-
     function transferHubOwnership(uint256 _id, address _newOwner) external {
-        Details.Hub storage hub_ = s.hubs[_id];
+        HubInfo storage hub_ = s.hubs[_id];
         require(msg.sender == hub_.owner, "!owner");
         require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
@@ -195,34 +195,44 @@ contract HubFacet {
         emit TransferHubOwnership(_id, _newOwner);
     }
 
-    function setWarmup(uint256 _warmup) external onlyOwner {
-        require(_warmup != s.hubWarmup, "_warmup == s.hubWarmup");
+    function setHubWarmup(uint256 _warmup) external onlyDurationsController {
+        require(_warmup != s.hubWarmup, "same warmup");
         s.hubWarmup = _warmup;
     }
 
-    function setDuration(uint256 _duration) external onlyOwner {
-        require(_duration != s.hubDuration, "_duration == s.hubDuration");
+    function setHubDuration(uint256 _duration)
+        external
+        onlyDurationsController
+    {
+        require(_duration != s.hubDuration, "same duration");
         s.hubDuration = _duration;
     }
 
-    function setCooldown(uint256 _cooldown) external onlyOwner {
-        require(_cooldown != s.hubCooldown, "_cooldown == s.hubCooldown");
+    function setHubCooldown(uint256 _cooldown)
+        external
+        onlyDurationsController
+    {
+        require(_cooldown != s.hubCooldown, "same cooldown");
         s.hubCooldown = _cooldown;
+    }
+
+    function getDetails(uint256 _id) external view returns (HubInfo memory) {
+        return LibHub.getHub(_id);
     }
 
     function count() external view returns (uint256) {
         return s.hubCount;
     }
 
-    function warmup() external view returns (uint256) {
-        return s.hubWarmup;
+    function hubWarmup() external view returns (uint256) {
+        return LibHub.warmup();
     }
 
-    function duration() external view returns (uint256) {
-        return s.hubDuration;
+    function hubDuration() external view returns (uint256) {
+        return LibHub.duration();
     }
 
-    function cooldown() external view returns (uint256) {
-        return s.hubCooldown;
+    function hubCooldown() external view returns (uint256) {
+        return LibHub.cooldown();
     }
 }

@@ -1,8 +1,7 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../artifacts/types/HubFacet";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
@@ -17,7 +16,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { ERC20 } from "../../artifacts/types/ERC20";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../utils/hardhatNode";
@@ -25,20 +24,19 @@ import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
-import { ICurve } from "../../artifacts/types";
+import { Diamond, ICurve } from "../../artifacts/types";
 
 const setup = async () => {
-  describe("Foundry.sol", () => {
+  describe("FoundryFacet.sol", () => {
     let DAI: string;
-    let DAIWhale: string;
-    let daiHolder: Signer;
     let dai: ERC20;
+    let diamond: Diamond;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: BancorABDK;
-    let meTokenRegistry: MeTokenRegistry;
-    let foundry: Foundry;
+    let curve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let foundry: FoundryFacet;
     let token: ERC20;
     let meToken: MeToken;
     let tokenHolder: Signer;
@@ -50,12 +48,10 @@ const setup = async () => {
     const hubId = 1;
     const name = "Carl meToken";
     const symbol = "CARL";
-    const refundRatio = 240000;
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount = ethers.utils.parseEther("10");
     const amount1 = ethers.utils.parseEther("100");
-    const amount2 = ethers.utils.parseEther("6.9");
     const tokenDepositedInETH = 10;
     const tokenDeposited = ethers.utils.parseEther(
       tokenDepositedInETH.toString()
@@ -72,7 +68,7 @@ const setup = async () => {
     // weight at 50% linear curve
     // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
     before(async () => {
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      ({ DAI } = await getNamedAccounts());
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -82,36 +78,25 @@ const setup = async () => {
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      // foundry = await deploy<Foundry>("Foundry", {
-      //   WeightedAverage: weightedAverage.address,
-      // });
-      // hub = await deploy<HubFacet>("HubFacet");
-      // curve_ = await deploy<BancorABDK>(
-      //   "BancorABDK",
-      //   undefined,
-      //   hub.address,
-      //   foundry.address
-      // );
       ({
         token,
-        foundry,
+        tokenHolder,
         hub,
-        singleAssetVault,
         curve,
-        meTokenRegistry,
+        diamond,
+        foundry,
+        singleAssetVault,
         curveRegistry,
         migrationRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        tokenHolder,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
         initRefundRatio,
-        // BancorABDK,
-        "BancorABDK"
-        // curve
+        "bancorABDK"
       ));
 
       // Prefund owner/buyer w/ DAI
@@ -980,9 +965,9 @@ const setup = async () => {
           [earliestSwapTime]
         );
         // 10 hour
-        await hub.setDuration(600 * 60);
-        await hub.setWarmup(60 * 60);
-        await hub.setCooldown(60 * 60);
+        await hub.setHubDuration(600 * 60);
+        await hub.setHubWarmup(60 * 60);
+        await hub.setHubCooldown(60 * 60);
         // vault stays the same
         await hub.initUpdate(
           hubId,

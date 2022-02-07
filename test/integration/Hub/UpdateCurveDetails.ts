@@ -13,9 +13,9 @@ import { BigNumber, Signer } from "ethers";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
@@ -25,19 +25,16 @@ import {
   passHours,
   passSeconds,
   setAutomine,
-  setNextBlockTimestamp,
 } from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { start } from "repl";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 const setup = async () => {
   describe("HubFacet - update CurveDetails", () => {
-    let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let updatedBancorABDK: BancorABDK;
     let curveRegistry: CurveRegistry;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let hub: HubFacet;
     let token: ERC20;
     let dai: ERC20;
@@ -76,18 +73,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<HubFacet>("HubFacet");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
+
       ({
         token,
+        hub,
+        curve,
+        foundry,
         curveRegistry,
         singleAssetVault,
         tokenHolder,
@@ -100,13 +91,9 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
       dai = token;
-      const detail = await bancorABDK.getBancorDetails(firstHubId);
-      expect(detail.reserveWeight).to.equal(reserveWeight);
 
       // Pre-load owner and buyer w/ DAI
       await token
@@ -138,25 +125,25 @@ const setup = async () => {
       const balAfter = await meToken.balanceOf(account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
-      //setWarmup for 2 days
-      let warmup = await hub.warmup();
+      //setHubWarmup for 2 days
+      let warmup = await hub.hubWarmup();
       expect(warmup).to.equal(0);
-      await hub.setWarmup(172800);
+      await hub.setHubWarmup(172800);
 
-      warmup = await hub.warmup();
+      warmup = await hub.hubWarmup();
       expect(warmup).to.equal(172800);
-      let cooldown = await hub.cooldown();
+      let cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(0);
       //setCooldown for 1 day
-      await hub.setCooldown(86400);
-      cooldown = await hub.cooldown();
+      await hub.setHubCooldown(86400);
+      cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(86400);
 
-      let duration = await hub.duration();
+      let duration = await hub.hubDuration();
       expect(duration).to.equal(0);
       //setDuration for 1 week
-      await hub.setDuration(604800);
-      duration = await hub.duration();
+      await hub.setHubDuration(604800);
+      duration = await hub.hubDuration();
       expect(duration).to.equal(604800);
     });
 
@@ -169,7 +156,7 @@ const setup = async () => {
         await expect(
           hub.initUpdate(
             firstHubId,
-            bancorABDK.address,
+            curve.address,
             0,
             updatedEncodedCurveDetails
           )
@@ -194,9 +181,6 @@ const setup = async () => {
           0,
           updatedEncodedCurveDetails
         );
-
-        const detail = await updatedBancorABDK.getBancorDetails(firstHubId);
-        expect(detail.reserveWeight).to.equal(updatedReserveWeight);
 
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
@@ -623,12 +607,7 @@ const setup = async () => {
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
         await expect(
-          hub.initUpdate(
-            1,
-            bancorABDK.address,
-            1000,
-            ethers.utils.toUtf8Bytes("")
-          )
+          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
         ).to.be.revertedWith("Still cooling down");
       });
 
@@ -880,8 +859,6 @@ const setup = async () => {
             details.curve
           );
           expect(currentCurve.address).to.equal(updatedBancorABDK.address);
-          const detail = await updatedBancorABDK.getBancorDetails(firstHubId);
-          expect(detail.targetReserveWeight).to.equal(updatedReserveWeight);
 
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
@@ -1325,12 +1302,7 @@ const setup = async () => {
           // move forward to cooldown
           await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
           await expect(
-            hub.initUpdate(
-              1,
-              bancorABDK.address,
-              1000,
-              ethers.utils.toUtf8Bytes("")
-            )
+            hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
           ).to.be.revertedWith("Still cooling down");
         });
         it("burn() and mint() by owner should use the targetCurve", async () => {
