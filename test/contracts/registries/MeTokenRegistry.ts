@@ -601,7 +601,6 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
         expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
-        // TODO check next line
         expect(meTokenRegistryDetails.endCooldown).to.equal(
           expectedEndCooldownTime
         );
@@ -1101,7 +1100,7 @@ const setup = async () => {
           toETHNumber(
             meTokenDetails.balanceLocked.sub(newMeTokenDetails.balanceLocked)
           )
-        ).to.be.approximately(lockedAmount, 1e-13);
+        ).to.be.approximately(lockedAmount, 1e-15);
       });
     });
   });
