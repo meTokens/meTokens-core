@@ -28,7 +28,7 @@ interface ICurve {
 
     /// @notice Get curveDetails for a hub
     /// @return curveDetails (TODO: curve w/ more than 4 curveDetails)
-    function getDetails(uint256 _hubId)
+    function getCurveDetails(uint256 _hubId)
         external
         view
         returns (uint256[4] memory);

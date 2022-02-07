@@ -169,7 +169,7 @@ interface IMeTokenRegistry {
     /// @notice View to get details of a meToken
     /// @param meToken      address of meToken queried
     /// @return meToken_    details of meToken
-    function getDetails(address meToken)
+    function getMeTokenDetails(address meToken)
         external
         view
         returns (MeTokenInfo memory meToken_);

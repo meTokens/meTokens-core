@@ -111,7 +111,7 @@ interface IHub {
     /// @notice Get the details of a hub
     /// @param _id  unique hub identifier
     /// @return     details of hub
-    function getDetails(uint256 _id) external view returns (HubInfo memory);
+    function getHubDetails(uint256 _id) external view returns (HubInfo memory);
 
     /// @notice Counter of hubs registered
     /// @return uint256

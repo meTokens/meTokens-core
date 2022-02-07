@@ -255,7 +255,7 @@ const setup = async () => {
           .to.equal(0)
           .to.be.equal(calculatedRes)
           .to.be.equal(meTokensMinted);
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.owner).to.equal(account0.address);
@@ -295,7 +295,7 @@ const setup = async () => {
         tx.wait();
         const balAfter = await token.balanceOf(account1.address);
         expect(balBefore.sub(balAfter)).equal(assetsDeposited);
-        const hubDetail = await hub.getDetails(hubId);
+        const hubDetail = await hub.getHubDetails(hubId);
         const balVault = await token.balanceOf(hubDetail.vault);
         expect(balVault).equal(assetsDeposited);
         // assert token infos
@@ -335,7 +335,7 @@ const setup = async () => {
         expect(await meToken.totalSupply()).to.be.equal(
           estimateCalculateTokenReturnedFromZero
         );
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr1
         );
         expect(meTokenRegistryDetails.owner).to.equal(account1.address);
@@ -566,11 +566,11 @@ const setup = async () => {
       });
       it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
         // exiting hub is active
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         expect(
-          (await hub.getDetails(meTokenRegistryDetails.hubId)).active
+          (await hub.getHubDetails(meTokenRegistryDetails.hubId)).active
         ).to.equal(true);
         tx = await meTokenRegistry.initResubscribe(
           meToken,
@@ -587,7 +587,7 @@ const setup = async () => {
         const expectedEndCooldownTime =
           block.timestamp + warmup + duration + coolDown;
 
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
@@ -634,13 +634,13 @@ const setup = async () => {
       it("Successfully resets meToken details", async () => {
         block = await ethers.provider.getBlock("latest");
         expect(
-          (await meTokenRegistry.getDetails(meTokenAddr0)).startTime
+          (await meTokenRegistry.getMeTokenDetails(meTokenAddr0)).startTime
         ).to.be.gt(block.timestamp);
         tx = await meTokenRegistry.cancelResubscribe(meTokenAddr0);
         await tx.wait();
       });
       it("Successfully resets meToken details", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
@@ -656,16 +656,15 @@ const setup = async () => {
           .withArgs(meTokenAddr0);
       });
       it("should be able to resubscribe | migrate from inactive hub", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         await hub.deactivate(meTokenRegistryDetails.hubId);
         expect(
-          (await hub.getDetails(meTokenRegistryDetails.hubId)).active
+          (await hub.getHubDetails(meTokenRegistryDetails.hubId)).active
         ).to.equal(false);
-        const oldMeTokenRegistryDetails = await meTokenRegistry.getDetails(
-          meTokenAddr0
-        );
+        const oldMeTokenRegistryDetails =
+          await meTokenRegistry.getMeTokenDetails(meTokenAddr0);
         // forward time after start time
         await mineBlock(oldMeTokenRegistryDetails.endCooldown.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
@@ -686,7 +685,7 @@ const setup = async () => {
         await tx.wait();
       });
       it("Fails if resubscription already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         // forward time after start time
@@ -707,7 +706,7 @@ const setup = async () => {
         ).to.be.revertedWith("No targetHubId");
       });
       it("Fails if updating but cooldown not reached", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         // forward time before endTime
@@ -719,7 +718,7 @@ const setup = async () => {
         ).to.be.revertedWith("block.timestamp < endTime");
       });
       it("Successfully calls IMigration.finishMigration()", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         // forward time before endTime
@@ -731,7 +730,7 @@ const setup = async () => {
         await tx.wait();
       });
       it("Successfully updates meToken details", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
@@ -775,7 +774,7 @@ const setup = async () => {
       });
 
       it("Successfully call updateBalances() from migration", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr1
         );
         // forward time before endTime
@@ -797,7 +796,9 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .withArgs(meTokenAddr1);
 
-        const meTokenDetails = await meTokenRegistry.getDetails(meTokenAddr1);
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+          meTokenAddr1
+        );
         expect(meTokenDetails.owner).to.equal(account1.address);
         expect(meTokenDetails.hubId).to.equal(targetHubId);
         // TODO check args
@@ -917,7 +918,7 @@ const setup = async () => {
         expect(
           await meTokenRegistry.getOwnerMeToken(account2.address)
         ).to.equal(meTokenAddr0);
-        const details = await meTokenRegistry.getDetails(meTokenAddr0);
+        const details = await meTokenRegistry.getMeTokenDetails(meTokenAddr0);
         expect(details.owner).to.equal(account2.address);
         expect(
           await meTokenRegistry.getPendingOwner(account0.address)

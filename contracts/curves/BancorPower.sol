@@ -100,7 +100,7 @@ contract BancorPower is Power, ICurve {
         return _bancors[bancor];
     }
 
-    function getDetails(uint256 bancor)
+    function getCurveDetails(uint256 bancor)
         external
         view
         override

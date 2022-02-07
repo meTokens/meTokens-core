@@ -94,7 +94,7 @@ contract StepwiseCurve is ICurve {
         return _stepwises[stepwise];
     }
 
-    function getDetails(uint256 stepwise)
+    function getCurveDetails(uint256 stepwise)
         external
         view
         override

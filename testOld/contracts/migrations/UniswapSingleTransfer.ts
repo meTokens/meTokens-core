@@ -357,7 +357,7 @@ const setup = async () => {
         ).to.be.revertedWith("!meTokenRegistry");
       });
       it("Should not trigger startsMigration() if already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -412,7 +412,7 @@ const setup = async () => {
         expect(migrationDetails.fee).to.equal(fees);
         expect(migrationDetails.soonest).to.equal(earliestSwapTime);
 
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
@@ -424,7 +424,7 @@ const setup = async () => {
         ).to.be.revertedWith("timestamp < soonest");
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
-        let meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         migrationDetails = await migration.getDetails(meToken.address);
@@ -436,7 +436,7 @@ const setup = async () => {
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
-        meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await expect(tx)
@@ -516,7 +516,7 @@ const setup = async () => {
           ).to.equal(amount);
         });
         it("From soonest => endTime: assets transferred to/from migration vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 
@@ -560,7 +560,7 @@ const setup = async () => {
           expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
         });
         it("After endTime: assets transferred to/from target vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 

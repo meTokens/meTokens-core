@@ -264,7 +264,7 @@ const setup = async () => {
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -286,7 +286,7 @@ const setup = async () => {
         expect(balBefore).to.equal(balAfterBurn);
         const balDaiAfter = await token.balanceOf(account0.address);
 
-        const { active, updating } = await hub.getDetails(1);
+        const { active, updating } = await hub.getHubDetails(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
 
@@ -316,7 +316,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -338,7 +338,7 @@ const setup = async () => {
           startTime,
           endTime,
           targetRefundRatio,
-        } = await hub.getDetails(1);
+        } = await hub.getHubDetails(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
 
@@ -379,7 +379,7 @@ const setup = async () => {
           endCooldown,
           reconfigure,
           targetRefundRatio,
-        } = await hub.getDetails(1);
+        } = await hub.getHubDetails(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
@@ -420,7 +420,7 @@ const setup = async () => {
           endCooldown,
           reconfigure,
           targetRefundRatio,
-        } = await hub.getDetails(1);
+        } = await hub.getHubDetails(1);
         // update has been finished by calling mint function as we passed the end time
         expect(targetRefundRatio).to.equal(0);
         expect(refundRatio).to.equal(targetedRefundRatio);
@@ -432,7 +432,7 @@ const setup = async () => {
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -486,7 +486,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -516,7 +516,7 @@ const setup = async () => {
           endCooldown,
           reconfigure,
           targetRefundRatio,
-        } = await hub.getDetails(1);
+        } = await hub.getHubDetails(1);
 
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -559,7 +559,7 @@ const setup = async () => {
 
         let duration = await hub.duration();
         expect(duration).to.equal(0);
-        const detBefore = await hub.getDetails(hubId);
+        const detBefore = await hub.getHubDetails(hubId);
 
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
@@ -570,7 +570,7 @@ const setup = async () => {
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
-        const detAfterInit = await hub.getDetails(hubId);
+        const detAfterInit = await hub.getHubDetails(hubId);
 
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
@@ -578,7 +578,7 @@ const setup = async () => {
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
 
         await hub.finishUpdate(hubId);
-        const detAfterUpdate = await hub.getDetails(hubId);
+        const detAfterUpdate = await hub.getHubDetails(hubId);
 
         expect(detAfterUpdate.active).to.be.true;
         expect(detAfterUpdate.updating).to.be.false;
@@ -598,7 +598,7 @@ const setup = async () => {
           endCooldown,
           reconfigure,
           targetRefundRatio,
-        } = await hub.getDetails(1);
+        } = await hub.getHubDetails(1);
 
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -617,7 +617,7 @@ const setup = async () => {
           ethers.utils.toUtf8Bytes("")
         );
 
-        const detAfterInit = await hub.getDetails(1);
+        const detAfterInit = await hub.getHubDetails(1);
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
         expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio);
@@ -645,7 +645,7 @@ const setup = async () => {
 
         let duration = await hub.duration();
         expect(duration).to.equal(0);
-        const detBefore = await hub.getDetails(hubId);
+        const detBefore = await hub.getHubDetails(hubId);
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
         expect(detBefore.targetRefundRatio).to.equal(0);
@@ -655,7 +655,7 @@ const setup = async () => {
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
-        const detAfterInit = await hub.getDetails(hubId);
+        const detAfterInit = await hub.getHubDetails(hubId);
 
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
@@ -671,7 +671,7 @@ const setup = async () => {
           ethers.utils.toUtf8Bytes("")
         );
 
-        const detAfterUpdate = await hub.getDetails(hubId);
+        const detAfterUpdate = await hub.getHubDetails(hubId);
         expect(detAfterUpdate.active).to.be.true;
         expect(detAfterUpdate.updating).to.be.true;
         expect(detAfterUpdate.refundRatio).to.equal(targetedRefundRatio);
