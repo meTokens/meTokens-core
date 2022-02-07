@@ -163,7 +163,7 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
@@ -182,7 +182,7 @@ const setup = async () => {
           .burn(meToken.address, ownerMeTokenBefore, account0.address);
 
         const totalSupply = await meToken.totalSupply();
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -215,7 +215,7 @@ const setup = async () => {
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerDAIAfter = await dai.balanceOf(account1.address);
         const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -232,7 +232,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.startTime.toNumber() + 2);
@@ -277,7 +277,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -316,8 +316,8 @@ const setup = async () => {
           .burn(meToken.address, buyerMeTokenBefore, account1.address);
 
         const { startTime, endTime, targetHubId } =
-          await meTokenRegistry.getDetails(meToken.address);
-        const { refundRatio: targetRefundRatio } = await hub.getDetails(
+          await meTokenRegistry.getMeTokenDetails(meToken.address);
+        const { refundRatio: targetRefundRatio } = await hub.getHubDetails(
           targetHubId
         );
         const block = await ethers.provider.getBlock("latest");
@@ -336,7 +336,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const totalSupply = await meToken.totalSupply();
@@ -364,7 +364,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.endTime.toNumber() + 2);
@@ -410,7 +410,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -463,7 +463,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 

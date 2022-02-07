@@ -55,7 +55,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         uint256 _assetsDeposited
     ) external override {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        HubInfo memory hub_ = hub.getDetails(_hubId);
+        HubInfo memory hub_ = hub.getHubDetails(_hubId);
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
 
@@ -120,8 +120,8 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
         bytes memory _encodedMigrationArgs
     ) external override {
         MeTokenInfo storage meToken_ = _meTokens[_meToken];
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getDetails(_targetHubId);
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getHubDetails(_targetHubId);
 
         require(msg.sender == meToken_.owner, "!owner");
         require(
@@ -354,7 +354,7 @@ contract MeTokenRegistry is Ownable, IMeTokenRegistry {
     }
 
     /// @inheritdoc IMeTokenRegistry
-    function getDetails(address _meToken)
+    function getMeTokenDetails(address _meToken)
         external
         view
         override

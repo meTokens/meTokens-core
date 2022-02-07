@@ -239,7 +239,7 @@ const setup = async () => {
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
       it("Triggers startMigration()", async () => {
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(meTokenDetails.startTime.toNumber() + 2);
@@ -269,7 +269,7 @@ const setup = async () => {
         ).to.be.revertedWith("!meTokenRegistry");
       });
       it("Should not trigger startsMigration() if already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -312,14 +312,14 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        let meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
-        meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await expect(tx)
@@ -393,7 +393,7 @@ const setup = async () => {
           ).to.equal(amount);
         });
         it("From startTime => endTime: assets transferred to/from migration vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 
@@ -426,7 +426,7 @@ const setup = async () => {
           );
         });
         it("After endTime: assets transferred to/from target vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 

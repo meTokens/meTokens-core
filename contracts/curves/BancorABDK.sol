@@ -94,7 +94,7 @@ contract BancorABDK is ICurve {
         return _bancors[hubId];
     }
 
-    function getDetails(uint256 hubId)
+    function getCurveDetails(uint256 hubId)
         external
         view
         override

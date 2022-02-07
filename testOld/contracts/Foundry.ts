@@ -277,7 +277,9 @@ describe("Foundry.sol", () => {
 
     const balBefore = await dai.balanceOf(account0.address);
     const tokenBalBefore = await meToken.balanceOf(account2.address);
-    const meTokenDetails = await meTokenRegistry.getDetails(meToken.address);
+    const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+      meToken.address
+    );
     // gas savings
     const totalSupply = await meToken.totalSupply();
 
@@ -295,7 +297,7 @@ describe("Foundry.sol", () => {
     expect(balBefore.sub(balAfter)).equal(amount);
     expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
 
-    const hubDetail = await hub.getDetails(hubId);
+    const hubDetail = await hub.getHubDetails(hubId);
     const balVault = await dai.balanceOf(hubDetail.vault);
     expect(balVault).equal(amount);
 
@@ -372,7 +374,7 @@ describe("Foundry.sol", () => {
     });
     it("mint() Should work the same right after the migration ", async () => {
       // metoken should be registered
-      let hubDetail = await hub.getDetails(hubId);
+      let hubDetail = await hub.getHubDetails(hubId);
       expect(hubDetail.reconfigure).to.be.false;
       expect(hubDetail.updating).to.be.true;
 
@@ -392,7 +394,7 @@ describe("Foundry.sol", () => {
       expect(balTokenAfter).to.be.gt(balTokenBefore);
       expect(balBefore.sub(balAfter)).equal(amount);
 
-      hubDetail = await hub.getDetails(hubId);
+      hubDetail = await hub.getHubDetails(hubId);
       const balVaultAfter = await dai.balanceOf(hubDetail.vault);
       expect(balVaultAfter.sub(balVaultBefore)).equal(amount);
 
@@ -413,7 +415,7 @@ describe("Foundry.sol", () => {
       const balBefore = await meToken.balanceOf(account2.address);
       const balDaiBefore = await dai.balanceOf(account2.address);
 
-      const hubDetail = await hub.getDetails(hubId);
+      const hubDetail = await hub.getHubDetails(hubId);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);
       await foundry
         .connect(account2)
@@ -434,7 +436,7 @@ describe("Foundry.sol", () => {
       let block = await ethers.provider.getBlock("latest");
       await mineBlock(block.timestamp + 60 * 60);
 
-      const hubDetail = await hub.getDetails(hubId);
+      const hubDetail = await hub.getHubDetails(hubId);
       block = await ethers.provider.getBlock("latest");
       expect(hubDetail.startTime).to.be.lt(block.timestamp);
       const balVaultBefore = await dai.balanceOf(hubDetail.vault);

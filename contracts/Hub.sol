@@ -221,7 +221,7 @@ contract Hub is IHub, Ownable, Initializable {
     }
 
     /// @inheritdoc IHub
-    function getDetails(uint256 id)
+    function getHubDetails(uint256 id)
         external
         view
         override

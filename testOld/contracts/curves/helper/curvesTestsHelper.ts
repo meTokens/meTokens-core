@@ -83,7 +83,7 @@ export const curvesTestsHelper = async ({
     );
   });
   it("Passes w/ valid encodedDetails", async () => {
-    //register is done in the setup and there is no getDetails part of  the interface
+    //register is done in the setup and there is no getCurveDetails part of  the interface
   });
   it("should be able to calculate Mint Return from zero", async () => {
     const etherAmount = 20;
@@ -228,7 +228,7 @@ export const curvesTestsHelper = async ({
       [targetReserveWeight.toString()]
     );
     await curve.initReconfigure(hubId, encodedValueSet);
-    const detail = await curve.getDetails(hubId);
+    const detail = await curve.getCurveDetails(hubId);
 
     const targetBaseY = ethers.utils
       .parseEther(baseY.toString())
@@ -239,7 +239,7 @@ export const curvesTestsHelper = async ({
     expect(detail[2]).to.equal(targetBaseY);
   });
   it("viewTargetMeTokensMinted() from zero should work", async () => {
-    const detail = await curve.getDetails(hubId);
+    const detail = await curve.getCurveDetails(hubId);
     let amount = one.mul(2);
 
     let estimate = await curve.viewTargetMeTokensMinted(amount, hubId, 0, 0);

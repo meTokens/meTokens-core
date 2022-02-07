@@ -98,7 +98,7 @@ describe("Generic Curve", () => {
     //     .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
-  describe("getDetails()", () => {
+  describe("getCurveDetails()", () => {
     it("Returns correct struct type", async () => {});
     it("Returns correct registered details", async () => {});
   });
@@ -362,7 +362,7 @@ describe("Generic Curve", () => {
   //     [targetReserveWeight.toString()]
   //   );
   //   await _curve.initReconfigure(hubId, encodedValueSet);
-  //   const detail = await _curve.getDetails(hubId);
+  //   const detail = await _curve.getCurveDetails(hubId);
   //   const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
   //   expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
   //   expect(detail.targetBaseY).to.equal(targetBaseY);

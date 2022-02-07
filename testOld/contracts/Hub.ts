@@ -102,7 +102,7 @@ const setup = async () => {
         expect(await hub.warmup()).to.be.equal(0);
         expect(await hub.duration()).to.be.equal(0);
         expect(await hub.cooldown()).to.be.equal(0);
-        const details = await hub.getDetails(0);
+        const details = await hub.getHubDetails(0);
         expect(details.active).to.be.equal(false);
         expect(details.owner).to.be.equal(ethers.constants.AddressZero);
         expect(details.vault).to.be.equal(ethers.constants.AddressZero);
@@ -220,7 +220,7 @@ const setup = async () => {
             encodedVaultDAIArgs
           );
         expect(await hub.count()).to.be.equal(hubId);
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -410,7 +410,7 @@ const setup = async () => {
             expectedEndTime,
             expectedEndCooldownTime
           );
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -434,7 +434,7 @@ const setup = async () => {
           refundRatio2,
           encodedCurveDetails
         );
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
 
         await expect(txBeforeStartTime).to.be.revertedWith("already updating");
         let block = await ethers.provider.getBlock("latest");
@@ -491,7 +491,7 @@ const setup = async () => {
       });
 
       it("should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
-        let details = await hub.getDetails(hubId);
+        let details = await hub.getHubDetails(hubId);
 
         // fast fwd to endCooldown - 2
         await mineBlock(details.endCooldown.toNumber());
@@ -527,7 +527,7 @@ const setup = async () => {
             expectedEndCooldownTime
           );
 
-        details = await hub.getDetails(hubId);
+        details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -555,7 +555,7 @@ const setup = async () => {
 
         await expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
 
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -606,7 +606,7 @@ const setup = async () => {
             expectedEndCooldownTime
           );
 
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -635,7 +635,7 @@ const setup = async () => {
     describe("finishUpdate()", () => {
       it("should revert before endTime, during warmup and duration", async () => {
         // increase time before endTime
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
 
         await mineBlock(details.endTime.toNumber() - 2);
         const block = await ethers.provider.getBlock("latest");
@@ -649,7 +649,7 @@ const setup = async () => {
 
       it("should correctly set HubDetails when called during cooldown", async () => {
         // increase time after endTime
-        const oldDetails = await hub.getDetails(hubId);
+        const oldDetails = await hub.getHubDetails(hubId);
         await mineBlock(oldDetails.endTime.toNumber() + 2);
         const block = await ethers.provider.getBlock("latest");
         expect(oldDetails.endTime).to.be.lt(block.timestamp);
@@ -661,7 +661,7 @@ const setup = async () => {
           .to.emit(hub, "FinishUpdate")
           .withArgs(hubId);
 
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.active).to.be.equal(true);
         expect(newDetails.owner).to.be.equal(account0.address);
         expect(newDetails.vault).to.be.equal(singleAssetVault.address);
@@ -682,7 +682,7 @@ const setup = async () => {
       describe("finishUpdate() from mint | burn", () => {
         let toggle = false; // for generating different weight each time
         beforeEach(async () => {
-          const oldDetails = await hub.getDetails(hubId);
+          const oldDetails = await hub.getHubDetails(hubId);
           await mineBlock(oldDetails.endCooldown.toNumber() + 10);
 
           const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
@@ -699,7 +699,7 @@ const setup = async () => {
           await tx.wait();
 
           // increase time after endTime
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endTime.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endTime).to.be.lt(block.timestamp);
@@ -730,7 +730,7 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when mint() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endCooldown).to.be.lt(block.timestamp);
@@ -747,7 +747,7 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when burn() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endCooldown).to.be.lt(block.timestamp);
@@ -786,7 +786,7 @@ const setup = async () => {
           .to.emit(hub, "TransferHubOwnership")
           .withArgs(hubId, account1.address);
 
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.owner).to.be.equal(account1.address);
       });
     });

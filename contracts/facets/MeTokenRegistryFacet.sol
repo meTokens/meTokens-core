@@ -308,7 +308,7 @@ contract MeTokenRegistryFacet is Modifiers {
         return s.pendingMeTokenOwners[_oldOwner];
     }
 
-    function getDetails(address _meToken)
+    function getMeTokenDetails(address _meToken)
         external
         view
         returns (MeTokenInfo memory)

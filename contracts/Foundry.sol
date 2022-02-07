@@ -64,20 +64,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _assetsDeposited,
         address _recipient
     ) external override {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
 
         // Handling changes
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (meToken_.targetHubId != 0) {
             if (block.timestamp > meToken_.endTime) {
-                hub_ = hub.getDetails(meToken_.targetHubId);
+                hub_ = hub.getHubDetails(meToken_.targetHubId);
                 meToken_ = meTokenRegistry.finishResubscribe(_meToken);
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
                 IMigration(meToken_.migration).poke(_meToken);
-                meToken_ = meTokenRegistry.getDetails(_meToken);
+                meToken_ = meTokenRegistry.getMeTokenDetails(_meToken);
             }
         }
 
@@ -97,7 +99,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.migration != address(0) &&
             block.timestamp > meToken_.startTime
         ) {
-            HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+            HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
             // Use meToken address to get the asset address from the migration vault
             vault = IVault(meToken_.migration);
             asset = targetHub_.asset;
@@ -160,15 +162,17 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         address _recipient
     ) external override {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
 
         if (hub_.updating && block.timestamp > hub_.endTime) {
             hub_ = hub.finishUpdate(meToken_.hubId);
         } else if (
             meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
         ) {
-            hub_ = hub.getDetails(meToken_.targetHubId);
+            hub_ = hub.getHubDetails(meToken_.targetHubId);
             meToken_ = meTokenRegistry.finishResubscribe(_meToken);
         }
         // Calculate how many tokens are returned
@@ -224,7 +228,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.migration != address(0) &&
             block.timestamp > meToken_.startTime
         ) {
-            HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+            HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
             vault = IVault(meToken_.migration);
             asset = targetHub_.asset;
         }
@@ -246,8 +250,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _meToken,
         uint256 _assetsDeposited
     ) private view returns (uint256 meTokensMinted) {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
         // gas savings
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
         // Calculate return assuming update/resubscribe is not happening
@@ -290,7 +296,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.endTime
             );
         } else if (meToken_.targetHubId != 0) {
-            HubInfo memory targetHub = hub.getDetails(meToken_.targetHubId);
+            HubInfo memory targetHub = hub.getHubDetails(meToken_.targetHubId);
             uint256 targetMeTokensMinted = ICurve(targetHub.curve)
                 .viewMeTokensMinted(
                     _assetsDeposited,
@@ -311,8 +317,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _meToken,
         uint256 _meTokensBurned
     ) private view returns (uint256 rawAssetsReturned) {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
 
         uint256 totalSupply_ = IERC20(_meToken).totalSupply(); // gas savings
 
@@ -357,7 +365,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                 hub_.endTime
             );
         } else if (meToken_.targetHubId != 0) {
-            HubInfo memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+            HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
 
             // Calculate return assuming update is not happening
             targetAssetsReturned = ICurve(targetHub_.curve).viewAssetsReturned(
@@ -382,8 +390,10 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         uint256 rawAssetsReturned
     ) private view returns (uint256 actualAssetsReturned) {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        HubInfo memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
@@ -414,7 +424,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         MAX_REFUND_RATIO;
                 } else {
                     // meToken is resubscribing
-                    HubInfo memory targetHub_ = hub.getDetails(
+                    HubInfo memory targetHub_ = hub.getHubDetails(
                         meToken_.targetHubId
                     );
                     actualAssetsReturned =
