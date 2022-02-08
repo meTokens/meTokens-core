@@ -5,8 +5,10 @@ import { MeToken } from "../../../artifacts/types/MeToken";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import {
+  calculateCollateralReturned,
   calculateTokenReturnedFromZero,
   deploy,
+  fromETHNumber,
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
@@ -86,6 +88,7 @@ const setup = async () => {
     let diamond: Diamond;
     let token: ERC20;
     let fee: FeesFacet;
+    let weth: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -111,6 +114,10 @@ const setup = async () => {
     const duration = 4 * 60 * 24 * 24; // 4 days
     const coolDown = 5 * 60 * 24 * 24; // 5 days
     const fees = 3000;
+    const tokenDepositedInETH = 100;
+    const tokenDeposited = ethers.utils.parseEther(
+      tokenDepositedInETH.toString()
+    );
     let block: any;
     before(async () => {
       ({ DAI, WETH, USDT } = await getNamedAccounts());
@@ -189,6 +196,7 @@ const setup = async () => {
         migrationRegistry.address
       );
       await migration.deployed();
+      weth = await getContractAt<ERC20>("ERC20", WETH);
     });
 
     describe("subscribe()", () => {
@@ -592,7 +600,6 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
         expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
-        // TODO check next line
         expect(meTokenRegistryDetails.endCooldown).to.equal(
           expectedEndCooldownTime
         );
@@ -944,6 +951,156 @@ const setup = async () => {
       });
       it("Returns true for a meToken issuer", async () => {
         expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
+      });
+    });
+    describe("balancePool", () => {
+      it("Fails updateBalancePooled() if not foundry", async () => {
+        await expect(
+          meTokenRegistry.updateBalancePooled(
+            true,
+            meTokenAddr1,
+            account2.address
+          )
+        ).to.revertedWith("!foundry");
+      });
+      it("updateBalancePooled()", async () => {
+        await weth
+          .connect(tokenHolder)
+          .transfer(account0.address, tokenDeposited);
+        await weth.approve(
+          singleAssetVault.address,
+          ethers.constants.MaxUint256
+        );
+        const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const tx = await foundry.mint(
+          meTokenAddr1,
+          tokenDeposited,
+          account0.address
+        );
+        await tx.wait();
+
+        const amountDepositedAfterFee = tokenDeposited.sub(
+          tokenDeposited.mul(await fee.mintFee()).div(PRECISION)
+        );
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalancePooled")
+          .withArgs(true, meTokenAddr1, amountDepositedAfterFee);
+        const newMeTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(
+          newMeTokenDetails.balancePooled.sub(meTokenDetails.balancePooled)
+        ).to.be.equal(amountDepositedAfterFee);
+      });
+
+      it("Fails updateBalanceLocked() if not foundry", async () => {
+        await expect(
+          meTokenRegistry.updateBalanceLocked(
+            true,
+            meTokenAddr1,
+            account2.address
+          )
+        ).to.revertedWith("!foundry");
+      });
+      it("updateBalanceLocked()", async () => {
+        const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const buyerMeToken = await meToken.balanceOf(account0.address);
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(buyerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight / MAX_WEIGHT
+        );
+        const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
+        const lockedAmount = fromETHNumber(rawAssetsReturned - assetsReturned);
+
+        const tx = await foundry.burn(
+          meTokenAddr1,
+          buyerMeToken,
+          account0.address
+        );
+        await tx.wait();
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalancePooled")
+          // TODO fails in next line, loosing precision by 1 wei.
+          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
+          .to.emit(meTokenRegistry, "UpdateBalanceLocked")
+          .withArgs(true, meTokenAddr1, lockedAmount);
+        const newMeTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(
+          toETHNumber(
+            meTokenDetails.balancePooled.sub(newMeTokenDetails.balancePooled)
+          )
+        ).to.be.approximately(rawAssetsReturned, 1e-15);
+        expect(
+          newMeTokenDetails.balanceLocked.sub(meTokenDetails.balanceLocked)
+        ).to.be.equal(lockedAmount);
+      });
+      it("updateBalanceLocked() when owner burns", async () => {
+        await weth
+          .connect(tokenHolder)
+          .transfer(account1.address, tokenDeposited);
+        await weth
+          .connect(account1)
+          .approve(singleAssetVault.address, ethers.constants.MaxUint256);
+        await foundry
+          .connect(account1)
+          .mint(meTokenAddr1, tokenDeposited, account1.address);
+
+        const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const ownerMeToken = await meToken.balanceOf(account1.address);
+        const meTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight / MAX_WEIGHT
+        );
+        const assetsReturned =
+          rawAssetsReturned +
+          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+            toETHNumber(meTokenDetails.balanceLocked);
+        const lockedAmount = assetsReturned - rawAssetsReturned;
+
+        const tx = await foundry
+          .connect(account1)
+          .burn(meTokenAddr1, ownerMeToken, account1.address);
+        await tx.wait();
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalancePooled")
+          // TODO fails in next line, loosing precision
+          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
+          .to.emit(meTokenRegistry, "UpdateBalanceLocked");
+        // TODO fails in next line, loosing precision
+        // .withArgs(false, meTokenAddr1, fromETHNumber(lockedAmount));
+        const newMeTokenDetails = await meTokenRegistry.getDetails(
+          meToken.address
+        );
+        expect(
+          toETHNumber(
+            meTokenDetails.balancePooled.sub(newMeTokenDetails.balancePooled)
+          )
+        ).to.be.approximately(rawAssetsReturned, 1e-15);
+        expect(
+          toETHNumber(
+            meTokenDetails.balanceLocked.sub(newMeTokenDetails.balanceLocked)
+          )
+        ).to.be.approximately(lockedAmount, 1e-15);
       });
     });
   });
