@@ -1,11 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Fees } from "../../artifacts/types/Fees";
+import { FeesFacet } from "../../artifacts/types/FeesFacet";
 import { deploy } from "../utils/helpers";
 
-describe("Fees.sol", () => {
-  let fees: Fees;
+describe("FeesFacet.sol", () => {
+  let fees: FeesFacet;
 
   const mintFee = 10000000;
   const burnBuyerFee = 10000000;
@@ -18,18 +18,18 @@ describe("Fees.sol", () => {
   let account1: SignerWithAddress;
   before(async () => {
     [account0, account1] = await ethers.getSigners();
-    fees = await deploy<Fees>("Fees");
+    fees = await deploy<FeesFacet>("FeesFacet");
 
     await fees.deployed();
 
-    await fees.initialize(
-      mintFee,
-      burnBuyerFee,
-      burnOwnerFee,
-      transferFee,
-      interestFee,
-      yieldFee
-    );
+    // await fees.initialize(
+    //   mintFee,
+    //   burnBuyerFee,
+    //   burnOwnerFee,
+    //   transferFee,
+    //   interestFee,
+    //   yieldFee
+    // );
   });
 
   describe("setMintFee()", () => {

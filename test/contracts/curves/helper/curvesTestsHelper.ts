@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { Hub } from "../../../../artifacts/types/Hub";
+import { HubFacet } from "../../../../artifacts/types/HubFacet";
 import { ICurve } from "../../../../artifacts/types/ICurve";
 import { toETHNumber } from "../../../utils/helpers";
 
@@ -27,7 +27,7 @@ export const curvesTestsHelper = async ({
   newCurve: ICurve;
   encodedReconfigureValueSet: string;
   hubId: number;
-  hub: Hub;
+  hub: HubFacet;
   precision: number;
   calculateTargetTokenReturned: (
     collateralAmount: number,

@@ -217,6 +217,24 @@ contract FoundryFacet is IFoundry, Modifiers {
         );
     }
 
+    function donate(address _meToken, uint256 _assetsDeposited)
+        external
+        override
+    {
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
+        require(meToken_.migration == address(0), "meToken resubscribing");
+
+        IVault vault = IVault(hub_.vault);
+        address asset = hub_.asset;
+
+        vault.handleDeposit(msg.sender, asset, _assetsDeposited, 0);
+
+        LibMeToken.updateBalanceLocked(true, _meToken, _assetsDeposited);
+
+        emit Donate(_meToken, asset, msg.sender, _assetsDeposited);
+    }
+
     // NOTE: for now this does not include fees
     function _calculateMeTokensMinted(
         address _meToken,

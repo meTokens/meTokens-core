@@ -2,15 +2,12 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
 import { BigNumber, Signer } from "ethers";
-import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { expect } from "chai";
-import { hubSetup } from "../../utils/hubSetup";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
@@ -25,7 +22,7 @@ describe("Generic Curve", () => {
   let account2: SignerWithAddress;
   let _curve: BancorABDK;
   let meTokenRegistry: MeTokenRegistryFacet;
-  let foundry: Foundry;
+  let foundry: FoundryFacet;
   let token: ERC20;
   let meToken: MeToken;
   let tokenHolder: Signer;
@@ -60,7 +57,7 @@ describe("Generic Curve", () => {
     );
 
     const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    // foundry = await deploy<Foundry>("Foundry", {
+    // foundry = await deploy<FoundryFacet>("FoundryFacet", {
     //   WeightedAverage: weightedAverage.address,
     // });
     // hub = await deploy<Hub>("Hub");

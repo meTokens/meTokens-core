@@ -2,6 +2,7 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../artifacts/types/HubFacet";
+import { SameAssetTransferMigration } from "../../artifacts/types/SameAssetTransferMigration";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
@@ -32,7 +33,6 @@ const setup = async () => {
     let dai: ERC20;
     let diamond: Diamond;
     let WETH: string;
-    let dai: ERC20;
     let weth: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
@@ -53,6 +53,7 @@ const setup = async () => {
     const hubId = 1;
     const name = "Carl meToken";
     const symbol = "CARL";
+    const refundRatio = 240000;
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount = ethers.utils.parseEther("10");
@@ -1081,13 +1082,13 @@ const setup = async () => {
         );
       });
       after(async () => {
-        const oldDetails = await hub.getDetails(hubId);
+        const oldDetails = await hub.getHubDetails(hubId);
         await mineBlock(oldDetails.endTime.toNumber() + 2);
         const block = await ethers.provider.getBlock("latest");
         expect(oldDetails.endTime).to.be.lt(block.timestamp);
 
         await hub.finishUpdate(hubId);
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.updating).to.be.equal(false);
       });
     });
@@ -1098,7 +1099,7 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          _curve.address,
+          curve.address,
           refundRatio,
           encodedCurveDetails,
           encodedVaultArgs
@@ -1130,7 +1131,7 @@ const setup = async () => {
             encodedMigrationArgs
           );
         expect(
-          (await meTokenRegistry.getDetails(meToken.address)).migration
+          (await meTokenRegistry.getMeTokenDetails(meToken.address)).migration
         ).to.equal(migration.address);
       });
       it("should revert when meToken is resubscribing", async () => {
@@ -1139,7 +1140,7 @@ const setup = async () => {
         );
       });
       it("should be able to donate", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
@@ -1149,7 +1150,7 @@ const setup = async () => {
 
         const oldVaultBalance = await dai.balanceOf(singleAssetVault.address);
         const oldAccountBalance = await dai.balanceOf(account0.address);
-        const oldMeTokenDetails = await meTokenRegistry.getDetails(
+        const oldMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const oldAccruedFee = await singleAssetVault.accruedFees(dai.address);
@@ -1170,7 +1171,7 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
-        const newMeTokenDetails = await meTokenRegistry.getDetails(
+        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const newVaultBalance = await dai.balanceOf(singleAssetVault.address);
@@ -1198,7 +1199,7 @@ const setup = async () => {
           account0.address,
           WETH,
           singleAssetVault.address,
-          _curve.address,
+          curve.address,
           refundRatio,
           encodedCurveDetails,
           encodedVaultArgs
@@ -1235,7 +1236,7 @@ const setup = async () => {
             encodedMigrationArgs
           );
         expect(
-          (await meTokenRegistry.getDetails(meToken.address)).migration
+          (await meTokenRegistry.getMeTokenDetails(meToken.address)).migration
         ).to.equal(migration.address);
         const migrationDetails = await migration.getDetails(meToken.address);
         await mineBlock(migrationDetails.soonest.toNumber() + 2);
@@ -1258,7 +1259,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const oldAccountBalance = await weth.balanceOf(account0.address);
-        const oldMeTokenDetails = await meTokenRegistry.getDetails(
+        const oldMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const oldAccruedFee = await singleAssetVault.accruedFees(weth.address);
@@ -1279,7 +1280,7 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
-        const newMeTokenDetails = await meTokenRegistry.getDetails(
+        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const newDAIVaultBalance = await dai.balanceOf(

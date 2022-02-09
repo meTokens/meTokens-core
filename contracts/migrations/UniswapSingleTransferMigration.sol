@@ -54,9 +54,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
-        Details.Hub memory targetHub_ = hub.getDetails(meToken_.targetHubId);
+        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
+            _meToken
+        );
+        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
 
         require(hub_.asset != targetHub_.asset, "same asset");
 

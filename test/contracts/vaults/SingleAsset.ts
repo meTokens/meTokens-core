@@ -3,9 +3,8 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { deploy } from "../../utils/helpers";
-import { Foundry } from "../../../artifacts/types/Foundry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -28,7 +27,7 @@ describe("SingleAsset.sol", () => {
       "MigrationRegistry"
     );
 
-    const foundry = await deploy<Foundry>("Foundry", {
+    const foundry = await deploy<FoundryFacet>("FoundryFacet", {
       WeightedAverage: weightedAverage.address,
     });
     const hub = await deploy<HubFacet>("HubFacet");
