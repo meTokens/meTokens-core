@@ -95,12 +95,6 @@ const setup = async () => {
       );
 
       // Register first and second hub
-      stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
-        "StepwiseCurveABDK",
-        undefined,
-        hub.address
-      );
-
       ({
         token,
         tokenHolder,
@@ -119,6 +113,13 @@ const setup = async () => {
         refundRatio,
         "bancorABDK"
       ));
+
+      stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
+        "StepwiseCurveABDK",
+        undefined,
+        hub.address
+      );
+
       await curveRegistry.approve(stepwiseCurveABDK.address);
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
