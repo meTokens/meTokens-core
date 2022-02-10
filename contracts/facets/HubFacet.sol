@@ -86,8 +86,10 @@ contract HubFacet is Modifiers {
 
     function deactivate(uint256 _id) external {
         HubInfo storage hub_ = s.hubs[_id];
+
+        address sender = LibMeta.msgSender();
         require(
-            msg.sender == hub_.owner || msg.sender == s.deactivateController,
+            sender == hub_.owner || sender == s.deactivateController,
             "!owner && !deactivateController"
         );
         require(hub_.active, "!active");
@@ -102,7 +104,9 @@ contract HubFacet is Modifiers {
         bytes memory _encodedCurveDetails
     ) external {
         HubInfo storage hub_ = s.hubs[_id];
-        require(msg.sender == hub_.owner, "!owner");
+
+        address sender = LibMeta.msgSender();
+        require(sender == hub_.owner, "!owner");
         if (hub_.updating && block.timestamp > hub_.endTime) {
             LibHub.finishUpdate(_id);
         }
@@ -171,7 +175,8 @@ contract HubFacet is Modifiers {
 
     function cancelUpdate(uint256 _id) external {
         HubInfo storage hub_ = s.hubs[_id];
-        require(msg.sender == hub_.owner, "!owner");
+        address sender = LibMeta.msgSender();
+        require(sender == hub_.owner, "!owner");
         require(hub_.updating, "!updating");
         require(block.timestamp < hub_.startTime, "Update has started");
 
@@ -188,7 +193,8 @@ contract HubFacet is Modifiers {
 
     function transferHubOwnership(uint256 _id, address _newOwner) external {
         HubInfo storage hub_ = s.hubs[_id];
-        require(msg.sender == hub_.owner, "!owner");
+        address sender = LibMeta.msgSender();
+        require(sender == hub_.owner, "!owner");
         require(_newOwner != hub_.owner, "Same owner");
         hub_.owner = _newOwner;
 
