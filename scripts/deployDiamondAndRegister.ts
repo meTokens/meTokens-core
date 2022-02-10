@@ -38,7 +38,6 @@ async function main() {
   const { DAI } = await getNamedAccounts();
 
   const tokenAddr = DAI;
-  const address = await deployer.getAddress();
   if (!deployer.provider) {
     process.exit(1);
   }
@@ -134,21 +133,21 @@ async function main() {
   const hubFacet = await deploy<HubFacet>("HubFacet");
   console.log("HubFacet deployed at:", hubFacet.address);
   contracts.push({
-    name: "contracts/facts/HubFacet.sol:HubFacet",
+    name: "contracts/facets/HubFacet.sol:HubFacet",
     address: hubFacet.address,
   });
 
   const foundryFacet = await deploy<FoundryFacet>("FoundryFacet");
   console.log("FoundryFacet deployed at:", foundryFacet.address);
   contracts.push({
-    name: "contracts/facts/FoundryFacet.sol:FoundryFacet",
+    name: "contracts/facets/FoundryFacet.sol:FoundryFacet",
     address: foundryFacet.address,
   });
 
   const feesFacet = await deploy<FeesFacet>("FeesFacet");
   console.log("FeesFacet deployed at:", feesFacet.address);
   contracts.push({
-    name: "contracts/facts/FeesFacet.sol:FeesFacet",
+    name: "contracts/facets/FeesFacet.sol:FeesFacet",
     address: feesFacet.address,
   });
 
@@ -160,7 +159,7 @@ async function main() {
     meTokenRegistryFacet.address
   );
   contracts.push({
-    name: "contracts/facts/MeeTokenRegistryFacet.sol:MeeTokenRegistryFacet",
+    name: "contracts/facets/MeTokenRegistryFacet.sol:MeTokenRegistryFacet",
     address: meTokenRegistryFacet.address,
   });
 
@@ -169,14 +168,14 @@ async function main() {
   );
   console.log("DiamondLoupeFacet deployed at:", diamondLoupeFacet.address);
   contracts.push({
-    name: "contracts/facts/DiamondLoupeFacet.sol:DiamondLoupeFacet",
+    name: "contracts/facets/DiamondLoupeFacet.sol:DiamondLoupeFacet",
     address: diamondLoupeFacet.address,
   });
 
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
   console.log("OwnershipFacet deployed at:", ownershipFacet.address);
   contracts.push({
-    name: "contracts/facts/OwnershipFacet.sol:OwnershipFacet",
+    name: "contracts/facets/OwnershipFacet.sol:OwnershipFacet",
     address: ownershipFacet.address,
   });
 
