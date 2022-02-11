@@ -205,13 +205,14 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
+        // BlockTime < startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.gt(block.timestamp);
       });
-      it("mint(): meTokens received based on initial Curve details", async () => {
+      it("mint() [buyer]: meTokens received based on initial Curve details", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
@@ -342,6 +343,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
+        // IncreaseBlockTime > startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -350,7 +352,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.lt(block.timestamp);
       });
-      it("mint(): meTokens received based on weighted average curve details", async () => {
+      it("mint() [buyer]: meTokens received based on weighted average curve details", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
@@ -547,6 +549,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
+        // IncreaseBlockTime > endTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -555,7 +558,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.endTime).to.be.lt(block.timestamp);
       });
-      it("burn(): finish migration must be called", async () => {
+      it("burn() [buyer]: finish migration must be called", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();

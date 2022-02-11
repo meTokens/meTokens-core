@@ -220,13 +220,14 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
+        // BlockTime < startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.gt(block.timestamp);
       });
-      it("mint(): meTokens received based on initial Curve", async () => {
+      it("mint() [buyer]: meTokens received based on initial Curve", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
@@ -252,7 +253,7 @@ const setup = async () => {
         expect(meTokenTotalSupplyAfter).to.be.equal(ownerMeTokenAfter);
         expect(vaultDAIAfter.sub(vaultDAIBefore)).to.equal(tokenDeposited);
       });
-      it("burn() [buyer]: assets received based on initial Curve", async () => {
+      it("burn() [buyer]: assets received based on initial Curve assets received apply initial refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -307,7 +308,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on initial Curve", async () => {
+      it("burn() [owner]: assets received based on initial Curve and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -358,6 +359,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
+        // IncreaseBlockTime > startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -366,7 +368,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.lt(block.timestamp);
       });
-      it("mint(): meTokens received based on weighted average of Curves", async () => {
+      it("mint() [buyer]: meTokens received based on weighted average of Curves", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
@@ -421,7 +423,7 @@ const setup = async () => {
           tokenDeposited
         ); // new asset is WETH
       });
-      it("burn() [buyer]: assets received based on weighted average of Curves", async () => {
+      it("burn() [buyer]: assets received based on weighted average of Curves and and assets received apply weighted average refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -505,7 +507,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on weighted average of Curves", async () => {
+      it("burn() [owner]: assets received based on weighted average of Curves and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -576,6 +578,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
+        // IncreaseBlockTime > endTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -584,7 +587,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.endTime).to.be.lt(block.timestamp);
       });
-      it("mint(): assets received based on target Curve", async () => {
+      it("mint() [buyer]: assets received based on target Curve", async () => {
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
@@ -618,7 +621,7 @@ const setup = async () => {
         expect(vaultWETHAfter.sub(vaultWETHBefore)).to.equal(tokenDeposited);
         expect(migrationWETHAfter.sub(migrationWETHBefore)).to.equal(0);
       });
-      it("burn() [buyer]: assets received based on target Curve", async () => {
+      it("burn() [buyer]: assets received based on target Curve and assets received apply target refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -675,7 +678,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on target Curve", async () => {
+      it("burn() [owner]: assets received based on target Curve and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
