@@ -49,25 +49,6 @@ async function main() {
   console.log("Deploying on network", network.name);
   console.log("Deployer address:", deployerAddr);
 
-  const diamondCutFacet = await deploy<DiamondCutFacet>("DiamondCutFacet");
-  console.log("\nDiamondCutFacet deployed at:", diamondCutFacet.address);
-  contracts.push({
-    name: "contracts/facets/DiamondCutFacet.sol:DiamondCutFacet",
-    address: diamondCutFacet.address,
-  });
-
-  const diamond = await deploy<Diamond>(
-    "Diamond",
-    undefined,
-    deployer.address,
-    diamondCutFacet.address
-  );
-  console.log("Diamond deployed at:", diamond.address);
-  contracts.push({
-    name: "contracts/Diamond.sol:Diamond",
-    address: diamond.address,
-  });
-
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   console.log("curveRegistry deployed at:", curveRegistry.address);
   contracts.push({
@@ -91,6 +72,21 @@ async function main() {
     address: vaultRegistry.address,
   });
 
+  const diamondCutFacet = await deploy<DiamondCutFacet>("DiamondCutFacet");
+  console.log("\nDiamondCutFacet deployed at:", diamondCutFacet.address);
+  contracts.push({
+    name: "contracts/facets/DiamondCutFacet.sol:DiamondCutFacet",
+    address: diamondCutFacet.address,
+  });
+
+  const diamond = await deploy<Diamond>(
+    "Diamond",
+    undefined,
+    deployerAddr,
+    diamondCutFacet.address
+  );
+  console.log("Diamond deployed at:", diamond.address);
+
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
@@ -108,17 +104,6 @@ async function main() {
     diamond.address
   );
   console.log("curve deployed at:", curve.address);
-  contracts.push({
-    name: "contracts/curves/BancorABDK.sol:BancorABDK",
-    address: curve.address,
-  });
-
-  const diamondInit = await deploy<DiamondInit>("DiamondInit");
-  console.log("DiamondInit deployed at:", diamondInit.address);
-  contracts.push({
-    name: "contracts/DiamondInit.sol:DiamondInit",
-    address: diamondInit.address,
-  });
 
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   console.log("MeTokenFactory deployed at:", meTokenFactory.address);
@@ -218,6 +203,13 @@ async function main() {
   ];
 
   // call to init function
+  const diamondInit = await deploy<DiamondInit>("DiamondInit");
+  console.log("DiamondInit deployed at:", diamondInit.address);
+  contracts.push({
+    name: "contracts/DiamondInit.sol:DiamondInit",
+    address: diamondInit.address,
+  });
+
   let functionCall = diamondInit.interface.encodeFunctionData("init", args);
   tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
   console.log("Diamond cut tx: ", tx.hash);
@@ -240,7 +232,10 @@ async function main() {
   );
 
   // Set facets to their proxies
-  const hub = await ethers.getContractAt("HubFacet", diamond.address);
+  const hub = (await ethers.getContractAt(
+    "HubFacet",
+    diamond.address
+  )) as HubFacet;
 
   // register first hub
   tx = await hub.register(
