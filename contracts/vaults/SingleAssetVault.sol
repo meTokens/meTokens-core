@@ -42,7 +42,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     function isValid(
         address _asset,
         bytes memory /*_encodedArgs */
-    ) public pure override returns (bool) {
+    ) external pure override returns (bool) {
         if (_asset == address(0)) {
             return false;
         }

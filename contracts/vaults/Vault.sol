@@ -83,7 +83,7 @@ abstract contract Vault is Ownable, IVault {
     }
 
     function isValid(address _meToken, bytes memory _encodedArgs)
-        public
+        external
         virtual
         override
         returns (bool);

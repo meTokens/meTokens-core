@@ -204,20 +204,20 @@ contract StepwiseCurveABDK is ICurve {
             .toUInt()
             .fromUInt();
         bytes16 stepBalance = (steps.mul(steps).add(steps))
-            .div(_two)
             .mul(stepX_)
-            .mul(stepY_);
+            .mul(stepY_)
+            .div(_two);
 
         bytes16 supplyAfterMint;
         if (stepBalance.cmp(totalBalancePooled_) > 0) {
             bytes16 intres = (stepBalance.sub(totalBalancePooled_))
-                .div(stepY_.mul(steps))
-                .mul(_precision);
+                .mul(_precision)
+                .div(stepY_.mul(steps));
             supplyAfterMint = stepX_.mul(steps).sub(intres);
         } else {
             supplyAfterMint = stepX_.mul(steps).add(
                 (totalBalancePooled_.sub(stepBalance)).div(
-                    stepY_.div(_precision).mul(steps.add(_one))
+                    stepY_.mul(steps.add(_one)).div(_precision)
                 )
             );
         }

@@ -47,27 +47,27 @@ contract FeesFacet is Modifiers {
         emit SetYieldFee(rate);
     }
 
-    function mintFee() public view returns (uint256) {
+    function mintFee() external view returns (uint256) {
         return s.mintFee;
     }
 
-    function burnBuyerFee() public view returns (uint256) {
+    function burnBuyerFee() external view returns (uint256) {
         return s.burnBuyerFee;
     }
 
-    function burnOwnerFee() public view returns (uint256) {
+    function burnOwnerFee() external view returns (uint256) {
         return s.burnOwnerFee;
     }
 
-    function transferFee() public view returns (uint256) {
+    function transferFee() external view returns (uint256) {
         return s.transferFee;
     }
 
-    function interestFee() public view returns (uint256) {
+    function interestFee() external view returns (uint256) {
         return s.interestFee;
     }
 
-    function yieldFee() public view returns (uint256) {
+    function yieldFee() external view returns (uint256) {
         return s.yieldFee;
     }
 }

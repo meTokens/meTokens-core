@@ -100,7 +100,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     function isValid(
         address _meToken,
         bytes memory /* _encodedArgs */
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
             _meToken
         );
