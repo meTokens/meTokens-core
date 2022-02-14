@@ -2,12 +2,15 @@
 pragma solidity ^0.8.0;
 
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "../libs/Details.sol";
-import "../vaults/Vault.sol";
-import "../interfaces/IMigration.sol";
-import "../interfaces/ISingleAssetVault.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Vault} from "../vaults/Vault.sol";
+import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
+import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -40,25 +43,20 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 10000; // 1%
 
-    constructor(
-        address _dao,
-        address _foundry,
-        IHub _hub,
-        IMeTokenRegistry _meTokenRegistry,
-        IMigrationRegistry _migrationRegistry
-    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
+    constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     function initMigration(address _meToken, bytes memory _encodedArgs)
         external
         override
     {
-        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        require(msg.sender == diamond, "!diamond");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(_meToken);
+        HubInfo memory hub_ = IHub(diamond).getHubDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = IHub(diamond).getHubDetails(
+            meToken_.targetHubId
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
 
         require(hub_.asset != targetHub_.asset, "same asset");
 
@@ -74,10 +72,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     function poke(address _meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(_meToken);
+        HubInfo memory hub_ = IHub(diamond).getHubDetails(meToken_.hubId);
         if (
             usts_.soonest != 0 &&
             block.timestamp > usts_.soonest &&
@@ -95,15 +92,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         nonReentrant
         returns (uint256 amountOut)
     {
-        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        require(msg.sender == diamond, "!diamond");
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         require(usts_.soonest < block.timestamp, "timestamp < soonest");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(_meToken);
+        HubInfo memory hub_ = IHub(diamond).getHubDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = IHub(diamond).getHubDetails(
+            meToken_.targetHubId
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
 
         // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts_.started) {
@@ -145,9 +143,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
         // Too soon
         if (soon < block.timestamp) return false;
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
+        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(_meToken);
         // MeToken not subscribed to a hub
         if (meToken_.hubId == 0) return false;
         // Invalid fee
@@ -160,11 +157,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     function _swap(address _meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(_meToken);
+        HubInfo memory hub_ = IHub(diamond).getHubDetails(meToken_.hubId);
+        HubInfo memory targetHub_ = IHub(diamond).getHubDetails(
+            meToken_.targetHubId
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
         uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
 
         // Only swap if
@@ -204,6 +202,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
-        meTokenRegistry.updateBalances(_meToken, amountOut);
+        IMeTokenRegistry(diamond).updateBalances(_meToken, amountOut);
     }
 }

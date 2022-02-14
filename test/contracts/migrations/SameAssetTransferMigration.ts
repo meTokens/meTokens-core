@@ -108,10 +108,7 @@ const setup = async () => {
         "SameAssetTransferMigration",
         undefined,
         account0.address,
-        foundry.address,
-        hub.address,
-        meTokenRegistry.address,
-        migrationRegistry.address
+        hub.address // diamond
       );
       await migrationRegistry.approve(
         initialVault.address,
@@ -162,10 +159,10 @@ const setup = async () => {
     });
 
     describe("initMigration()", () => {
-      it("Reverts when sender is not meTokenRegistry", async () => {
+      it("Reverts when sender is not diamond", async () => {
         await expect(
           migration.initMigration(meToken.address, encodedMigrationArgs)
-        ).to.be.revertedWith("!meTokenRegistry");
+        ).to.be.revertedWith("!diamond");
       });
       it("should revert when try to approve already approved vaults", async () => {
         await expect(
@@ -263,10 +260,10 @@ const setup = async () => {
       });
     });
     describe("finishMigration()", () => {
-      it("Reverts when sender is not meTokenRegistry", async () => {
+      it("Reverts when sender is not diamond", async () => {
         await expect(
           migration.finishMigration(meToken.address)
-        ).to.be.revertedWith("!meTokenRegistry");
+        ).to.be.revertedWith("!diamond");
       });
       it("Should not trigger startsMigration() if already started", async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(

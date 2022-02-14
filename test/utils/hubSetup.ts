@@ -218,24 +218,12 @@ export async function hubSetupWithoutRegister(
     account0.address,
     diamondCutFacet.address
   );
-  // Deploy contracts depending on hubFacet address,
-  // which is actually the address of the diamond
-  // meTokenRegistry = await deploy<MeTokenRegistry>(
-  //   "MeTokenRegistry",
-  //   undefined,
-  //   foundry.address,
-  //   diamond.address,
-  //   meTokenFactory.address,
-  //   migrationRegistry.address
-  // );
+
   singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
     account0.address, // DAO
-    diamond.address, // foundry
-    diamond.address, // hub
-    diamond.address, //IMeTokenRegistry
-    migrationRegistry.address //IMigrationRegistry
+    diamond.address
   );
 
   curve = await getCurve(curveStr, diamond.address);
@@ -338,11 +326,8 @@ export async function addHubSetup(
   tokenAddr: string,
   hub: HubFacet,
   diamond: Diamond,
-  foundry: FoundryFacet,
   curveType: string,
-  meTokenRegistry: MeTokenRegistryFacet,
   curveRegistry: CurveRegistry,
-  migrationRegistry: MigrationRegistry,
   vaultRegistry: VaultRegistry,
   encodedCurveDetails: string,
   encodedVaultArgs: string,
@@ -377,10 +362,7 @@ export async function addHubSetup(
     "SingleAssetVault",
     undefined, //no libs
     dao, // DAO
-    foundry.address, // foundry
-    hub.address, // hub
-    meTokenRegistry.address, //IMeTokenRegistry
-    migrationRegistry.address //IMigrationRegistry
+    diamond.address
   );
 
   await vaultRegistry.approve(singleAssetVault.address);

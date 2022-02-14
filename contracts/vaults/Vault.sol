@@ -1,40 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../libs/Details.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMigrationRegistry.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 /// @title meTokens basic Vault
 /// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
-abstract contract Vault is Ownable, IVault {
+abstract contract Vault is IVault {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
     address public dao;
-    address public foundry;
-    IHub public hub;
-    IMeTokenRegistry public meTokenRegistry;
-    IMigrationRegistry public migrationRegistry;
+    address public diamond;
 
-    constructor(
-        address _dao,
-        address _foundry,
-        IHub _hub,
-        IMeTokenRegistry _meTokenRegistry,
-        IMigrationRegistry _migrationRegistry
-    ) {
+    constructor(address _dao, address _diamond) {
         dao = _dao;
-        foundry = _foundry;
-
-        hub = _hub;
-        meTokenRegistry = _meTokenRegistry;
-        migrationRegistry = _migrationRegistry;
+        diamond = _diamond;
     }
 
     function handleDeposit(
@@ -43,7 +28,7 @@ abstract contract Vault is Ownable, IVault {
         uint256 _depositAmount,
         uint256 _feeAmount
     ) external override {
-        require(msg.sender == foundry, "!foundry");
+        require(msg.sender == diamond, "!diamond");
         IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;
@@ -57,7 +42,7 @@ abstract contract Vault is Ownable, IVault {
         uint256 _withdrawalAmount,
         uint256 _feeAmount
     ) external override {
-        require(msg.sender == foundry, "!foundry");
+        require(msg.sender == diamond, "!diamond");
         IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
         if (_feeAmount > 0) {
             accruedFees[_asset] += _feeAmount;
