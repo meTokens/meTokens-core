@@ -25,10 +25,8 @@ import {
   passHours,
   passSeconds,
   setAutomine,
-  setNextBlockTimestamp,
 } from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { start } from "repl";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 const setup = async () => {
   describe("Hub - update CurveDetails", () => {
@@ -117,7 +115,7 @@ const setup = async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
 
-      const tx = await meTokenRegistry
+      await meTokenRegistry
         .connect(account0)
         .subscribe(name, symbol, firstHubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -130,12 +128,10 @@ const setup = async () => {
       await token.connect(account1).approve(singleAssetVault.address, max);
       await token.connect(account2).approve(singleAssetVault.address, max);
 
-      const balBefore = await meToken.balanceOf(account2.address);
       const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
       await foundry
         .connect(account2)
         .mint(meTokenAddr, tokenDeposited, account2.address);
-      const balAfter = await meToken.balanceOf(account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //setWarmup for 2 days
@@ -161,7 +157,7 @@ const setup = async () => {
     });
 
     describe("Warmup", () => {
-      it("should revert if targetCurve is the current curve", async () => {
+      it("should revert initUpdate() if targetCurve is the current curve", async () => {
         const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [updatedBaseY, updatedReserveWeight]
@@ -175,7 +171,7 @@ const setup = async () => {
           )
         ).to.be.revertedWith("targetCurve==curve");
       });
-      it("Assets received based on initial curveDetails", async () => {
+      it("Assets received based on initial initialCurveDetails", async () => {
         const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [updatedBaseY, updatedReserveWeight]
@@ -283,7 +279,7 @@ const setup = async () => {
       before(async () => {
         await passHours(1);
       });
-      it("Assets received for buyer based on weighted average burning full supply ", async () => {
+      it("Assets received for buyer based on weighted average  of curveDetails on burning full supply ", async () => {
         //move forward  3 Days
         await passDays(3);
         const tokenDepositedInETH = 100;
@@ -365,7 +361,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
-      it("Assets received for buyer based on weighted average not burning full supply ", async () => {
+      it("Assets received for buyer based on weighted average  of curveDetails on not burning full supply ", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -447,7 +443,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
-      it("Assets received for owner based on weighted average not burning full supply ", async () => {
+      it("Assets received for owner based on weighted average  of curveDetails on not burning full supply ", async () => {
         // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
@@ -537,7 +533,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.0000000000001);
       });
-      it("mint(): assets received based on weighted average", async () => {
+      it("mint(): assets received based on weighted average of curveDetails", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -603,17 +599,10 @@ const setup = async () => {
     });
 
     describe("Cooldown", () => {
-      it("initUpdate() cannot be called", async () => {
-        const {
-          active,
-          refundRatio,
-          updating,
-          startTime,
-          endTime,
-          endCooldown,
-          reconfigure,
-          targetRefundRatio,
-        } = await hub.getDetails(1);
+      it("should revert initUpdate() if before cool down", async () => {
+        const { active, updating, endTime, reconfigure } = await hub.getDetails(
+          1
+        );
         expect(active).to.be.true;
         expect(updating).to.be.true;
         expect(reconfigure).to.be.false;
@@ -632,7 +621,7 @@ const setup = async () => {
         ).to.be.revertedWith("Still cooling down");
       });
 
-      it("burn() and mint() by owner should use the targetCurve", async () => {
+      it("burn() and mint() by owner should use the targetCurveDetails", async () => {
         // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
@@ -733,7 +722,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.00000000001);
       });
-      it("burn() and mint() by buyer should use the targetCurve", async () => {
+      it("burn() and mint() by buyer should use the targetCurveDetails", async () => {
         // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(

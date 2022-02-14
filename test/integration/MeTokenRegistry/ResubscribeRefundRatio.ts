@@ -173,6 +173,7 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
+        // BlockTime < startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -242,6 +243,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
+        // IncreaseBlockTime > startTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
@@ -374,6 +376,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
+        // IncreaseBlockTime > endTime
         const metokenDetails = await meTokenRegistry.getDetails(
           meToken.address
         );
