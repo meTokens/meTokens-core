@@ -173,12 +173,11 @@ contract FoundryFacet is IFoundry, Modifiers {
             feeRate = s.burnBuyerFee;
         }
 
-        // Burn metoken from user
-        IMeToken(_meToken).burn(sender, _meTokensBurned);
-
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, _meToken, rawAssetsReturned);
 
+        // Burn metoken from user
+        IMeToken(_meToken).burn(sender, _meTokensBurned);
         if (sender == meToken_.owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(

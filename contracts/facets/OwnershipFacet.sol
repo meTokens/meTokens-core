@@ -13,19 +13,27 @@ contract OwnershipFacet is Modifiers {
     {
         require(
             _newController != s.diamondController,
-            "_newController == diamondController"
+            "same diamondController"
         );
         s.diamondController = _newController;
+    }
+
+    function setTrustedForwarder(address _trustedForwarder)
+        external
+        onlyDiamondController
+    {
+        require(
+            _trustedForwarder != s.trustedForwarder,
+            "same trustedForwarder"
+        );
+        s.trustedForwarder = _trustedForwarder;
     }
 
     function setFeesController(address _newController)
         external
         onlyFeesController
     {
-        require(
-            _newController != s.feesController,
-            "_newController == feesController"
-        );
+        require(_newController != s.feesController, "same feesController");
         s.feesController = _newController;
     }
 
@@ -35,7 +43,7 @@ contract OwnershipFacet is Modifiers {
     {
         require(
             _newController != s.durationsController,
-            "_newController == durationsController"
+            "same durationsController"
         );
         s.durationsController = _newController;
     }
@@ -46,7 +54,7 @@ contract OwnershipFacet is Modifiers {
     {
         require(
             _newController != s.meTokenRegistryController,
-            "_newController == meTokenRegistryController"
+            "same meTokenRegistryController"
         );
         s.meTokenRegistryController = _newController;
     }
@@ -57,7 +65,7 @@ contract OwnershipFacet is Modifiers {
     {
         require(
             _newController != s.registerController,
-            "_newController == registerController"
+            "same registerController"
         );
         s.registerController = _newController;
     }
@@ -68,9 +76,13 @@ contract OwnershipFacet is Modifiers {
     {
         require(
             _newController != s.deactivateController,
-            "_newController == deactivateController"
+            "same deactivateController"
         );
         s.deactivateController = _newController;
+    }
+
+    function trustedForwarder() external view returns (address) {
+        return s.trustedForwarder;
     }
 
     function diamondController() external view returns (address) {
