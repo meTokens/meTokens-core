@@ -6,7 +6,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
 import { deploy, getContractAt } from "../utils/helpers";
-import { hubSetupWithoutRegister } from "../utils/hubSetup";
+import { hubSetupWithoutRegister, tranferFromWhale } from "../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
@@ -70,8 +70,6 @@ const setup = async () => {
       );
 
       ({
-        token,
-        tokenHolder,
         hub,
         curve,
         foundry,
@@ -82,6 +80,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetupWithoutRegister("bancorABDK"));
+      ({ token, tokenHolder } = await tranferFromWhale(account1.address));
     });
 
     describe("Initial state", () => {

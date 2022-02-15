@@ -110,6 +110,7 @@ const config: HardhatUserConfig = {
       },
       gas: "auto",
       timeout: 1800000,
+      chainId: 1,
     },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_KEY}`,

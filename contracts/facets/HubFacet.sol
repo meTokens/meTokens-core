@@ -53,7 +53,6 @@ contract HubFacet is Modifiers {
             s.vaultRegistry.isApproved(address(_vault)),
             "_vault !approved"
         );
-
         require(_refundRatio < s.MAX_REFUND_RATIO, "_refundRatio > MAX");
         require(_refundRatio > 0, "_refundRatio == 0");
 
@@ -63,7 +62,6 @@ contract HubFacet is Modifiers {
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;
         _curve.register(id, _encodedCurveDetails);
-
         // Save the hub to the registry
         HubInfo storage hub_ = s.hubs[s.hubCount];
         hub_.active = true;
