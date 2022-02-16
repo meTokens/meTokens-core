@@ -64,8 +64,6 @@ const setup = async () => {
     );
     const fee = 3000;
 
-    // TODO: pass in curve arguments to function
-    // TODO: then loop over array of set of curve arguments
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
@@ -80,7 +78,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      // TODO: pass in name of curve to deploy, encodedCurveDetails to general func
       encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
