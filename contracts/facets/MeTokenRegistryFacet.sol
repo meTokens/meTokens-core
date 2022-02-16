@@ -58,8 +58,7 @@ contract MeTokenRegistryFacet is Modifiers {
         uint256 _hubId,
         uint256 _assetsDeposited
     ) external {
-        address sender = LibMeta.msgSender();
-        require(!isOwner(sender), "msg.sender already owns a meToken");
+        require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         HubInfo memory hub_ = s.hubs[_hubId];
         require(hub_.active, "Hub inactive");
         require(!hub_.updating, "Hub updating");
@@ -67,7 +66,7 @@ contract MeTokenRegistryFacet is Modifiers {
         if (_assetsDeposited > 0) {
             require(
                 IERC20(hub_.asset).transferFrom(
-                    sender,
+                    msg.sender,
                     hub_.vault,
                     _assetsDeposited
                 ),
@@ -90,21 +89,21 @@ contract MeTokenRegistryFacet is Modifiers {
                 0, // _supply
                 0 // _balancePooled
             );
-            IMeToken(meTokenAddr).mint(sender, _meTokensMinted);
+            IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
         }
 
         // Register the address which created a meToken
-        s.meTokenOwners[sender] = meTokenAddr;
+        s.meTokenOwners[msg.sender] = meTokenAddr;
 
         // Add meToken to registry
-        // MeTokenInfo storage meToken_ = s.meTokens[meTokenAddr];
-        s.meTokens[meTokenAddr].owner = sender;
-        s.meTokens[meTokenAddr].hubId = _hubId;
-        s.meTokens[meTokenAddr].balancePooled = _assetsDeposited;
+        MeTokenInfo storage meToken_ = s.meTokens[meTokenAddr];
+        meToken_.owner = msg.sender;
+        meToken_.hubId = _hubId;
+        meToken_.balancePooled = _assetsDeposited;
 
         emit Subscribe(
             meTokenAddr,
-            sender,
+            msg.sender,
             _meTokensMinted,
             hub_.asset,
             _assetsDeposited,
@@ -123,8 +122,8 @@ contract MeTokenRegistryFacet is Modifiers {
         MeTokenInfo storage meToken_ = s.meTokens[_meToken];
         HubInfo memory hub_ = s.hubs[meToken_.hubId];
         HubInfo memory targetHub_ = s.hubs[_targetHubId];
-        address sender = LibMeta.msgSender();
-        require(sender == meToken_.owner, "!owner");
+
+        require(msg.sender == meToken_.owner, "!owner");
         require(
             block.timestamp >= meToken_.endCooldown,
             "Cooldown not complete"
@@ -181,8 +180,7 @@ contract MeTokenRegistryFacet is Modifiers {
 
     function cancelResubscribe(address _meToken) external {
         MeTokenInfo storage meToken_ = s.meTokens[_meToken];
-        address sender = LibMeta.msgSender();
-        require(sender == meToken_.owner, "!owner");
+        require(msg.sender == meToken_.owner, "!owner");
         require(meToken_.targetHubId != 0, "!resubscribing");
         require(
             block.timestamp < meToken_.startTime,
@@ -199,8 +197,7 @@ contract MeTokenRegistryFacet is Modifiers {
 
     function updateBalances(address _meToken, uint256 _newBalance) external {
         MeTokenInfo storage meToken_ = s.meTokens[_meToken];
-        address sender = LibMeta.msgSender();
-        require(sender == meToken_.migration, "!migration");
+        require(msg.sender == meToken_.migration, "!migration");
         uint256 balancePooled = meToken_.balancePooled;
         uint256 balanceLocked = meToken_.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
@@ -217,48 +214,48 @@ contract MeTokenRegistryFacet is Modifiers {
     }
 
     function transferMeTokenOwnership(address _newOwner) external {
-        address sender = LibMeta.msgSender();
         require(
-            s.pendingMeTokenOwners[sender] == address(0),
+            s.pendingMeTokenOwners[msg.sender] == address(0),
             "transfer ownership already pending"
         );
         require(!isOwner(_newOwner), "_newOwner already owns a meToken");
         require(_newOwner != address(0), "Cannot transfer to 0 address");
-        address meToken_ = s.meTokenOwners[sender];
+        address meToken_ = s.meTokenOwners[msg.sender];
         require(meToken_ != address(0), "meToken does not exist");
-        s.pendingMeTokenOwners[sender] = _newOwner;
+        s.pendingMeTokenOwners[msg.sender] = _newOwner;
 
-        emit TransferMeTokenOwnership(sender, _newOwner, meToken_);
+        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken_);
     }
 
     function cancelTransferMeTokenOwnership() external {
-        address sender = LibMeta.msgSender();
-        address _meToken = s.meTokenOwners[sender];
+        address _meToken = s.meTokenOwners[msg.sender];
         require(_meToken != address(0), "meToken does not exist");
 
         require(
-            s.pendingMeTokenOwners[sender] != address(0),
+            s.pendingMeTokenOwners[msg.sender] != address(0),
             "transferMeTokenOwnership() not initiated"
         );
 
-        delete s.pendingMeTokenOwners[sender];
-        emit CancelTransferMeTokenOwnership(sender, _meToken);
+        delete s.pendingMeTokenOwners[msg.sender];
+        emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
     }
 
     function claimMeTokenOwnership(address _oldOwner) external {
-        address sender = LibMeta.msgSender();
-        require(!isOwner(sender), "Already owns a meToken");
-        require(sender == s.pendingMeTokenOwners[_oldOwner], "!_pendingOwner");
+        require(!isOwner(msg.sender), "Already owns a meToken");
+        require(
+            msg.sender == s.pendingMeTokenOwners[_oldOwner],
+            "!_pendingOwner"
+        );
 
         address _meToken = s.meTokenOwners[_oldOwner];
 
-        s.meTokens[_meToken].owner = sender;
-        s.meTokenOwners[sender] = _meToken;
+        s.meTokens[_meToken].owner = msg.sender;
+        s.meTokenOwners[msg.sender] = _meToken;
 
         delete s.meTokenOwners[_oldOwner];
         delete s.pendingMeTokenOwners[_oldOwner];
 
-        emit ClaimMeTokenOwnership(_oldOwner, sender, _meToken);
+        emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
     }
 
     function setMeTokenWarmup(uint256 _warmup)
