@@ -14,13 +14,14 @@ import {IHub} from "../interfaces/IHub.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "../libs/Details.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
 /// @notice This contract tracks basic information about all meTokens
-contract MeTokenRegistryFacet is Modifiers {
+contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
     event Subscribe(
         address indexed _meToken,
         address indexed _owner,
@@ -57,7 +58,7 @@ contract MeTokenRegistryFacet is Modifiers {
         string calldata _symbol,
         uint256 _hubId,
         uint256 _assetsDeposited
-    ) external {
+    ) external nonReentrant {
         require(!isOwner(msg.sender), "msg.sender already owns a meToken");
         HubInfo memory hub_ = s.hubs[_hubId];
         require(hub_.active, "Hub inactive");

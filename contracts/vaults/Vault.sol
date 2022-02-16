@@ -9,11 +9,12 @@ import "../interfaces/IVault.sol";
 import "../interfaces/IHub.sol";
 import "../interfaces/IMeTokenRegistry.sol";
 import "../interfaces/IMigrationRegistry.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /// @title meTokens basic Vault
 /// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
-abstract contract Vault is Ownable, IVault {
+abstract contract Vault is Ownable, IVault, ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
     address public dao;
@@ -42,7 +43,7 @@ abstract contract Vault is Ownable, IVault {
         address _asset,
         uint256 _depositAmount,
         uint256 _feeAmount
-    ) external override {
+    ) external override nonReentrant {
         require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
         if (_feeAmount > 0) {
@@ -56,7 +57,7 @@ abstract contract Vault is Ownable, IVault {
         address _asset,
         uint256 _withdrawalAmount,
         uint256 _feeAmount
-    ) external override {
+    ) external override nonReentrant {
         require(msg.sender == foundry, "!foundry");
         IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
         if (_feeAmount > 0) {
@@ -69,7 +70,7 @@ abstract contract Vault is Ownable, IVault {
         address _asset,
         bool _max,
         uint256 _amount
-    ) external override {
+    ) external override nonReentrant {
         require(msg.sender == dao, "!DAO");
         if (_max) {
             _amount = accruedFees[_asset];
