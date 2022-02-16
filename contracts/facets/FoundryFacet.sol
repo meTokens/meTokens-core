@@ -81,7 +81,6 @@ contract FoundryFacet is IFoundry, Modifiers {
             vault = IVault(meToken_.migration);
             asset = s.hubs[meToken_.targetHubId].asset;
         }
-
         vault.handleDeposit(sender, asset, _assetsDeposited, fee);
 
         LibMeToken.updateBalancePooled(
