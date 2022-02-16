@@ -1,7 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import {
   calculateCollateralReturned,
-  deploy,
   getContractAt,
   toETHNumber,
   weightedAverageSimulation,
@@ -9,7 +8,6 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
@@ -24,7 +22,6 @@ import {
   passSeconds,
   setAutomine,
 } from "../../utils/hardhatNode";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 const setup = async () => {
   describe("HubFacet - update RefundRatio", () => {
@@ -89,8 +86,6 @@ const setup = async () => {
 
       // Create meToken and subscribe to Hub1
       const name = "Carl0 meToken";
-      const symbol = "CARL";
-
       await meTokenRegistry
         .connect(account0)
         .subscribe(name, "CARL", firstHubId, 0);
@@ -139,9 +134,7 @@ const setup = async () => {
       });
       it("should revert initUpdate() if already updating", async () => {
         // fast fwd a little bit
-        let lastBlock = await ethers.provider.getBlock("latest");
         await passDays(1);
-        lastBlock = await ethers.provider.getBlock("latest");
         await expect(
           hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
@@ -193,8 +186,6 @@ const setup = async () => {
         expect(vaultBalAfterMint.sub(vaultBalAfterBurn)).to.equal(
           tokenDeposited
         );
-
-        const balDaiAcc1AfterMint = await token.balanceOf(account1.address);
 
         const balAcc1After = await meToken.balanceOf(account1.address);
         expect(balAcc1After.sub(balAcc1Before)).to.equal(
@@ -362,16 +353,7 @@ const setup = async () => {
 
     describe("During cooldown", () => {
       it("initUpdate() cannot be called", async () => {
-        const {
-          active,
-          refundRatio,
-          updating,
-          startTime,
-          endTime,
-          endCooldown,
-          reconfigure,
-          targetRefundRatio,
-        } = await hub.getHubDetails(1);
+        const { active, updating, endTime } = await hub.getHubDetails(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
@@ -402,10 +384,8 @@ const setup = async () => {
           active,
           updating,
           refundRatio,
-          startTime,
           endTime,
           endCooldown,
-          reconfigure,
           targetRefundRatio,
         } = await hub.getHubDetails(1);
         // update has been finished by calling mint function as we passed the end time
@@ -497,10 +477,8 @@ const setup = async () => {
           active,
           refundRatio,
           updating,
-          startTime,
           endTime,
           endCooldown,
-          reconfigure,
           targetRefundRatio,
         } = await hub.getHubDetails(1);
 
@@ -579,10 +557,8 @@ const setup = async () => {
           active,
           refundRatio,
           updating,
-          startTime,
           endTime,
           endCooldown,
-          reconfigure,
           targetRefundRatio,
         } = await hub.getHubDetails(1);
 

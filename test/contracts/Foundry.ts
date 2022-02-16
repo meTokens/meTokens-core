@@ -25,13 +25,12 @@ import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
-import { Diamond, ICurve } from "../../artifacts/types";
+import { ICurve } from "../../artifacts/types";
 
 const setup = async () => {
   describe("FoundryFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
-    let diamond: Diamond;
     let WETH: string;
     let weth: ERC20;
     let account0: SignerWithAddress;
@@ -87,7 +86,6 @@ const setup = async () => {
         tokenHolder,
         hub,
         curve,
-        diamond,
         foundry,
         singleAssetVault,
         curveRegistry,
@@ -647,8 +645,6 @@ const setup = async () => {
           toETHNumber(baseY),
           reserveWeight / MAX_WEIGHT
         );
-        let res = toETHNumber(expectedMeTokensMinted);
-        res = toETHNumber(baseY);
         expect(toETHNumber(amount1)).to.approximately(
           calculated,
           0.000000000000000000000001
@@ -660,7 +656,7 @@ const setup = async () => {
         // );
 
         // Mint first meTokens to owner account1
-        let tx = await meTokenRegistry
+        await meTokenRegistry
           .connect(account1)
           .subscribe(name, symbol, hubId, amount1);
         let meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -711,7 +707,7 @@ const setup = async () => {
         );
 
         // Create meToken w/o issuing supply and account2 as the owner
-        const tx = await meTokenRegistry
+        await meTokenRegistry
           .connect(account2)
           .subscribe(name, symbol, hubId, 0);
         const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -961,7 +957,7 @@ const setup = async () => {
           ["uint256", "uint32"],
           [baseY, reserveWeight]
         );
-        const migrationFactory = await deploy<UniswapSingleTransferMigration>(
+        await deploy<UniswapSingleTransferMigration>(
           "UniswapSingleTransferMigration",
           undefined, //no libs
           account1.address, // DAO
@@ -973,10 +969,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         // earliestSwapTime 10 hour
         const earliestSwapTime = block.timestamp + 600 * 60;
-        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256"],
-          [earliestSwapTime]
-        );
+        ethers.utils.defaultAbiCoder.encode(["uint256"], [earliestSwapTime]);
         // 10 hour
         await hub.setHubDuration(600 * 60);
         await hub.setHubWarmup(60 * 60);

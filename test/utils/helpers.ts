@@ -4,7 +4,6 @@ import { Contract } from "@ethersproject/contracts";
 import { Libraries } from "@nomiclabs/hardhat-ethers/types";
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { ICurve } from "../../artifacts/types/ICurve";
 
 export async function deploy<Type>(
   typeName: string,
@@ -383,21 +382,13 @@ export const getCalculationFuncsForBancorCurves = (
         balancePooled,
         targetReserveWeight / MAX_WEIGHT
       ),
-    calculateTokenReturnedFromZero: (
-      depositAmount: number,
-      balancePooled: number,
-      meTokenSupply: number
-    ) =>
+    calculateTokenReturnedFromZero: (depositAmount: number) =>
       calculateTokenReturnedFromZero(
         depositAmount,
         toETHNumber(baseY),
         reserveWeight / MAX_WEIGHT
       ),
-    calculateTargetTokenReturnedFromZero: (
-      depositAmount: number,
-      balancePooled: number,
-      meTokenSupply: number
-    ) => {
+    calculateTargetTokenReturnedFromZero: (depositAmount: number) => {
       const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
 
       return calculateTokenReturnedFromZero(

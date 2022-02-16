@@ -15,7 +15,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
@@ -27,7 +26,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
-import { ICurve, StepwiseCurveABDK } from "../../../artifacts/types";
+import { StepwiseCurveABDK } from "../../../artifacts/types";
 
 // Differences:
 // 1. Curve details: encodedBancorDetails - encodedStepwiseDetails
@@ -37,7 +36,6 @@ import { ICurve, StepwiseCurveABDK } from "../../../artifacts/types";
 const setup = async () => {
   describe("MeToken Resubscribe - multiple differences", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let bancorABDK: BancorABDK;
     let stepwiseCurveABDK: StepwiseCurveABDK;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
