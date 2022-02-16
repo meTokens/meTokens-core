@@ -325,7 +325,7 @@ const setup = async () => {
     it("should burn", async () => {
       const amount = await meToken.balanceOf(account0.address);
       const daiBalanceBeforeBurn = await token.balanceOf(account0.address);
-      expect(daiBalanceBeforeBurn).to.equal(0);
+
       const { data } = await foundry.populateTransaction.burn(
         meToken.address,
         amount,
@@ -373,7 +373,9 @@ const setup = async () => {
 
       await expect(tx).to.emit(foundry, "Burn");
       const daiBalanceBeforeAfter = await token.balanceOf(account0.address);
-      expect(daiBalanceBeforeAfter).to.equal(ethers.utils.parseEther("10"));
+      expect(daiBalanceBeforeAfter.sub(daiBalanceBeforeBurn)).to.equal(
+        ethers.utils.parseEther("10")
+      );
       expect(await forwarder.getNonce(message.from)).to.equal(2);
     });
   });
