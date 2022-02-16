@@ -1,7 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import {
   calculateCollateralReturned,
-  calculateTokenReturned,
   deploy,
   getContractAt,
   toETHNumber,
@@ -50,8 +49,6 @@ const setup = async () => {
     const firstRefundRatio = 5000;
     const targetedRefundRatio = 500000; // 50%
     before(async () => {
-      // TODO: pre-load contracts
-      // NOTE: hub.register() should have already been called
       baseY = one.mul(1000);
       let DAI;
       ({ DAI } = await getNamedAccounts());
@@ -94,7 +91,7 @@ const setup = async () => {
       const name = "Carl0 meToken";
       const symbol = "CARL";
 
-      const tx = await meTokenRegistry
+      await meTokenRegistry
         .connect(account0)
         .subscribe(name, "CARL", firstHubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -103,12 +100,10 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       const tokenDeposited = ethers.utils.parseEther("100");
-      const balBefore = await meToken.balanceOf(account2.address);
       const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
       await foundry
         .connect(account2)
         .mint(meTokenAddr, tokenDeposited, account2.address);
-      const balAfter = await meToken.balanceOf(account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //setWarmup for 2 days
@@ -133,7 +128,7 @@ const setup = async () => {
       expect(duration).to.equal(604800);
     });
 
-    describe("During warmup", () => {
+    describe("Warmup", () => {
       before(async () => {
         await hub.initUpdate(
           firstHubId,
@@ -142,12 +137,10 @@ const setup = async () => {
           ethers.utils.toUtf8Bytes("")
         );
       });
-      it("initUpdate() cannot be called", async () => {
-        // TODO: fast fwd a little bit
+      it("should revert initUpdate() if already updating", async () => {
+        // fast fwd a little bit
         let lastBlock = await ethers.provider.getBlock("latest");
         await passDays(1);
-        lastBlock = await ethers.provider.getBlock("latest");
-        //await hub.setHubWarmup(172801);
         lastBlock = await ethers.provider.getBlock("latest");
         await expect(
           hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
@@ -234,14 +227,13 @@ const setup = async () => {
       before(async () => {
         await passHours(1);
       });
-      it("initUpdate() cannot be called", async () => {
-        // TODO: fast to active duration
+      it("should revert initUpdate() if already updating", async () => {
         await expect(
           hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
         ).to.be.revertedWith("already updating");
       });
 
-      it("Assets received for owner are not based on weighted average refund ratio only applies to buyer", async () => {
+      it("Assets received for owner should not apply refund ratio", async () => {
         //move forward  2 Days
         await passDays(2);
         const tokenDepositedInETH = 100;
@@ -297,7 +289,7 @@ const setup = async () => {
         );
       });
 
-      it("Assets received for buyer based on weighted average", async () => {
+      it("Assets received for buyer based on weighted average refundRatio", async () => {
         //move forward  3 Days
         await passDays(3);
         // TODO: calculate weighted refundRatio based on current time relative to duration
@@ -393,7 +385,7 @@ const setup = async () => {
         ).to.be.revertedWith("Still cooling down");
       });
 
-      it("Before refundRatio set, burn() for owner should not use the targetRefundRatio", async () => {
+      it("Before refundRatio set, burn() for owner should not apply refund ratio", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
