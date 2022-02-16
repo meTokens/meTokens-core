@@ -13,7 +13,6 @@ import {LibMeToken} from "../libs/LibMeToken.sol";
 import {LibHub} from "../libs/LibHub.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import "../libs/Details.sol";
-import "../libs/LibMeta.sol";
 
 contract FoundryFacet is IFoundry, Modifiers {
     // MINT FLOW CHART
@@ -42,7 +41,6 @@ contract FoundryFacet is IFoundry, Modifiers {
         uint256 _assetsDeposited,
         address _recipient
     ) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo memory meToken_ = s.meTokens[_meToken];
         HubInfo memory hub_ = s.hubs[meToken_.hubId];
 
@@ -82,7 +80,7 @@ contract FoundryFacet is IFoundry, Modifiers {
             asset = s.hubs[meToken_.targetHubId].asset;
         }
 
-        vault.handleDeposit(sender, asset, _assetsDeposited, fee);
+        vault.handleDeposit(msg.sender, asset, _assetsDeposited, fee);
 
         LibMeToken.updateBalancePooled(
             true,
@@ -94,7 +92,7 @@ contract FoundryFacet is IFoundry, Modifiers {
         emit Mint(
             _meToken,
             asset,
-            sender,
+            msg.sender,
             _recipient,
             _assetsDeposited,
             meTokensMinted
@@ -139,7 +137,6 @@ contract FoundryFacet is IFoundry, Modifiers {
         uint256 _meTokensBurned,
         address _recipient
     ) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo memory meToken_ = s.meTokens[_meToken];
         HubInfo memory hub_ = s.hubs[meToken_.hubId];
 
@@ -157,7 +154,7 @@ contract FoundryFacet is IFoundry, Modifiers {
             _meTokensBurned
         );
         uint256 assetsReturned = _calculateActualAssetsReturned(
-            sender,
+            msg.sender,
             _meToken,
             _meTokensBurned,
             rawAssetsReturned
@@ -167,19 +164,19 @@ contract FoundryFacet is IFoundry, Modifiers {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meToken_.owner) {
+        if (msg.sender == meToken_.owner) {
             feeRate = s.burnOwnerFee;
         } else {
             feeRate = s.burnBuyerFee;
         }
 
         // Burn metoken from user
-        IMeToken(_meToken).burn(sender, _meTokensBurned);
+        IMeToken(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, _meToken, rawAssetsReturned);
 
-        if (sender == meToken_.owner) {
+        if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
                 false,
@@ -213,7 +210,7 @@ contract FoundryFacet is IFoundry, Modifiers {
         emit Burn(
             _meToken,
             asset,
-            sender,
+            msg.sender,
             _recipient,
             _meTokensBurned,
             assetsReturned
@@ -224,7 +221,6 @@ contract FoundryFacet is IFoundry, Modifiers {
         external
         override
     {
-        address sender = LibMeta.msgSender();
         MeTokenInfo memory meToken_ = s.meTokens[_meToken];
         HubInfo memory hub_ = s.hubs[meToken_.hubId];
         require(meToken_.migration == address(0), "meToken resubscribing");
@@ -232,11 +228,11 @@ contract FoundryFacet is IFoundry, Modifiers {
         IVault vault = IVault(hub_.vault);
         address asset = hub_.asset;
 
-        vault.handleDeposit(sender, asset, _assetsDeposited, 0);
+        vault.handleDeposit(msg.sender, asset, _assetsDeposited, 0);
 
         LibMeToken.updateBalanceLocked(true, _meToken, _assetsDeposited);
 
-        emit Donate(_meToken, asset, sender, _assetsDeposited);
+        emit Donate(_meToken, asset, msg.sender, _assetsDeposited);
     }
 
     // NOTE: for now this does not include fees
