@@ -1,5 +1,5 @@
 ```
-➜  meTokens-core git:(diamond) ✗ slither .
+➜  ➜  meTokens-core git:(diamond-slither) slither .
 'npx hardhat compile --force' running
 Compiling 60 files with 0.8.10
 Generating typings for: 61 artifacts in dir: artifacts/types for target: ethers-v5
@@ -54,12 +54,12 @@ Power.optimalLog(uint256) (contracts/curves/Power.sol#384-459) performs a multip
 	-x = (x * FIXED_1) / 0xa45af1e1f40c333b3de1db4dd55f29a7 (contracts/curves/Power.sol#397)
 Power.optimalLog(uint256) (contracts/curves/Power.sol#384-459) performs a multiplication on the result of a division:
 	-x = (x * FIXED_1) / 0xa45af1e1f40c333b3de1db4dd55f29a7 (contracts/curves/Power.sol#397)
-	-x = (x * FIXED_1) / 0x88415abbe9a76bead8d00cf112e4d4a8 (contracts/curves/Power.sol#405)
+	-x = (x * FIXED_1) / 0x910b022db7ae67ce76b441c27035c6a1 (contracts/curves/Power.sol#401)
 Power.optimalLog(uint256) (contracts/curves/Power.sol#384-459) performs a multiplication on the result of a division:
 	-x = (x * FIXED_1) / 0x910b022db7ae67ce76b441c27035c6a1 (contracts/curves/Power.sol#401)
 	-x = (x * FIXED_1) / 0x88415abbe9a76bead8d00cf112e4d4a8 (contracts/curves/Power.sol#405)
 Power.optimalLog(uint256) (contracts/curves/Power.sol#384-459) performs a multiplication on the result of a division:
-	-x = (x * FIXED_1) / 0x910b022db7ae67ce76b441c27035c6a1 (contracts/curves/Power.sol#401)
+	-x = (x * FIXED_1) / 0x88415abbe9a76bead8d00cf112e4d4a8 (contracts/curves/Power.sol#405)
 	-x = (x * FIXED_1) / 0x84102b00893f64c705e841d5d4064bd3 (contracts/curves/Power.sol#409)
 Power.optimalLog(uint256) (contracts/curves/Power.sol#384-459) performs a multiplication on the result of a division:
 	-x = (x * FIXED_1) / 0x84102b00893f64c705e841d5d4064bd3 (contracts/curves/Power.sol#409)
@@ -251,10 +251,10 @@ StepwiseCurve._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (cont
 	-balancePooledAtCurrentSteps = ((stepsAfterMint * stepsAfterMint + stepsAfterMint) / 2) * _stepX * _stepY (contracts/curves/StepwiseCurve.sol#199-203)
 StepwiseCurve._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurve.sol#183-221) performs a multiplication on the result of a division:
 	-stepsAfterMint = (((_balancePooled + _assetsDeposited) * _stepX * _stepX) / ((_stepX * _stepY) / 2)) (contracts/curves/StepwiseCurve.sol#196-198)
-	-supplyAfterMint = _stepX * stepsAfterMint + ((_balancePooled + _assetsDeposited) - balancePooledAtCurrentSteps) / (_stepY * (stepsAfterMint + 1)) (contracts/curves/StepwiseCurve.sol#213-218)
+	-supplyAfterMint = _stepX * stepsAfterMint - (balancePooledAtCurrentSteps - (_balancePooled + _assetsDeposited)) / (_stepY * stepsAfterMint) (contracts/curves/StepwiseCurve.sol#206-211)
 StepwiseCurve._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurve.sol#183-221) performs a multiplication on the result of a division:
 	-stepsAfterMint = (((_balancePooled + _assetsDeposited) * _stepX * _stepX) / ((_stepX * _stepY) / 2)) (contracts/curves/StepwiseCurve.sol#196-198)
-	-supplyAfterMint = _stepX * stepsAfterMint - (balancePooledAtCurrentSteps - (_balancePooled + _assetsDeposited)) / (_stepY * stepsAfterMint) (contracts/curves/StepwiseCurve.sol#206-211)
+	-supplyAfterMint = _stepX * stepsAfterMint + ((_balancePooled + _assetsDeposited) - balancePooledAtCurrentSteps) / (_stepY * (stepsAfterMint + 1)) (contracts/curves/StepwiseCurve.sol#213-218)
 StepwiseCurve._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurve.sol#231-268) performs a multiplication on the result of a division:
 	-steps = _supply / _stepX (contracts/curves/StepwiseCurve.sol#247)
 	-supplyAtCurrentStep = _supply - (steps * _stepX) (contracts/curves/StepwiseCurve.sol#248)
@@ -265,12 +265,6 @@ StepwiseCurve._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256) (cont
 	-balancePooledAtCurrentSteps = ((steps * steps + steps) / 2) * _stepX * _stepY (contracts/curves/StepwiseCurve.sol#252-254)
 StepwiseCurve._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurve.sol#231-268) performs a multiplication on the result of a division:
 	-balancePooledAtStepsAfterBurn = ((stepsAfterBurn * stepsAfterBurn + stepsAfterBurn) / 2) * _stepX * _stepY (contracts/curves/StepwiseCurve.sol#255-259)
-StepwiseCurveABDK._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurveABDK.sol#180-226) performs a multiplication on the result of a division:
-	-stepBalance = (steps.mul(steps).add(steps)).div(_two).mul(stepX_).mul(stepY_) (contracts/curves/StepwiseCurveABDK.sol#206-209)
-StepwiseCurveABDK._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurveABDK.sol#180-226) performs a multiplication on the result of a division:
-	-supplyAfterMint = stepX_.mul(steps).add((totalBalancePooled_.sub(stepBalance)).div(stepY_.div(_precision).mul(steps.add(_one)))) (contracts/curves/StepwiseCurveABDK.sol#218-222)
-StepwiseCurveABDK._viewMeTokensMinted(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurveABDK.sol#180-226) performs a multiplication on the result of a division:
-	-intres = (stepBalance.sub(totalBalancePooled_)).div(stepY_.mul(steps)).mul(_precision) (contracts/curves/StepwiseCurveABDK.sol#213-215)
 StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256) (contracts/curves/StepwiseCurveABDK.sol#236-271) performs a multiplication on the result of a division:
 	-newSupplyInStep = supply_.sub(meTokensBurned_).sub(newSteps.mul(stepX_)).div(_precision) (contracts/curves/StepwiseCurveABDK.sol#263-266)
 	-newCollateralInBalance = (newSteps.mul(stepX_).mul(stepY_).div(_precision)).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stepY_)) (contracts/curves/StepwiseCurveABDK.sol#267-269)
@@ -411,15 +405,15 @@ Reentrancy in MeTokenRegistryFacet.subscribe(string,string,uint256,uint256) (con
 	- meToken_.balancePooled = _assetsDeposited (contracts/facets/MeTokenRegistryFacet.sol#102)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-1
 
-Power.optimalExp(uint256).y (contracts/curves/Power.sol#469) is a local variable never initialized
 MeTokenRegistryFacet.subscribe(string,string,uint256,uint256)._meTokensMinted (contracts/facets/MeTokenRegistryFacet.sol#84) is a local variable never initialized
-HubFacet.initUpdate(uint256,address,uint256,bytes).reconfigure (contracts/facets/HubFacet.sol#130) is a local variable never initialized
-LibDiamond.removeFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#170) is a local variable never initialized
-LibDiamond.addFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#99) is a local variable never initialized
-LibDiamond.diamondCut(IDiamondCut.FacetCut[],address,bytes).facetIndex (contracts/libs/LibDiamond.sol#50) is a local variable never initialized
-Power.optimalLog(uint256).y (contracts/curves/Power.sol#387) is a local variable never initialized
-LibDiamond.replaceFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#137) is a local variable never initialized
 DiamondLoupeFacet.facets().i (contracts/facets/DiamondLoupeFacet.sol#24) is a local variable never initialized
+LibDiamond.removeFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#170) is a local variable never initialized
+LibDiamond.replaceFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#137) is a local variable never initialized
+LibDiamond.diamondCut(IDiamondCut.FacetCut[],address,bytes).facetIndex (contracts/libs/LibDiamond.sol#50) is a local variable never initialized
+LibDiamond.addFunctions(address,bytes4[]).selectorIndex (contracts/libs/LibDiamond.sol#99) is a local variable never initialized
+HubFacet.initUpdate(uint256,address,uint256,bytes).reconfigure (contracts/facets/HubFacet.sol#130) is a local variable never initialized
+Power.optimalExp(uint256).y (contracts/curves/Power.sol#469) is a local variable never initialized
+Power.optimalLog(uint256).y (contracts/curves/Power.sol#387) is a local variable never initialized
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-local-variables
 
 HubFacet.initUpdate(uint256,address,uint256,bytes) (contracts/facets/HubFacet.sol#98-166) ignores return value by LibHub.finishUpdate(_id) (contracts/facets/HubFacet.sol#107)
@@ -714,22 +708,6 @@ Different versions of Solidity is used:
 	- ^0.8.0 (contracts/vaults/Vault.sol#2)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
 
-ABDKMathQuad.abs(bytes16) (contracts/utils/ABDKMathQuad.sol#985-989) is never used and should be removed
-ABDKMathQuad.eq(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#550-558) is never used and should be removed
-ABDKMathQuad.from128x128(int256) (contracts/utils/ABDKMathQuad.sol#170-189) is never used and should be removed
-ABDKMathQuad.from64x64(int128) (contracts/utils/ABDKMathQuad.sol#236-255) is never used and should be removed
-ABDKMathQuad.fromDouble(bytes8) (contracts/utils/ABDKMathQuad.sol#373-400) is never used and should be removed
-ABDKMathQuad.fromInt(int256) (contracts/utils/ABDKMathQuad.sol#50-69) is never used and should be removed
-ABDKMathQuad.fromOctuple(bytes32) (contracts/utils/ABDKMathQuad.sol#295-330) is never used and should be removed
-ABDKMathQuad.isInfinity(bytes16) (contracts/utils/ABDKMathQuad.sol#475-481) is never used and should be removed
-ABDKMathQuad.isNaN(bytes16) (contracts/utils/ABDKMathQuad.sol#460-466) is never used and should be removed
-ABDKMathQuad.neg(bytes16) (contracts/utils/ABDKMathQuad.sol#973-977) is never used and should be removed
-ABDKMathQuad.sign(bytes16) (contracts/utils/ABDKMathQuad.sol#490-501) is never used and should be removed
-ABDKMathQuad.to128x128(bytes16) (contracts/utils/ABDKMathQuad.sol#198-227) is never used and should be removed
-ABDKMathQuad.to64x64(bytes16) (contracts/utils/ABDKMathQuad.sol#264-287) is never used and should be removed
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) is never used and should be removed
-ABDKMathQuad.toInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-107) is never used and should be removed
-ABDKMathQuad.toOctuple(bytes16) (contracts/utils/ABDKMathQuad.sol#338-365) is never used and should be removed
 LibHub.count() (contracts/libs/LibHub.sol#74-77) is never used and should be removed
 LibMeta.domainSeparator(string,string) (contracts/libs/LibMeta.sol#12-26) is never used and should be removed
 LibMeta.getChainID() (contracts/libs/LibMeta.sol#28-32) is never used and should be removed
@@ -812,14 +790,13 @@ Low level call in LibDiamond.initializeDiamondCut(address,bytes) (contracts/libs
 	- (success,error) = _init.delegatecall(_calldata) (contracts/libs/LibDiamond.sol#290)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
 
-MeTokenFactory (contracts/MeTokenFactory.sol#9-22) should inherit from IMeTokenFactory (contracts/interfaces/IMeTokenFactory.sol#6-16)
 MigrationRegistry (contracts/registries/MigrationRegistry.sol#9-45) should inherit from IMigrationRegistry (contracts/interfaces/IMigrationRegistry.sol#6-57)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-inheritance
 
 Parameter DiamondInit.init(DiamondInit.Args)._args (contracts/DiamondInit.sol#31) is not in mixedCase
-Parameter MeTokenFactory.create(string,string,address)._name (contracts/MeTokenFactory.sol#14) is not in mixedCase
-Parameter MeTokenFactory.create(string,string,address)._symbol (contracts/MeTokenFactory.sol#15) is not in mixedCase
-Parameter MeTokenFactory.create(string,string,address)._diamond (contracts/MeTokenFactory.sol#16) is not in mixedCase
+Parameter MeTokenFactory.create(string,string,address)._name (contracts/MeTokenFactory.sol#15) is not in mixedCase
+Parameter MeTokenFactory.create(string,string,address)._symbol (contracts/MeTokenFactory.sol#16) is not in mixedCase
+Parameter MeTokenFactory.create(string,string,address)._diamond (contracts/MeTokenFactory.sol#17) is not in mixedCase
 Parameter BancorABDK.register(uint256,bytes)._hubId (contracts/curves/BancorABDK.sol#36) is not in mixedCase
 Parameter BancorABDK.register(uint256,bytes)._encodedDetails (contracts/curves/BancorABDK.sol#36) is not in mixedCase
 Parameter BancorABDK.initReconfigure(uint256,bytes)._hubId (contracts/curves/BancorABDK.sol#58) is not in mixedCase
@@ -1015,8 +992,8 @@ Parameter UniswapSingleTransferMigration.isValid(address,bytes)._encodedArgs (co
 Parameter Registry.approve(address)._addr (contracts/registries/Registry.sol#16) is not in mixedCase
 Parameter Registry.unapprove(address)._addr (contracts/registries/Registry.sol#23) is not in mixedCase
 Parameter Registry.isApproved(address)._addr (contracts/registries/Registry.sol#30) is not in mixedCase
-Function ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) is not in mixedCase
-Function ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) is not in mixedCase
+Function ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) is not in mixedCase
+Function ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) is not in mixedCase
 Constant ABDKMathQuad.NaN (contracts/utils/ABDKMathQuad.sol#42) is not in UPPER_CASE_WITH_UNDERSCORES
 Parameter SingleAssetVault.startMigration(address)._meToken (contracts/vaults/SingleAssetVault.sol#23) is not in mixedCase
 Parameter SingleAssetVault.isValid(address,bytes)._asset (contracts/vaults/SingleAssetVault.sol#43) is not in mixedCase
@@ -1035,16 +1012,14 @@ Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#conform
 
 Variable IUniswapV3SwapCallback.uniswapV3SwapCallback(int256,int256,bytes).amount0Delta (node_modules/@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol#17) is too similar to IUniswapV3SwapCallback.uniswapV3SwapCallback(int256,int256,bytes).amount1Delta (node_modules/@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol#18)
 Variable StepwiseCurve.initReconfigure(uint256,bytes).targetStepX (contracts/curves/StepwiseCurve.sol#58) is too similar to StepwiseCurve.initReconfigure(uint256,bytes).targetStepY (contracts/curves/StepwiseCurve.sol#58)
-Variable ICurve.viewTargetAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/interfaces/ICurve.sol#82) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
-Variable StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256)._meTokensBurned (contracts/curves/StepwiseCurveABDK.sol#237) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
 Variable StepwiseCurveABDK.viewAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/curves/StepwiseCurveABDK.sol#141) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
-Variable ICurve.viewAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/interfaces/ICurve.sol#56) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
 Variable StepwiseCurveABDK.viewTargetAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/curves/StepwiseCurveABDK.sol#157) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
+Variable ICurve.viewAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/interfaces/ICurve.sol#56) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
+Variable StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256)._meTokensBurned (contracts/curves/StepwiseCurveABDK.sol#237) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
+Variable ICurve.viewTargetAssetsReturned(uint256,uint256,uint256,uint256)._meTokensBurned (contracts/interfaces/ICurve.sol#82) is too similar to StepwiseCurveABDK._viewAssetsReturned(uint256,uint256,uint256,uint256,uint256).meTokensBurned_ (contracts/curves/StepwiseCurveABDK.sol#253)
 Variable StepwiseCurveABDK.initReconfigure(uint256,bytes).targetStepX (contracts/curves/StepwiseCurveABDK.sol#62) is too similar to StepwiseCurveABDK.initReconfigure(uint256,bytes).targetStepY (contracts/curves/StepwiseCurveABDK.sol#62)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#variable-names-are-too-similar
 
-BancorABDK.slitherConstructorConstantVariables() (contracts/curves/BancorABDK.sol#12-351) uses literals with too many digits:
-	- MAX_WEIGHT = 1000000 (contracts/curves/BancorABDK.sol#23)
 Power.generalExp(uint256,uint8) (contracts/curves/Power.sol#302-377) uses literals with too many digits:
 	- res += xi * 0x3442c4e6074a82f1797f72ac0000000 (contracts/curves/Power.sol#311)
 Power.generalExp(uint256,uint8) (contracts/curves/Power.sol#302-377) uses literals with too many digits:
@@ -1193,631 +1168,559 @@ BancorPower.slitherConstructorConstantVariables() (contracts/curves/BancorPower.
 	- MAX_NUM = 0x200000000000000000000000000000000 (contracts/curves/Power.sol#21)
 BancorPower.slitherConstructorConstantVariables() (contracts/curves/BancorPower.sol#17-293) uses literals with too many digits:
 	- OPT_EXP_MAX_VAL = 0x800000000000000000000000000000000 (contracts/curves/Power.sol#29-30)
-BancorPower.slitherConstructorConstantVariables() (contracts/curves/BancorPower.sol#17-293) uses literals with too many digits:
-	- MAX_WEIGHT = 1000000 (contracts/curves/BancorPower.sol#28)
-ABDKMathQuad.fromInt(int256) (contracts/utils/ABDKMathQuad.sol#50-69) uses literals with too many digits:
-	- result |= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#64)
-ABDKMathQuad.toInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-107) uses literals with too many digits:
-	- result = (uint256(uint128(x)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#85-87)
-ABDKMathQuad.toInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-107) uses literals with too many digits:
-	- uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#92)
-ABDKMathQuad.toInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-107) uses literals with too many digits:
-	- require(bool)(result <= 0x8000000000000000000000000000000000000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#94-97)
-ABDKMathQuad.toUInt(bytes16) (contracts/utils/ABDKMathQuad.sol#143-161) uses literals with too many digits:
-	- require(bool)(uint128(x) < 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#149)
-ABDKMathQuad.toUInt(bytes16) (contracts/utils/ABDKMathQuad.sol#143-161) uses literals with too many digits:
-	- result = (uint256(uint128(x)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#152-154)
-ABDKMathQuad.from128x128(int256) (contracts/utils/ABDKMathQuad.sol#170-189) uses literals with too many digits:
-	- result |= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#184)
-ABDKMathQuad.to128x128(bytes16) (contracts/utils/ABDKMathQuad.sol#198-227) uses literals with too many digits:
-	- result = (uint256(uint128(x)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#205-207)
-ABDKMathQuad.to128x128(bytes16) (contracts/utils/ABDKMathQuad.sol#198-227) uses literals with too many digits:
-	- uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#212)
-ABDKMathQuad.to128x128(bytes16) (contracts/utils/ABDKMathQuad.sol#198-227) uses literals with too many digits:
-	- require(bool)(result <= 0x8000000000000000000000000000000000000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#214-217)
-ABDKMathQuad.from64x64(int128) (contracts/utils/ABDKMathQuad.sol#236-255) uses literals with too many digits:
-	- result |= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#250)
-ABDKMathQuad.to64x64(bytes16) (contracts/utils/ABDKMathQuad.sol#264-287) uses literals with too many digits:
-	- result = (uint256(uint128(x)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#271-273)
-ABDKMathQuad.to64x64(bytes16) (contracts/utils/ABDKMathQuad.sol#264-287) uses literals with too many digits:
-	- uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#278)
-ABDKMathQuad.to64x64(bytes16) (contracts/utils/ABDKMathQuad.sol#264-287) uses literals with too many digits:
-	- require(bool)(result <= 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#280)
-ABDKMathQuad.fromOctuple(bytes32) (contracts/utils/ABDKMathQuad.sol#295-330) uses literals with too many digits:
-	- negative = x & 0x8000000000000000000000000000000000000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#297-299)
-ABDKMathQuad.fromOctuple(bytes32) (contracts/utils/ABDKMathQuad.sol#295-330) uses literals with too many digits:
-	- significand = (significand | 0x100000000000000000000000000000000000000000000000000000000000) >> (245885 - exponent) (contracts/utils/ABDKMathQuad.sol#315-318)
-ABDKMathQuad.fromOctuple(bytes32) (contracts/utils/ABDKMathQuad.sol#295-330) uses literals with too many digits:
-	- result |= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#326)
-ABDKMathQuad.toOctuple(bytes16) (contracts/utils/ABDKMathQuad.sol#338-365) uses literals with too many digits:
-	- uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#360)
-ABDKMathQuad.toOctuple(bytes16) (contracts/utils/ABDKMathQuad.sol#338-365) uses literals with too many digits:
-	- result |= 0x8000000000000000000000000000000000000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#361)
-ABDKMathQuad.fromDouble(bytes8) (contracts/utils/ABDKMathQuad.sol#373-400) uses literals with too many digits:
-	- x & 0x8000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#395)
-ABDKMathQuad.fromDouble(bytes8) (contracts/utils/ABDKMathQuad.sol#373-400) uses literals with too many digits:
-	- result |= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#396)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- negative = uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#410)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- 0x7FF8000000000000 (contracts/utils/ABDKMathQuad.sol#416)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- significand = (significand | 0x10000000000000000000000000000) >> (15421 - exponent) (contracts/utils/ABDKMathQuad.sol#438-440)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- result |= 0x8000000000000000 (contracts/utils/ABDKMathQuad.sol#448)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0xFFF0000000000000) (contracts/utils/ABDKMathQuad.sol#419-422)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0x7FF0000000000000) (contracts/utils/ABDKMathQuad.sol#419-422)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0xFFF0000000000000) (contracts/utils/ABDKMathQuad.sol#426-429)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0x7FF0000000000000) (contracts/utils/ABDKMathQuad.sol#426-429)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0x8000000000000000) (contracts/utils/ABDKMathQuad.sol#432-435)
-ABDKMathQuad.toDouble(bytes16) (contracts/utils/ABDKMathQuad.sol#408-452) uses literals with too many digits:
-	- bytes8(0x0000000000000000) (contracts/utils/ABDKMathQuad.sol#432-435)
-ABDKMathQuad.isNaN(bytes16) (contracts/utils/ABDKMathQuad.sol#460-466) uses literals with too many digits:
-	- uint128(x) & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF > 0x7FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#462-464)
-ABDKMathQuad.isInfinity(bytes16) (contracts/utils/ABDKMathQuad.sol#475-481) uses literals with too many digits:
-	- uint128(x) & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF == 0x7FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#477-479)
-ABDKMathQuad.sign(bytes16) (contracts/utils/ABDKMathQuad.sol#490-501) uses literals with too many digits:
-	- require(bool)(absoluteX <= 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#494)
-ABDKMathQuad.sign(bytes16) (contracts/utils/ABDKMathQuad.sol#490-501) uses literals with too many digits:
-	- uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#497)
-ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#511-540) uses literals with too many digits:
-	- require(bool)(absoluteX <= 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#515)
-ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#511-540) uses literals with too many digits:
-	- require(bool)(absoluteY <= 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#519)
-ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#511-540) uses literals with too many digits:
-	- require(bool)(x != y || absoluteX < 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#522)
-ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#511-540) uses literals with too many digits:
-	- negativeX = uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#526-527)
-ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#511-540) uses literals with too many digits:
-	- negativeY = uint128(y) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#528-529)
-ABDKMathQuad.eq(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#550-558) uses literals with too many digits:
-	- uint128(x) & 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF < 0x7FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#553-555)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- xSign = uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#586)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#590)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- ySign = uint128(y) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#592)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#596)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- xSignifier >= 0x20000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#616)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- xSignifier < 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#625)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- bytes16(uint128((0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#629-640)
-ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#574-710) uses literals with too many digits:
-	- bytes16(uint128((0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#694-705)
-ABDKMathQuad.sub(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#726-730) uses literals with too many digits:
-	- add(x,y ^ 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#728)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#759)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- x ^ y == 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#760)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#765)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- y ^ (x & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#769)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#774)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#779)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- bytes16(uint128(uint128((x ^ y) & 0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#820-829)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- (x ^ y) & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#783-786)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- xSignifier >= 0x200000000000000000000000000000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#790-796)
-ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#751-832) uses literals with too many digits:
-	- xSignifier >= 0x100000000000000000000000000000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#790-796)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#875)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- _POSITIVE_ZERO | ((x ^ y) & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#879-881)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- _POSITIVE_INFINITY | ((x ^ y) & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#885-887)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#892)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- xSignifier = (xSignifier | 0x10000000000000000000000000000) << 114 (contracts/utils/ABDKMathQuad.sol#906-908)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- assert(bool)(xSignifier >= 0x1000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#918)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- bytes16(uint128(uint128((x ^ y) & 0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#953-962)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- (x ^ y) & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#913-916)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- xSignifier >= 0x80000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#920-926)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- xSignifier >= 0x40000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#920-926)
-ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#868-965) uses literals with too many digits:
-	- xSignifier >= 0x20000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#920-926)
-ABDKMathQuad.neg(bytes16) (contracts/utils/ABDKMathQuad.sol#973-977) uses literals with too many digits:
-	- x ^ 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#975)
-ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#997-1055) uses literals with too many digits:
-	- uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#999)
-ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#997-1055) uses literals with too many digits:
-	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1007)
-ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#997-1055) uses literals with too many digits:
-	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1015)
-ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#997-1055) uses literals with too many digits:
-	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1024)
-ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#997-1055) uses literals with too many digits:
-	- r = 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1034)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1065)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- x == 0x3FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1066)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1075)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1089)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- xSignifier == 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1099)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- resultSignifier < 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1108)
-ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1063-1136) uses literals with too many digits:
-	- bytes16(uint128((0x80000000000000000000000000000000) | (resultExponent << 112) | (resultSignifier & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF))) (contracts/utils/ABDKMathQuad.sol#1120-1132)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xNegative = uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1158)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- 0x3FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1166)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1169)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xNegative && xSignifier > 0x406E00000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1175-1176)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1191)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1192)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1197)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1202)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1207)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1212)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1217)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1222)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1227)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1232)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1237)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1242)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1247)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1252)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1257)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1262)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1267)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1272)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1277)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1282)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1287)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000B1721BCFC99D9F890EA06911763) >> 128 (contracts/utils/ABDKMathQuad.sol#1288-1291)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1292)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000058B90CF1E6D97F9CA14DBCC1628) >> 128 (contracts/utils/ABDKMathQuad.sol#1293-1296)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1297)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000002C5C863B73F016468F6BAC5CA2B) >> 128 (contracts/utils/ABDKMathQuad.sol#1298-1301)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1302)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000162E430E5A18F6119E3C02282A5) >> 128 (contracts/utils/ABDKMathQuad.sol#1303-1306)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1307)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000B1721835514B86E6D96EFD1BFE) >> 128 (contracts/utils/ABDKMathQuad.sol#1308-1311)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1312)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000058B90C0B48C6BE5DF846C5B2EF) >> 128 (contracts/utils/ABDKMathQuad.sol#1313-1316)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1317)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000002C5C8601CC6B9E94213C72737A) >> 128 (contracts/utils/ABDKMathQuad.sol#1318-1321)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1322)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000162E42FFF037DF38AA2B219F06) >> 128 (contracts/utils/ABDKMathQuad.sol#1323-1326)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1327)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000B17217FBA9C739AA5819F44F9) >> 128 (contracts/utils/ABDKMathQuad.sol#1328-1331)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1332)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000058B90BFCDEE5ACD3C1CEDC823) >> 128 (contracts/utils/ABDKMathQuad.sol#1333-1336)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1337)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000002C5C85FE31F35A6A30DA1BE50) >> 128 (contracts/utils/ABDKMathQuad.sol#1338-1341)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1342)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000162E42FF0999CE3541B9FFFCF) >> 128 (contracts/utils/ABDKMathQuad.sol#1343-1346)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1347)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000B17217F80F4EF5AADDA45554) >> 128 (contracts/utils/ABDKMathQuad.sol#1348-1351)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1352)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000058B90BFBF8479BD5A81B51AD) >> 128 (contracts/utils/ABDKMathQuad.sol#1353-1356)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1357)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000002C5C85FDF84BD62AE30A74CC) >> 128 (contracts/utils/ABDKMathQuad.sol#1358-1361)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1362)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000162E42FEFB2FED257559BDAA) >> 128 (contracts/utils/ABDKMathQuad.sol#1363-1366)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1367)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000B17217F7D5A7716BBA4A9AE) >> 128 (contracts/utils/ABDKMathQuad.sol#1368-1371)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1372)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000058B90BFBE9DDBAC5E109CCE) >> 128 (contracts/utils/ABDKMathQuad.sol#1373-1376)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1377)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000002C5C85FDF4B15DE6F17EB0D) >> 128 (contracts/utils/ABDKMathQuad.sol#1378-1381)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1382)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000162E42FEFA494F1478FDE05) >> 128 (contracts/utils/ABDKMathQuad.sol#1383-1386)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1387)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000B17217F7D20CF927C8E94C) >> 128 (contracts/utils/ABDKMathQuad.sol#1388-1391)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1392)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000058B90BFBE8F71CB4E4B33D) >> 128 (contracts/utils/ABDKMathQuad.sol#1393-1396)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1397)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000002C5C85FDF477B662B26945) >> 128 (contracts/utils/ABDKMathQuad.sol#1398-1401)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1402)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000162E42FEFA3AE53369388C) >> 128 (contracts/utils/ABDKMathQuad.sol#1403-1406)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1407)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000B17217F7D1D351A389D40) >> 128 (contracts/utils/ABDKMathQuad.sol#1408-1411)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1412)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000058B90BFBE8E8B2D3D4EDE) >> 128 (contracts/utils/ABDKMathQuad.sol#1413-1416)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1417)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000002C5C85FDF4741BEA6E77E) >> 128 (contracts/utils/ABDKMathQuad.sol#1418-1421)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1422)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000162E42FEFA39FE95583C2) >> 128 (contracts/utils/ABDKMathQuad.sol#1423-1426)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1427)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000B17217F7D1CFB72B45E1) >> 128 (contracts/utils/ABDKMathQuad.sol#1428-1431)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1432)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000058B90BFBE8E7CC35C3F0) >> 128 (contracts/utils/ABDKMathQuad.sol#1433-1436)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1437)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000002C5C85FDF473E242EA38) >> 128 (contracts/utils/ABDKMathQuad.sol#1438-1441)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1442)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000162E42FEFA39F02B772C) >> 128 (contracts/utils/ABDKMathQuad.sol#1443-1446)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1447)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000B17217F7D1CF7D83C1A) >> 128 (contracts/utils/ABDKMathQuad.sol#1448-1451)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1452)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000058B90BFBE8E7BDCBE2E) >> 128 (contracts/utils/ABDKMathQuad.sol#1453-1456)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1457)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000002C5C85FDF473DEA871F) >> 128 (contracts/utils/ABDKMathQuad.sol#1458-1461)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1462)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000162E42FEFA39EF44D91) >> 128 (contracts/utils/ABDKMathQuad.sol#1463-1466)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1467)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000B17217F7D1CF79E949) >> 128 (contracts/utils/ABDKMathQuad.sol#1468-1471)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1472)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000058B90BFBE8E7BCE544) >> 128 (contracts/utils/ABDKMathQuad.sol#1473-1476)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1477)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000002C5C85FDF473DE6ECA) >> 128 (contracts/utils/ABDKMathQuad.sol#1478-1481)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1482)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000162E42FEFA39EF366F) >> 128 (contracts/utils/ABDKMathQuad.sol#1483-1486)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1487)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000B17217F7D1CF79AFA) >> 128 (contracts/utils/ABDKMathQuad.sol#1488-1491)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1492)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000058B90BFBE8E7BCD6D) >> 128 (contracts/utils/ABDKMathQuad.sol#1493-1496)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1497)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000002C5C85FDF473DE6B2) >> 128 (contracts/utils/ABDKMathQuad.sol#1498-1501)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1502)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000162E42FEFA39EF358) >> 128 (contracts/utils/ABDKMathQuad.sol#1503-1506)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1507)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000B17217F7D1CF79AB) >> 128 (contracts/utils/ABDKMathQuad.sol#1508-1511)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1512)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000058B90BFBE8E7BCD5) >> 128 (contracts/utils/ABDKMathQuad.sol#1513-1516)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1517)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000002C5C85FDF473DE6A) >> 128 (contracts/utils/ABDKMathQuad.sol#1518-1521)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1522)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000162E42FEFA39EF34) >> 128 (contracts/utils/ABDKMathQuad.sol#1523-1526)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1527)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000B17217F7D1CF799) >> 128 (contracts/utils/ABDKMathQuad.sol#1528-1531)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1532)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000058B90BFBE8E7BCC) >> 128 (contracts/utils/ABDKMathQuad.sol#1533-1536)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1537)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000002C5C85FDF473DE5) >> 128 (contracts/utils/ABDKMathQuad.sol#1538-1541)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1542)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000162E42FEFA39EF2) >> 128 (contracts/utils/ABDKMathQuad.sol#1543-1546)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1547)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000B17217F7D1CF78) >> 128 (contracts/utils/ABDKMathQuad.sol#1548-1551)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1552)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000058B90BFBE8E7BB) >> 128 (contracts/utils/ABDKMathQuad.sol#1553-1556)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1557)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000002C5C85FDF473DD) >> 128 (contracts/utils/ABDKMathQuad.sol#1558-1561)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1562)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000162E42FEFA39EE) >> 128 (contracts/utils/ABDKMathQuad.sol#1563-1566)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1567)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000B17217F7D1CF6) >> 128 (contracts/utils/ABDKMathQuad.sol#1568-1571)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1572)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000058B90BFBE8E7A) >> 128 (contracts/utils/ABDKMathQuad.sol#1573-1576)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1577)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000002C5C85FDF473C) >> 128 (contracts/utils/ABDKMathQuad.sol#1578-1581)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1582)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000162E42FEFA39D) >> 128 (contracts/utils/ABDKMathQuad.sol#1583-1586)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1587)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000B17217F7D1CE) >> 128 (contracts/utils/ABDKMathQuad.sol#1588-1591)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1592)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000058B90BFBE8E6) >> 128 (contracts/utils/ABDKMathQuad.sol#1593-1596)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1597)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000002C5C85FDF472) >> 128 (contracts/utils/ABDKMathQuad.sol#1598-1601)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1602)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000162E42FEFA38) >> 128 (contracts/utils/ABDKMathQuad.sol#1603-1606)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1607)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000B17217F7D1B) >> 128 (contracts/utils/ABDKMathQuad.sol#1608-1611)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1612)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000058B90BFBE8D) >> 128 (contracts/utils/ABDKMathQuad.sol#1613-1616)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1617)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000002C5C85FDF46) >> 128 (contracts/utils/ABDKMathQuad.sol#1618-1621)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1622)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000162E42FEFA2) >> 128 (contracts/utils/ABDKMathQuad.sol#1623-1626)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1627)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000B17217F7D0) >> 128 (contracts/utils/ABDKMathQuad.sol#1628-1631)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1632)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000058B90BFBE7) >> 128 (contracts/utils/ABDKMathQuad.sol#1633-1636)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1637)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000002C5C85FDF3) >> 128 (contracts/utils/ABDKMathQuad.sol#1638-1641)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1642)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000162E42FEF9) >> 128 (contracts/utils/ABDKMathQuad.sol#1643-1646)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1647)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000B17217F7C) >> 128 (contracts/utils/ABDKMathQuad.sol#1648-1651)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000000 > 0 (contracts/utils/ABDKMathQuad.sol#1652)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000058B90BFBD) >> 128 (contracts/utils/ABDKMathQuad.sol#1653-1656)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000000 > 0 (contracts/utils/ABDKMathQuad.sol#1657)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000002C5C85FDE) >> 128 (contracts/utils/ABDKMathQuad.sol#1658-1661)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000000 > 0 (contracts/utils/ABDKMathQuad.sol#1662)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000162E42FEE) >> 128 (contracts/utils/ABDKMathQuad.sol#1663-1666)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000000 > 0 (contracts/utils/ABDKMathQuad.sol#1667)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000B17217F6) >> 128 (contracts/utils/ABDKMathQuad.sol#1668-1671)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x80000000 > 0 (contracts/utils/ABDKMathQuad.sol#1672)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000058B90BFA) >> 128 (contracts/utils/ABDKMathQuad.sol#1673-1676)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x40000000 > 0 (contracts/utils/ABDKMathQuad.sol#1677)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000002C5C85FC) >> 128 (contracts/utils/ABDKMathQuad.sol#1678-1681)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x20000000 > 0 (contracts/utils/ABDKMathQuad.sol#1682)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000162E42FD) >> 128 (contracts/utils/ABDKMathQuad.sol#1683-1686)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x10000000 > 0 (contracts/utils/ABDKMathQuad.sol#1687)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000B17217E) >> 128 (contracts/utils/ABDKMathQuad.sol#1688-1691)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x8000000 > 0 (contracts/utils/ABDKMathQuad.sol#1692)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000058B90BE) >> 128 (contracts/utils/ABDKMathQuad.sol#1693-1696)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x4000000 > 0 (contracts/utils/ABDKMathQuad.sol#1697)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000002C5C85E) >> 128 (contracts/utils/ABDKMathQuad.sol#1698-1701)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x2000000 > 0 (contracts/utils/ABDKMathQuad.sol#1702)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000162E42E) >> 128 (contracts/utils/ABDKMathQuad.sol#1703-1706)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x1000000 > 0 (contracts/utils/ABDKMathQuad.sol#1707)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000B17216) >> 128 (contracts/utils/ABDKMathQuad.sol#1708-1711)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x800000 > 0 (contracts/utils/ABDKMathQuad.sol#1712)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000058B90A) >> 128 (contracts/utils/ABDKMathQuad.sol#1713-1716)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x400000 > 0 (contracts/utils/ABDKMathQuad.sol#1717)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000002C5C84) >> 128 (contracts/utils/ABDKMathQuad.sol#1718-1721)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x200000 > 0 (contracts/utils/ABDKMathQuad.sol#1722)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000162E41) >> 128 (contracts/utils/ABDKMathQuad.sol#1723-1726)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- xSignifier & 0x100000 > 0 (contracts/utils/ABDKMathQuad.sol#1727)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000B1720) >> 128 (contracts/utils/ABDKMathQuad.sol#1728-1731)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000058B8F) >> 128 (contracts/utils/ABDKMathQuad.sol#1733-1736)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000002C5C7) >> 128 (contracts/utils/ABDKMathQuad.sol#1738-1741)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000162E3) >> 128 (contracts/utils/ABDKMathQuad.sol#1743-1746)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000B171) >> 128 (contracts/utils/ABDKMathQuad.sol#1748-1751)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000058B8) >> 128 (contracts/utils/ABDKMathQuad.sol#1753-1756)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000002C5B) >> 128 (contracts/utils/ABDKMathQuad.sol#1758-1761)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000162D) >> 128 (contracts/utils/ABDKMathQuad.sol#1763-1766)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000B16) >> 128 (contracts/utils/ABDKMathQuad.sol#1768-1771)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000058A) >> 128 (contracts/utils/ABDKMathQuad.sol#1773-1776)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000002C4) >> 128 (contracts/utils/ABDKMathQuad.sol#1778-1781)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000161) >> 128 (contracts/utils/ABDKMathQuad.sol#1783-1786)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000000B0) >> 128 (contracts/utils/ABDKMathQuad.sol#1788-1791)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000057) >> 128 (contracts/utils/ABDKMathQuad.sol#1793-1796)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000002B) >> 128 (contracts/utils/ABDKMathQuad.sol#1798-1801)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000015) >> 128 (contracts/utils/ABDKMathQuad.sol#1803-1806)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000000A) >> 128 (contracts/utils/ABDKMathQuad.sol#1808-1811)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000004) >> 128 (contracts/utils/ABDKMathQuad.sol#1813-1816)
-ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#1156-1844) uses literals with too many digits:
-	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000001) >> 128 (contracts/utils/ABDKMathQuad.sol#1818-1821)
-ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1865-1903) uses literals with too many digits:
-	- x >= 0x100000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1871)
-ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1865-1903) uses literals with too many digits:
-	- x >= 0x10000000000000000 (contracts/utils/ABDKMathQuad.sol#1875)
-ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1865-1903) uses literals with too many digits:
-	- x >= 0x100000000 (contracts/utils/ABDKMathQuad.sol#1879)
-ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1904) uses literals with too many digits:
+ABDKMathQuad.toUInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-96) uses literals with too many digits:
+	- require(bool)(uint128(x) < 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#84)
+ABDKMathQuad.toUInt(bytes16) (contracts/utils/ABDKMathQuad.sol#78-96) uses literals with too many digits:
+	- result = (uint256(uint128(x)) & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF) | 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#87-89)
+ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#106-135) uses literals with too many digits:
+	- require(bool)(absoluteX <= 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#110)
+ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#106-135) uses literals with too many digits:
+	- require(bool)(absoluteY <= 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#114)
+ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#106-135) uses literals with too many digits:
+	- require(bool)(x != y || absoluteX < 0x7FFF0000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#117)
+ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#106-135) uses literals with too many digits:
+	- negativeX = uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#121-122)
+ABDKMathQuad.cmp(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#106-135) uses literals with too many digits:
+	- negativeY = uint128(y) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#123-124)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- xSign = uint128(x) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#163)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#167)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- ySign = uint128(y) >= 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#169)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#173)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- xSignifier >= 0x20000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#193)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- xSignifier < 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#202)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- bytes16(uint128((0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#206-217)
+ABDKMathQuad.add(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#151-287) uses literals with too many digits:
+	- bytes16(uint128((0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#271-282)
+ABDKMathQuad.sub(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#303-307) uses literals with too many digits:
+	- add(x,y ^ 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#305)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#336)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- x ^ y == 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#337)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#342)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- y ^ (x & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#346)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#351)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#356)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- bytes16(uint128(uint128((x ^ y) & 0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#397-406)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- (x ^ y) & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#360-363)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- xSignifier >= 0x200000000000000000000000000000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#367-373)
+ABDKMathQuad.mul(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#328-409) uses literals with too many digits:
+	- xSignifier >= 0x100000000000000000000000000000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#367-373)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- x ^ (y & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#452)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- _POSITIVE_ZERO | ((x ^ y) & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#456-458)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- _POSITIVE_INFINITY | ((x ^ y) & 0x80000000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#462-464)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- ySignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#469)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- xSignifier = (xSignifier | 0x10000000000000000000000000000) << 114 (contracts/utils/ABDKMathQuad.sol#483-485)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- assert(bool)(xSignifier >= 0x1000000000000000000000000000) (contracts/utils/ABDKMathQuad.sol#495)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- bytes16(uint128(uint128((x ^ y) & 0x80000000000000000000000000000000) | (xExponent << 112) | xSignifier)) (contracts/utils/ABDKMathQuad.sol#530-539)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- (x ^ y) & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#490-493)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- xSignifier >= 0x80000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#497-503)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- xSignifier >= 0x40000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#497-503)
+ABDKMathQuad.div(bytes16,bytes16) (contracts/utils/ABDKMathQuad.sol#445-542) uses literals with too many digits:
+	- xSignifier >= 0x20000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#497-503)
+ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#550-608) uses literals with too many digits:
+	- uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#552)
+ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#550-608) uses literals with too many digits:
+	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#560)
+ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#550-608) uses literals with too many digits:
+	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#568)
+ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#550-608) uses literals with too many digits:
+	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#577)
+ABDKMathQuad.sqrt(bytes16) (contracts/utils/ABDKMathQuad.sol#550-608) uses literals with too many digits:
+	- r = 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#587)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#618)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- x == 0x3FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#619)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#628)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- xSignifier >= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#642)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- xSignifier == 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#652)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- resultSignifier < 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#661)
+ABDKMathQuad.log_2(bytes16) (contracts/utils/ABDKMathQuad.sol#616-689) uses literals with too many digits:
+	- bytes16(uint128((0x80000000000000000000000000000000) | (resultExponent << 112) | (resultSignifier & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF))) (contracts/utils/ABDKMathQuad.sol#673-685)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xNegative = uint128(x) > 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#711)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- 0x3FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#719)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier |= 0x10000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#722)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xNegative && xSignifier > 0x406E00000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#728-729)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#744)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#745)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#750)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#755)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#760)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#765)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#770)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#775)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#780)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#785)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#790)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#795)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#800)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#805)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#810)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#815)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#820)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#825)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#830)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#835)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#840)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000B1721BCFC99D9F890EA06911763) >> 128 (contracts/utils/ABDKMathQuad.sol#841-844)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#845)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000058B90CF1E6D97F9CA14DBCC1628) >> 128 (contracts/utils/ABDKMathQuad.sol#846-849)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#850)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000002C5C863B73F016468F6BAC5CA2B) >> 128 (contracts/utils/ABDKMathQuad.sol#851-854)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#855)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000162E430E5A18F6119E3C02282A5) >> 128 (contracts/utils/ABDKMathQuad.sol#856-859)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#860)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000B1721835514B86E6D96EFD1BFE) >> 128 (contracts/utils/ABDKMathQuad.sol#861-864)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#865)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000058B90C0B48C6BE5DF846C5B2EF) >> 128 (contracts/utils/ABDKMathQuad.sol#866-869)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#870)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000002C5C8601CC6B9E94213C72737A) >> 128 (contracts/utils/ABDKMathQuad.sol#871-874)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#875)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000162E42FFF037DF38AA2B219F06) >> 128 (contracts/utils/ABDKMathQuad.sol#876-879)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#880)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000B17217FBA9C739AA5819F44F9) >> 128 (contracts/utils/ABDKMathQuad.sol#881-884)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#885)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000058B90BFCDEE5ACD3C1CEDC823) >> 128 (contracts/utils/ABDKMathQuad.sol#886-889)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#890)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000002C5C85FE31F35A6A30DA1BE50) >> 128 (contracts/utils/ABDKMathQuad.sol#891-894)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#895)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000162E42FF0999CE3541B9FFFCF) >> 128 (contracts/utils/ABDKMathQuad.sol#896-899)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#900)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000B17217F80F4EF5AADDA45554) >> 128 (contracts/utils/ABDKMathQuad.sol#901-904)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#905)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000058B90BFBF8479BD5A81B51AD) >> 128 (contracts/utils/ABDKMathQuad.sol#906-909)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#910)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000002C5C85FDF84BD62AE30A74CC) >> 128 (contracts/utils/ABDKMathQuad.sol#911-914)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#915)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000162E42FEFB2FED257559BDAA) >> 128 (contracts/utils/ABDKMathQuad.sol#916-919)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#920)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000B17217F7D5A7716BBA4A9AE) >> 128 (contracts/utils/ABDKMathQuad.sol#921-924)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#925)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000058B90BFBE9DDBAC5E109CCE) >> 128 (contracts/utils/ABDKMathQuad.sol#926-929)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#930)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000002C5C85FDF4B15DE6F17EB0D) >> 128 (contracts/utils/ABDKMathQuad.sol#931-934)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#935)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000162E42FEFA494F1478FDE05) >> 128 (contracts/utils/ABDKMathQuad.sol#936-939)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#940)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000B17217F7D20CF927C8E94C) >> 128 (contracts/utils/ABDKMathQuad.sol#941-944)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#945)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000058B90BFBE8F71CB4E4B33D) >> 128 (contracts/utils/ABDKMathQuad.sol#946-949)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#950)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000002C5C85FDF477B662B26945) >> 128 (contracts/utils/ABDKMathQuad.sol#951-954)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#955)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000162E42FEFA3AE53369388C) >> 128 (contracts/utils/ABDKMathQuad.sol#956-959)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#960)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000B17217F7D1D351A389D40) >> 128 (contracts/utils/ABDKMathQuad.sol#961-964)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#965)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000058B90BFBE8E8B2D3D4EDE) >> 128 (contracts/utils/ABDKMathQuad.sol#966-969)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#970)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000002C5C85FDF4741BEA6E77E) >> 128 (contracts/utils/ABDKMathQuad.sol#971-974)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#975)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000162E42FEFA39FE95583C2) >> 128 (contracts/utils/ABDKMathQuad.sol#976-979)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#980)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000B17217F7D1CFB72B45E1) >> 128 (contracts/utils/ABDKMathQuad.sol#981-984)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#985)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000058B90BFBE8E7CC35C3F0) >> 128 (contracts/utils/ABDKMathQuad.sol#986-989)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#990)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000002C5C85FDF473E242EA38) >> 128 (contracts/utils/ABDKMathQuad.sol#991-994)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#995)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000162E42FEFA39F02B772C) >> 128 (contracts/utils/ABDKMathQuad.sol#996-999)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1000)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000B17217F7D1CF7D83C1A) >> 128 (contracts/utils/ABDKMathQuad.sol#1001-1004)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1005)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000058B90BFBE8E7BDCBE2E) >> 128 (contracts/utils/ABDKMathQuad.sol#1006-1009)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1010)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000002C5C85FDF473DEA871F) >> 128 (contracts/utils/ABDKMathQuad.sol#1011-1014)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1015)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000162E42FEFA39EF44D91) >> 128 (contracts/utils/ABDKMathQuad.sol#1016-1019)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1020)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000B17217F7D1CF79E949) >> 128 (contracts/utils/ABDKMathQuad.sol#1021-1024)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1025)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000058B90BFBE8E7BCE544) >> 128 (contracts/utils/ABDKMathQuad.sol#1026-1029)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1030)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000002C5C85FDF473DE6ECA) >> 128 (contracts/utils/ABDKMathQuad.sol#1031-1034)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1035)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000162E42FEFA39EF366F) >> 128 (contracts/utils/ABDKMathQuad.sol#1036-1039)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1040)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000B17217F7D1CF79AFA) >> 128 (contracts/utils/ABDKMathQuad.sol#1041-1044)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1045)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000058B90BFBE8E7BCD6D) >> 128 (contracts/utils/ABDKMathQuad.sol#1046-1049)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1050)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000002C5C85FDF473DE6B2) >> 128 (contracts/utils/ABDKMathQuad.sol#1051-1054)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1055)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000162E42FEFA39EF358) >> 128 (contracts/utils/ABDKMathQuad.sol#1056-1059)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1060)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000B17217F7D1CF79AB) >> 128 (contracts/utils/ABDKMathQuad.sol#1061-1064)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1065)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000058B90BFBE8E7BCD5) >> 128 (contracts/utils/ABDKMathQuad.sol#1066-1069)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1070)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000002C5C85FDF473DE6A) >> 128 (contracts/utils/ABDKMathQuad.sol#1071-1074)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1075)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000162E42FEFA39EF34) >> 128 (contracts/utils/ABDKMathQuad.sol#1076-1079)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1080)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000B17217F7D1CF799) >> 128 (contracts/utils/ABDKMathQuad.sol#1081-1084)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1085)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000058B90BFBE8E7BCC) >> 128 (contracts/utils/ABDKMathQuad.sol#1086-1089)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1090)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000002C5C85FDF473DE5) >> 128 (contracts/utils/ABDKMathQuad.sol#1091-1094)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1095)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000162E42FEFA39EF2) >> 128 (contracts/utils/ABDKMathQuad.sol#1096-1099)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1100)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000B17217F7D1CF78) >> 128 (contracts/utils/ABDKMathQuad.sol#1101-1104)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1105)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000058B90BFBE8E7BB) >> 128 (contracts/utils/ABDKMathQuad.sol#1106-1109)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1110)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000002C5C85FDF473DD) >> 128 (contracts/utils/ABDKMathQuad.sol#1111-1114)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1115)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000162E42FEFA39EE) >> 128 (contracts/utils/ABDKMathQuad.sol#1116-1119)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1120)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000B17217F7D1CF6) >> 128 (contracts/utils/ABDKMathQuad.sol#1121-1124)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1125)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000058B90BFBE8E7A) >> 128 (contracts/utils/ABDKMathQuad.sol#1126-1129)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1130)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000002C5C85FDF473C) >> 128 (contracts/utils/ABDKMathQuad.sol#1131-1134)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1135)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000162E42FEFA39D) >> 128 (contracts/utils/ABDKMathQuad.sol#1136-1139)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1140)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000B17217F7D1CE) >> 128 (contracts/utils/ABDKMathQuad.sol#1141-1144)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1145)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000058B90BFBE8E6) >> 128 (contracts/utils/ABDKMathQuad.sol#1146-1149)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1150)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000002C5C85FDF472) >> 128 (contracts/utils/ABDKMathQuad.sol#1151-1154)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1155)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000162E42FEFA38) >> 128 (contracts/utils/ABDKMathQuad.sol#1156-1159)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1160)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000B17217F7D1B) >> 128 (contracts/utils/ABDKMathQuad.sol#1161-1164)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1165)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000058B90BFBE8D) >> 128 (contracts/utils/ABDKMathQuad.sol#1166-1169)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1170)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000002C5C85FDF46) >> 128 (contracts/utils/ABDKMathQuad.sol#1171-1174)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1175)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000162E42FEFA2) >> 128 (contracts/utils/ABDKMathQuad.sol#1176-1179)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1180)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000B17217F7D0) >> 128 (contracts/utils/ABDKMathQuad.sol#1181-1184)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1185)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000058B90BFBE7) >> 128 (contracts/utils/ABDKMathQuad.sol#1186-1189)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1190)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000002C5C85FDF3) >> 128 (contracts/utils/ABDKMathQuad.sol#1191-1194)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1195)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000162E42FEF9) >> 128 (contracts/utils/ABDKMathQuad.sol#1196-1199)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000000 > 0 (contracts/utils/ABDKMathQuad.sol#1200)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000B17217F7C) >> 128 (contracts/utils/ABDKMathQuad.sol#1201-1204)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000000 > 0 (contracts/utils/ABDKMathQuad.sol#1205)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000058B90BFBD) >> 128 (contracts/utils/ABDKMathQuad.sol#1206-1209)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000000 > 0 (contracts/utils/ABDKMathQuad.sol#1210)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000002C5C85FDE) >> 128 (contracts/utils/ABDKMathQuad.sol#1211-1214)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000000 > 0 (contracts/utils/ABDKMathQuad.sol#1215)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000162E42FEE) >> 128 (contracts/utils/ABDKMathQuad.sol#1216-1219)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000000 > 0 (contracts/utils/ABDKMathQuad.sol#1220)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000B17217F6) >> 128 (contracts/utils/ABDKMathQuad.sol#1221-1224)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x80000000 > 0 (contracts/utils/ABDKMathQuad.sol#1225)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000058B90BFA) >> 128 (contracts/utils/ABDKMathQuad.sol#1226-1229)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x40000000 > 0 (contracts/utils/ABDKMathQuad.sol#1230)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000002C5C85FC) >> 128 (contracts/utils/ABDKMathQuad.sol#1231-1234)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x20000000 > 0 (contracts/utils/ABDKMathQuad.sol#1235)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000162E42FD) >> 128 (contracts/utils/ABDKMathQuad.sol#1236-1239)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x10000000 > 0 (contracts/utils/ABDKMathQuad.sol#1240)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000B17217E) >> 128 (contracts/utils/ABDKMathQuad.sol#1241-1244)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x8000000 > 0 (contracts/utils/ABDKMathQuad.sol#1245)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000058B90BE) >> 128 (contracts/utils/ABDKMathQuad.sol#1246-1249)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x4000000 > 0 (contracts/utils/ABDKMathQuad.sol#1250)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000002C5C85E) >> 128 (contracts/utils/ABDKMathQuad.sol#1251-1254)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x2000000 > 0 (contracts/utils/ABDKMathQuad.sol#1255)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000162E42E) >> 128 (contracts/utils/ABDKMathQuad.sol#1256-1259)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x1000000 > 0 (contracts/utils/ABDKMathQuad.sol#1260)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000B17216) >> 128 (contracts/utils/ABDKMathQuad.sol#1261-1264)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x800000 > 0 (contracts/utils/ABDKMathQuad.sol#1265)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000058B90A) >> 128 (contracts/utils/ABDKMathQuad.sol#1266-1269)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x400000 > 0 (contracts/utils/ABDKMathQuad.sol#1270)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000002C5C84) >> 128 (contracts/utils/ABDKMathQuad.sol#1271-1274)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x200000 > 0 (contracts/utils/ABDKMathQuad.sol#1275)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000162E41) >> 128 (contracts/utils/ABDKMathQuad.sol#1276-1279)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- xSignifier & 0x100000 > 0 (contracts/utils/ABDKMathQuad.sol#1280)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000B1720) >> 128 (contracts/utils/ABDKMathQuad.sol#1281-1284)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000058B8F) >> 128 (contracts/utils/ABDKMathQuad.sol#1286-1289)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000002C5C7) >> 128 (contracts/utils/ABDKMathQuad.sol#1291-1294)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000162E3) >> 128 (contracts/utils/ABDKMathQuad.sol#1296-1299)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000B171) >> 128 (contracts/utils/ABDKMathQuad.sol#1301-1304)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000058B8) >> 128 (contracts/utils/ABDKMathQuad.sol#1306-1309)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000002C5B) >> 128 (contracts/utils/ABDKMathQuad.sol#1311-1314)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000162D) >> 128 (contracts/utils/ABDKMathQuad.sol#1316-1319)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000B16) >> 128 (contracts/utils/ABDKMathQuad.sol#1321-1324)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000058A) >> 128 (contracts/utils/ABDKMathQuad.sol#1326-1329)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000002C4) >> 128 (contracts/utils/ABDKMathQuad.sol#1331-1334)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000161) >> 128 (contracts/utils/ABDKMathQuad.sol#1336-1339)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x1000000000000000000000000000000B0) >> 128 (contracts/utils/ABDKMathQuad.sol#1341-1344)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000057) >> 128 (contracts/utils/ABDKMathQuad.sol#1346-1349)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000002B) >> 128 (contracts/utils/ABDKMathQuad.sol#1351-1354)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000015) >> 128 (contracts/utils/ABDKMathQuad.sol#1356-1359)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x10000000000000000000000000000000A) >> 128 (contracts/utils/ABDKMathQuad.sol#1361-1364)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000004) >> 128 (contracts/utils/ABDKMathQuad.sol#1366-1369)
+ABDKMathQuad.pow_2(bytes16) (contracts/utils/ABDKMathQuad.sol#709-1397) uses literals with too many digits:
+	- resultSignifier = (resultSignifier * 0x100000000000000000000000000000001) >> 128 (contracts/utils/ABDKMathQuad.sol#1371-1374)
+ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1418-1456) uses literals with too many digits:
+	- x >= 0x100000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#1424)
+ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1418-1456) uses literals with too many digits:
+	- x >= 0x10000000000000000 (contracts/utils/ABDKMathQuad.sol#1428)
+ABDKMathQuad.mostSignificantBit(uint256) (contracts/utils/ABDKMathQuad.sol#1418-1456) uses literals with too many digits:
+	- x >= 0x100000000 (contracts/utils/ABDKMathQuad.sol#1432)
+ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1457) uses literals with too many digits:
 	- _POSITIVE_ZERO = 0x00000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#18-19)
-ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1904) uses literals with too many digits:
+ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1457) uses literals with too many digits:
 	- _NEGATIVE_ZERO = 0x80000000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#24-25)
-ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1904) uses literals with too many digits:
+ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1457) uses literals with too many digits:
 	- _POSITIVE_INFINITY = 0x7FFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#30-31)
-ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1904) uses literals with too many digits:
+ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1457) uses literals with too many digits:
 	- _NEGATIVE_INFINITY = 0xFFFF0000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#36-37)
-ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1904) uses literals with too many digits:
+ABDKMathQuad.slitherConstructorConstantVariables() (contracts/utils/ABDKMathQuad.sol#14-1457) uses literals with too many digits:
 	- NaN = 0x7FFF8000000000000000000000000000 (contracts/utils/ABDKMathQuad.sol#42)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#too-many-digits
 
@@ -1852,23 +1755,7 @@ burn(uint256) should be declared external:
 	- ERC20Burnable.burn(uint256) (node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol#20-22)
 burnFrom(address,uint256) should be declared external:
 	- ERC20Burnable.burnFrom(address,uint256) (node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol#35-38)
-mintFee() should be declared external:
-	- FeesFacet.mintFee() (contracts/facets/FeesFacet.sol#50-52)
-burnBuyerFee() should be declared external:
-	- FeesFacet.burnBuyerFee() (contracts/facets/FeesFacet.sol#54-56)
-burnOwnerFee() should be declared external:
-	- FeesFacet.burnOwnerFee() (contracts/facets/FeesFacet.sol#58-60)
-transferFee() should be declared external:
-	- FeesFacet.transferFee() (contracts/facets/FeesFacet.sol#62-64)
-interestFee() should be declared external:
-	- FeesFacet.interestFee() (contracts/facets/FeesFacet.sol#66-68)
-yieldFee() should be declared external:
-	- FeesFacet.yieldFee() (contracts/facets/FeesFacet.sol#70-72)
-isValid(address,bytes) should be declared external:
-	- SameAssetTransferMigration.isValid(address,bytes) (contracts/migrations/SameAssetTransferMigration.sol#100-110)
-	- SingleAssetVault.isValid(address,bytes) (contracts/vaults/SingleAssetVault.sol#42-50)
-	- UniswapSingleTransferMigration.isValid(address,bytes) (contracts/migrations/UniswapSingleTransferMigration.sol#134-159)
-	- Vault.isValid(address,bytes) (contracts/vaults/Vault.sol#85-89)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#public-function-that-could-be-declared-external
-. analyzed (61 contracts with 77 detectors), 901 result(s) found
+. analyzed (61 contracts with 77 detectors), 837 result(s) found
+
 ```
