@@ -1,8 +1,7 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { Hub } from "../../artifacts/types/Hub";
-import { Foundry } from "../../artifacts/types/Foundry";
+import { HubFacet } from "../../artifacts/types/HubFacet";
+import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
@@ -12,9 +11,8 @@ import { expect } from "chai";
 import { mineBlock } from "../utils/hardhatNode";
 import { ERC20 } from "../../artifacts/types/ERC20";
 import { Signer } from "ethers";
-import { MeTokenRegistry } from "../../artifacts/types/MeTokenRegistry";
+import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { MeToken } from "../../artifacts/types/MeToken";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../artifacts/types";
 
 /*
@@ -28,26 +26,23 @@ const policyFactory = await ethers.getContractFactory("PolicyLib", {
 });
 */
 const setup = async () => {
-  describe("Hub.sol", () => {
+  describe("HubFacet.sol", () => {
     let DAI: string;
-    let WETH: string;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: BancorABDK;
+    let curve: ICurve;
     let newCurve: BancorABDK;
-    let foundry: Foundry;
-    let hub: Hub;
+    let foundry: FoundryFacet;
+    let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
-    let vaultRegistry: VaultRegistry;
     let encodedVaultDAIArgs: string;
-    let encodedVaultWETHArgs: string;
     let encodedCurveDetails: string;
     let token: ERC20;
     let dai: ERC20;
     let tokenHolder: Signer;
-    let meTokenRegistry: MeTokenRegistry;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let meToken: MeToken;
 
     const hubId = 1;
@@ -64,56 +59,40 @@ const setup = async () => {
     const symbol = "CARL";
 
     before(async () => {
-      ({ DAI, WETH } = await getNamedAccounts());
+      ({ DAI } = await getNamedAccounts());
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
-      );
-      encodedVaultWETHArgs = ethers.utils.defaultAbiCoder.encode(
-        ["address"],
-        [WETH]
       );
       encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
         token,
         tokenHolder,
+        hub,
+        curve,
+        foundry,
+        singleAssetVault,
+        curveRegistry,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
-        vaultRegistry,
-        curveRegistry,
-        singleAssetVault,
-      } = await hubSetupWithoutRegister(
-        hub,
-        foundry,
-        curve as unknown as ICurve
-      ));
+      } = await hubSetupWithoutRegister("bancorABDK"));
     });
 
     describe("Initial state", () => {
       it("Check initial values", async () => {
-        expect(await hub.MAX_REFUND_RATIO()).to.be.equal(10 ** 6);
-        expect(await hub.foundry()).to.be.equal(foundry.address);
-        expect(await hub.vaultRegistry()).to.be.equal(vaultRegistry.address);
-        expect(await hub.curveRegistry()).to.be.equal(curveRegistry.address);
-        expect(await hub.owner()).to.be.equal(account0.address);
+        // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
-        expect(await hub.warmup()).to.be.equal(0);
-        expect(await hub.duration()).to.be.equal(0);
-        expect(await hub.cooldown()).to.be.equal(0);
-        expect(await hub.registerer()).to.be.equal(account0.address);
-        const details = await hub.getDetails(0);
+        expect(await hub.hubWarmup()).to.be.equal(0);
+        expect(await hub.hubDuration()).to.be.equal(0);
+        expect(await hub.hubCooldown()).to.be.equal(0);
+        // expect(await hub.registerer()).to.be.equal(account0.address);
+        const details = await hub.getHubDetails(0);
         expect(details.active).to.be.equal(false);
         expect(details.owner).to.be.equal(ethers.constants.AddressZero);
         expect(details.vault).to.be.equal(ethers.constants.AddressZero);
@@ -145,7 +124,7 @@ const setup = async () => {
               encodedCurveDetails,
               encodedVaultDAIArgs
             )
-        ).to.be.revertedWith("!registerer");
+        ).to.be.revertedWith("!registerController");
       });
       it("should revert from invalid address arguments", async () => {
         // Un-approved curve
@@ -260,7 +239,7 @@ const setup = async () => {
             encodedVaultDAIArgs
           );
         expect(await hub.count()).to.be.equal(hubId);
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -277,7 +256,7 @@ const setup = async () => {
       });
     });
 
-    describe("setWarmup()", () => {
+    describe("setHubWarmup()", () => {
       before(async () => {
         // required in later testing
 
@@ -300,53 +279,53 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       });
-      it("should revert to setWarmup if not owner", async () => {
-        const tx = hub.connect(account1).setWarmup(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+      it("should revert to setHubWarmup if not owner", async () => {
+        const tx = hub.connect(account1).setHubWarmup(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setWarmup if same as before", async () => {
-        const oldWarmup = await hub.warmup();
-        const tx = hub.setWarmup(oldWarmup);
-        await expect(tx).to.be.revertedWith("warmup_ == _warmup");
+      it("should revert to setHubWarmup if same as before", async () => {
+        const oldWarmup = await hub.hubWarmup();
+        const tx = hub.setHubWarmup(oldWarmup);
+        await expect(tx).to.be.revertedWith("same warmup");
       });
-      it("should be able to setWarmup", async () => {
-        const tx = await hub.setWarmup(duration);
+      it("should be able to setHubWarmup", async () => {
+        const tx = await hub.setHubWarmup(duration);
         await tx.wait();
-        expect(await hub.warmup()).to.be.equal(duration);
+        expect(await hub.hubWarmup()).to.be.equal(duration);
       });
     });
 
-    describe("setDuration()", () => {
-      it("should revert to setDuration if not owner", async () => {
-        const tx = hub.connect(account1).setDuration(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+    describe("setHubDuration()", () => {
+      it("should revert to setHubDuration if not owner", async () => {
+        const tx = hub.connect(account1).setHubDuration(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setDuration if same as before", async () => {
-        const oldWarmup = await hub.duration();
-        const tx = hub.setDuration(oldWarmup);
-        await expect(tx).to.be.revertedWith("duration_ == _duration");
+      it("should revert to setHubDuration if same as before", async () => {
+        const oldDuration = await hub.hubDuration();
+        const tx = hub.setHubDuration(oldDuration);
+        await expect(tx).to.be.revertedWith("same duration");
       });
-      it("should be able to setDuration", async () => {
-        const tx = await hub.setDuration(duration);
+      it("should be able to setHubDuration", async () => {
+        const tx = await hub.setHubDuration(duration);
         await tx.wait();
-        expect(await hub.duration()).to.be.equal(duration);
+        expect(await hub.hubDuration()).to.be.equal(duration);
       });
     });
 
-    describe("setCooldown()", () => {
-      it("should revert to setCooldown if not owner", async () => {
-        const tx = hub.connect(account1).setCooldown(duration);
-        await expect(tx).to.be.revertedWith("Ownable: caller is not the owner");
+    describe("setHubCooldown()", () => {
+      it("should revert to setHubCooldown if not owner", async () => {
+        const tx = hub.connect(account1).setHubCooldown(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setCooldown if same as before", async () => {
-        const oldWarmup = await hub.cooldown();
-        const tx = hub.setCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("cooldown_ == _cooldown");
+      it("should revert to setHubCooldown if same as before", async () => {
+        const oldCooldown = await hub.hubCooldown();
+        const tx = hub.setHubCooldown(oldCooldown);
+        await expect(tx).to.be.revertedWith("same cooldown");
       });
-      it("should be able to setCooldown", async () => {
-        const tx = await hub.setCooldown(duration);
+      it("should be able to setHubCooldown", async () => {
+        const tx = await hub.setHubCooldown(duration);
         await tx.wait();
-        expect(await hub.cooldown()).to.be.equal(duration);
+        expect(await hub.hubCooldown()).to.be.equal(duration);
       });
     });
 
@@ -359,7 +338,9 @@ const setup = async () => {
       });
 
       it("should revert when nothing to update", async () => {
-        const tx = hub.initUpdate(hubId, curve.address, 0, "0x");
+        const tx = hub
+          .connect(account0)
+          .initUpdate(hubId, curve.address, 0, "0x");
         await expect(tx).to.be.revertedWith("Nothing to update");
       });
 
@@ -458,7 +439,7 @@ const setup = async () => {
             expectedEndTime,
             expectedEndCooldownTime
           );
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -482,7 +463,7 @@ const setup = async () => {
           refundRatio2,
           encodedCurveDetails
         );
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
 
         await expect(txBeforeStartTime).to.be.revertedWith("already updating");
         let block = await ethers.provider.getBlock("latest");
@@ -539,7 +520,7 @@ const setup = async () => {
       });
 
       it("should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
-        let details = await hub.getDetails(hubId);
+        let details = await hub.getHubDetails(hubId);
 
         // fast fwd to endCooldown - 2
         await mineBlock(details.endCooldown.toNumber());
@@ -575,7 +556,7 @@ const setup = async () => {
             expectedEndCooldownTime
           );
 
-        details = await hub.getDetails(hubId);
+        details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -603,7 +584,7 @@ const setup = async () => {
 
         await expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
 
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -654,7 +635,7 @@ const setup = async () => {
             expectedEndCooldownTime
           );
 
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
         expect(details.active).to.be.equal(true);
         expect(details.owner).to.be.equal(account0.address);
         expect(details.vault).to.be.equal(singleAssetVault.address);
@@ -683,7 +664,7 @@ const setup = async () => {
     describe("finishUpdate()", () => {
       it("should revert before endTime, during warmup and duration", async () => {
         // increase time before endTime
-        const details = await hub.getDetails(hubId);
+        const details = await hub.getHubDetails(hubId);
 
         await mineBlock(details.endTime.toNumber() - 2);
         const block = await ethers.provider.getBlock("latest");
@@ -697,7 +678,7 @@ const setup = async () => {
 
       it("should correctly set HubDetails when called during cooldown", async () => {
         // increase time after endTime
-        const oldDetails = await hub.getDetails(hubId);
+        const oldDetails = await hub.getHubDetails(hubId);
         await mineBlock(oldDetails.endTime.toNumber() + 2);
         const block = await ethers.provider.getBlock("latest");
         expect(oldDetails.endTime).to.be.lt(block.timestamp);
@@ -709,7 +690,7 @@ const setup = async () => {
           .to.emit(hub, "FinishUpdate")
           .withArgs(hubId);
 
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.active).to.be.equal(true);
         expect(newDetails.owner).to.be.equal(account0.address);
         expect(newDetails.vault).to.be.equal(singleAssetVault.address);
@@ -730,7 +711,7 @@ const setup = async () => {
       describe("finishUpdate() from mint | burn", () => {
         let toggle = false; // for generating different weight each time
         beforeEach(async () => {
-          const oldDetails = await hub.getDetails(hubId);
+          const oldDetails = await hub.getHubDetails(hubId);
           await mineBlock(oldDetails.endCooldown.toNumber() + 10);
 
           const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
@@ -747,7 +728,7 @@ const setup = async () => {
           await tx.wait();
 
           // increase time after endTime
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endTime.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endTime).to.be.lt(block.timestamp);
@@ -778,7 +759,7 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when mint() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endCooldown).to.be.lt(block.timestamp);
@@ -795,7 +776,7 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when burn() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getDetails(hubId);
+          const details = await hub.getHubDetails(hubId);
           await mineBlock(details.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
           expect(details.endCooldown).to.be.lt(block.timestamp);
@@ -824,17 +805,16 @@ const setup = async () => {
         ).to.be.revertedWith("Same owner");
       });
       it("should transfers hub ownership", async () => {
-        const transferHubOwnershipTx = await hub.transferHubOwnership(
-          hubId,
-          account1.address
-        );
+        const transferHubOwnershipTx = await hub
+          .connect(account0)
+          .transferHubOwnership(hubId, account1.address);
         await transferHubOwnershipTx.wait();
 
         await expect(transferHubOwnershipTx)
           .to.emit(hub, "TransferHubOwnership")
           .withArgs(hubId, account1.address);
 
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.owner).to.be.equal(account1.address);
       });
       after(async () => {
@@ -842,14 +822,14 @@ const setup = async () => {
         await hub
           .connect(account1)
           .transferHubOwnership(hubId, account0.address);
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.owner).to.be.equal(account0.address);
       });
     });
 
     describe("deactivate()", () => {
       before(async () => {
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.active).to.equal(true);
       });
       it("should revert when sender isn't owner", async () => {
@@ -862,7 +842,7 @@ const setup = async () => {
 
         await expect(tx).to.emit(hub, "Deactivate").withArgs(hubId);
 
-        const newDetails = await hub.getDetails(hubId);
+        const newDetails = await hub.getHubDetails(hubId);
         expect(newDetails.active).to.equal(false);
       });
       it("should revert when hub already inactive", async () => {
@@ -870,29 +850,29 @@ const setup = async () => {
       });
     });
 
-    describe("setRegisterer()", () => {
-      it("should revert when sender is not registerer", async () => {
-        await expect(
-          hub.connect(account1).setRegisterer(account1.address)
-        ).to.be.revertedWith("!registerer");
-      });
-      it("should revert when new registerer is same as old", async () => {
-        await expect(hub.setRegisterer(account0.address)).to.be.revertedWith(
-          "_registerer == registerer"
-        );
-      });
-      it("should be able to change registerer", async () => {
-        await hub.setRegisterer(account1.address);
-        expect(await hub.registerer()).to.be.equal(account1.address);
-      });
-      after(async () => {
-        await expect(
-          hub.connect(account0).setRegisterer(account0.address)
-        ).to.be.revertedWith("!registerer");
-        // set registerer back to account0
-        await hub.connect(account1).setRegisterer(account0.address);
-        expect(await hub.registerer()).to.be.equal(account0.address);
-      });
+    describe("setRegisterer() [TODO]", () => {
+      // it("should revert when sender is not registerer", async () => {
+      //   await expect(
+      //     hub.connect(account1).setRegisterer(account1.address)
+      //   ).to.be.revertedWith("!registerer");
+      // });
+      // it("should revert when new registerer is same as old", async () => {
+      //   await expect(hub.setHubRegisterer(account0.address)).to.be.revertedWith(
+      //     "_registerer == registerer"
+      //   );
+      // });
+      // it("should be able to change registerer", async () => {
+      //   await hub.setHubRegisterer(account1.address);
+      //   expect(await hub.registerer()).to.be.equal(account1.address);
+      // });
+      // after(async () => {
+      //   await expect(
+      //     hub.connect(account0).setRegisterer(account0.address)
+      //   ).to.be.revertedWith("!registerer");
+      //   // set registerer back to account0
+      //   await hub.connect(account1).setRegisterer(account0.address);
+      //   expect(await hub.registerer()).to.be.equal(account0.address);
+      // });
     });
   });
 };

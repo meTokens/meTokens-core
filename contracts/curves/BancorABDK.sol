@@ -15,8 +15,8 @@ contract BancorABDK is ICurve {
 
     struct Bancor {
         uint256 baseY;
-        uint32 reserveWeight;
         uint256 targetBaseY;
+        uint32 reserveWeight;
         uint32 targetReserveWeight;
     }
 
@@ -94,7 +94,7 @@ contract BancorABDK is ICurve {
         return _bancors[hubId];
     }
 
-    function getDetails(uint256 hubId)
+    function getCurveDetails(uint256 hubId)
         external
         view
         override

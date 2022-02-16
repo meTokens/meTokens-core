@@ -2,41 +2,19 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IFees.sol";
-import "./interfaces/IMeTokenRegistry.sol";
-import "./interfaces/IMeToken.sol";
-import "./interfaces/ICurve.sol";
-import "./interfaces/IVault.sol";
-import "./interfaces/IMigration.sol";
-import "./interfaces/IHub.sol";
-import "./interfaces/IFoundry.sol";
-import "./libs/WeightedAverage.sol";
-import "./libs/Details.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
+import {IFoundry} from "../interfaces/IFoundry.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
 
-/// @title meTokens Foundry
-/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213), @zgorizzo69
-/// @notice Mint and burn meTokens for other assets
-contract Foundry is IFoundry, Ownable, Initializable {
-    using SafeERC20 for IERC20;
-    uint256 public constant PRECISION = 10**18;
-    uint256 public constant MAX_REFUND_RATIO = 10**6;
-    IHub public hub;
-    IFees public fees;
-    IMeTokenRegistry public meTokenRegistry;
+import {LibMeToken} from "../libs/LibMeToken.sol";
+import {LibHub} from "../libs/LibHub.sol";
+import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
+import "../libs/Details.sol";
 
-    function initialize(
-        address _hub,
-        address _fees,
-        address _meTokenRegistry
-    ) external onlyOwner initializer {
-        hub = IHub(_hub);
-        fees = IFees(_fees);
-        meTokenRegistry = IMeTokenRegistry(_meTokenRegistry);
-    }
-
+contract FoundryFacet is IFoundry, Modifiers {
     // MINT FLOW CHART
     /****************************************************************************
     //                                                                         //
@@ -57,29 +35,31 @@ contract Foundry is IFoundry, Ownable, Initializable {
     //                                              .sub(fees)                 //
     //                                                                         //
     ****************************************************************************/
+
     function mint(
         address _meToken,
         uint256 _assetsDeposited,
         address _recipient
     ) external override {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
 
         // Handling changes
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            hub_ = hub.finishUpdate(meToken_.hubId);
+            hub_ = LibHub.finishUpdate(meToken_.hubId);
         } else if (meToken_.targetHubId != 0) {
             if (block.timestamp > meToken_.endTime) {
-                hub_ = hub.getDetails(meToken_.targetHubId);
-                meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+                hub_ = s.hubs[meToken_.targetHubId];
+                // meToken_ = s.meTokenRegistry.finishResubscribe(_meToken);
+                meToken_ = LibMeToken.finishResubscribe(_meToken);
             } else if (block.timestamp > meToken_.startTime) {
                 // Handle migration actions if needed
                 IMigration(meToken_.migration).poke(_meToken);
-                meToken_ = meTokenRegistry.getDetails(_meToken);
+                meToken_ = s.meTokens[_meToken];
             }
         }
 
-        uint256 fee = (_assetsDeposited * fees.mintFee()) / PRECISION;
+        uint256 fee = (_assetsDeposited * s.mintFee) / s.PRECISION;
         uint256 assetsDepositedAfterFees = _assetsDeposited - fee;
 
         uint256 meTokensMinted = _calculateMeTokensMinted(
@@ -95,17 +75,14 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.migration != address(0) &&
             block.timestamp > meToken_.startTime
         ) {
-            Details.Hub memory targetHub_ = hub.getDetails(
-                meToken_.targetHubId
-            );
             // Use meToken address to get the asset address from the migration vault
             vault = IVault(meToken_.migration);
-            asset = targetHub_.asset;
+            asset = s.hubs[meToken_.targetHubId].asset;
         }
 
         vault.handleDeposit(msg.sender, asset, _assetsDeposited, fee);
 
-        meTokenRegistry.updateBalancePooled(
+        LibMeToken.updateBalancePooled(
             true,
             _meToken,
             assetsDepositedAfterFees
@@ -160,16 +137,16 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         address _recipient
     ) external override {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
 
         if (hub_.updating && block.timestamp > hub_.endTime) {
-            hub_ = hub.finishUpdate(meToken_.hubId);
+            hub_ = LibHub.finishUpdate(meToken_.hubId);
         } else if (
             meToken_.targetHubId != 0 && block.timestamp > meToken_.endTime
         ) {
-            hub_ = hub.getDetails(meToken_.targetHubId);
-            meToken_ = meTokenRegistry.finishResubscribe(_meToken);
+            hub_ = s.hubs[meToken_.targetHubId];
+            meToken_ = LibMeToken.finishResubscribe(_meToken);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
@@ -188,34 +165,34 @@ contract Foundry is IFoundry, Ownable, Initializable {
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
         if (msg.sender == meToken_.owner) {
-            feeRate = fees.burnOwnerFee();
+            feeRate = s.burnOwnerFee;
         } else {
-            feeRate = fees.burnBuyerFee();
+            feeRate = s.burnBuyerFee;
         }
 
         // Burn metoken from user
         IMeToken(_meToken).burn(msg.sender, _meTokensBurned);
 
         // Subtract tokens returned from balance pooled
-        meTokenRegistry.updateBalancePooled(false, _meToken, rawAssetsReturned);
+        LibMeToken.updateBalancePooled(false, _meToken, rawAssetsReturned);
 
         if (msg.sender == meToken_.owner) {
             // Is owner, subtract from balance locked
-            meTokenRegistry.updateBalanceLocked(
+            LibMeToken.updateBalanceLocked(
                 false,
                 _meToken,
                 assetsReturned - rawAssetsReturned
             );
         } else {
             // Is buyer, add to balance locked using refund ratio
-            meTokenRegistry.updateBalanceLocked(
+            LibMeToken.updateBalanceLocked(
                 true,
                 _meToken,
                 rawAssetsReturned - assetsReturned
             );
         }
 
-        uint256 fee = (assetsReturned * feeRate) / PRECISION;
+        uint256 fee = (assetsReturned * feeRate) / s.PRECISION;
         assetsReturned = assetsReturned - fee;
         IVault vault = IVault(hub_.vault);
         address asset = hub_.asset;
@@ -224,11 +201,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
             meToken_.migration != address(0) &&
             block.timestamp > meToken_.startTime
         ) {
-            Details.Hub memory targetHub_ = hub.getDetails(
-                meToken_.targetHubId
-            );
             vault = IVault(meToken_.migration);
-            asset = targetHub_.asset;
+            asset = s.hubs[meToken_.targetHubId].asset;
         }
 
         vault.handleWithdrawal(_recipient, asset, assetsReturned, fee);
@@ -247,8 +221,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         external
         override
     {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
         require(meToken_.migration == address(0), "meToken resubscribing");
 
         IVault vault = IVault(hub_.vault);
@@ -256,7 +230,7 @@ contract Foundry is IFoundry, Ownable, Initializable {
 
         vault.handleDeposit(msg.sender, asset, _assetsDeposited, 0);
 
-        meTokenRegistry.updateBalanceLocked(true, _meToken, _assetsDeposited);
+        LibMeToken.updateBalanceLocked(true, _meToken, _assetsDeposited);
 
         emit Donate(_meToken, asset, msg.sender, _assetsDeposited);
     }
@@ -266,8 +240,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _meToken,
         uint256 _assetsDeposited
     ) private view returns (uint256 meTokensMinted) {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
         // gas savings
         uint256 totalSupply_ = IERC20(_meToken).totalSupply();
         // Calculate return assuming update/resubscribe is not happening
@@ -303,22 +277,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         meToken_.balancePooled
                     );
             }
-            meTokensMinted = WeightedAverage.calculate(
+            meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
                 hub_.startTime,
                 hub_.endTime
             );
         } else if (meToken_.targetHubId != 0) {
-            Details.Hub memory targetHub = hub.getDetails(meToken_.targetHubId);
-            uint256 targetMeTokensMinted = ICurve(targetHub.curve)
-                .viewMeTokensMinted(
+            uint256 targetMeTokensMinted = ICurve(
+                s.hubs[meToken_.targetHubId].curve
+            ).viewMeTokensMinted(
                     _assetsDeposited,
                     meToken_.targetHubId,
                     totalSupply_,
                     meToken_.balancePooled
                 );
-            meTokensMinted = WeightedAverage.calculate(
+            meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
                 meToken_.startTime,
@@ -331,8 +305,8 @@ contract Foundry is IFoundry, Ownable, Initializable {
         address _meToken,
         uint256 _meTokensBurned
     ) private view returns (uint256 rawAssetsReturned) {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
 
         uint256 totalSupply_ = IERC20(_meToken).totalSupply(); // gas savings
 
@@ -370,25 +344,22 @@ contract Foundry is IFoundry, Ownable, Initializable {
                         meToken_.balancePooled
                     );
             }
-            rawAssetsReturned = WeightedAverage.calculate(
+            rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
                 hub_.startTime,
                 hub_.endTime
             );
         } else if (meToken_.targetHubId != 0) {
-            Details.Hub memory targetHub_ = hub.getDetails(
-                meToken_.targetHubId
-            );
-
             // Calculate return assuming update is not happening
-            targetAssetsReturned = ICurve(targetHub_.curve).viewAssetsReturned(
-                _meTokensBurned,
-                meToken_.targetHubId,
-                totalSupply_,
-                meToken_.balancePooled
-            );
-            rawAssetsReturned = WeightedAverage.calculate(
+            targetAssetsReturned = ICurve(s.hubs[meToken_.targetHubId].curve)
+                .viewAssetsReturned(
+                    _meTokensBurned,
+                    meToken_.targetHubId,
+                    totalSupply_,
+                    meToken_.balancePooled
+                );
+            rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
                 meToken_.startTime,
@@ -404,50 +375,47 @@ contract Foundry is IFoundry, Ownable, Initializable {
         uint256 _meTokensBurned,
         uint256 rawAssetsReturned
     ) private view returns (uint256 actualAssetsReturned) {
-        Details.MeToken memory meToken_ = meTokenRegistry.getDetails(_meToken);
-        Details.Hub memory hub_ = hub.getDetails(meToken_.hubId);
+        MeTokenInfo memory meToken_ = s.meTokens[_meToken];
+        HubInfo memory hub_ = s.hubs[meToken_.hubId];
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
         if (_sender == meToken_.owner) {
             actualAssetsReturned =
                 rawAssetsReturned +
-                (((PRECISION * _meTokensBurned) /
+                (((s.PRECISION * _meTokensBurned) /
                     IERC20(_meToken).totalSupply()) * meToken_.balanceLocked) /
-                PRECISION;
+                s.PRECISION;
         } else {
             if (hub_.targetRefundRatio == 0 && meToken_.targetHubId == 0) {
                 // Not updating targetRefundRatio or resubscribing
 
                 actualAssetsReturned =
                     (rawAssetsReturned * hub_.refundRatio) /
-                    MAX_REFUND_RATIO;
+                    s.MAX_REFUND_RATIO;
             } else {
                 if (hub_.targetRefundRatio > 0) {
                     // Hub is updating
                     actualAssetsReturned =
                         (rawAssetsReturned *
-                            WeightedAverage.calculate(
+                            LibWeightedAverage.calculate(
                                 hub_.refundRatio,
                                 hub_.targetRefundRatio,
                                 hub_.startTime,
                                 hub_.endTime
                             )) /
-                        MAX_REFUND_RATIO;
+                        s.MAX_REFUND_RATIO;
                 } else {
                     // meToken is resubscribing
-                    Details.Hub memory targetHub_ = hub.getDetails(
-                        meToken_.targetHubId
-                    );
                     actualAssetsReturned =
                         (rawAssetsReturned *
-                            WeightedAverage.calculate(
+                            LibWeightedAverage.calculate(
                                 hub_.refundRatio,
-                                targetHub_.refundRatio,
+                                s.hubs[meToken_.targetHubId].refundRatio,
                                 meToken_.startTime,
                                 meToken_.endTime
                             )) /
-                        MAX_REFUND_RATIO;
+                        s.MAX_REFUND_RATIO;
                 }
             }
         }

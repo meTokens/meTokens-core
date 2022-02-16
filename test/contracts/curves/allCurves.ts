@@ -2,9 +2,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import {
@@ -13,17 +13,13 @@ import {
   calculateTokenReturnedFromZero,
   deploy,
   getCalculationFuncsForBancorCurves,
-  getCalculationFuncsForStepwiseCurves,
   toETHNumber,
 } from "../../utils/helpers";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, hubSetup } from "../../utils/hubSetup";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { StepwiseCurveABDK } from "../../../artifacts/types/StepwiseCurveABDK";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
-import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { Description } from "@ethersproject/properties";
+import { Diamond } from "../../../artifacts/types";
 
 describe("All curves", () => {
   before("setup curves instance", async () => {});
@@ -31,12 +27,13 @@ describe("All curves", () => {
 const setup = async () => {
   let curves = new Array();
   let DAI: string;
-  let meTokenRegistry: MeTokenRegistry;
+  let meTokenRegistry: MeTokenRegistryFacet;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let migrationRegistry: MigrationRegistry;
-  let foundry: Foundry;
-  let hub: Hub;
+  let foundry: FoundryFacet;
+  let hub: HubFacet;
+  let diamond: Diamond;
   let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
@@ -53,33 +50,6 @@ const setup = async () => {
     [DAI]
   );
 
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  });
-  hub = await deploy<Hub>("Hub");
-  const bancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  );
-
-  const newBancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
-    undefined,
-    hub.address
-  );
-
-  const bancorPower = await deploy<BancorPower>(
-    "BancorPower",
-    undefined,
-    hub.address
-  );
-  const stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
-    "StepwiseCurveABDK",
-    undefined,
-    hub.address
-  );
   // Setting up curve info to test
 
   let baseY1 = one.mul(1000);
@@ -129,12 +99,16 @@ const setup = async () => {
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
   );
-
-  // Create hub and register first hub
+  // Create and register first hub we also link the curve of type "bancorABDK" to this hub (hubID = 1)
+  let curve: ICurve;
   ({
     token,
+    curve,
     curveRegistry,
     tokenAddr,
+    hub,
+    foundry,
+    diamond,
     migrationRegistry,
     vaultRegistry,
     account0,
@@ -145,50 +119,50 @@ const setup = async () => {
     encodedCurveDetails1,
     encodedVaultArgs,
     5000,
-    hub,
-    foundry,
-    bancorABDK as unknown as ICurve
+    "bancorABDK"
   ));
-
-  let hubArgs: [
-    Hub,
-    Foundry,
-    MeTokenRegistry,
-    CurveRegistry,
+  let addArgs: [
     string,
+    HubFacet,
+    Diamond,
+    FoundryFacet,
+    string,
+    MeTokenRegistryFacet,
+    CurveRegistry,
     MigrationRegistry,
     VaultRegistry,
     string,
     string,
     number,
-    ICurve,
-    string
+    string,
+    ICurve | undefined
   ] = [
+    tokenAddr,
     hub,
+    diamond,
     foundry,
+    "bancorABDK",
     meTokenRegistry,
     curveRegistry,
-    tokenAddr,
     migrationRegistry,
     vaultRegistry,
     encodedCurveDetails1,
     encodedVaultArgs,
     5000,
-    bancorABDK as unknown as ICurve,
     account0.address,
+    undefined,
   ];
-  let hubDetails = await addHubSetup(...hubArgs);
 
-  await curveRegistry.approve(newBancorABDK.address);
-
+  // we create a new curve of type "bancorABDK" and register it to a new hub (hubID = 2)
+  // along with encoded details for the curve and the vault
+  let hubDetails = await addHubSetup(...addArgs);
   let testCurve = {
     signers: [account0, account1, account2],
-    curve: bancorABDK as unknown as ICurve,
-    newCurve: newBancorABDK as unknown as ICurve,
+    curve: hubDetails.curve,
+    newCurve: curve,
     hub,
     precision: 0.000000000001,
   };
-
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
@@ -205,275 +179,214 @@ const setup = async () => {
   });
 
   // Second ABDK Curve
-  hubArgs[7] = encodedCurveDetails2;
-  hubDetails = await addHubSetup(...hubArgs);
 
-  //  curve.hubId = hubDetails.hubId;
+  addArgs[13] = hubDetails.curve;
+  addArgs[9] = encodedCurveDetails2;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight2.toString()]
+    ),
     ...getCalculationFuncsForBancorCurves(
       baseY2,
       reserveWeight2,
       targetReserveWeight2,
       MAX_WEIGHT
     ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight2.toString()]
-    ),
   });
 
   // Third ABDK curve
-  hubArgs[7] = encodedCurveDetails3;
-  hubDetails = await addHubSetup(...hubArgs);
-
+  addArgs[9] = encodedCurveDetails3;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight3.toString()]
+    ),
     ...getCalculationFuncsForBancorCurves(
       baseY3,
       reserveWeight3,
       targetReserveWeight3,
       MAX_WEIGHT
     ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight3.toString()]
-    ),
   });
-
   // Fourth ABDK curve
-  hubArgs[7] = encodedCurveDetails4;
-  hubDetails = await addHubSetup(...hubArgs);
-
+  addArgs[9] = encodedCurveDetails4;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight4.toString()]
+    ),
     ...getCalculationFuncsForBancorCurves(
       baseY4,
       reserveWeight4,
       targetReserveWeight4,
       MAX_WEIGHT
     ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight4.toString()]
-    ),
   });
-
   // fifth ABDK curve
-  hubArgs[7] = encodedCurveDetails5;
-  hubDetails = await addHubSetup(...hubArgs);
-
+  addArgs[9] = encodedCurveDetails5;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight5.toString()]
+    ),
     ...getCalculationFuncsForBancorCurves(
       baseY5,
       reserveWeight5,
       targetReserveWeight5,
       MAX_WEIGHT
     ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight5.toString()]
-    ),
   });
-
   // sixth ABDK curve
-  hubArgs[7] = encodedCurveDetails6;
-  hubDetails = await addHubSetup(...hubArgs);
-
+  addArgs[9] = encodedCurveDetails6;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight6.toString()]
+    ),
     ...getCalculationFuncsForBancorCurves(
       baseY6,
       reserveWeight6,
       targetReserveWeight6,
       MAX_WEIGHT
     ),
+  });
+  // Bancor Power
+  addArgs[4] = "BancorPower";
+
+  // First Power curve
+  addArgs[9] = encodedCurveDetails1;
+  // we create a new curve of type "BancorPower" and register it to the hub
+  // along with encoded details for this curve
+  hubDetails = await addHubSetup(...addArgs);
+  // we set this new curve as the default curve
+  testCurve = { ...testCurve, curve: hubDetails.curve };
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight1.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY1,
+      reserveWeight1,
+      targetReserveWeight1,
+      MAX_WEIGHT
+    ),
+  });
+  // Second Power curve
+  addArgs[13] = testCurve.curve;
+  addArgs[9] = encodedCurveDetails2;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight2.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY2,
+      reserveWeight2,
+      targetReserveWeight2,
+      MAX_WEIGHT
+    ),
+  });
+  // third power curve
+  addArgs[9] = encodedCurveDetails3;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight3.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY3,
+      reserveWeight3,
+      targetReserveWeight3,
+      MAX_WEIGHT
+    ),
+  });
+  // fourth power curve
+  addArgs[9] = encodedCurveDetails4;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight4.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY4,
+      reserveWeight4,
+      targetReserveWeight4,
+      MAX_WEIGHT
+    ),
+  });
+  // fifth power curve
+  addArgs[9] = encodedCurveDetails5;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint32"],
+      [targetReserveWeight5.toString()]
+    ),
+    ...getCalculationFuncsForBancorCurves(
+      baseY5,
+      reserveWeight5,
+      targetReserveWeight5,
+      MAX_WEIGHT
+    ),
+  });
+  // sixth power curve
+  addArgs[9] = encodedCurveDetails6;
+  // we register a new hub with the same curve deployed before but with new encoded curve details
+  hubDetails = await addHubSetup(...addArgs);
+  curves.push({
+    ...testCurve,
+    hubId: hubDetails.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight6.toString()]
     ),
-  });
-
-  // stepwise ABDK curves
-
-  testCurve.curve = stepwiseCurveABDK as unknown as ICurve;
-  hubArgs[10] = stepwiseCurveABDK as unknown as ICurve;
-
-  // First stepwise curve
-  let stepX = 4;
-  let stepY = 2;
-
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  let targetStepX = 8;
-  let targetStepY = 15;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
+    ...getCalculationFuncsForBancorCurves(
+      baseY6,
+      reserveWeight6,
+      targetReserveWeight6,
+      MAX_WEIGHT
     ),
   });
-
-  // Second stepwise curve
-  stepX = 5;
-  stepY = 6;
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  targetStepX = 4;
-  targetStepY = 2;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
-    ),
-  });
-
-  // third stepwise curve
-  stepX = 4568;
-  stepY = 600;
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  targetStepX = 40000;
-  targetStepY = 2;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
-    ),
-  });
-
-  // fourth stepwise curve
-  stepX = 468;
-  stepY = 60;
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  targetStepX = 12345;
-  targetStepY = 256;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
-    ),
-  });
-
-  // fifth stepwise curve
-  stepX = 468;
-  stepY = 600;
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  targetStepX = 12345;
-  targetStepY = 956;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
-    ),
-  });
-
-  // sixth stepwise curve
-  stepX = 12345000000000;
-  stepY = 956;
-  hubArgs[7] = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint256"],
-    [one.mul(stepX), one.mul(stepY)]
-  );
-
-  targetStepX = 12345000000001;
-  targetStepY = 957;
-
-  hubDetails = await addHubSetup(...hubArgs);
-
-  curves.push({
-    ...testCurve,
-    hubId: hubDetails.hubId,
-    ...getCalculationFuncsForStepwiseCurves(
-      stepX,
-      stepY,
-      targetStepX,
-      targetStepY
-    ),
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint256", "uint256"],
-      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
-    ),
-  });
-
   return curves;
 };
 setup().then((tests) => {

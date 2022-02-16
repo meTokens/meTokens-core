@@ -2,15 +2,12 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
 import { BigNumber, Signer } from "ethers";
-import { BancorPower } from "../../../artifacts/types/BancorPower";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { expect } from "chai";
-import { hubSetup } from "../../utils/hubSetup";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
@@ -24,12 +21,12 @@ describe("Generic Curve", () => {
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let _curve: BancorABDK;
-  let meTokenRegistry: MeTokenRegistry;
-  let foundry: Foundry;
+  let meTokenRegistry: MeTokenRegistryFacet;
+  let foundry: FoundryFacet;
   let token: ERC20;
   let meToken: MeToken;
   let tokenHolder: Signer;
-  let hub: Hub;
+  let hub: HubFacet;
   let singleAssetVault: SingleAssetVault;
 
   const hubId = 1;
@@ -60,45 +57,45 @@ describe("Generic Curve", () => {
     );
 
     const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-    foundry = await deploy<Foundry>("Foundry", {
-      WeightedAverage: weightedAverage.address,
-    });
-    hub = await deploy<Hub>("Hub");
-    _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
-    ({
-      token,
-      tokenHolder,
-      account0,
-      account1,
-      account2,
-      meTokenRegistry,
-      singleAssetVault,
-    } = await hubSetup(
-      encodedCurveDetails,
-      encodedVaultArgs,
-      5000,
-      hub,
-      foundry,
-      _curve as unknown as ICurve
-    ));
+    // foundry = await deploy<FoundryFacet>("FoundryFacet", {
+    //   WeightedAverage: weightedAverage.address,
+    // });
+    // hub = await deploy<Hub>("Hub");
+    // _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
+    // ({
+    //   token,
+    //   tokenHolder,
+    //   account0,
+    //   account1,
+    //   account2,
+    //   meTokenRegistry,
+    //   singleAssetVault,
+    // } = await hubSetup(
+    //   encodedCurveDetails,
+    //   encodedVaultArgs,
+    //   5000,
+    //   hub,
+    //   foundry,
+    //   _curve as unknown as ICurve
+    // ));
 
     // Prefund owner/buyer w/ DAI
-    dai = token;
-    await dai
-      .connect(tokenHolder)
-      .transfer(account1.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(tokenHolder)
-      .transfer(account2.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
-    await dai
-      .connect(account1)
-      .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
+    //   dai = token;
+    //   await dai
+    //     .connect(tokenHolder)
+    //     .transfer(account1.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(tokenHolder)
+    //     .transfer(account2.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(account1)
+    //     .approve(meTokenRegistry.address, ethers.utils.parseEther("100"));
+    //   await dai
+    //     .connect(account1)
+    //     .approve(singleAssetVault.address, ethers.utils.parseEther("100"));
   });
 
-  describe("getDetails()", () => {
+  describe("getCurveDetails()", () => {
     it("Returns correct struct type", async () => {});
     it("Returns correct registered details", async () => {});
   });
@@ -362,7 +359,7 @@ describe("Generic Curve", () => {
   //     [targetReserveWeight.toString()]
   //   );
   //   await _curve.initReconfigure(hubId, encodedValueSet);
-  //   const detail = await _curve.getDetails(hubId);
+  //   const detail = await _curve.getCurveDetails(hubId);
   //   const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
   //   expect(detail.targetReserveWeight).to.equal(targetReserveWeight);
   //   expect(detail.targetBaseY).to.equal(targetBaseY);

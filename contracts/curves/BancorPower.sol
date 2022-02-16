@@ -20,8 +20,8 @@ contract BancorPower is Power, ICurve {
 
     struct Bancor {
         uint256 baseY;
-        uint32 reserveWeight;
         uint256 targetBaseY;
+        uint32 reserveWeight;
         uint32 targetReserveWeight;
     }
 
@@ -100,7 +100,7 @@ contract BancorPower is Power, ICurve {
         return _bancors[bancor];
     }
 
-    function getDetails(uint256 bancor)
+    function getCurveDetails(uint256 bancor)
         external
         view
         override

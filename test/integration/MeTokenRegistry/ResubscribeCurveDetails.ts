@@ -1,7 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  calculateTokenReturned,
   calculateCollateralReturned,
   deploy,
   getContractAt,
@@ -12,33 +11,30 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { expect } from "chai";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
-import { Fees } from "../../../artifacts/types/Fees";
+import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let tx: ContractTransaction;
-    let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
-    let hub: Hub;
+    let foundry: FoundryFacet;
+    let hub: HubFacet;
     let tokenHolder: Signer;
     let dai: ERC20;
     let weth: ERC20;
@@ -48,7 +44,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let encodedCurveDetails1: string;
     let encodedCurveDetails2: string;
-    let fees: Fees;
+    let fees: FeesFacet;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -96,20 +92,13 @@ const setup = async () => {
       );
 
       // Register first and second hub
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
 
       ({
         token,
         tokenHolder,
+        hub,
+        foundry,
+        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -120,9 +109,7 @@ const setup = async () => {
         encodedCurveDetails1,
         encodedVaultArgs,
         refundRatio,
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -132,17 +119,17 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        curve.address,
         refundRatio,
         encodedCurveDetails2,
         encodedVaultArgs
       );
 
       // set update/resubscribe times
-      await hub.setWarmup(hubWarmup);
-      await meTokenRegistry.setWarmup(warmup);
-      await meTokenRegistry.setDuration(duration);
-      await meTokenRegistry.setCooldown(coolDown);
+      await hub.setHubWarmup(hubWarmup);
+      await meTokenRegistry.setMeTokenWarmup(warmup);
+      await meTokenRegistry.setMeTokenDuration(duration);
+      await meTokenRegistry.setMeTokenCooldown(coolDown);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 
@@ -205,8 +192,7 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        // BlockTime < startTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
@@ -246,7 +232,7 @@ const setup = async () => {
 
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const buyerDAIBefore = await dai.balanceOf(account1.address);
@@ -296,7 +282,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const ownerDAIBefore = await dai.balanceOf(account0.address);
@@ -343,8 +329,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
-        // IncreaseBlockTime > startTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.startTime.toNumber() + 2);
@@ -357,7 +342,7 @@ const setup = async () => {
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -414,7 +399,7 @@ const setup = async () => {
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerWETHBefore = await weth.balanceOf(account1.address);
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -483,7 +468,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
@@ -549,8 +534,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
-        // IncreaseBlockTime > endTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.endTime.toNumber() + 2);
@@ -562,7 +546,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
@@ -640,7 +624,7 @@ const setup = async () => {
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerWETHBefore = await weth.balanceOf(account1.address);
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -691,7 +675,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);

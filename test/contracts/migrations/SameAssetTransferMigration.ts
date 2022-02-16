@@ -3,18 +3,16 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { impersonate, mineBlock, passHours } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
 import { expect } from "chai";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types/ICurve";
 
 const setup = async () => {
@@ -29,13 +27,13 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: SameAssetTransferMigration;
-    let curve: BancorABDK;
-    let meTokenRegistry: MeTokenRegistry;
+    let curve: ICurve;
+    let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     // let targetVault: SingleAssetVault;
-    let foundry: Foundry;
+    let foundry: FoundryFacet;
     let meToken: MeToken;
-    let hub: Hub;
+    let hub: HubFacet;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -77,27 +75,22 @@ const setup = async () => {
       earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
       encodedMigrationArgs = "0x";
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
 
       ({
+        hub,
+        curve,
+        foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
+        meTokenRegistry,
         account0,
         account1,
         account2,
-        meTokenRegistry,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        hub,
-        foundry,
-        curve as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Register 2nd hub to which we'll migrate to
@@ -148,7 +141,7 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      await hub.setWarmup(hubWarmup);
+      await hub.setHubWarmup(hubWarmup);
     });
 
     describe("isValid()", () => {
@@ -246,7 +239,7 @@ const setup = async () => {
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
       it("Triggers startMigration()", async () => {
-        const meTokenDetails = await meTokenRegistry.getDetails(
+        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(meTokenDetails.startTime.toNumber() + 2);
@@ -276,7 +269,7 @@ const setup = async () => {
         ).to.be.revertedWith("!meTokenRegistry");
       });
       it("Should not trigger startsMigration() if already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -319,14 +312,14 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        let meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
-        meTokenRegistryDetails = await meTokenRegistry.getDetails(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await expect(tx)
@@ -348,9 +341,9 @@ const setup = async () => {
 
       describe("During resubscribe", () => {
         before(async () => {
-          await meTokenRegistry.setWarmup(warmup);
-          await meTokenRegistry.setDuration(duration);
-          await meTokenRegistry.setCooldown(coolDown);
+          await meTokenRegistry.setMeTokenWarmup(warmup);
+          await meTokenRegistry.setMeTokenDuration(duration);
+          await meTokenRegistry.setMeTokenCooldown(coolDown);
 
           await meTokenRegistry
             .connect(account2)
@@ -400,7 +393,7 @@ const setup = async () => {
           ).to.equal(amount);
         });
         it("From startTime => endTime: assets transferred to/from migration vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 
@@ -433,7 +426,7 @@ const setup = async () => {
           );
         });
         it("After endTime: assets transferred to/from target vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getDetails(
+          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
 

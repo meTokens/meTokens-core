@@ -13,11 +13,10 @@ contract MeTokenFactory {
     function create(
         string calldata _name,
         string calldata _symbol,
-        address _foundry,
-        address _meTokenRegistry
+        address _diamond
     ) external returns (address) {
         // Create our meToken
-        MeToken erc20 = new MeToken(_name, _symbol, _foundry, _meTokenRegistry);
+        MeToken erc20 = new MeToken(_name, _symbol, _diamond);
         return address(erc20);
     }
 }

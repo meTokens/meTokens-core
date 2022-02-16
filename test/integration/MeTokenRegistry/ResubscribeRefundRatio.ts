@@ -8,9 +8,9 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BancorABDK } from "../../../artifacts/types/BancorABDK";
-import { Foundry } from "../../../artifacts/types/Foundry";
-import { Hub } from "../../../artifacts/types/Hub";
-import { MeTokenRegistry } from "../../../artifacts/types/MeTokenRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
 import { MeToken } from "../../../artifacts/types/MeToken";
@@ -23,12 +23,12 @@ import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
-    let meTokenRegistry: MeTokenRegistry;
-    let bancorABDK: BancorABDK;
+    let meTokenRegistry: MeTokenRegistryFacet;
+    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
-    let foundry: Foundry;
-    let hub: Hub;
+    let foundry: FoundryFacet;
+    let hub: HubFacet;
     let dai: ERC20;
     let weth: ERC20;
     let meToken: MeToken;
@@ -66,19 +66,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-      foundry = await deploy<Foundry>("Foundry", {
-        WeightedAverage: weightedAverage.address,
-      });
-      hub = await deploy<Hub>("Hub");
-      bancorABDK = await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        hub.address
-      );
       ({
         token: dai,
         tokenHolder,
+        hub,
+        foundry,
+        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -89,9 +82,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
-        hub,
-        foundry,
-        bancorABDK as unknown as ICurve
+        "bancorABDK"
       ));
 
       // Deploy uniswap migration and approve it to the registry
@@ -133,15 +124,15 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        bancorABDK.address,
+        curve.address,
         targetRefundRatio,
         encodedCurveDetails,
         encodedVaultArgs
       );
-      await hub.setWarmup(7 * 60 * 24 * 24); // 1 week
-      await meTokenRegistry.setWarmup(2 * 60 * 24 * 24); // 2 days
-      await meTokenRegistry.setDuration(4 * 60 * 24 * 24); // 4 days
-      await meTokenRegistry.setCooldown(5 * 60 * 24 * 24); // 5 days
+      await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week
+      await meTokenRegistry.setMeTokenWarmup(2 * 60 * 24 * 24); // 2 days
+      await meTokenRegistry.setMeTokenDuration(4 * 60 * 24 * 24); // 4 days
+      await meTokenRegistry.setMeTokenCooldown(5 * 60 * 24 * 24); // 5 days
 
       const block = await ethers.provider.getBlock("latest");
       const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
@@ -173,8 +164,7 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        // BlockTime < startTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
@@ -193,7 +183,7 @@ const setup = async () => {
           .burn(meToken.address, ownerMeTokenBefore, account0.address);
 
         const totalSupply = await meToken.totalSupply();
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -226,7 +216,7 @@ const setup = async () => {
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerDAIAfter = await dai.balanceOf(account1.address);
         const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -243,8 +233,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
-        // IncreaseBlockTime > startTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.startTime.toNumber() + 2);
@@ -289,7 +278,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -328,8 +317,8 @@ const setup = async () => {
           .burn(meToken.address, buyerMeTokenBefore, account1.address);
 
         const { startTime, endTime, targetHubId } =
-          await meTokenRegistry.getDetails(meToken.address);
-        const { refundRatio: targetRefundRatio } = await hub.getDetails(
+          await meTokenRegistry.getMeTokenDetails(meToken.address);
+        const { refundRatio: targetRefundRatio } = await hub.getHubDetails(
           targetHubId
         );
         const block = await ethers.provider.getBlock("latest");
@@ -348,7 +337,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         const totalSupply = await meToken.totalSupply();
@@ -376,8 +365,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
-        // IncreaseBlockTime > endTime
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
         await mineBlock(metokenDetails.endTime.toNumber() + 2);
@@ -423,7 +411,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
@@ -476,7 +464,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getDetails(
+        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
 
