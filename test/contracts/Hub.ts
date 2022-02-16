@@ -850,7 +850,8 @@ const setup = async () => {
       });
     });
 
-    describe("setRegisterer() [TODO]", () => {
+    describe("setRegisterer()", () => {
+      xit("Pending tests");
       // it("should revert when sender is not registerer", async () => {
       //   await expect(
       //     hub.connect(account1).setRegisterer(account1.address)

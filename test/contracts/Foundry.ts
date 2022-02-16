@@ -678,10 +678,9 @@ const setup = async () => {
         // Compare owner dai balance before/after
         let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
 
-        expect(
-          // TODO: how to verify difference of numbers to type of amount1?
-          minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
-        ).to.equal(amount1);
+        expect(minterDaiBalanceBefore.sub(minterDaiBalanceAfter)).to.equal(
+          amount1
+        );
 
         // Expect balance of vault to have increased by assets deposited
         let vaultDaiBalanceAfter = await dai.balanceOf(

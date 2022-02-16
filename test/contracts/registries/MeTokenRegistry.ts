@@ -953,7 +953,7 @@ const setup = async () => {
       });
     });
     describe("balancePool", () => {
-      it("Fails updateBalancePooled() if not foundry (TODO)", async () => {
+      xit("Fails updateBalancePooled() if not foundry", async () => {
         // await expect(
         //   meTokenRegistry.updateBalancePooled(
         //     true,
@@ -996,7 +996,7 @@ const setup = async () => {
         ).to.be.equal(amountDepositedAfterFee);
       });
 
-      it("Fails updateBalanceLocked() if not foundry (TODO)", async () => {
+      xit("Fails updateBalanceLocked() if not foundry", async () => {
         // await expect(
         //   meTokenRegistry.updateBalanceLocked(
         //     true,

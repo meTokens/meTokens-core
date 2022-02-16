@@ -331,7 +331,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         const assetsReturned =
           (rawAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
-        const calcWAvrgRes = weightedAverageSimulation(
+        const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
           startTime.toNumber(),
@@ -340,9 +340,9 @@ const setup = async () => {
         );
         const calculatedReturn = ethers.utils
           .parseEther(`${assetsReturned}`)
-          .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+          .mul(BigNumber.from(Math.floor(calcWAvgRes)))
           .div(BigNumber.from(10 ** 6));
-        // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+        // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
@@ -411,7 +411,7 @@ const setup = async () => {
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
 
-        const calcWAvrgRes = weightedAverageSimulation(
+        const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
           startTime.toNumber(),
@@ -419,19 +419,18 @@ const setup = async () => {
           block.timestamp
         );
         const assetsReturned =
-          (calcWAvrgRes * refundRatio.toNumber()) / MAX_WEIGHT;
+          (calcWAvgRes * refundRatio.toNumber()) / MAX_WEIGHT;
         const calculatedReturn = ethers.utils
           .parseEther(`${assetsReturned}`)
-          .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+          .mul(BigNumber.from(Math.floor(calcWAvgRes)))
           .div(BigNumber.from(10 ** 6));
-        // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+        // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
       it("Assets received for owner based on weighted average  of curveDetails on not burning full supply ", async () => {
-        // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -495,7 +494,7 @@ const setup = async () => {
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
         // the weighted average on the curve should be applied for owner and buyers
-        const calcWAvrgRes = weightedAverageSimulation(
+        const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
           startTime.toNumber(),
@@ -504,16 +503,16 @@ const setup = async () => {
         );
         // but the owner gets a proportional share of the token burnt from the balanced locked
         const assetsReturned =
-          calcWAvrgRes +
+          calcWAvgRes +
           (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
         const calculatedReturn = ethers.utils
           .parseEther(`${assetsReturned}`)
-          .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+          .mul(BigNumber.from(Math.floor(calcWAvgRes)))
           .div(BigNumber.from(10 ** 6));
 
-        // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+        // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
@@ -555,7 +554,7 @@ const setup = async () => {
 
         //  take into account the time when
         // the mint transaction will be included
-        const calcWAvrgRes = weightedAverageSimulation(
+        const calcWAvgRes = weightedAverageSimulation(
           calcTokenReturn,
           calcTargetTokenReturn,
           startTime.toNumber(),
@@ -577,7 +576,7 @@ const setup = async () => {
         );
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-          calcWAvrgRes,
+          calcWAvgRes,
           0.00000000000001
         );
       });
@@ -592,7 +591,7 @@ const setup = async () => {
         expect(reconfigure).to.be.false;
         const block = await ethers.provider.getBlock("latest");
 
-        //Block.timestamp should be between endtime and endCooldown
+        //Block.timestamp should be between endTime and endCooldown
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
         await expect(
@@ -601,7 +600,6 @@ const setup = async () => {
       });
 
       it("burn() and mint() by owner should use the targetCurveDetails", async () => {
-        // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -660,7 +658,7 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           updatedReserveWeight / MAX_WEIGHT
         );
-        const xtargetassetsReturned = calculateCollateralReturned(
+        calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
@@ -698,14 +696,13 @@ const setup = async () => {
           (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
-        // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+        // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.00000000001);
       });
       it("burn() and mint() by buyer should use the targetCurveDetails", async () => {
-        // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -800,7 +797,7 @@ const setup = async () => {
         const assetsReturned =
           (targetAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
 
-        // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+        // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
@@ -1019,7 +1016,7 @@ const setup = async () => {
           const block = await ethers.provider.getBlock("latest");
           const assetsReturned =
             (rawAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
-          const calcWAvrgRes = weightedAverageSimulation(
+          const calcWAvgRes = weightedAverageSimulation(
             rawAssetsReturned,
             targetAssetsReturned,
             startTime.toNumber(),
@@ -1027,8 +1024,8 @@ const setup = async () => {
             block.timestamp
           );
           const calcWithRefundRatio =
-            (calcWAvrgRes * refundRatio.toNumber()) / MAX_WEIGHT;
-          // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+            (calcWAvgRes * refundRatio.toNumber()) / MAX_WEIGHT;
+          // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
@@ -1100,7 +1097,7 @@ const setup = async () => {
           expect(updating).to.be.true;
           const block = await ethers.provider.getBlock("latest");
 
-          const calcWAvrgRes = weightedAverageSimulation(
+          const calcWAvgRes = weightedAverageSimulation(
             rawAssetsReturned,
             targetAssetsReturned,
             startTime.toNumber(),
@@ -1108,19 +1105,18 @@ const setup = async () => {
             block.timestamp
           );
           const assetsReturned =
-            (calcWAvrgRes * refundRatio.toNumber()) / MAX_WEIGHT;
+            (calcWAvgRes * refundRatio.toNumber()) / MAX_WEIGHT;
           const calculatedReturn = ethers.utils
             .parseEther(`${assetsReturned}`)
-            .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+            .mul(BigNumber.from(Math.floor(calcWAvgRes)))
             .div(BigNumber.from(10 ** 6));
-          // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+          // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
           ).to.be.approximately(assetsReturned, 0.000000000000001);
         });
         it("Assets received for owner based on weighted average not burning full supply ", async () => {
-          // TODO: calculate weighted refundRatio based on current time relative to duration
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
@@ -1189,7 +1185,7 @@ const setup = async () => {
           expect(updating).to.be.true;
           const block = await ethers.provider.getBlock("latest");
           // the weighted average on the curve should be applied for owner and buyers
-          const calcWAvrgRes = weightedAverageSimulation(
+          const calcWAvgRes = weightedAverageSimulation(
             rawAssetsReturned,
             targetAssetsReturned,
             startTime.toNumber(),
@@ -1198,15 +1194,15 @@ const setup = async () => {
           );
           // but the owner gets a proportional share of the token burnt from the balanced locked
           const assetsReturned =
-            calcWAvrgRes +
+            calcWAvgRes +
             (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
               toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
           const calculatedReturn = ethers.utils
             .parseEther(`${assetsReturned}`)
-            .mul(BigNumber.from(Math.floor(calcWAvrgRes)))
+            .mul(BigNumber.from(Math.floor(calcWAvgRes)))
             .div(BigNumber.from(10 ** 6));
-          // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+          // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
@@ -1252,7 +1248,7 @@ const setup = async () => {
 
           // take into account the time when
           // the mint transaction will be included
-          const calcWAvrgRes = weightedAverageSimulation(
+          const calcWAvgRes = weightedAverageSimulation(
             calcTokenReturn,
             calcTargetTokenReturn,
             startTime.toNumber(),
@@ -1275,7 +1271,7 @@ const setup = async () => {
             tokenDeposited
           );
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
-            calcWAvrgRes,
+            calcWAvgRes,
             0.0000000000001
           );
         });
@@ -1289,7 +1285,7 @@ const setup = async () => {
           expect(reconfigure).to.be.true;
           const block = await ethers.provider.getBlock("latest");
 
-          //Block.timestamp should be between endtime and endCooldown
+          //Block.timestamp should be between endTime and endCooldown
           // move forward to cooldown
           await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
           await expect(
@@ -1297,7 +1293,6 @@ const setup = async () => {
           ).to.be.revertedWith("Still cooling down");
         });
         it("burn() and mint() by owner should use the targetCurve", async () => {
-          // TODO: calculate weighted refundRatio based on current time relative to duration
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
@@ -1388,14 +1383,13 @@ const setup = async () => {
             (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
               toETHNumber(meTokenDetailsBeforeBurn.balanceLocked);
 
-          // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+          // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
           ).to.be.approximately(assetsReturned, 0.00000000001);
         });
         it("burn() and mint() by buyer should use the targetCurve", async () => {
-          // TODO: calculate weighted refundRatio based on current time relative to duration
           const tokenDepositedInETH = 10;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
@@ -1483,7 +1477,7 @@ const setup = async () => {
           const assetsReturned =
             (targetAssetsReturned * refundRatio.toNumber()) / MAX_WEIGHT;
 
-          // we get the calcWAvrgRes percentage of the tokens returned by the Metokens burn
+          // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))

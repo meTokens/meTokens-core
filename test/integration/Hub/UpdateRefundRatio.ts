@@ -292,7 +292,6 @@ const setup = async () => {
       it("Assets received for buyer based on weighted average refundRatio", async () => {
         //move forward  3 Days
         await passDays(3);
-        // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -457,7 +456,6 @@ const setup = async () => {
 
       it("Before refundRatio set, burn() for buyers should use the targetRefundRatio", async () => {
         await passHours(4);
-        // TODO: calculate weighted refundRatio based on current time relative to duration
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
