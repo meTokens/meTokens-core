@@ -379,15 +379,6 @@ const setup = async () => {
 };
 setup().then((tests) => {
   describe(`${tests.length} Curves should work`, async () => {
-    before(async () => {
-      console.log(`
-      
-    resetFork before
-    
-    `);
-    });
-    /*  const curvesTests = tests.map((args) => curvesTestsHelper(args));
-    await Promise.all(curvesTests); */
     tests.forEach(async (args) => {
       await curvesTestsHelper(args);
     });
