@@ -27,7 +27,6 @@ import {
   setAutomine,
 } from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 
 const setup = async () => {
   describe("HubFacet - update CurveDetails", () => {
@@ -585,11 +584,9 @@ const setup = async () => {
     });
 
     describe("Cooldown", () => {
-
       it("should revert initUpdate() if before cool down", async () => {
-        const { active, updating, endTime, reconfigure } = await hub.getDetails(
-          1
-        );
+        const { active, updating, endTime, reconfigure } =
+          await hub.getHubDetails(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
         expect(reconfigure).to.be.false;
