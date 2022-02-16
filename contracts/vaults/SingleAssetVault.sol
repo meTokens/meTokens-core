@@ -20,6 +20,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
+    /// dev: not adding reentrancy guard as no state changes after external call
     function startMigration(address _meToken) external override {
         MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
             _meToken

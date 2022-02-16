@@ -158,6 +158,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
+    /// dev: parent call must have reentrancy check
     function _swap(address _meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(

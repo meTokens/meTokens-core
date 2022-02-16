@@ -10,7 +10,7 @@ import {
   fromETHNumber,
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
@@ -27,7 +27,6 @@ import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
-    let tx: ContractTransaction;
     let meTokenRegistry: MeTokenRegistryFacet;
     let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
@@ -170,7 +169,7 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       // initialize resubscription to hub 2
-      tx = await meTokenRegistry
+      await meTokenRegistry
         .connect(account0)
         .initResubscribe(
           meTokenAddr,
@@ -198,7 +197,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.gt(block.timestamp);
       });
-      it("mint(): meTokens received based on initial Curve details", async () => {
+      it("mint() [buyer]: meTokens received based on initial Curve details", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
@@ -337,7 +336,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.startTime).to.be.lt(block.timestamp);
       });
-      it("mint(): meTokens received based on weighted average curve details", async () => {
+      it("mint() [buyer]: meTokens received based on weighted average curve details", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
@@ -542,7 +541,7 @@ const setup = async () => {
         const block = await ethers.provider.getBlock("latest");
         expect(metokenDetails.endTime).to.be.lt(block.timestamp);
       });
-      it("burn(): finish migration must be called", async () => {
+      it("burn() [buyer]: finish migration must be called", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();

@@ -1,5 +1,3 @@
-import { BigNumber } from "@ethersproject/bignumber";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
@@ -11,12 +9,9 @@ import {
 
 describe("WeightedAverage.sol", () => {
   let wa: WeightedAverage;
-  let account0: SignerWithAddress;
-  let account1: SignerWithAddress;
-  before(async () => {
-    [account0, account1] = await ethers.getSigners();
-    wa = await deploy<WeightedAverage>("WeightedAverage");
 
+  before(async () => {
+    wa = await deploy<WeightedAverage>("WeightedAverage");
     await wa.deployed();
   });
 

@@ -7,7 +7,6 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
@@ -18,7 +17,6 @@ import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../../utils/hardhatNode";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -205,7 +203,6 @@ const setup = async () => {
 
         const buyerMeTokenBefore = await meToken.balanceOf(account1.address);
         const buyerDAIBefore = await dai.balanceOf(account1.address);
-        const ownerDAIBefore = await dai.balanceOf(account0.address);
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
 
         await foundry

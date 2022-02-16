@@ -7,7 +7,7 @@ import { MeToken } from "../../artifacts/types/MeToken";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
 import { mineBlock, setAutomine } from "../utils/hardhatNode";
-import { deploy, getContractAt } from "../utils/helpers";
+import { getContractAt } from "../utils/helpers";
 import { hubSetup } from "../utils/hubSetup";
 
 const setup = async () => {

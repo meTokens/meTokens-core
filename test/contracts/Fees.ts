@@ -14,15 +14,9 @@ const setup = async () => {
     const transferFee = 10000000;
     const interestFee = 10000000;
     const yieldFee = 10000000;
-    const FEE_MAX = 10 ** 18;
-    let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     before(async () => {
-      ({
-        fee: fees,
-        account0,
-        account1,
-      } = await hubSetupWithoutRegister("bancorABDK", [
+      ({ fee: fees, account1 } = await hubSetupWithoutRegister("bancorABDK", [
         mintFee,
         burnBuyerFee,
         burnOwnerFee,

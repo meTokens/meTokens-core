@@ -28,8 +28,13 @@ import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
 import { StepwiseCurveABDK } from "../../../artifacts/types";
 
+// Differences:
+// 1. Curve details: encodedBancorDetails - encodedStepwiseDetails
+// 2. Curves: bancorABDK - stepwiseCurveABDK
+// 3. Refund ratio: initialRefundRatio - targetRefundRatio
+
 const setup = async () => {
-  describe("MeToken Resubscribe - new curve", () => {
+  describe("MeToken Resubscribe - multiple differences", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let stepwiseCurveABDK: StepwiseCurveABDK;
     let migrationRegistry: MigrationRegistry;
@@ -37,6 +42,7 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
+    let fees: FeesFacet;
     let tokenHolder: Signer;
     let dai: ERC20;
     let weth: ERC20;
@@ -46,7 +52,6 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let encodedBancorDetails: string;
     let encodedStepwiseDetails: string;
-    let fees: FeesFacet;
     let curveRegistry: CurveRegistry;
 
     const hubId1 = 1;
@@ -59,7 +64,8 @@ const setup = async () => {
     const PRECISION = BigNumber.from(10).pow(18);
     const baseY = PRECISION.div(1000);
     const reserveWeight = MAX_WEIGHT / 10;
-    const refundRatio = 5000;
+    const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
+    const targetRefundRatio = ethers.utils.parseUnits("500000", 0); // 50%
     const fee = 3000;
     const tokenDepositedInETH = 5;
     const tokenDeposited = ethers.utils.parseEther(
@@ -94,8 +100,10 @@ const setup = async () => {
         [earliestSwapTime, fee]
       );
 
-      // Register first and second hub
       ({
+        hub,
+        foundry,
+        meTokenRegistry,
         token,
         tokenHolder,
         migrationRegistry,
@@ -105,13 +113,11 @@ const setup = async () => {
         meTokenRegistry,
         fee: fees,
         curveRegistry,
-        foundry,
-        hub,
       } = await hubSetup(
         encodedBancorDetails,
         encodedVaultArgs,
-        refundRatio,
-        "bancorABDK"
+        initialRefundRatio.toNumber(),
+        "BancorABDK"
       ));
 
       stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
@@ -130,7 +136,7 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         stepwiseCurveABDK.address,
-        refundRatio,
+        targetRefundRatio,
         encodedStepwiseDetails,
         encodedVaultArgs
       );
@@ -202,6 +208,7 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
+        // BlockTime < startTime
         const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
@@ -234,7 +241,7 @@ const setup = async () => {
         expect(meTokenTotalSupplyAfter).to.be.equal(ownerMeTokenAfter);
         expect(vaultDAIAfter.sub(vaultDAIBefore)).to.equal(tokenDeposited);
       });
-      it("burn() [buyer]: assets received based on initial Curve", async () => {
+      it("burn() [buyer]: assets received based on initial Curve assets received apply initial refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -253,7 +260,8 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
+        const assetsReturned =
+          (rawAssetsReturned * initialRefundRatio.toNumber()) / MAX_WEIGHT;
 
         await foundry
           .connect(account1)
@@ -288,7 +296,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on initial Curve", async () => {
+      it("burn() [owner]: assets received based on initial Curve and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -339,6 +347,7 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
+        // IncreaseBlockTime > startTime
         const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
@@ -402,7 +411,7 @@ const setup = async () => {
           tokenDeposited
         ); // new asset is WETH
       });
-      it("burn() [buyer]: assets received based on weighted average of Curves", async () => {
+      it("burn() [buyer]: assets received based on weighted average of Curves and and assets received apply weighted average refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -443,7 +452,16 @@ const setup = async () => {
           block.timestamp + 1
         );
 
-        const assetsReturned = (calcWAvgRes * refundRatio) / MAX_WEIGHT;
+        const calcWAvgRefundRatio = weightedAverageSimulation(
+          initialRefundRatio.toNumber(),
+          targetRefundRatio.toNumber(),
+          meTokenDetails.startTime.toNumber(),
+          meTokenDetails.endTime.toNumber(),
+          block.timestamp + 1
+        );
+
+        const assetsReturned =
+          (calcWAvgRes * Math.floor(calcWAvgRefundRatio)) / MAX_WEIGHT;
 
         await mineBlock(block.timestamp + 1);
         await setAutomine(true);
@@ -477,7 +495,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on weighted average of Curves", async () => {
+      it("burn() [owner]: assets received based on weighted average of Curves and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -548,6 +566,7 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
+        // IncreaseBlockTime > endTime
         const metokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
@@ -590,7 +609,7 @@ const setup = async () => {
         expect(vaultWETHAfter.sub(vaultWETHBefore)).to.equal(tokenDeposited);
         expect(migrationWETHAfter.sub(migrationWETHBefore)).to.equal(0);
       });
-      it("burn() [buyer]: assets received based on target Curve", async () => {
+      it("burn() [buyer]: assets received based on target Curve and assets received apply target refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -616,7 +635,7 @@ const setup = async () => {
           .burn(meToken.address, buyerMeToken, account1.address);
 
         const assetsReturned =
-          (targetAssetsReturned * refundRatio) / MAX_WEIGHT;
+          (targetAssetsReturned * targetRefundRatio.toNumber()) / MAX_WEIGHT;
 
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerWETHAfter = await weth.balanceOf(account1.address);
@@ -647,7 +666,7 @@ const setup = async () => {
           1e-15
         );
       });
-      it("burn() [owner]: assets received based on target Curve", async () => {
+      it("burn() [owner]: assets received based on target Curve and assets received do not apply refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
