@@ -281,7 +281,8 @@ async function main() {
     `Latest Contract Address written to: ${deployDir}/script-${network.name}.json`
   );
 
-  const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
+  const isEtherscan =
+    ETHERSCAN_CHAIN_IDS.includes(chainId) && network.name != "hardhat";
   if (isEtherscan) {
     await tx.wait(5);
     console.log("Verifying Contracts...\n");
