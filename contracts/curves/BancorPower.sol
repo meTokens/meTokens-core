@@ -35,6 +35,7 @@ contract BancorPower is Power, ICurve {
     mapping(uint256 => Bancor) private _bancors;
 
     constructor(address _hub) {
+        require(_hub != address(0), "!hub");
         hub = _hub;
     }
 

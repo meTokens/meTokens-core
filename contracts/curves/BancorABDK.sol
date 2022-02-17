@@ -30,7 +30,7 @@ contract BancorABDK is ICurve {
     mapping(uint256 => Bancor) private _bancors;
 
     constructor(address _hub) {
-        // FIXME add zero check BancorPower StepwiseCurve StepwiseCurveABDK
+        require(_hub != address(0), "!hub");
         hub = _hub;
     }
 

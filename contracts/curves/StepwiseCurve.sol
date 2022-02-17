@@ -25,6 +25,7 @@ contract StepwiseCurve is ICurve {
     mapping(uint256 => Stepwise) private _stepwises;
 
     constructor(address _hub) {
+        require(_hub != address(0), "!hub");
         hub = _hub;
     }
 
