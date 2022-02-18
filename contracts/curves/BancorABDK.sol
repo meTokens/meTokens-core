@@ -20,7 +20,7 @@ contract BancorABDK is ICurve {
         uint32 targetReserveWeight;
     }
 
-    uint32 public constant MAX_WEIGHT = 1000000;
+    uint32 public constant MAX_WEIGHT = 1e6;
     bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
     bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
     bytes16 private immutable _one = (uint256(1)).fromUInt();
@@ -30,6 +30,7 @@ contract BancorABDK is ICurve {
     mapping(uint256 => Bancor) private _bancors;
 
     constructor(address _hub) {
+        require(_hub != address(0), "!hub");
         hub = _hub;
     }
 
@@ -204,7 +205,7 @@ contract BancorABDK is ICurve {
 
     /// @notice Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
-    /// @dev _supply * ((1 + _assetsDeposited / _balancePooled) ^ (_reserveWeight / 1000000) - 1)
+    /// @dev _supply * ((1 + _assetsDeposited / _balancePooled) ^ (_reserveWeight / MAX_WEIGHT) - 1)
     /// @param _assetsDeposited   amount of collateral tokens to deposit
     /// @param _reserveWeight   connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply          current meToken supply
@@ -300,7 +301,7 @@ contract BancorABDK is ICurve {
 
     /// @notice Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @dev _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / 1000000)))
+    /// @dev _balancePooled * (1 - (1 - _meTokensBurned/_supply) ^ (1 / (_reserveWeight / MAX_WEIGHT)))
     /// @param _meTokensBurned          amount of meTokens to burn
     /// @param _reserveWeight       connector weight, represented in ppm, 1 - 1,000,000
     /// @param _supply              current meToken supply

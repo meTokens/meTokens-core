@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "../interfaces/IRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IRegistry} from "../interfaces/IRegistry.sol";
 
 /// @title Registry
 /// @author Carl Farterson (@carlfarterson)

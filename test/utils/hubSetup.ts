@@ -1,6 +1,5 @@
 import { Contract } from "@ethersproject/contracts";
 import { ethers, getNamedAccounts } from "hardhat";
-import { WeightedAverage } from "../../artifacts/types/WeightedAverage";
 import { BancorABDK } from "../../artifacts/types/BancorABDK";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
@@ -24,8 +23,6 @@ import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
-
-import { text } from "stream/consumers";
 import { BancorPower, StepwiseCurve } from "../../artifacts/types";
 
 export async function hubSetup(
@@ -277,12 +274,7 @@ export async function hubSetupWithoutRegister(
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier
   const diamondInit = await deploy<DiamondInit>("DiamondInit");
   let functionCall = diamondInit.interface.encodeFunctionData("init", args);
-  const tx = await diamondCut.diamondCut(
-    cut,
-    diamondInit.address,
-    functionCall
-  );
-  const receipt = await tx.wait();
+  await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
 
   hub = (await ethers.getContractAt("HubFacet", diamond.address)) as HubFacet;
   foundry = (await ethers.getContractAt(

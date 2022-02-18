@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";

@@ -96,12 +96,12 @@ describe("Generic Curve", () => {
   });
 
   describe("getCurveDetails()", () => {
-    it("Returns correct struct type", async () => {});
-    it("Returns correct registered details", async () => {});
+    xit("Returns correct struct type", async () => {});
+    xit("Returns correct registered details", async () => {});
   });
 
   describe("viewMeTokensMinted()", () => {
-    it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
+    xit("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
       // let expectedMeTokensMinted = await _curve.viewMeTokensMinted(
       //   amount1,
       //   hubId,
@@ -223,57 +223,27 @@ describe("Generic Curve", () => {
   });
 
   describe("calculateBurnReturn()", () => {
-    it("balanceLocked = 0, buyer, ending supply = 0", async () => {
-      // TODO
-    });
-    it("balanceLocked = 0, owner, ending supply = 0", async () => {
-      // TODO
-    });
-    it("balanceLocked = 0, buyer, ending supply > 0", async () => {
-      // TODO
-    });
-    it("balanceLocked = 0, owner, ending supply > 0", async () => {
-      // TODO
-    });
-    it("balanceLocked > 0, buyer, ending supply = 0", async () => {
-      // TODO
-    });
-    it("balanceLocked > 0, owner, ending supply = 0", async () => {
-      // TODO
-    });
-    it("balanceLocked > 0, buyer, ending supply > 0", async () => {
-      // TODO
-    });
-    it("balanceLocked > 0, owner, ending supply > 0", async () => {
-      // TODO
-    });
+    xit("balanceLocked = 0, buyer, ending supply = 0", async () => {});
+    xit("balanceLocked = 0, owner, ending supply = 0", async () => {});
+    xit("balanceLocked = 0, buyer, ending supply > 0", async () => {});
+    xit("balanceLocked = 0, owner, ending supply > 0", async () => {});
+    xit("balanceLocked > 0, buyer, ending supply = 0", async () => {});
+    xit("balanceLocked > 0, owner, ending supply = 0", async () => {});
+    xit("balanceLocked > 0, buyer, ending supply > 0", async () => {});
+    xit("balanceLocked > 0, owner, ending supply > 0", async () => {});
   });
 
-  describe("initReconfigure()", () => {
-    it("Only be callable by Hub", async () => {
-      // TODO
-    });
-    it("Fails if settings out of range", async () => {
-      // TODO
-    });
-    it("Fails if target values == current values", async () => {
-      // TODO
-    });
-    it("Sets target values", async () => {
-      // TODO
-    });
+  describe("inxitReconfigure()", () => {
+    xit("Only be callable by Hub", async () => {});
+    xit("Fails if settings out of range", async () => {});
+    xit("Fails if target values == current values", async () => {});
+    xit("Sets target values", async () => {});
   });
 
   describe("finishReconfigure()", () => {
-    it("Only callable by Hub", async () => {
-      // TODO
-    });
-    it("Sets all values to target values", async () => {
-      // TODO
-    });
-    it("Resets target values to default values", async () => {
-      // TODO
-    });
+    xit("Only callable by Hub", async () => {});
+    xit("Sets all values to target values", async () => {});
+    xit("Resets target values to default values", async () => {});
   });
   // it("viewMeTokensMinted() should work", async () => {
   //   let amount = one.mul(2);

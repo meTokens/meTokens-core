@@ -15,16 +15,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   BigNumber,
-  Bytes,
   ContractReceipt,
   ContractTransaction,
   Signer,
 } from "ethers";
 import { expect } from "chai";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
-import { MeTokenFactory } from "../../../artifacts/types/MeTokenFactory";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
@@ -32,7 +27,7 @@ import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import { mineBlock } from "../../utils/hardhatNode";
 import { Address } from "hardhat-deploy/dist/types";
 import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
-import { Diamond, ICurve } from "../../../artifacts/types";
+import { ICurve } from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
   DAI: string,
@@ -76,15 +71,11 @@ const setup = async () => {
     let USDT: string;
     let DAI: string;
     let WETH: string;
-    let weightedAverage: WeightedAverage;
-    let meTokenFactory: MeTokenFactory;
-    let curveRegistry: CurveRegistry;
-    let vaultRegistry: VaultRegistry;
+
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
-    let diamond: Diamond;
     let token: ERC20;
     let fee: FeesFacet;
     let weth: ERC20;
@@ -93,7 +84,6 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
-    let tokenWhale: string;
     let curve: ICurve;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
@@ -136,11 +126,7 @@ const setup = async () => {
         hub,
         curve,
         foundry,
-        diamond,
         meTokenRegistry,
-        meTokenFactory,
-        curveRegistry,
-        vaultRegistry,
         migrationRegistry,
         singleAssetVault,
         token,
@@ -150,7 +136,6 @@ const setup = async () => {
         account2,
         account3,
         tokenHolder,
-        tokenWhale,
       } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
@@ -950,7 +935,7 @@ const setup = async () => {
       });
     });
     describe("balancePool", () => {
-      it("Fails updateBalancePooled() if not foundry (TODO)", async () => {
+      xit("Fails updateBalancePooled() if not foundry", async () => {
         // await expect(
         //   meTokenRegistry.updateBalancePooled(
         //     true,
@@ -993,7 +978,7 @@ const setup = async () => {
         ).to.be.equal(amountDepositedAfterFee);
       });
 
-      it("Fails updateBalanceLocked() if not foundry (TODO)", async () => {
+      xit("Fails updateBalanceLocked() if not foundry", async () => {
         // await expect(
         //   meTokenRegistry.updateBalanceLocked(
         //     true,

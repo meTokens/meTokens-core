@@ -1,58 +1,43 @@
-import { network, run, ethers, getNamedAccounts } from "hardhat";
-import { Hub } from "../artifacts/types/Hub";
-import { VaultRegistry } from "../artifacts/types/VaultRegistry";
-import { SingleAssetVault } from "../artifacts/types/SingleAssetVault";
-import fs from "fs";
+import { Contract } from "@ethersproject/contracts";
 import { deploy } from "../test/utils/helpers";
-import { MeTokenFactory } from "../artifacts/types/MeTokenFactory";
-import { MeTokenRegistry } from "../artifacts/types/MeTokenRegistry";
-import { BancorABDK } from "../artifacts/types/BancorABDK";
-import { CurveRegistry } from "../artifacts/types/CurveRegistry";
-import { Foundry } from "../artifacts/types/Foundry";
-import { WeightedAverage } from "../artifacts/types/WeightedAverage";
-import { BigNumber } from "ethers";
-import { MigrationRegistry } from "../artifacts/types/MigrationRegistry";
-import { Fees } from "../artifacts/types/Fees";
+import fs from "fs";
+import { network, run, ethers, getNamedAccounts } from "hardhat";
+import { DiamondCutFacet } from "../artifacts/types/DiamondCutFacet";
+import { Diamond } from "../artifacts/types/Diamond";
+import { DiamondInit } from "../artifacts/types/DiamondInit";
+import { HubFacet } from "../artifacts/types/HubFacet";
+import { FoundryFacet } from "../artifacts/types/FoundryFacet";
+import { FeesFacet } from "../artifacts/types/FeesFacet";
+import { MeTokenRegistryFacet } from "../artifacts/types/MeTokenRegistryFacet";
+import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
+import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
+import { getSelectors } from "./libraries/helpers";
+import {
+  BancorABDK,
+  CurveRegistry,
+  MeTokenFactory,
+  MigrationRegistry,
+  SingleAssetVault,
+  VaultRegistry,
+} from "../artifacts/types";
 import { verifyContract } from "./utils";
 
+const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 100, 31337];
-const deployDir = "deployment";
+const REFUND_RATIO = 50000;
 const contracts: { name?: string; address: string }[] = [];
-const REFUND_RATIO = 800000;
-const MAX_WEIGHT = 1000000;
-const RESERVE_WEIGHT = BigNumber.from(MAX_WEIGHT).div(2).toString();
-const baseY = ethers.utils.parseEther("1000").toString();
-const MINT_FEE = 0;
-const BURN_BUYER_FEE = 0;
-const BURN_OWNER_FEE = 0;
-const TRANSFER_FEE = 0;
-const INTEREST_FEE = 0;
-const YIELD_FEE = 0;
-let DAI;
-function currencySymbol(chainId: number) {
-  switch (chainId.toString()) {
-    case "100":
-      return "XDAI";
-    default:
-      return "ETH";
-  }
-}
-
-function printLog(msg: string) {
-  console.log(msg);
-  /*  if (process.stdout.isTTY) {
-    process.stdout.clearLine(-1);
-    process.stdout.cursorTo(0);
-    process.stdout.write(msg);
-  } */
-}
+const deployDir = "deployment";
+const feeInitialization = [0, 0, 0, 0, 0, 0];
 
 async function main() {
-  const [deployer, DAO] = await ethers.getSigners();
-  ({ DAI } = await getNamedAccounts());
+  let [deployer, DAO] = await ethers.getSigners();
+  const deployerAddr = await deployer.getAddress();
+  // NOTE: this is done when PK is used over mnemonic
+  DAO = deployer;
+  const { DAI } = await getNamedAccounts();
 
-  const address = await deployer.getAddress();
+  const tokenAddr = DAI;
   if (!deployer.provider) {
     process.exit(1);
   }
@@ -61,167 +46,226 @@ async function main() {
   if (SUPPORTED_NETWORK.indexOf(chainId) === -1)
     throw new Error("Un-supported network");
 
-  console.log("Deploying meTokens on network:", network.name);
-  console.log("DAI  Address:", DAI);
-  console.log("Account address:", address);
-  console.log(
-    "Account balance:",
-    ethers.utils.formatEther(await deployer.provider.getBalance(address)),
-    currencySymbol(chainId)
-  );
+  console.log("Deploying on network", network.name);
+  console.log("Deployer address:", deployerAddr);
 
-  printLog("Deploying weightedAverage Contract...");
-  const weightedAverage = await deploy<WeightedAverage>("WeightedAverage");
-  contracts.push({
-    address: weightedAverage.address,
-  });
-
-  printLog("Deploying CurveRegistry Contract...");
   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
+  console.log("curveRegistry deployed at:", curveRegistry.address);
   contracts.push({
     name: "contracts/registries/CurveRegistry.sol:CurveRegistry",
     address: curveRegistry.address,
   });
 
-  printLog("Deploying VaultRegistry Contract...");
+  const migrationRegistry = await deploy<MigrationRegistry>(
+    "MigrationRegistry"
+  );
+  console.log("migrationRegistry deployed at:", migrationRegistry.address);
+  contracts.push({
+    name: "contracts/registries/MigrationRegistry.sol:MigrationRegistry",
+    address: migrationRegistry.address,
+  });
+
   const vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
+  console.log("vaultRegistry deployed at:", vaultRegistry.address);
   contracts.push({
     name: "contracts/registries/VaultRegistry.sol:VaultRegistry",
     address: vaultRegistry.address,
   });
 
-  printLog("Deploying MigrationRegistry Contract...");
-  const migrationRegistry = await deploy<MigrationRegistry>(
-    "MigrationRegistry"
-  );
+  const diamondCutFacet = await deploy<DiamondCutFacet>("DiamondCutFacet");
+  console.log("\nDiamondCutFacet deployed at:", diamondCutFacet.address);
   contracts.push({
-    address: migrationRegistry.address,
+    name: "contracts/facets/DiamondCutFacet.sol:DiamondCutFacet",
+    address: diamondCutFacet.address,
   });
 
-  printLog("Deploying Foundry Contract...");
-  const foundry = await deploy<Foundry>("Foundry", {
-    WeightedAverage: weightedAverage.address,
-  });
-  contracts.push({
-    address: foundry.address,
-  });
-
-  printLog("Deploying Hub Contract...");
-  const hub = await deploy<Hub>("Hub");
-  contracts.push({
-    address: hub.address,
-  });
-
-  printLog("Deploying BancorABDK Contract...");
-  const BancorABDK = await deploy<BancorABDK>(
-    "BancorABDK",
+  const diamond = await deploy<Diamond>(
+    "Diamond",
     undefined,
-    hub.address
+    deployerAddr,
+    diamondCutFacet.address
   );
+  console.log("Diamond deployed at:", diamond.address);
 
-  printLog("Deploying MeTokenFactory Contract...");
-  const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
-  contracts.push({
-    address: meTokenFactory.address,
-  });
-
-  printLog("Deploying MeTokenRegistry Contract...");
-  const meTokenRegistry = await deploy<MeTokenRegistry>(
-    "MeTokenRegistry",
-    undefined,
-    foundry.address,
-    hub.address,
-    meTokenFactory.address,
-    migrationRegistry.address
-  );
-
-  printLog("Deploying SingleAssetVault Contract...");
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
-    DAO.address, // DAO
-    foundry.address, // foundry
-    hub.address, // hub
-    meTokenRegistry.address, //IMeTokenRegistry
+    deployer.address, // DAO
+    diamond.address, // foundry
+    diamond.address, // hub
+    diamond.address, //IMeTokenRegistry
     migrationRegistry.address //IMigrationRegistry
   );
+  console.log("singleAssetVault deployed at:", singleAssetVault.address);
 
-  printLog("Deploying fees Contract...");
-  const fees = await deploy<Fees>("Fees");
+  const curve = await deploy<BancorABDK>(
+    "BancorABDK",
+    undefined,
+    diamond.address
+  );
+  console.log("curve deployed at:", curve.address);
+
+  const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
+  console.log("MeTokenFactory deployed at:", meTokenFactory.address);
   contracts.push({
-    address: fees.address,
+    name: "contracts/MeTokenFactory.sol:MeTokenFactory",
+    address: meTokenFactory.address,
   });
 
-  printLog("Registering Bancor Curve to curve registry...");
-  let tx = await curveRegistry.approve(BancorABDK.address);
-  await tx.wait();
-  printLog("Registering vault to vault registry...");
-  tx = await vaultRegistry.approve(singleAssetVault.address);
-  await tx.wait();
+  // deploy facets
+  console.log("\nDeploying Facets...");
 
-  printLog("Initializing fees...");
-  tx = await fees.initialize(
-    MINT_FEE,
-    BURN_BUYER_FEE,
-    BURN_OWNER_FEE,
-    TRANSFER_FEE,
-    INTEREST_FEE,
-    YIELD_FEE
+  const hubFacet = await deploy<HubFacet>("HubFacet");
+  console.log("HubFacet deployed at:", hubFacet.address);
+  contracts.push({
+    name: "contracts/facets/HubFacet.sol:HubFacet",
+    address: hubFacet.address,
+  });
+
+  const foundryFacet = await deploy<FoundryFacet>("FoundryFacet");
+  console.log("FoundryFacet deployed at:", foundryFacet.address);
+  contracts.push({
+    name: "contracts/facets/FoundryFacet.sol:FoundryFacet",
+    address: foundryFacet.address,
+  });
+
+  const feesFacet = await deploy<FeesFacet>("FeesFacet");
+  console.log("FeesFacet deployed at:", feesFacet.address);
+  contracts.push({
+    name: "contracts/facets/FeesFacet.sol:FeesFacet",
+    address: feesFacet.address,
+  });
+
+  const meTokenRegistryFacet = await deploy<MeTokenRegistryFacet>(
+    "MeTokenRegistryFacet"
   );
-  await tx.wait();
-
-  printLog("Initializing hub Contract...");
-  tx = await hub.initialize(
-    foundry.address,
-    vaultRegistry.address,
-    curveRegistry.address
+  console.log(
+    "MeTokenRegistryFacet deployed at:",
+    meTokenRegistryFacet.address
   );
-  await tx.wait();
+  contracts.push({
+    name: "contracts/facets/MeTokenRegistryFacet.sol:MeTokenRegistryFacet",
+    address: meTokenRegistryFacet.address,
+  });
 
-  const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+  const diamondLoupeFacet = await deploy<DiamondLoupeFacet>(
+    "DiamondLoupeFacet"
+  );
+  console.log("DiamondLoupeFacet deployed at:", diamondLoupeFacet.address);
+  contracts.push({
+    name: "contracts/facets/DiamondLoupeFacet.sol:DiamondLoupeFacet",
+    address: diamondLoupeFacet.address,
+  });
+
+  const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
+  console.log("OwnershipFacet deployed at:", ownershipFacet.address);
+  contracts.push({
+    name: "contracts/facets/OwnershipFacet.sol:OwnershipFacet",
+    address: ownershipFacet.address,
+  });
+
+  const facets = [
+    hubFacet,
+    foundryFacet,
+    feesFacet,
+    meTokenRegistryFacet,
+    diamondLoupeFacet,
+    ownershipFacet,
+  ];
+  const cut = [];
+  for (const facet of facets) {
+    cut.push({
+      facetAddress: facet.address,
+      action: FacetCutAction.Add,
+      functionSelectors: getSelectors(facet as unknown as Contract),
+    });
+  }
+
+  // Upgrade diamond w/ facets
+  console.log("\nDiamond Cut successful");
+  const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
+  let tx;
+  let receipt;
+  let args: any = [
+    {
+      mintFee: feeInitialization[0],
+      burnBuyerFee: feeInitialization[1],
+      burnOwnerFee: feeInitialization[2],
+      transferFee: feeInitialization[3],
+      interestFee: feeInitialization[4],
+      yieldFee: feeInitialization[5],
+      diamond: diamond.address,
+      vaultRegistry: vaultRegistry.address,
+      curveRegistry: curveRegistry.address,
+      migrationRegistry: migrationRegistry.address,
+      meTokenFactory: meTokenFactory.address,
+    },
+  ];
+
+  // call to init function
+  const diamondInit = await deploy<DiamondInit>("DiamondInit");
+  console.log("DiamondInit deployed at:", diamondInit.address);
+  contracts.push({
+    name: "contracts/DiamondInit.sol:DiamondInit",
+    address: diamondInit.address,
+  });
+
+  let functionCall = diamondInit.interface.encodeFunctionData("init", args);
+  tx = await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
+  console.log("Diamond cut tx: ", tx.hash);
+  receipt = await tx.wait();
+  if (!receipt.status) {
+    throw Error(`Diamond upgrade failed: ${tx.hash}`);
+  }
+  await curveRegistry.approve(curve.address);
+  await vaultRegistry.approve(singleAssetVault.address);
+  console.log("curve and singleAssetVault approved");
+  let baseY = ethers.utils.parseEther("1");
+  let reserveWeight = 250000;
+  let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
-    [baseY, RESERVE_WEIGHT]
+    [baseY, reserveWeight]
   );
-  const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
+  let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
   );
 
-  printLog(`Registering hub with ${deployer.address} as the owner...`);
+  // Set facets to their proxies
+  const hub = (await ethers.getContractAt(
+    "HubFacet",
+    diamond.address
+  )) as HubFacet;
+
+  // register first hub
   tx = await hub.register(
-    deployer.address,
-    DAI,
+    deployerAddr,
+    tokenAddr,
     singleAssetVault.address,
-    BancorABDK.address,
+    curve.address,
     REFUND_RATIO, //refund ratio
     encodedCurveDetails,
     encodedVaultArgs
   );
   await tx.wait();
+  console.log("hub registered");
+  receipt = await deployer.provider.getTransactionReceipt(tx.hash);
 
-  printLog("Initializing foundry Contract...");
-  tx = await foundry.initialize(
-    hub.address,
-    fees.address,
-    meTokenRegistry.address
-  );
-  await tx.wait();
-  const receipt = await deployer.provider.getTransactionReceipt(tx.hash);
-  printLog("Deployment done !");
-
+  // Verify contracts on etherscan
   const deploymentInfo = {
     network: network.name,
-    "Hub Contract Address": hub.address,
+    "Diamond Cut Facet Contract Address:": diamondCutFacet.address,
+    "Diamond Contract Address:": diamond.address,
+    "Hub Facet Contract Address": hubFacet.address,
+    "Fee Facet Contract Address": feesFacet.address,
+    "Foundry Facet Contract Address": foundryFacet.address,
+    "MeToken Registry Facet Contract Address": meTokenRegistryFacet.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
-    "Fee Contract Address": fees.address,
     "Curve Registry Contract Address": curveRegistry.address,
-    "Bancor Curve Contract Address": BancorABDK.address,
-    "Foundry Contract Address": foundry.address,
+    "Bancor Curve Contract Address": curve.address,
     "MeToken Factory Contract Address": meTokenFactory.address,
-    "MeToken Registry Contract Address": meTokenRegistry.address,
-    "WeightedAverage Contract Address": weightedAverage.address,
     "Block Number": receipt.blockNumber.toString(),
   };
 
@@ -239,33 +283,27 @@ async function main() {
 
   const isEtherscan = ETHERSCAN_CHAIN_IDS.includes(chainId);
   if (isEtherscan) {
-    printLog(`Waiting for Etherscan  to index Contracts...`);
     await tx.wait(5);
-    printLog("Verifying Contracts...\n");
+    console.log("Verifying Contracts...\n");
 
     const TASK_VERIFY = "verify";
 
     await verifyContract("singleAssetVault", singleAssetVault.address, [
       DAO.address, // DAO
-      foundry.address, // foundry
-      hub.address, // hub
-      meTokenRegistry.address, //IMeTokenRegistry
+      diamond.address, // foundry
+      diamond.address, // hub
+      diamond.address, //IMeTokenRegistry
       migrationRegistry.address, //IMigrationRegistry
     ]);
-    await verifyContract("meTokenRegistry", meTokenRegistry.address, [
-      foundry.address,
-      hub.address,
-      meTokenFactory.address,
-      migrationRegistry.address,
+    await verifyContract("Diamond", diamond.address, [
+      deployer.address,
+      diamondCutFacet.address,
     ]);
-    await verifyContract("BancorABDK", BancorABDK.address, [
-      hub.address,
-      foundry.address,
-    ]);
+    await verifyContract("BancorABDK", curve.address, [diamond.address]);
 
     for (let i = 0; i < contracts.length; ++i) {
       try {
-        await run(TASK_VERIFY, {
+        await run("verify", {
           contract: contracts[i].name || undefined,
           address: contracts[i].address,
           constructorArguments: [],

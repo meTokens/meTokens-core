@@ -270,7 +270,7 @@ const setup = async () => {
         await dai.connect(account2).approve(singleAssetVault.address, max);
         await dai.connect(account1).approve(meTokenRegistry.address, max);
         // account0 is registering a metoken
-        const tx = await meTokenRegistry
+        await meTokenRegistry
           .connect(account0)
           .subscribe(name, symbol, hubId, 0);
         const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -850,7 +850,8 @@ const setup = async () => {
       });
     });
 
-    describe("setRegisterer() [TODO]", () => {
+    describe("setRegisterer()", () => {
+      xit("Pending tests");
       // it("should revert when sender is not registerer", async () => {
       //   await expect(
       //     hub.connect(account1).setRegisterer(account1.address)

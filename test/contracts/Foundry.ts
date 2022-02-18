@@ -25,13 +25,12 @@ import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
 import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../utils/hubSetup";
-import { Diamond, ICurve } from "../../artifacts/types";
+import { ICurve } from "../../artifacts/types";
 
 const setup = async () => {
   describe("FoundryFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
-    let diamond: Diamond;
     let WETH: string;
     let weth: ERC20;
     let account0: SignerWithAddress;
@@ -64,8 +63,6 @@ const setup = async () => {
     );
     const fee = 3000;
 
-    // TODO: pass in curve arguments to function
-    // TODO: then loop over array of set of curve arguments
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
@@ -80,7 +77,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      // TODO: pass in name of curve to deploy, encodedCurveDetails to general func
       encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
@@ -90,7 +86,6 @@ const setup = async () => {
         tokenHolder,
         hub,
         curve,
-        diamond,
         foundry,
         singleAssetVault,
         curveRegistry,
@@ -650,8 +645,6 @@ const setup = async () => {
           toETHNumber(baseY),
           reserveWeight / MAX_WEIGHT
         );
-        let res = toETHNumber(expectedMeTokensMinted);
-        res = toETHNumber(baseY);
         expect(toETHNumber(amount1)).to.approximately(
           calculated,
           0.000000000000000000000001
@@ -663,7 +656,7 @@ const setup = async () => {
         // );
 
         // Mint first meTokens to owner account1
-        let tx = await meTokenRegistry
+        await meTokenRegistry
           .connect(account1)
           .subscribe(name, symbol, hubId, amount1);
         let meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -681,10 +674,9 @@ const setup = async () => {
         // Compare owner dai balance before/after
         let minterDaiBalanceAfter = await dai.balanceOf(account1.address);
 
-        expect(
-          // TODO: how to verify difference of numbers to type of amount1?
-          minterDaiBalanceBefore.sub(minterDaiBalanceAfter)
-        ).to.equal(amount1);
+        expect(minterDaiBalanceBefore.sub(minterDaiBalanceAfter)).to.equal(
+          amount1
+        );
 
         // Expect balance of vault to have increased by assets deposited
         let vaultDaiBalanceAfter = await dai.balanceOf(
@@ -715,7 +707,7 @@ const setup = async () => {
         );
 
         // Create meToken w/o issuing supply and account2 as the owner
-        const tx = await meTokenRegistry
+        await meTokenRegistry
           .connect(account2)
           .subscribe(name, symbol, hubId, 0);
         const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -965,13 +957,16 @@ const setup = async () => {
           ["uint256", "uint32"],
           [baseY, reserveWeight]
         );
+        await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined, //no libs
+          account1.address, // DAO
+          foundry.address, // diamond
+        );
         const block = await ethers.provider.getBlock("latest");
         // earliestSwapTime 10 hour
         const earliestSwapTime = block.timestamp + 600 * 60;
-        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256"],
-          [earliestSwapTime]
-        );
+        ethers.utils.defaultAbiCoder.encode(["uint256"], [earliestSwapTime]);
         // 10 hour
         await hub.setHubDuration(600 * 60);
         await hub.setHubWarmup(60 * 60);

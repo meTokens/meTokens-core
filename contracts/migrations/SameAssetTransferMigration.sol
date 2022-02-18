@@ -11,6 +11,15 @@ import {IMigration} from "../interfaces/IMigration.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Vault} from "../vaults/Vault.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
+import {HubInfo} from "../libs/LibHub.sol";
+
 /// @title Same asset vault migrator
 /// @author Parv Garg (@parv3213), Carl Farterson (@carlfarterson)
 /// @notice create a vault to hold an asset if a meToken is resubscribing
@@ -98,7 +107,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     function isValid(
         address _meToken,
         bytes memory /* _encodedArgs */
-    ) public view override returns (bool) {
+    ) external view override returns (bool) {
         MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
             .getMeTokenDetails(_meToken);
         // MeToken not subscribed to a hub

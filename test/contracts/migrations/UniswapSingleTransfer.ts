@@ -275,7 +275,7 @@ const setup = async () => {
         ).to.be.revertedWith("migration not approved");
 
         // approve vaults again
-        const tx = await migrationRegistry.approve(
+        await migrationRegistry.approve(
           initialVault.address,
           targetVault.address,
           migration.address

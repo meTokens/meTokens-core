@@ -7,6 +7,7 @@ import {Vault} from "./Vault.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
 import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
 import {IHub} from "../interfaces/IHub.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
@@ -20,6 +21,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
+    /// @dev not adding reentrancy guard as no state changes after external call
     function startMigration(address _meToken) external override {
         MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
             .getMeTokenDetails(_meToken);
@@ -41,7 +43,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     function isValid(
         address _asset,
         bytes memory /*_encodedArgs */
-    ) public pure override returns (bool) {
+    ) external pure override returns (bool) {
         if (_asset == address(0)) {
             return false;
         }

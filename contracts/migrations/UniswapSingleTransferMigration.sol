@@ -41,7 +41,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     // TODO: configurable fee
     uint24 public constant MINFEE = 500; // 0.05%
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
-    uint24 public constant MAXFEE = 10000; // 1%
+    uint24 public constant MAXFEE = 1e4; // 1%
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
@@ -130,7 +130,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     // Kicks off meToken warmup period
     function isValid(address _meToken, bytes memory _encodedArgs)
-        public
+        external
         view
         override
         returns (bool)
@@ -155,6 +155,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
+    /// @dev parent call must have reentrancy check
     function _swap(address _meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
         MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)

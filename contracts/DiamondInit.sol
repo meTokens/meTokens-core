@@ -8,7 +8,7 @@ import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
-import "./libs/Details.sol";
+import {AppStorage} from "./libs/Details.sol";
 
 contract DiamondInit {
     struct Args {
