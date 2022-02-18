@@ -8,6 +8,15 @@ import "../vaults/Vault.sol";
 import "../interfaces/IMigration.sol";
 import "../interfaces/ISingleAssetVault.sol";
 
+import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Vault} from "../vaults/Vault.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
+import {HubInfo} from "../libs/LibHub.sol";
+
 /// @title Same asset vault migrator
 /// @author Carl Farterson (@carlfarterson)
 /// @notice create a vault to hold an asset if a meToken is resubscribing

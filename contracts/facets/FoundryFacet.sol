@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IFoundry} from "../interfaces/IFoundry.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 
-import {LibMeToken} from "../libs/LibMeToken.sol";
-import {LibHub} from "../libs/LibHub.sol";
+import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
+import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
-import "../libs/Details.sol";
+import {Modifiers} from "../libs/Details.sol";
 
 contract FoundryFacet is IFoundry, Modifiers {
     // MINT FLOW CHART

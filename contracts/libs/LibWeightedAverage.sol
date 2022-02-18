@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage} from "./Details.sol";
-
 library LibWeightedAverage {
     uint256 private constant _PRECISION = 10**18;
 

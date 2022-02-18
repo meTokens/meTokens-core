@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "./interfaces/IMeTokenFactory.sol";
-import "./MeToken.sol";
+import {IMeTokenFactory} from "./interfaces/IMeTokenFactory.sol";
+import {MeToken} from "./MeToken.sol";
 
 /// @title meToken factory
 /// @author Carl Farterson (@carlfarterson)

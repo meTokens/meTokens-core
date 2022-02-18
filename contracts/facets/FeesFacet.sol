@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {AppStorage, Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/Details.sol";
 
 contract FeesFacet is Modifiers {
     event SetMintFee(uint256 rate);

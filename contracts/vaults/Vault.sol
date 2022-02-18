@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../libs/Details.sol";
-import "../interfaces/IVault.sol";
-import "../interfaces/IHub.sol";
-import "../interfaces/IMeTokenRegistry.sol";
-import "../interfaces/IMigrationRegistry.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 /// @title meTokens basic Vault
 /// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
@@ -14,9 +15,7 @@ import {IHub} from "../interfaces/IHub.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
-import "../libs/Details.sol";
+import {HubInfo, MeTokenInfo, Modifiers} from "../libs/Details.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
