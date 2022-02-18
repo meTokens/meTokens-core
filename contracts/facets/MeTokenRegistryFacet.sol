@@ -16,6 +16,7 @@ import {IVault} from "../interfaces/IVault.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {HubInfo, MeTokenInfo, Modifiers} from "../libs/Details.sol";
+import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)

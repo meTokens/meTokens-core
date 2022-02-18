@@ -15,15 +15,12 @@ contract OwnershipFacet is Modifiers {
         s.diamondController = newController;
     }
 
-    function setTrustedForwarder(address trustedForwarder)
+    function setTrustedForwarder(address forwarder)
         external
         onlyDiamondController
     {
-        require(
-            trustedForwarder != s.trustedForwarder,
-            "same trustedForwarder"
-        );
-        s.trustedForwarder = trustedForwarder;
+        require(forwarder != s.trustedForwarder, "same trustedForwarder");
+        s.trustedForwarder = forwarder;
     }
 
     function setFeesController(address newController)
