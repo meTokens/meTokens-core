@@ -10,7 +10,7 @@ import {
   fromETHNumber,
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, ContractTransaction, Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
@@ -27,7 +27,6 @@ import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
-    let tx: ContractTransaction;
     let meTokenRegistry: MeTokenRegistryFacet;
     let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
@@ -170,7 +169,7 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       // initialize resubscription to hub 2
-      tx = await meTokenRegistry
+      await meTokenRegistry
         .connect(account0)
         .initResubscribe(
           meTokenAddr,

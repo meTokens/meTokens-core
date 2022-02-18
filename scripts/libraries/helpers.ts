@@ -1,4 +1,3 @@
-import { Signer } from "@ethersproject/abstract-signer";
 import { Contract } from "@ethersproject/contracts";
 import { DiamondLoupeFacet } from "../../artifacts/types";
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import "../libs/Details.sol";
+import {Modifiers} from "../libs/Details.sol";
 import {IHub} from "../interfaces/IHub.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";

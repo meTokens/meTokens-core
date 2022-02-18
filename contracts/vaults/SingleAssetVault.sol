@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "./Vault.sol";
-import "../interfaces/ISingleAssetVault.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Vault} from "./Vault.sol";
+import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
+import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title Vault
 /// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
@@ -20,6 +27,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
+    /// @dev not adding reentrancy guard as no state changes after external call
     function startMigration(address _meToken) external override {
         MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
             _meToken
@@ -42,7 +50,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     function isValid(
         address _asset,
         bytes memory /*_encodedArgs */
-    ) public pure override returns (bool) {
+    ) external pure override returns (bool) {
         if (_asset == address(0)) {
             return false;
         }

@@ -1,20 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { ERC20 } from "../../../artifacts/types/ERC20";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import {
-  calculateCollateralReturned,
-  calculateTokenReturned,
-  calculateTokenReturnedFromZero,
-  deploy,
-  getCalculationFuncsForBancorCurves,
-  toETHNumber,
-} from "../../utils/helpers";
+import { getCalculationFuncsForBancorCurves } from "../../utils/helpers";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, hubSetup } from "../../utils/hubSetup";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
@@ -34,14 +25,12 @@ const setup = async () => {
   let foundry: FoundryFacet;
   let hub: HubFacet;
   let diamond: Diamond;
-  let dai: ERC20;
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   const one = ethers.utils.parseEther("1");
   const MAX_WEIGHT = 1000000;
 
-  let token;
   let tokenAddr: string;
 
   ({ DAI } = await getNamedAccounts());
@@ -102,7 +91,6 @@ const setup = async () => {
   // Create and register first hub we also link the curve of type "bancorABDK" to this hub (hubID = 1)
   let curve: ICurve;
   ({
-    token,
     curve,
     curveRegistry,
     tokenAddr,

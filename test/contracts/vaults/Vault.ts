@@ -5,7 +5,7 @@ import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { getContractAt } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import { ERC20 } from "../../../artifacts/types/ERC20";
