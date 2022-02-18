@@ -136,7 +136,7 @@ const setup = async () => {
           encodedCurveDetails,
           encodedVaultDAIArgs
         );
-        await expect(tx).to.be.revertedWith("_curve !approved");
+        await expect(tx).to.be.revertedWith("curve !approved");
 
         // Un-approved vault
         tx = hub.register(
@@ -148,7 +148,7 @@ const setup = async () => {
           encodedCurveDetails,
           encodedVaultDAIArgs
         );
-        await expect(tx).to.be.revertedWith("_vault !approved");
+        await expect(tx).to.be.revertedWith("vault !approved");
       });
       it("should revert from invalid encodedCurveDetails", async () => {
         // Invalid _encodedCurveDetails for particular curve
@@ -162,7 +162,7 @@ const setup = async () => {
             "0x", // invalid _encodedCurveDetails
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!_encodedDetails");
+        ).to.be.revertedWith("!encodedDetails");
         await expect(
           hub.register(
             account0.address,
@@ -173,7 +173,7 @@ const setup = async () => {
             ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveDetails
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!_encodedDetails");
+        ).to.be.revertedWith("!encodedDetails");
       });
       it("should revert from invalid encodedVaultArgs", async () => {
         // Invalid _encodedVaultArgs
@@ -199,7 +199,7 @@ const setup = async () => {
           encodedCurveDetails,
           encodedVaultDAIArgs
         );
-        await expect(tx).to.be.revertedWith("_refundRatio > MAX");
+        await expect(tx).to.be.revertedWith("refundRatio > MAX");
 
         // _refundRatio = 0
         tx = hub.register(
@@ -211,7 +211,7 @@ const setup = async () => {
           encodedCurveDetails,
           encodedVaultDAIArgs
         );
-        await expect(tx).to.be.revertedWith("_refundRatio == 0");
+        await expect(tx).to.be.revertedWith("refundRatio == 0");
       });
       it("should be able to register", async () => {
         const tx = await hub.register(
@@ -356,9 +356,9 @@ const setup = async () => {
           refundRatio1,
           encodedCurveDetails
         );
-        await expect(tx1).to.be.revertedWith("_targetRefundRatio >= MAX");
+        await expect(tx1).to.be.revertedWith("targetRefundRatio >= MAX");
         await expect(tx2).to.be.revertedWith(
-          "_targetRefundRatio == refundRatio"
+          "targetRefundRatio == refundRatio"
         );
       });
 
@@ -383,7 +383,7 @@ const setup = async () => {
           refundRatio2,
           encodedCurveDetails
         );
-        await expect(tx).to.be.revertedWith("_targetCurve !approved");
+        await expect(tx).to.be.revertedWith("targetCurve !approved");
       });
 
       it("should revert on ICurve.register() from invalid encodedCurveDetails", async () => {

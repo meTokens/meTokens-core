@@ -20,7 +20,7 @@ describe("Registry.sol", () => {
     });
     it("Revert if already approved", async () => {
       await expect(registry.approve(signers[1].address)).to.be.revertedWith(
-        "_addr approved"
+        "addr approved"
       );
     });
   });
@@ -28,7 +28,7 @@ describe("Registry.sol", () => {
   describe("unapprove()", () => {
     it("Revert if not approved", async () => {
       await expect(registry.unapprove(signers[2].address)).to.be.revertedWith(
-        "_addr !approved"
+        "addr !approved"
       );
     });
 

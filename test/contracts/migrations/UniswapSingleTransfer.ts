@@ -240,7 +240,7 @@ const setup = async () => {
               migration.address,
               badEncodedMigrationArgs
             )
-        ).to.be.revertedWith("Invalid _encodedMigrationArgs");
+        ).to.be.revertedWith("Invalid encodedMigrationArgs");
       });
       it("should revert when try to approve already approved vaults", async () => {
         await expect(
