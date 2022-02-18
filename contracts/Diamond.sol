@@ -13,15 +13,15 @@ import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {LibAppStorage} from "./libs/Details.sol";
 
 contract Diamond {
-    constructor(address _firstController, address _diamondCutFacet) payable {
-        LibAppStorage.initControllers(_firstController);
+    constructor(address firstController, address diamondCutFacet) payable {
+        LibAppStorage.initControllers(firstController);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
         functionSelectors[0] = IDiamondCut.diamondCut.selector;
         cut[0] = IDiamondCut.FacetCut({
-            facetAddress: _diamondCutFacet,
+            facetAddress: diamondCutFacet,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectors
         });

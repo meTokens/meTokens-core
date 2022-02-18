@@ -12,12 +12,12 @@ contract MeToken is ERC20Burnable {
     address public diamond;
 
     constructor(
-        string memory _name,
-        string memory _symbol,
-        address _diamond
-    ) ERC20(_name, _symbol) {
+        string memory name,
+        string memory symbol,
+        address diamondAdr
+    ) ERC20(name, symbol) {
         version = "0.2";
-        diamond = _diamond;
+        diamond = diamondAdr;
     }
 
     function mint(address to, uint256 amount) external {

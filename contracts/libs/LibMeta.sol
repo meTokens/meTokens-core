@@ -14,9 +14,9 @@ library LibMeta {
     function domainSeparator(string memory name, string memory version)
         internal
         view
-        returns (bytes32 domainSeparator_)
+        returns (bytes32 domainSeparator)
     {
-        domainSeparator_ = keccak256(
+        domainSeparator = keccak256(
             abi.encode(
                 _EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(name)),

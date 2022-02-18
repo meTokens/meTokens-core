@@ -12,156 +12,150 @@ import {IFoundry} from "../interfaces/IFoundry.sol";
 
 contract HubFacet is Modifiers {
     event Register(
-        uint256 _id,
-        address _owner,
-        address _asset,
-        address _vault,
-        address _curve,
-        uint256 _refundRatio,
-        bytes _encodedCurveDetails,
-        bytes _encodedVaultArgs
+        uint256 id,
+        address owner,
+        address asset,
+        address vault,
+        address curve,
+        uint256 refundRatio,
+        bytes encodedCurveDetails,
+        bytes encodedVaultArgs
     );
-    event Deactivate(uint256 _id);
+    event Deactivate(uint256 id);
     event InitUpdate(
-        uint256 _id,
-        address _targetCurve,
-        uint256 _targetRefundRatio,
-        bytes _encodedCurveDetails,
-        bool _reconfigure,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _endCooldown
+        uint256 id,
+        address targetCurve,
+        uint256 targetRefundRatio,
+        bytes encodedCurveDetails,
+        bool reconfigure,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 endCooldown
     );
-    event FinishUpdate(uint256 _id);
-    event CancelUpdate(uint256 _id);
-    event TransferHubOwnership(uint256 _id, address _newOwner);
+    event FinishUpdate(uint256 id);
+    event CancelUpdate(uint256 id);
+    event TransferHubOwnership(uint256 id, address newOwner);
 
     function register(
-        address _owner,
-        address _asset,
-        IVault _vault,
-        ICurve _curve,
-        uint256 _refundRatio,
-        bytes memory _encodedCurveDetails,
-        bytes memory _encodedVaultArgs
+        address owner,
+        address asset,
+        IVault vault,
+        ICurve curve,
+        uint256 refundRatio,
+        bytes memory encodedCurveDetails,
+        bytes memory encodedVaultArgs
     ) external onlyRegisterController {
-        require(
-            s.curveRegistry.isApproved(address(_curve)),
-            "_curve !approved"
-        );
-        require(
-            s.vaultRegistry.isApproved(address(_vault)),
-            "_vault !approved"
-        );
-        require(_refundRatio < s.MAX_REFUND_RATIO, "_refundRatio > MAX");
-        require(_refundRatio > 0, "_refundRatio == 0");
+        require(s.curveRegistry.isApproved(address(curve)), "curve !approved");
+        require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
+        require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio > MAX");
+        require(refundRatio > 0, "refundRatio == 0");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        require(_vault.isValid(_asset, _encodedVaultArgs), "asset !valid");
+        require(vault.isValid(asset, encodedVaultArgs), "asset !valid");
 
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;
-        _curve.register(id, _encodedCurveDetails);
+        curve.register(id, encodedCurveDetails);
         // Save the hub to the registry
-        HubInfo storage hub_ = s.hubs[s.hubCount];
-        hub_.active = true;
-        hub_.owner = _owner;
-        hub_.asset = _asset;
-        hub_.vault = address(_vault);
-        hub_.curve = address(_curve);
-        hub_.refundRatio = _refundRatio;
+        HubInfo storage hub = s.hubs[s.hubCount];
+        hub.active = true;
+        hub.owner = owner;
+        hub.asset = asset;
+        hub.vault = address(vault);
+        hub.curve = address(curve);
+        hub.refundRatio = refundRatio;
         emit Register(
             id,
-            _owner,
-            _asset,
-            address(_vault),
-            address(_curve),
-            _refundRatio,
-            _encodedCurveDetails,
-            _encodedVaultArgs
+            owner,
+            asset,
+            address(vault),
+            address(curve),
+            refundRatio,
+            encodedCurveDetails,
+            encodedVaultArgs
         );
     }
 
-    function deactivate(uint256 _id) external {
+    function deactivate(uint256 id) external {
         address sender = LibMeta.msgSender();
-        HubInfo storage hub_ = s.hubs[_id];
+        HubInfo storage hub = s.hubs[id];
         require(
-            sender == hub_.owner || sender == s.deactivateController,
+            sender == hub.owner || sender == s.deactivateController,
             "!owner && !deactivateController"
         );
-        require(hub_.active, "!active");
-        hub_.active = false;
-        emit Deactivate(_id);
+        require(hub.active, "!active");
+        hub.active = false;
+        emit Deactivate(id);
     }
 
     function initUpdate(
-        uint256 _id,
-        address _targetCurve,
-        uint256 _targetRefundRatio,
-        bytes memory _encodedCurveDetails
+        uint256 id,
+        address targetCurve,
+        uint256 targetRefundRatio,
+        bytes memory encodedCurveDetails
     ) external {
-        HubInfo storage hub_ = s.hubs[_id];
+        HubInfo storage hub = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub_.owner, "!owner");
-        if (hub_.updating && block.timestamp > hub_.endTime) {
-            LibHub.finishUpdate(_id);
+        require(sender == hub.owner, "!owner");
+        if (hub.updating && block.timestamp > hub.endTime) {
+            LibHub.finishUpdate(id);
         }
-        require(!hub_.updating, "already updating");
+        require(!hub.updating, "already updating");
 
-        require(block.timestamp >= hub_.endCooldown, "Still cooling down");
+        require(block.timestamp >= hub.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (_targetRefundRatio != 0) || (_encodedCurveDetails.length > 0),
+            (targetRefundRatio != 0) || (encodedCurveDetails.length > 0),
             "Nothing to update"
         );
 
-        if (_targetRefundRatio != 0) {
+        if (targetRefundRatio != 0) {
             require(
-                _targetRefundRatio < s.MAX_REFUND_RATIO,
-                "_targetRefundRatio >= MAX"
+                targetRefundRatio < s.MAX_REFUND_RATIO,
+                "targetRefundRatio >= MAX"
             );
             require(
-                _targetRefundRatio != hub_.refundRatio,
-                "_targetRefundRatio == refundRatio"
+                targetRefundRatio != hub.refundRatio,
+                "targetRefundRatio == refundRatio"
             );
-            hub_.targetRefundRatio = _targetRefundRatio;
+            hub.targetRefundRatio = targetRefundRatio;
         }
 
         bool reconfigure;
-        if (_encodedCurveDetails.length > 0) {
-            if (_targetCurve == address(0)) {
-                ICurve(hub_.curve).initReconfigure(_id, _encodedCurveDetails);
+        if (encodedCurveDetails.length > 0) {
+            if (targetCurve == address(0)) {
+                ICurve(hub.curve).initReconfigure(id, encodedCurveDetails);
                 reconfigure = true;
             } else {
                 require(
-                    s.curveRegistry.isApproved(_targetCurve),
-                    "_targetCurve !approved"
+                    s.curveRegistry.isApproved(targetCurve),
+                    "targetCurve !approved"
                 );
-                require(_targetCurve != hub_.curve, "targetCurve==curve");
-                ICurve(_targetCurve).register(_id, _encodedCurveDetails);
-                hub_.targetCurve = _targetCurve;
+                require(targetCurve != hub.curve, "targetCurve==curve");
+                ICurve(targetCurve).register(id, encodedCurveDetails);
+                hub.targetCurve = targetCurve;
             }
         }
 
-        hub_.reconfigure = reconfigure;
-        hub_.updating = true;
-        hub_.startTime = block.timestamp + s.hubWarmup;
-        hub_.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
-        hub_.endCooldown =
+        hub.reconfigure = reconfigure;
+        hub.updating = true;
+        hub.startTime = block.timestamp + s.hubWarmup;
+        hub.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
+        hub.endCooldown =
             block.timestamp +
             s.hubWarmup +
             s.hubDuration +
             s.hubCooldown;
 
         emit InitUpdate(
-            _id,
-            _targetCurve,
-            _targetRefundRatio,
-            _encodedCurveDetails,
+            id,
+            targetCurve,
+            targetRefundRatio,
+            encodedCurveDetails,
             reconfigure,
-            hub_.startTime,
-            hub_.endTime,
-            hub_.endCooldown
+            hub.startTime,
+            hub.endTime,
+            hub.endCooldown
         );
     }
 
@@ -169,57 +163,51 @@ contract HubFacet is Modifiers {
         LibHub.finishUpdate(id);
     }
 
-    function cancelUpdate(uint256 _id) external {
-        HubInfo storage hub_ = s.hubs[_id];
+    function cancelUpdate(uint256 id) external {
+        HubInfo storage hub = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub_.owner, "!owner");
-        require(hub_.updating, "!updating");
-        require(block.timestamp < hub_.startTime, "Update has started");
+        require(sender == hub.owner, "!owner");
+        require(hub.updating, "!updating");
+        require(block.timestamp < hub.startTime, "Update has started");
 
-        hub_.targetRefundRatio = 0;
-        hub_.reconfigure = false;
-        hub_.targetCurve = address(0);
-        hub_.updating = false;
-        hub_.startTime = 0;
-        hub_.endTime = 0;
-        hub_.endCooldown = 0;
+        hub.targetRefundRatio = 0;
+        hub.reconfigure = false;
+        hub.targetCurve = address(0);
+        hub.updating = false;
+        hub.startTime = 0;
+        hub.endTime = 0;
+        hub.endCooldown = 0;
 
-        emit CancelUpdate(_id);
+        emit CancelUpdate(id);
     }
 
-    function transferHubOwnership(uint256 _id, address _newOwner) external {
-        HubInfo storage hub_ = s.hubs[_id];
+    function transferHubOwnership(uint256 id, address newOwner) external {
+        HubInfo storage hub = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub_.owner, "!owner");
-        require(_newOwner != hub_.owner, "Same owner");
-        hub_.owner = _newOwner;
+        require(sender == hub.owner, "!owner");
+        require(newOwner != hub.owner, "Same owner");
+        hub.owner = newOwner;
 
-        emit TransferHubOwnership(_id, _newOwner);
+        emit TransferHubOwnership(id, newOwner);
     }
 
-    function setHubWarmup(uint256 _warmup) external onlyDurationsController {
-        require(_warmup != s.hubWarmup, "same warmup");
-        s.hubWarmup = _warmup;
+    function setHubWarmup(uint256 warmup) external onlyDurationsController {
+        require(warmup != s.hubWarmup, "same warmup");
+        s.hubWarmup = warmup;
     }
 
-    function setHubDuration(uint256 _duration)
-        external
-        onlyDurationsController
-    {
-        require(_duration != s.hubDuration, "same duration");
-        s.hubDuration = _duration;
+    function setHubDuration(uint256 duration) external onlyDurationsController {
+        require(duration != s.hubDuration, "same duration");
+        s.hubDuration = duration;
     }
 
-    function setHubCooldown(uint256 _cooldown)
-        external
-        onlyDurationsController
-    {
-        require(_cooldown != s.hubCooldown, "same cooldown");
-        s.hubCooldown = _cooldown;
+    function setHubCooldown(uint256 cooldown) external onlyDurationsController {
+        require(cooldown != s.hubCooldown, "same cooldown");
+        s.hubCooldown = cooldown;
     }
 
-    function getHubDetails(uint256 _id) external view returns (HubInfo memory) {
-        return LibHub.getHub(_id);
+    function getHubDetails(uint256 id) external view returns (HubInfo memory) {
+        return LibHub.getHub(id);
     }
 
     function count() external view returns (uint256) {

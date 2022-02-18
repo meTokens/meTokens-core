@@ -32,89 +32,81 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     mapping(address => SameAssetMigration) private _sameAssetMigration;
 
     constructor(
-        address _dao,
-        address _foundry,
-        IHub _hub,
-        IMeTokenRegistry _meTokenRegistry,
-        IMigrationRegistry _migrationRegistry
-    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
+        address dao,
+        address foundry,
+        IHub hub,
+        IMeTokenRegistry meTokenRegistry,
+        IMigrationRegistry migrationRegistry
+    ) Vault(dao, foundry, hub, meTokenRegistry, migrationRegistry) {}
 
     function initMigration(
-        address _meToken,
-        bytes memory /* _encodedArgs */
+        address meToken,
+        bytes memory /* encodedArgs */
     ) external override {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
+        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
+        HubInfo memory targetHub = hub.getHubDetails(info.targetHubId);
 
-        require(hub_.asset == targetHub_.asset, "asset different");
+        require(hubInfo.asset == targetHub.asset, "asset different");
 
-        _sameAssetMigration[_meToken].isMigrating = true;
+        _sameAssetMigration[meToken].isMigrating = true;
     }
 
-    function poke(address _meToken) external override nonReentrant {
-        SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        if (usts_.isMigrating && !usts_.started) {
-            ISingleAssetVault(hub_.vault).startMigration(_meToken);
-            usts_.started = true;
+    function poke(address meToken) external override nonReentrant {
+        SameAssetMigration storage usts = _sameAssetMigration[meToken];
+        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
+        if (usts.isMigrating && !usts.started) {
+            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
+            usts.started = true;
         }
     }
 
-    function finishMigration(address _meToken)
+    function finishMigration(address meToken)
         external
         override
         nonReentrant
         returns (uint256 amountOut)
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
-        SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
-        require(usts_.isMigrating, "!migrating");
+        SameAssetMigration storage usts = _sameAssetMigration[meToken];
+        require(usts.isMigrating, "!migrating");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
+        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
+        HubInfo memory targetHub = hub.getHubDetails(info.targetHubId);
 
-        if (!usts_.started) {
-            ISingleAssetVault(hub_.vault).startMigration(_meToken);
-            usts_.started = true;
+        if (!usts.started) {
+            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
+            usts.started = true;
         }
-        amountOut = meToken_.balancePooled + meToken_.balanceLocked;
+        amountOut = info.balancePooled + info.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
-        IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
+        IERC20(targetHub.asset).transfer(targetHub.vault, amountOut);
 
         // reset mappings
-        delete _sameAssetMigration[_meToken];
+        delete _sameAssetMigration[meToken];
     }
 
-    function getDetails(address _meToken)
+    function getDetails(address meToken)
         external
         view
-        returns (SameAssetMigration memory usts_)
+        returns (SameAssetMigration memory usts)
     {
-        usts_ = _sameAssetMigration[_meToken];
+        usts = _sameAssetMigration[meToken];
     }
 
     // Kicks off meToken warmup period
     function isValid(
-        address _meToken,
-        bytes memory /* _encodedArgs */
+        address meToken,
+        bytes memory /* encodedArgs */
     ) external view override returns (bool) {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
+        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
         // MeToken not subscribed to a hub
-        if (meToken_.hubId == 0) return false;
+        if (info.hubId == 0) return false;
         return true;
     }
 }
