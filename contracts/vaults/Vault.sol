@@ -29,7 +29,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         address _asset,
         uint256 _depositAmount,
         uint256 _feeAmount
-    ) external override nonReentrant{
+    ) external override nonReentrant {
         require(msg.sender == diamond, "!diamond");
         IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
         if (_feeAmount > 0) {

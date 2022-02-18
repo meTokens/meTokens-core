@@ -173,8 +173,8 @@ const setup = async () => {
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
         undefined,
-        account0.address,
-        diamond.address
+        account0.address, // DAO
+        foundry.address // diamond
       );
       await migration.deployed();
       weth = await getContractAt<ERC20>("ERC20", WETH);
