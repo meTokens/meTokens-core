@@ -34,10 +34,10 @@ interface ICurve {
         returns (uint256[4] memory);
 
     /// @notice Calculate meTokens minted based on a curve's active details
-    /// @param assetsDeposited Amount of assets deposited to the hub
-    /// @param hubId           unique hub identifier
-    /// @param supply          current meToken supply
-    /// @param balancePooled   area under curve
+    /// @param assetsDeposited  Amount of assets deposited to the hub
+    /// @param hubId            unique hub identifier
+    /// @param supply           current meToken supply
+    /// @param balancePooled    area under curve
     /// @return meTokensMinted  amount of MeTokens minted
     function viewMeTokensMinted(
         uint256 assetsDeposited,
@@ -47,10 +47,10 @@ interface ICurve {
     ) external view returns (uint256 meTokensMinted);
 
     /// @notice Calculate assets returned based on a curve's active details
-    /// @param meTokensBurned  Amount of assets deposited to the hub
-    /// @param hubId           unique hub identifier
-    /// @param supply          current meToken supply
-    /// @param balancePooled   area under curve
+    /// @param meTokensBurned   amount of assets deposited to the hub
+    /// @param hubId            unique hub identifier
+    /// @param supply           current meToken supply
+    /// @param balancePooled    area under curve
     /// @return assetsReturned  amount of assets returned
     function viewAssetsReturned(
         uint256 meTokensBurned,
@@ -60,10 +60,10 @@ interface ICurve {
     ) external view returns (uint256 assetsReturned);
 
     /// @notice Calculate meTokens minted based on a curve's target details
-    /// @param assetsDeposited Amount of assets deposited to the hub
-    /// @param hubId           unique hub identifier
-    /// @param supply          current meToken supply
-    /// @param balancePooled   area under curve
+    /// @param assetsDeposited  amount of assets deposited to the hub
+    /// @param hubId            unique hub identifier
+    /// @param supply           current meToken supply
+    /// @param balancePooled    area under curve
     /// @return meTokensMinted  amount of MeTokens minted
     function viewTargetMeTokensMinted(
         uint256 assetsDeposited,
@@ -73,10 +73,10 @@ interface ICurve {
     ) external view returns (uint256 meTokensMinted);
 
     /// @notice Calculate assets returned based on a curve's target details
-    /// @param meTokensBurned  Amount of assets deposited to the hub
-    /// @param hubId           unique hub identifier
-    /// @param supply          current meToken supply
-    /// @param balancePooled   area under curve
+    /// @param meTokensBurned   amount of assets deposited to the hub
+    /// @param hubId            unique hub identifier
+    /// @param supply           current meToken supply
+    /// @param balancePooled    area under curve
     /// @return assetsReturned  amount of assets returned
     function viewTargetAssetsReturned(
         uint256 meTokensBurned,

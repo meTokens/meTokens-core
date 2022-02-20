@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../libs/Details.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
 /// @title meToken registry interface
@@ -110,8 +109,8 @@ interface IMeTokenRegistry {
     function cancelResubscribe(address meToken) external;
 
     /// @notice Finish a meToken's resubscription to a new hub
-    /// @param meToken address of meToken
-    /// @return details of meToken
+    /// @param meToken  address of meToken
+    /// @return         details of meToken
     function finishResubscribe(address meToken)
         external
         returns (MeTokenInfo memory);
@@ -158,20 +157,20 @@ interface IMeTokenRegistry {
     function getOwnerMeToken(address owner) external view returns (address);
 
     /// @notice View to see the address to claim meToken ownership from from
-    /// @param from    address to transfer meToken ownership
-    /// @return         address of pending meToken owner
+    /// @param from address to transfer meToken ownership
+    /// @return     address of pending meToken owner
     function getPendingOwner(address from) external view returns (address);
 
     /// @notice View to get details of a meToken
     /// @param meToken      address of meToken queried
-    /// @return meToken    details of meToken
+    /// @return meToken     details of meToken
     function getMeTokenDetails(address meToken)
         external
         view
         returns (MeTokenInfo memory);
 
     /// @notice View to return if an address owns a meToken or not
-    /// @param owner   address to query
+    /// @param owner    address to query
     /// @return         true if owns a meToken, else false
     function isOwner(address owner) external view returns (bool);
 }

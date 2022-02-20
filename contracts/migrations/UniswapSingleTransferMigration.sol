@@ -62,11 +62,15 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
-        HubInfo memory targetHub = hub.getHubDetails(info.targetHubId);
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
+        );
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
 
-        require(hubInfo.asset != targetHub.asset, "same asset");
+        require(hubInfo.asset != targetHubInfo.asset, "same asset");
 
         (uint256 soonest, uint24 fee) = abi.decode(
             encodedArgs,
@@ -80,8 +84,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     function poke(address meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
+        );
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
         if (
             usts.soonest != 0 && block.timestamp > usts.soonest && !usts.started
         ) {
@@ -101,9 +107,13 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         require(usts.soonest < block.timestamp, "timestamp < soonest");
 
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
-        HubInfo memory targetHub = hub.getHubDetails(info.targetHubId);
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
+        );
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
 
         // TODO: require migration hasn't finished, block.timestamp > meToken.startTime
         if (!usts.started) {
@@ -112,11 +122,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             amountOut = _swap(meToken);
         } else {
             // No swap, amountOut = amountIn
-            amountOut = info.balancePooled + info.balanceLocked;
+            amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
         }
 
         // Send asset to new vault only if there's a migration vault
-        IERC20(targetHub.asset).transfer(targetHub.vault, amountOut);
+        IERC20(targetHubInfo.asset).transfer(targetHubInfo.vault, amountOut);
 
         // reset mappings
         delete _uniswapSingleTransfers[meToken];
@@ -142,9 +152,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         (uint256 soon, uint24 fee) = abi.decode(encodedArgs, (uint256, uint24));
         // Too soon
         if (soon < block.timestamp) return false;
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
+        );
         // MeToken not subscribed to a hub
-        if (info.hubId == 0) return false;
+        if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
         if (fee == MINFEE || fee == MIDFEE || fee == MAXFEE) {
             return true;
@@ -155,10 +167,15 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     function _swap(address meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
-        HubInfo memory targetHub = hub.getHubDetails(info.targetHubId);
-        uint256 amountIn = info.balancePooled + info.balanceLocked;
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
+        );
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
+        uint256 amountIn = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Only swap if
         // - There are tokens to swap
@@ -182,7 +199,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: hubInfo.asset,
-                tokenOut: targetHub.asset,
+                tokenOut: targetHubInfo.asset,
                 fee: usts.fee,
                 recipient: address(this),
                 deadline: block.timestamp,

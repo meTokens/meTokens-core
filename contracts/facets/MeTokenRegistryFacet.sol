@@ -20,7 +20,7 @@ import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
-/// @notice This contract tracks basic information about all meTokens
+/// @notice This contract tracks basic meTokenInformation about all meTokens
 contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
     event Subscribe(
         address indexed meToken,
@@ -30,7 +30,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
         uint256 assetsDeposited,
         string name,
         string symbol,
-        uint256 hubId
+        uint256 hubInfoId
     );
     event InitResubscribe(
         address indexed meToken,
@@ -57,15 +57,15 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
     ) external nonReentrant {
         address sender = LibMeta.msgSender();
         require(!isOwner(sender), "msg.sender already owns a meToken");
-        HubInfo memory hub = s.hubs[hubId];
-        require(hub.active, "Hub inactive");
-        require(!hub.updating, "Hub updating");
+        HubInfo memory hubInfo = s.hubs[hubId];
+        require(hubInfo.active, "Hub inactive");
+        require(!hubInfo.updating, "Hub updating");
 
         if (assetsDeposited > 0) {
             require(
-                IERC20(hub.asset).transferFrom(
+                IERC20(hubInfo.asset).transferFrom(
                     sender,
-                    hub.vault,
+                    hubInfo.vault,
                     assetsDeposited
                 ),
                 "transfer failed"
@@ -81,7 +81,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
         // Mint meToken to user
         uint256 meTokensMinted;
         if (assetsDeposited > 0) {
-            meTokensMinted = ICurve(hub.curve).viewMeTokensMinted(
+            meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
                 assetsDeposited, // deposit_amount
                 hubId, // hubId
                 0, // supply
@@ -102,7 +102,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
             meTokenAddr,
             sender,
             meTokensMinted,
-            hub.asset,
+            hubInfo.asset,
             assetsDeposited,
             name,
             symbol,
@@ -117,24 +117,27 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
         bytes memory encodedMigrationArgs
     ) external {
         address sender = LibMeta.msgSender();
-        MeTokenInfo storage info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
-        HubInfo memory targetHub = s.hubs[targetHubId];
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        HubInfo memory targetHubInfo = s.hubs[targetHubId];
 
-        require(sender == info.owner, "!owner");
-        require(block.timestamp >= info.endCooldown, "Cooldown not complete");
-        require(info.hubId != targetHubId, "same hub");
-        require(targetHub.active, "targetHub inactive");
-        require(!hub.updating, "hub updating");
-        require(!targetHub.updating, "targetHub updating");
+        require(sender == meTokenInfo.owner, "!owner");
+        require(
+            block.timestamp >= meTokenInfo.endCooldown,
+            "Cooldown not complete"
+        );
+        require(meTokenInfo.hubId != targetHubId, "same hub");
+        require(targetHubInfo.active, "targetHub inactive");
+        require(!hubInfo.updating, "hub updating");
+        require(!targetHubInfo.updating, "targetHub updating");
 
         require(migration != address(0), "migration address(0)");
 
         // Ensure the migration we're using is approved
         require(
             s.migrationRegistry.isApproved(
-                hub.vault,
-                targetHub.vault,
+                hubInfo.vault,
+                targetHubInfo.vault,
                 migration
             ),
             "!approved"
@@ -143,15 +146,18 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
             IVault(migration).isValid(meToken, encodedMigrationArgs),
             "Invalid encodedMigrationArgs"
         );
-        info.startTime = block.timestamp + s.meTokenWarmup;
-        info.endTime = block.timestamp + s.meTokenWarmup + s.meTokenDuration;
-        info.endCooldown =
+        meTokenInfo.startTime = block.timestamp + s.meTokenWarmup;
+        meTokenInfo.endTime =
+            block.timestamp +
+            s.meTokenWarmup +
+            s.meTokenDuration;
+        meTokenInfo.endCooldown =
             block.timestamp +
             s.meTokenWarmup +
             s.meTokenDuration +
             s.meTokenCooldown;
-        info.targetHubId = targetHubId;
-        info.migration = migration;
+        meTokenInfo.targetHubId = targetHubId;
+        meTokenInfo.migration = migration;
 
         IMigration(migration).initMigration(meToken, encodedMigrationArgs);
 
@@ -172,32 +178,35 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
 
     function cancelResubscribe(address meToken) external {
         address sender = LibMeta.msgSender();
-        MeTokenInfo storage info = s.meTokens[meToken];
-        require(sender == info.owner, "!owner");
-        require(info.targetHubId != 0, "!resubscribing");
-        require(block.timestamp < info.startTime, "Resubscription has started");
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        require(sender == meTokenInfo.owner, "!owner");
+        require(meTokenInfo.targetHubId != 0, "!resubscribing");
+        require(
+            block.timestamp < meTokenInfo.startTime,
+            "Resubscription has started"
+        );
 
-        info.startTime = 0;
-        info.endTime = 0;
-        info.targetHubId = 0;
-        info.migration = address(0);
+        meTokenInfo.startTime = 0;
+        meTokenInfo.endTime = 0;
+        meTokenInfo.targetHubId = 0;
+        meTokenInfo.migration = address(0);
 
         emit CancelResubscribe(meToken);
     }
 
     function updateBalances(address meToken, uint256 newBalance) external {
-        MeTokenInfo storage info = s.meTokens[meToken];
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
         address sender = LibMeta.msgSender();
-        require(sender == info.migration, "!migration");
-        uint256 balancePooled = info.balancePooled;
-        uint256 balanceLocked = info.balanceLocked;
+        require(sender == meTokenInfo.migration, "!migration");
+        uint256 balancePooled = meTokenInfo.balancePooled;
+        uint256 balanceLocked = meTokenInfo.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
         uint256 p = s.PRECISION;
 
-        info.balancePooled =
+        meTokenInfo.balancePooled =
             (balancePooled * p * newBalance) /
             (oldBalance * p);
-        info.balanceLocked =
+        meTokenInfo.balanceLocked =
             (balanceLocked * p * newBalance) /
             (oldBalance * p);
 

@@ -42,21 +42,21 @@ contract FoundryFacet is IFoundry, Modifiers {
         address recipient
     ) external override {
         address sender = LibMeta.msgSender();
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
         // Handling changes
-        if (hub.updating && block.timestamp > hub.endTime) {
-            hub = LibHub.finishUpdate(info.hubId);
-        } else if (info.targetHubId != 0) {
-            if (block.timestamp > info.endTime) {
-                hub = s.hubs[info.targetHubId];
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+        } else if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
                 // meToken = s.meTokenRegistry.finishResubscribe(meToken);
-                info = LibMeToken.finishResubscribe(meToken);
-            } else if (block.timestamp > info.startTime) {
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
-                IMigration(info.migration).poke(meToken);
-                info = s.meTokens[meToken];
+                IMigration(meTokenInfo.migration).poke(meToken);
+                meTokenInfo = s.meTokens[meToken];
             }
         }
 
@@ -67,15 +67,18 @@ contract FoundryFacet is IFoundry, Modifiers {
             meToken,
             assetsDepositedAfterFees
         );
-        IVault vault = IVault(hub.vault);
-        address asset = hub.asset;
+        IVault vault = IVault(hubInfo.vault);
+        address asset = hubInfo.asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
         // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
         // in which case a migration vault isn't needed
-        if (info.migration != address(0) && block.timestamp > info.startTime) {
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime
+        ) {
             // Use meToken address to get the asset address from the migration vault
-            vault = IVault(info.migration);
-            asset = s.hubs[info.targetHubId].asset;
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
         }
         vault.handleDeposit(sender, asset, assetsDeposited, fee);
 
@@ -131,14 +134,17 @@ contract FoundryFacet is IFoundry, Modifiers {
         address recipient
     ) external override {
         address sender = LibMeta.msgSender();
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
-        if (hub.updating && block.timestamp > hub.endTime) {
-            hub = LibHub.finishUpdate(info.hubId);
-        } else if (info.targetHubId != 0 && block.timestamp > info.endTime) {
-            hub = s.hubs[info.targetHubId];
-            info = LibMeToken.finishResubscribe(meToken);
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+        } else if (
+            meTokenInfo.targetHubId != 0 &&
+            block.timestamp > meTokenInfo.endTime
+        ) {
+            hubInfo = s.hubs[meTokenInfo.targetHubId];
+            meTokenInfo = LibMeToken.finishResubscribe(meToken);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
@@ -156,7 +162,7 @@ contract FoundryFacet is IFoundry, Modifiers {
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == info.owner) {
+        if (sender == meTokenInfo.owner) {
             feeRate = s.burnOwnerFee;
         } else {
             feeRate = s.burnBuyerFee;
@@ -167,7 +173,7 @@ contract FoundryFacet is IFoundry, Modifiers {
 
         // Burn metoken from user
         IMeToken(meToken).burn(sender, meTokensBurned);
-        if (sender == info.owner) {
+        if (sender == meTokenInfo.owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
                 false,
@@ -185,12 +191,15 @@ contract FoundryFacet is IFoundry, Modifiers {
 
         uint256 fee = (assetsReturned * feeRate) / s.PRECISION;
         assetsReturned = assetsReturned - fee;
-        IVault vault = IVault(hub.vault);
-        address asset = hub.asset;
+        IVault vault = IVault(hubInfo.vault);
+        address asset = hubInfo.asset;
 
-        if (info.migration != address(0) && block.timestamp > info.startTime) {
-            vault = IVault(info.migration);
-            asset = s.hubs[info.targetHubId].asset;
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime
+        ) {
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
         }
 
         vault.handleWithdrawal(recipient, asset, assetsReturned, fee);
@@ -210,12 +219,12 @@ contract FoundryFacet is IFoundry, Modifiers {
         override
     {
         address sender = LibMeta.msgSender();
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
-        require(info.migration == address(0), "meToken resubscribing");
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        require(meTokenInfo.migration == address(0), "meToken resubscribing");
 
-        IVault vault = IVault(hub.vault);
-        address asset = hub.asset;
+        IVault vault = IVault(hubInfo.vault);
+        address asset = hubInfo.asset;
 
         vault.handleDeposit(sender, asset, assetsDeposited, 0);
 
@@ -230,63 +239,63 @@ contract FoundryFacet is IFoundry, Modifiers {
         view
         returns (uint256 meTokensMinted)
     {
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
         // gas savings
         uint256 totalSupply = IERC20(meToken).totalSupply();
         // Calculate return assuming update/resubscribe is not happening
-        meTokensMinted = ICurve(hub.curve).viewMeTokensMinted(
+        meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
             assetsDeposited,
-            info.hubId,
+            meTokenInfo.hubId,
             totalSupply,
-            info.balancePooled
+            meTokenInfo.balancePooled
         );
 
         // Logic for if we're switching to a new curve type // reconfiguring
         if (
-            (hub.updating && (hub.targetCurve != address(0))) ||
-            (hub.reconfigure)
+            (hubInfo.updating && (hubInfo.targetCurve != address(0))) ||
+            (hubInfo.reconfigure)
         ) {
             uint256 targetMeTokensMinted;
-            if (hub.targetCurve != address(0)) {
+            if (hubInfo.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
-                targetMeTokensMinted = ICurve(hub.targetCurve)
+                targetMeTokensMinted = ICurve(hubInfo.targetCurve)
                     .viewMeTokensMinted(
                         assetsDeposited,
-                        info.hubId,
+                        meTokenInfo.hubId,
                         totalSupply,
-                        info.balancePooled
+                        meTokenInfo.balancePooled
                     );
             } else {
                 // Must mean we're reconfiguring
-                targetMeTokensMinted = ICurve(hub.curve)
+                targetMeTokensMinted = ICurve(hubInfo.curve)
                     .viewTargetMeTokensMinted(
                         assetsDeposited,
-                        info.hubId,
+                        meTokenInfo.hubId,
                         totalSupply,
-                        info.balancePooled
+                        meTokenInfo.balancePooled
                     );
             }
             meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
-                hub.startTime,
-                hub.endTime
+                hubInfo.startTime,
+                hubInfo.endTime
             );
-        } else if (info.targetHubId != 0) {
+        } else if (meTokenInfo.targetHubId != 0) {
             uint256 targetMeTokensMinted = ICurve(
-                s.hubs[info.targetHubId].curve
+                s.hubs[meTokenInfo.targetHubId].curve
             ).viewMeTokensMinted(
                     assetsDeposited,
-                    info.targetHubId,
+                    meTokenInfo.targetHubId,
                     totalSupply,
-                    info.balancePooled
+                    meTokenInfo.balancePooled
                 );
             meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
-                info.startTime,
-                info.endTime
+                meTokenInfo.startTime,
+                meTokenInfo.endTime
             );
         }
     }
@@ -295,65 +304,65 @@ contract FoundryFacet is IFoundry, Modifiers {
         address meToken,
         uint256 meTokensBurned
     ) private view returns (uint256 rawAssetsReturned) {
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
         uint256 totalSupply = IERC20(meToken).totalSupply(); // gas savings
 
         // Calculate return assuming update is not happening
-        rawAssetsReturned = ICurve(hub.curve).viewAssetsReturned(
+        rawAssetsReturned = ICurve(hubInfo.curve).viewAssetsReturned(
             meTokensBurned,
-            info.hubId,
+            meTokenInfo.hubId,
             totalSupply,
-            info.balancePooled
+            meTokenInfo.balancePooled
         );
 
         uint256 targetAssetsReturned;
         // Logic for if we're switching to a new curve type // updating curveDetails
         if (
-            (hub.updating && (hub.targetCurve != address(0))) ||
-            (hub.reconfigure)
+            (hubInfo.updating && (hubInfo.targetCurve != address(0))) ||
+            (hubInfo.reconfigure)
         ) {
-            if (hub.targetCurve != address(0)) {
+            if (hubInfo.targetCurve != address(0)) {
                 // Means we are updating to a new curve type
 
-                targetAssetsReturned = ICurve(hub.targetCurve)
+                targetAssetsReturned = ICurve(hubInfo.targetCurve)
                     .viewAssetsReturned(
                         meTokensBurned,
-                        info.hubId,
+                        meTokenInfo.hubId,
                         totalSupply,
-                        info.balancePooled
+                        meTokenInfo.balancePooled
                     );
             } else {
                 // Must mean we're updating curveDetails
-                targetAssetsReturned = ICurve(hub.curve)
+                targetAssetsReturned = ICurve(hubInfo.curve)
                     .viewTargetAssetsReturned(
                         meTokensBurned,
-                        info.hubId,
+                        meTokenInfo.hubId,
                         totalSupply,
-                        info.balancePooled
+                        meTokenInfo.balancePooled
                     );
             }
             rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
-                hub.startTime,
-                hub.endTime
+                hubInfo.startTime,
+                hubInfo.endTime
             );
-        } else if (info.targetHubId != 0) {
+        } else if (meTokenInfo.targetHubId != 0) {
             // Calculate return assuming update is not happening
-            targetAssetsReturned = ICurve(s.hubs[info.targetHubId].curve)
+            targetAssetsReturned = ICurve(s.hubs[meTokenInfo.targetHubId].curve)
                 .viewAssetsReturned(
                     meTokensBurned,
-                    info.targetHubId,
+                    meTokenInfo.targetHubId,
                     totalSupply,
-                    info.balancePooled
+                    meTokenInfo.balancePooled
                 );
             rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
-                info.startTime,
-                info.endTime
+                meTokenInfo.startTime,
+                meTokenInfo.endTime
             );
         }
     }
@@ -365,34 +374,37 @@ contract FoundryFacet is IFoundry, Modifiers {
         uint256 meTokensBurned,
         uint256 rawAssetsReturned
     ) private view returns (uint256 actualAssetsReturned) {
-        MeTokenInfo memory info = s.meTokens[meToken];
-        HubInfo memory hub = s.hubs[info.hubId];
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
         // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
         // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == info.owner) {
+        if (sender == meTokenInfo.owner) {
             actualAssetsReturned =
                 rawAssetsReturned +
                 (((s.PRECISION * meTokensBurned) /
-                    IERC20(meToken).totalSupply()) * info.balanceLocked) /
+                    IERC20(meToken).totalSupply()) *
+                    meTokenInfo.balanceLocked) /
                 s.PRECISION;
         } else {
-            if (hub.targetRefundRatio == 0 && info.targetHubId == 0) {
+            if (
+                hubInfo.targetRefundRatio == 0 && meTokenInfo.targetHubId == 0
+            ) {
                 // Not updating targetRefundRatio or resubscribing
 
                 actualAssetsReturned =
-                    (rawAssetsReturned * hub.refundRatio) /
+                    (rawAssetsReturned * hubInfo.refundRatio) /
                     s.MAX_REFUND_RATIO;
             } else {
-                if (hub.targetRefundRatio > 0) {
+                if (hubInfo.targetRefundRatio > 0) {
                     // Hub is updating
                     actualAssetsReturned =
                         (rawAssetsReturned *
                             LibWeightedAverage.calculate(
-                                hub.refundRatio,
-                                hub.targetRefundRatio,
-                                hub.startTime,
-                                hub.endTime
+                                hubInfo.refundRatio,
+                                hubInfo.targetRefundRatio,
+                                hubInfo.startTime,
+                                hubInfo.endTime
                             )) /
                         s.MAX_REFUND_RATIO;
                 } else {
@@ -400,10 +412,10 @@ contract FoundryFacet is IFoundry, Modifiers {
                     actualAssetsReturned =
                         (rawAssetsReturned *
                             LibWeightedAverage.calculate(
-                                hub.refundRatio,
-                                s.hubs[info.targetHubId].refundRatio,
-                                info.startTime,
-                                info.endTime
+                                hubInfo.refundRatio,
+                                s.hubs[meTokenInfo.targetHubId].refundRatio,
+                                meTokenInfo.startTime,
+                                meTokenInfo.endTime
                             )) /
                         s.MAX_REFUND_RATIO;
                 }

@@ -28,20 +28,20 @@ library LibHub {
 
     function finishUpdate(uint256 id) internal returns (HubInfo memory) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        HubInfo storage hub = s.hubs[id];
-        require(block.timestamp > hub.endTime, "Still updating");
+        HubInfo storage hubInfo = s.hubs[id];
+        require(block.timestamp > hubInfo.endTime, "Still updating");
 
-        if (hub.targetRefundRatio != 0) {
-            s.hubs[id].refundRatio = hub.targetRefundRatio;
+        if (hubInfo.targetRefundRatio != 0) {
+            s.hubs[id].refundRatio = hubInfo.targetRefundRatio;
             s.hubs[id].targetRefundRatio = 0;
         }
 
-        if (hub.reconfigure) {
-            ICurve(hub.curve).finishReconfigure(id);
+        if (hubInfo.reconfigure) {
+            ICurve(hubInfo.curve).finishReconfigure(id);
             s.hubs[id].reconfigure = false;
         }
-        if (hub.targetCurve != address(0)) {
-            s.hubs[id].curve = hub.targetCurve;
+        if (hubInfo.targetCurve != address(0)) {
+            s.hubs[id].curve = hubInfo.targetCurve;
             s.hubs[id].targetCurve = address(0);
         }
 
@@ -51,24 +51,24 @@ library LibHub {
         s.hubs[id].endTime = 0;
 
         emit FinishUpdate(id);
-        return hub;
+        return hubInfo;
     }
 
-    function getHub(uint256 id) internal view returns (HubInfo memory hub) {
+    function getHub(uint256 id) internal view returns (HubInfo memory hubInfo) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        hub.active = s.hubs[id].active;
-        hub.owner = s.hubs[id].owner;
-        hub.vault = s.hubs[id].vault;
-        hub.asset = s.hubs[id].asset;
-        hub.curve = s.hubs[id].curve;
-        hub.refundRatio = s.hubs[id].refundRatio;
-        hub.updating = s.hubs[id].updating;
-        hub.startTime = s.hubs[id].startTime;
-        hub.endTime = s.hubs[id].endTime;
-        hub.endCooldown = s.hubs[id].endCooldown;
-        hub.reconfigure = s.hubs[id].reconfigure;
-        hub.targetCurve = s.hubs[id].targetCurve;
-        hub.targetRefundRatio = s.hubs[id].targetRefundRatio;
+        hubInfo.active = s.hubs[id].active;
+        hubInfo.owner = s.hubs[id].owner;
+        hubInfo.vault = s.hubs[id].vault;
+        hubInfo.asset = s.hubs[id].asset;
+        hubInfo.curve = s.hubs[id].curve;
+        hubInfo.refundRatio = s.hubs[id].refundRatio;
+        hubInfo.updating = s.hubs[id].updating;
+        hubInfo.startTime = s.hubs[id].startTime;
+        hubInfo.endTime = s.hubs[id].endTime;
+        hubInfo.endCooldown = s.hubs[id].endCooldown;
+        hubInfo.reconfigure = s.hubs[id].reconfigure;
+        hubInfo.targetCurve = s.hubs[id].targetCurve;
+        hubInfo.targetRefundRatio = s.hubs[id].targetRefundRatio;
     }
 
     function count() internal view returns (uint256) {

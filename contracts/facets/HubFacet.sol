@@ -58,13 +58,13 @@ contract HubFacet is Modifiers {
         uint256 id = ++s.hubCount;
         curve.register(id, encodedCurveDetails);
         // Save the hub to the registry
-        HubInfo storage hub = s.hubs[s.hubCount];
-        hub.active = true;
-        hub.owner = owner;
-        hub.asset = asset;
-        hub.vault = address(vault);
-        hub.curve = address(curve);
-        hub.refundRatio = refundRatio;
+        HubInfo storage hubInfo = s.hubs[s.hubCount];
+        hubInfo.active = true;
+        hubInfo.owner = owner;
+        hubInfo.asset = asset;
+        hubInfo.vault = address(vault);
+        hubInfo.curve = address(curve);
+        hubInfo.refundRatio = refundRatio;
         emit Register(
             id,
             owner,
@@ -79,13 +79,13 @@ contract HubFacet is Modifiers {
 
     function deactivate(uint256 id) external {
         address sender = LibMeta.msgSender();
-        HubInfo storage hub = s.hubs[id];
+        HubInfo storage hubInfo = s.hubs[id];
         require(
-            sender == hub.owner || sender == s.deactivateController,
+            sender == hubInfo.owner || sender == s.deactivateController,
             "!owner && !deactivateController"
         );
-        require(hub.active, "!active");
-        hub.active = false;
+        require(hubInfo.active, "!active");
+        hubInfo.active = false;
         emit Deactivate(id);
     }
 
@@ -95,15 +95,15 @@ contract HubFacet is Modifiers {
         uint256 targetRefundRatio,
         bytes memory encodedCurveDetails
     ) external {
-        HubInfo storage hub = s.hubs[id];
+        HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub.owner, "!owner");
-        if (hub.updating && block.timestamp > hub.endTime) {
+        require(sender == hubInfo.owner, "!owner");
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(id);
         }
-        require(!hub.updating, "already updating");
+        require(!hubInfo.updating, "already updating");
 
-        require(block.timestamp >= hub.endCooldown, "Still cooling down");
+        require(block.timestamp >= hubInfo.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
             (targetRefundRatio != 0) || (encodedCurveDetails.length > 0),
@@ -116,33 +116,33 @@ contract HubFacet is Modifiers {
                 "targetRefundRatio >= MAX"
             );
             require(
-                targetRefundRatio != hub.refundRatio,
+                targetRefundRatio != hubInfo.refundRatio,
                 "targetRefundRatio == refundRatio"
             );
-            hub.targetRefundRatio = targetRefundRatio;
+            hubInfo.targetRefundRatio = targetRefundRatio;
         }
 
         bool reconfigure;
         if (encodedCurveDetails.length > 0) {
             if (targetCurve == address(0)) {
-                ICurve(hub.curve).initReconfigure(id, encodedCurveDetails);
+                ICurve(hubInfo.curve).initReconfigure(id, encodedCurveDetails);
                 reconfigure = true;
             } else {
                 require(
                     s.curveRegistry.isApproved(targetCurve),
                     "targetCurve !approved"
                 );
-                require(targetCurve != hub.curve, "targetCurve==curve");
+                require(targetCurve != hubInfo.curve, "targetCurve==curve");
                 ICurve(targetCurve).register(id, encodedCurveDetails);
-                hub.targetCurve = targetCurve;
+                hubInfo.targetCurve = targetCurve;
             }
         }
 
-        hub.reconfigure = reconfigure;
-        hub.updating = true;
-        hub.startTime = block.timestamp + s.hubWarmup;
-        hub.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
-        hub.endCooldown =
+        hubInfo.reconfigure = reconfigure;
+        hubInfo.updating = true;
+        hubInfo.startTime = block.timestamp + s.hubWarmup;
+        hubInfo.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
+        hubInfo.endCooldown =
             block.timestamp +
             s.hubWarmup +
             s.hubDuration +
@@ -154,9 +154,9 @@ contract HubFacet is Modifiers {
             targetRefundRatio,
             encodedCurveDetails,
             reconfigure,
-            hub.startTime,
-            hub.endTime,
-            hub.endCooldown
+            hubInfo.startTime,
+            hubInfo.endTime,
+            hubInfo.endCooldown
         );
     }
 
@@ -165,29 +165,29 @@ contract HubFacet is Modifiers {
     }
 
     function cancelUpdate(uint256 id) external {
-        HubInfo storage hub = s.hubs[id];
+        HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub.owner, "!owner");
-        require(hub.updating, "!updating");
-        require(block.timestamp < hub.startTime, "Update has started");
+        require(sender == hubInfo.owner, "!owner");
+        require(hubInfo.updating, "!updating");
+        require(block.timestamp < hubInfo.startTime, "Update has started");
 
-        hub.targetRefundRatio = 0;
-        hub.reconfigure = false;
-        hub.targetCurve = address(0);
-        hub.updating = false;
-        hub.startTime = 0;
-        hub.endTime = 0;
-        hub.endCooldown = 0;
+        hubInfo.targetRefundRatio = 0;
+        hubInfo.reconfigure = false;
+        hubInfo.targetCurve = address(0);
+        hubInfo.updating = false;
+        hubInfo.startTime = 0;
+        hubInfo.endTime = 0;
+        hubInfo.endCooldown = 0;
 
         emit CancelUpdate(id);
     }
 
     function transferHubOwnership(uint256 id, address newOwner) external {
-        HubInfo storage hub = s.hubs[id];
+        HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
-        require(sender == hub.owner, "!owner");
-        require(newOwner != hub.owner, "Same owner");
-        hub.owner = newOwner;
+        require(sender == hubInfo.owner, "!owner");
+        require(newOwner != hubInfo.owner, "Same owner");
+        hubInfo.owner = newOwner;
 
         emit TransferHubOwnership(id, newOwner);
     }

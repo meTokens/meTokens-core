@@ -59,23 +59,26 @@ library LibMeToken {
         returns (MeTokenInfo memory)
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        MeTokenInfo storage info = s.meTokens[meToken];
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
 
-        require(info.targetHubId != 0, "No targetHubId");
-        require(block.timestamp > info.endTime, "block.timestamp < endTime");
+        require(meTokenInfo.targetHubId != 0, "No targetHubId");
+        require(
+            block.timestamp > meTokenInfo.endTime,
+            "block.timestamp < endTime"
+        );
         // Update balancePooled / balanceLocked
         // solhint-disable-next-line
-        IMigration(info.migration).finishMigration(meToken);
+        IMigration(meTokenInfo.migration).finishMigration(meToken);
 
         // Finish updating metoken details
-        info.startTime = 0;
-        info.endTime = 0;
-        info.hubId = info.targetHubId;
-        info.targetHubId = 0;
-        info.migration = address(0);
+        meTokenInfo.startTime = 0;
+        meTokenInfo.endTime = 0;
+        meTokenInfo.hubId = meTokenInfo.targetHubId;
+        meTokenInfo.targetHubId = 0;
+        meTokenInfo.migration = address(0);
 
         emit FinishResubscribe(meToken);
-        return info;
+        return meTokenInfo;
     }
 
     function getMeToken(address token)

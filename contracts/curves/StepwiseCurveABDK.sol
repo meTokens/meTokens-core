@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/ICurve.sol";
-import "../libs/WeightedAverage.sol";
-import "../utils/ABDKMathQuad.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
@@ -32,6 +31,7 @@ contract StepwiseCurveABDK is ICurve {
         hub = _hub;
     }
 
+    /// @inheritdoc ICurve
     function register(uint256 hubId, bytes calldata encodedDetails)
         external
         override
@@ -51,6 +51,7 @@ contract StepwiseCurveABDK is ICurve {
         stepwise.stepY = stepY;
     }
 
+    /// @inheritdoc ICurve
     function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
         external
         override
@@ -64,17 +65,18 @@ contract StepwiseCurveABDK is ICurve {
             encodedDetails,
             (uint256, uint256)
         );
-        Stepwise storage stepwiseDetails = _stepwises[hubId];
+        Stepwise storage stepwise = _stepwises[hubId];
         require(targetStepX > 0 && targetStepX > PRECISION, "!targetStepX");
-        require(targetStepX != stepwiseDetails.stepX, "targeStepX == stepX");
+        require(targetStepX != stepwise.stepX, "targeStepX == stepX");
 
         require(targetStepY > 0 && targetStepY > PRECISION, "!targetStepY");
-        require(targetStepY != stepwiseDetails.stepY, "targeStepY == stepY");
+        require(targetStepY != stepwise.stepY, "targeStepY == stepY");
 
-        stepwiseDetails.targetStepY = targetStepY;
-        stepwiseDetails.targetStepX = targetStepX;
+        stepwise.targetStepY = targetStepY;
+        stepwise.targetStepX = targetStepX;
     }
 
+    /// @inheritdoc ICurve
     function finishReconfigure(uint256 hubId) external override {
         require(msg.sender == hub, "!hub");
         Stepwise storage stepwise = _stepwises[hubId];
@@ -92,6 +94,7 @@ contract StepwiseCurveABDK is ICurve {
         return _stepwises[stepwise];
     }
 
+    /// @inheritdoc ICurve
     function getCurveDetails(uint256 stepwise)
         external
         view
@@ -106,71 +109,75 @@ contract StepwiseCurveABDK is ICurve {
         ];
     }
 
+    /// @inheritdoc ICurve
     function viewMeTokensMinted(
-        uint256 assetsDeposited, // assets deposited
-        uint256 hubId, // hubId
-        uint256 supply, // current supply
-        uint256 balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwiseDetails = _stepwises[hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         meTokensMinted = _viewMeTokensMinted(
             assetsDeposited,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
+            stepwise.stepX,
+            stepwise.stepY,
             supply,
             balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewTargetMeTokensMinted(
-        uint256 assetsDeposited, // assets deposited
-        uint256 hubId, // hubId
-        uint256 supply, // current supply
-        uint256 balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwiseDetails = _stepwises[hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         meTokensMinted = _viewMeTokensMinted(
             assetsDeposited,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
+            stepwise.targetStepX,
+            stepwise.targetStepY,
             supply,
             balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewAssetsReturned(
         uint256 meTokensBurned,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwiseDetails = _stepwises[hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
+            stepwise.stepX,
+            stepwise.stepY,
             supply,
             balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewTargetAssetsReturned(
         uint256 meTokensBurned,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwiseDetails = _stepwises[hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
+            stepwise.targetStepX,
+            stepwise.targetStepY,
             supply,
             balancePooled
         );
     }
 
-    /// @notice Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
+    /// @dev Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
     /// @param assetsDeposited, // assets deposited
     /// @param stepX, // length of step (aka supply duration)
@@ -179,11 +186,11 @@ contract StepwiseCurveABDK is ICurve {
     /// @param balancePooled // current collateral amount
     /// @return amount of meTokens minted
     function _viewMeTokensMinted(
-        uint256 assetsDeposited, // assets deposited
-        uint256 stepX, // length of step (aka supply duration)
-        uint256 stepY, // height of step (aka price delta)
-        uint256 supply, // current supply
-        uint256 balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 stepX,
+        uint256 stepY,
+        uint256 supply,
+        uint256 balancePooled
     ) private view returns (uint256) {
         // special case for 0 deposit amount
         if (assetsDeposited == 0) {
@@ -226,20 +233,20 @@ contract StepwiseCurveABDK is ICurve {
         return supplyAfterMint.toUInt() - supply;
     }
 
-    /// @notice Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
+    /// @dev Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @param meTokensBurned, // meTokens burned
-    /// @param stepX, // length of step (aka supply duration)
-    /// @param stepY, // height of step (aka price delta)
-    /// @param supply, // current supply
-    /// @param balancePooled // current collateral amount
-    /// @return amount of collateral tokens received
+    /// @param meTokensBurned   meTokens burned
+    /// @param stepX            length of step (aka supply duration)
+    /// @param stepY            height of step (aka price delta)
+    /// @param supply           current supply
+    /// @param balancePooled    current collateral amount
+    /// @return                 amount of collateral tokens received
     function _viewAssetsReturned(
-        uint256 meTokensBurned, // meTokens burned
-        uint256 stepX, // length of step (aka supply duration)
-        uint256 stepY, // height of step (aka price delta)
-        uint256 supply, // current supply
-        uint256 balancePooled // current collateral amount
+        uint256 meTokensBurned,
+        uint256 stepX,
+        uint256 stepY,
+        uint256 supply,
+        uint256 balancePooled
     ) private view returns (uint256) {
         // validate input
         require(

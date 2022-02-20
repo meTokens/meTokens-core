@@ -14,17 +14,18 @@ library LibMeta {
     function domainSeparator(string memory name, string memory version)
         internal
         view
-        returns (bytes32 domainSeparator)
+        returns (bytes32)
     {
-        domainSeparator = keccak256(
-            abi.encode(
-                _EIP712_DOMAIN_TYPEHASH,
-                keccak256(bytes(name)),
-                keccak256(bytes(version)),
-                getChainID(),
-                address(this)
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    _EIP712_DOMAIN_TYPEHASH,
+                    keccak256(bytes(name)),
+                    keccak256(bytes(version)),
+                    getChainID(),
+                    address(this)
+                )
+            );
     }
 
     function getChainID() internal view returns (uint256 id) {
