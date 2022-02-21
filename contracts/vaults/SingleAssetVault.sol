@@ -27,12 +27,14 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
             .getMeTokenDetails(meToken);
         HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
 
+        require(msg.sender == (meTokenInfo.migration), "!migration");
+        uint256 balance = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
 
-        require(msg.sender == (info.migration), "!migration");
-        uint256 balance = info.balancePooled + info.balanceLocked;
-
-        if (info.migration != address(0) && address(this) != info.migration) {
-            IERC20(hubInfo.asset).safeTransfer(info.migration, balance);
+        if (
+            meTokenInfo.migration != address(0) &&
+            address(this) != meTokenInfo.migration
+        ) {
+            IERC20(hubInfo.asset).safeTransfer(meTokenInfo.migration, balance);
         }
         emit StartMigration(meToken);
     }

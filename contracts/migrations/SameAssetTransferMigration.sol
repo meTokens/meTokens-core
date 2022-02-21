@@ -42,7 +42,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     ) external override {
         require(msg.sender == diamond, "!diamond");
 
-        MeTokenInfo memory meTokenInfoo = IMeTokenRegistry(diamond)
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
             .getMeTokenDetails(meToken);
         HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
         HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
@@ -55,13 +55,13 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     }
 
     function poke(address meToken) external override nonReentrant {
-        SameAssetMigration storage usts_ = _sameAssetMigration[meToken];
+        SameAssetMigration storage usts = _sameAssetMigration[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
             .getMeTokenDetails(meToken);
         HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
-        if (usts_.isMigrating && !usts_.started) {
+        if (usts.isMigrating && !usts.started) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
-            usts_.started = true;
+            usts.started = true;
         }
     }
 
@@ -72,8 +72,8 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         returns (uint256 amountOut)
     {
         require(msg.sender == diamond, "!diamond");
-        SameAssetMigration storage usts_ = _sameAssetMigration[_meToken];
-        require(usts_.isMigrating, "!migrating");
+        SameAssetMigration storage usts = _sameAssetMigration[meToken];
+        require(usts.isMigrating, "!migrating");
 
         MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
             .getMeTokenDetails(meToken);
@@ -109,8 +109,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         bytes memory /* encodedArgs */
     ) external view override returns (bool) {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(_meToken);
-        );
+            .getMeTokenDetails(meToken);
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         return true;
