@@ -17,85 +17,85 @@ struct MeTokenInfo {
 }
 
 library LibMeToken {
-    event UpdateBalances(address _meToken, uint256 _newBalance);
-    event UpdateBalancePooled(bool _add, address _meToken, uint256 _amount);
-    event UpdateBalanceLocked(bool _add, address _meToken, uint256 _amount);
-    event FinishResubscribe(address indexed _meToken);
+    event UpdateBalances(address meToken, uint256 newBalance);
+    event UpdateBalancePooled(bool add, address meToken, uint256 amount);
+    event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
+    event FinishResubscribe(address indexed meToken);
 
     function updateBalancePooled(
         bool add,
-        address _meToken,
-        uint256 _amount
+        address meToken,
+        uint256 amount
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         if (add) {
-            s.meTokens[_meToken].balancePooled += _amount;
+            s.meTokens[meToken].balancePooled += amount;
         } else {
-            s.meTokens[_meToken].balancePooled -= _amount;
+            s.meTokens[meToken].balancePooled -= amount;
         }
 
-        emit UpdateBalancePooled(add, _meToken, _amount);
+        emit UpdateBalancePooled(add, meToken, amount);
     }
 
     function updateBalanceLocked(
         bool add,
-        address _meToken,
-        uint256 _amount
+        address meToken,
+        uint256 amount
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         if (add) {
-            s.meTokens[_meToken].balanceLocked += _amount;
+            s.meTokens[meToken].balanceLocked += amount;
         } else {
-            s.meTokens[_meToken].balanceLocked -= _amount;
+            s.meTokens[meToken].balanceLocked -= amount;
         }
 
-        emit UpdateBalanceLocked(add, _meToken, _amount);
+        emit UpdateBalanceLocked(add, meToken, amount);
     }
 
-    function finishResubscribe(address _meToken)
+    function finishResubscribe(address meToken)
         internal
         returns (MeTokenInfo memory)
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
 
-        require(meToken_.targetHubId != 0, "No targetHubId");
+        require(meTokenInfo.targetHubId != 0, "No targetHubId");
         require(
-            block.timestamp > meToken_.endTime,
+            block.timestamp > meTokenInfo.endTime,
             "block.timestamp < endTime"
         );
         // Update balancePooled / balanceLocked
         // solhint-disable-next-line
-        IMigration(meToken_.migration).finishMigration(_meToken);
+        IMigration(meTokenInfo.migration).finishMigration(meToken);
 
         // Finish updating metoken details
-        meToken_.startTime = 0;
-        meToken_.endTime = 0;
-        meToken_.hubId = meToken_.targetHubId;
-        meToken_.targetHubId = 0;
-        meToken_.migration = address(0);
+        meTokenInfo.startTime = 0;
+        meTokenInfo.endTime = 0;
+        meTokenInfo.hubId = meTokenInfo.targetHubId;
+        meTokenInfo.targetHubId = 0;
+        meTokenInfo.migration = address(0);
 
-        emit FinishResubscribe(_meToken);
-        return meToken_;
+        emit FinishResubscribe(meToken);
+        return meTokenInfo;
     }
 
-    function getMeToken(address _meToken)
+    function getMeToken(address token)
         internal
         view
-        returns (MeTokenInfo memory meToken_)
+        returns (MeTokenInfo memory meToken)
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        meToken_.owner = s.meTokens[_meToken].owner;
-        meToken_.hubId = s.meTokens[_meToken].hubId;
-        meToken_.balancePooled = s.meTokens[_meToken].balancePooled;
-        meToken_.balanceLocked = s.meTokens[_meToken].balanceLocked;
-        meToken_.startTime = s.meTokens[_meToken].startTime;
-        meToken_.endTime = s.meTokens[_meToken].endTime;
-        meToken_.endCooldown = s.meTokens[_meToken].endCooldown;
-        meToken_.targetHubId = s.meTokens[_meToken].targetHubId;
-        meToken_.migration = s.meTokens[_meToken].migration;
+        meToken.owner = s.meTokens[token].owner;
+        meToken.hubId = s.meTokens[token].hubId;
+        meToken.balancePooled = s.meTokens[token].balancePooled;
+        meToken.balanceLocked = s.meTokens[token].balanceLocked;
+        meToken.startTime = s.meTokens[token].startTime;
+        meToken.endTime = s.meTokens[token].endTime;
+        meToken.endCooldown = s.meTokens[token].endCooldown;
+        meToken.targetHubId = s.meTokens[token].targetHubId;
+        meToken.migration = s.meTokens[token].migration;
     }
 
     function warmup() internal view returns (uint256) {

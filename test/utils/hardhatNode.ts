@@ -143,3 +143,10 @@ export async function resetFork(blockNumber: number): Promise<void> {
     ],
   });
 }
+
+export async function disableFork(): Promise<void> {
+  await network.provider.request({
+    method: "hardhat_reset",
+    params: [],
+  });
+}

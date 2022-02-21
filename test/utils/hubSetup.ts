@@ -70,11 +70,12 @@ export async function hubSetup(
     account1,
     account2,
     account3,
-    token,
-    tokenAddr,
-    tokenHolder,
-    tokenWhale,
-  } = await hubSetupWithoutRegister(curveStr, fees, erc20Address, erc20Whale);
+  } = await hubSetupWithoutRegister(curveStr, fees);
+  const { token, tokenAddr, tokenHolder, tokenWhale } = await tranferFromWhale(
+    account1.address,
+    erc20Address,
+    erc20Whale
+  );
   await hub.register(
     account0.address,
     tokenAddr,
@@ -134,48 +135,19 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
       )) as unknown as ICurve;
   }
 }
-export async function hubSetupWithoutRegister(
-  curveStr: string,
-  fees?: number[],
+export async function tranferFromWhale(
+  recipientAddr: string,
   erc20Address?: string,
   erc20Whale?: string
 ): Promise<{
   tokenAddr: string;
-  foundry: FoundryFacet;
-  hub: HubFacet;
-  meTokenRegistry: MeTokenRegistryFacet;
-  diamond: Diamond;
-  meTokenFactory: MeTokenFactory;
-  singleAssetVault: SingleAssetVault;
-  curve: ICurve;
-  vaultRegistry: VaultRegistry;
-  curveRegistry: CurveRegistry;
-  migrationRegistry: MigrationRegistry;
-  fee: FeesFacet;
   token: ERC20;
-  account0: SignerWithAddress;
-  account1: SignerWithAddress;
-  account2: SignerWithAddress;
-  account3: SignerWithAddress;
   tokenHolder: Signer;
   tokenWhale: string;
 }> {
   let tokenAddr: string;
-  let foundry: FoundryFacet;
-  let hub: HubFacet;
-  let meTokenFactory: MeTokenFactory;
-  let singleAssetVault: SingleAssetVault;
-  let curve: ICurve;
-  let meTokenRegistry: MeTokenRegistryFacet;
-  let vaultRegistry: VaultRegistry;
-  let curveRegistry: CurveRegistry;
-  let migrationRegistry: MigrationRegistry;
-  let fee: FeesFacet;
+
   let token: ERC20;
-  let account0: SignerWithAddress;
-  let account1: SignerWithAddress;
-  let account2: SignerWithAddress;
-  let account3: SignerWithAddress;
   let tokenHolder: Signer;
   let tokenWhale: string;
 
@@ -189,12 +161,51 @@ export async function hubSetupWithoutRegister(
     tokenAddr = erc20Address;
     tokenWhale = erc20Whale;
   }
-  [account0, account1, account2, account3] = await ethers.getSigners();
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
   await token
     .connect(tokenHolder)
-    .transfer(account1.address, ethers.utils.parseEther("1000"));
+    .transfer(recipientAddr, ethers.utils.parseEther("1000"));
+  return { token, tokenHolder, tokenWhale, tokenAddr };
+}
+
+export async function hubSetupWithoutRegister(
+  curveStr: string,
+  fees?: number[]
+): Promise<{
+  foundry: FoundryFacet;
+  hub: HubFacet;
+  meTokenRegistry: MeTokenRegistryFacet;
+  diamond: Diamond;
+  meTokenFactory: MeTokenFactory;
+  singleAssetVault: SingleAssetVault;
+  curve: ICurve;
+  vaultRegistry: VaultRegistry;
+  curveRegistry: CurveRegistry;
+  migrationRegistry: MigrationRegistry;
+  fee: FeesFacet;
+  account0: SignerWithAddress;
+  account1: SignerWithAddress;
+  account2: SignerWithAddress;
+  account3: SignerWithAddress;
+}> {
+  let foundry: FoundryFacet;
+  let hub: HubFacet;
+  let meTokenFactory: MeTokenFactory;
+  let singleAssetVault: SingleAssetVault;
+  let curve: ICurve;
+  let meTokenRegistry: MeTokenRegistryFacet;
+  let vaultRegistry: VaultRegistry;
+  let curveRegistry: CurveRegistry;
+  let migrationRegistry: MigrationRegistry;
+  let fee: FeesFacet;
+  let account0: SignerWithAddress;
+  let account1: SignerWithAddress;
+  let account2: SignerWithAddress;
+  let account3: SignerWithAddress;
+
+  [account0, account1, account2, account3] = await ethers.getSigners();
+
   curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
@@ -305,7 +316,6 @@ export async function hubSetupWithoutRegister(
   await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   return {
-    tokenAddr,
     foundry,
     hub,
     diamond,
@@ -317,13 +327,10 @@ export async function hubSetupWithoutRegister(
     curveRegistry,
     migrationRegistry,
     fee,
-    token,
     account0,
     account1,
     account2,
     account3,
-    tokenHolder,
-    tokenWhale,
   };
 }
 export async function addHubSetup(

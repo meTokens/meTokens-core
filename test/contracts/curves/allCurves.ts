@@ -12,9 +12,9 @@ import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import { ICurve } from "../../../artifacts/types/ICurve";
 import { Diamond } from "../../../artifacts/types";
 
-describe("All curves", () => {
+/* describe("All curves", () => {
   before("setup curves instance", async () => {});
-});
+}); */
 const setup = async () => {
   let curves = new Array();
   let DAI: string;
@@ -379,8 +379,8 @@ const setup = async () => {
 };
 setup().then((tests) => {
   describe(`${tests.length} Curves should work`, async () => {
-    tests.forEach((args) => {
-      curvesTestsHelper(args);
+    tests.forEach(async (args) => {
+      await curvesTestsHelper(args);
     });
   });
   run();

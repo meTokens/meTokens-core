@@ -47,6 +47,7 @@ struct AppStorage {
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
+    address trustedForwarder;
 }
 
 library LibAppStorage {
@@ -71,51 +72,69 @@ contract Modifiers {
     AppStorage internal s;
 
     modifier onlyDiamondController() {
-        require(msg.sender == s.diamondController, "!diamondController");
+        require(
+            LibMeta.msgSender() == s.diamondController,
+            "!diamondController"
+        );
         _;
     }
 
     modifier onlyFeesController() {
-        require(msg.sender == s.feesController, "!feesController");
+        require(LibMeta.msgSender() == s.feesController, "!feesController");
         _;
     }
 
     modifier onlyDurationsController() {
-        require(msg.sender == s.durationsController, "!durationsController");
+        require(
+            LibMeta.msgSender() == s.durationsController,
+            "!durationsController"
+        );
         _;
     }
 
     modifier onlyMeTokenRegistryController() {
         require(
-            msg.sender == s.meTokenRegistryController,
+            LibMeta.msgSender() == s.meTokenRegistryController,
             "!meTokenRegistryController"
         );
         _;
     }
 
     modifier onlyRegisterController() {
-        require(msg.sender == s.registerController, "!registerController");
+        require(
+            LibMeta.msgSender() == s.registerController,
+            "!registerController"
+        );
         _;
     }
 
     modifier onlyDeactivateController() {
-        require(msg.sender == s.deactivateController, "!deactivateController");
+        require(
+            LibMeta.msgSender() == s.deactivateController,
+            "!deactivateController"
+        );
         _;
     }
 
     modifier onlyVaultRegistry() {
-        require(msg.sender == address(s.vaultRegistry), "!vaultRegistry");
+        require(
+            LibMeta.msgSender() == address(s.vaultRegistry),
+            "!vaultRegistry"
+        );
         _;
     }
 
     modifier onlyCurveRegistry() {
-        require(msg.sender == address(s.curveRegistry), "!curveRegistry");
+        require(
+            LibMeta.msgSender() == address(s.curveRegistry),
+            "!curveRegistry"
+        );
         _;
     }
 
     modifier onlyMigrationRegistry() {
         require(
-            msg.sender == address(s.migrationRegistry),
+            LibMeta.msgSender() == address(s.migrationRegistry),
             "!migrationRegistry"
         );
         _;

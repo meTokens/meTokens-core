@@ -7,70 +7,76 @@ import {Modifiers} from "../libs/Details.sol";
 
 // TODO: IERC173
 contract OwnershipFacet is Modifiers {
-    function setDiamondController(address _newController)
+    function setDiamondController(address newController)
         external
         onlyDiamondController
     {
-        require(
-            _newController != s.diamondController,
-            "_newController == diamondController"
-        );
-        s.diamondController = _newController;
+        require(newController != s.diamondController, "same diamondController");
+        s.diamondController = newController;
     }
 
-    function setFeesController(address _newController)
+    function setTrustedForwarder(address forwarder)
+        external
+        onlyDiamondController
+    {
+        require(forwarder != s.trustedForwarder, "same trustedForwarder");
+        s.trustedForwarder = forwarder;
+    }
+
+    function setFeesController(address newController)
         external
         onlyFeesController
     {
-        require(
-            _newController != s.feesController,
-            "_newController == feesController"
-        );
-        s.feesController = _newController;
+        require(newController != s.feesController, "same feesController");
+        s.feesController = newController;
     }
 
-    function setDurationsController(address _newController)
+    function setDurationsController(address newController)
         external
         onlyDurationsController
     {
         require(
-            _newController != s.durationsController,
-            "_newController == durationsController"
+            newController != s.durationsController,
+            "same durationsController"
         );
-        s.durationsController = _newController;
+        s.durationsController = newController;
     }
 
-    function setMeTokenRegistryController(address _newController)
+    function setMeTokenRegistryController(address newController)
         external
         onlyMeTokenRegistryController
     {
         require(
-            _newController != s.meTokenRegistryController,
-            "_newController == meTokenRegistryController"
+            newController != s.meTokenRegistryController,
+            "same meTokenRegistryController"
         );
-        s.meTokenRegistryController = _newController;
+        s.meTokenRegistryController = newController;
     }
 
-    function setRegisterController(address _newController)
+    function setRegisterController(address newController)
         external
         onlyRegisterController
     {
         require(
-            _newController != s.registerController,
-            "_newController == registerController"
+            newController != s.registerController,
+            "same registerController"
         );
-        s.registerController = _newController;
+        s.registerController = newController;
     }
 
-    function setDeactivateController(address _newController)
+    function setDeactivateController(address newController)
         external
         onlyDeactivateController
     {
         require(
-            _newController != s.deactivateController,
-            "_newController == deactivateController"
+            newController != s.deactivateController,
+            "same deactivateController"
         );
-        s.deactivateController = _newController;
+        s.deactivateController = newController;
+    }
+
+    function trustedForwarder() external view returns (address) {
+        return s.trustedForwarder;
     }
 
     function diamondController() external view returns (address) {

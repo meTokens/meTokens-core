@@ -5,12 +5,12 @@ pragma solidity ^0.8.0;
 /// @author Carl Farterson (@carlfarterson)
 interface IMeTokenFactory {
     /// @notice Create a meToken
-    /// @param _name        name of meToken
-    /// @param _symbol      symbol of meToken
-    /// @param _diamond     address of diamond
+    /// @param name        name of meToken
+    /// @param symbol      symbol of meToken
+    /// @param diamond     address of diamond
     function create(
-        string calldata _name,
-        string calldata _symbol,
-        address _diamond
+        string calldata name,
+        string calldata symbol,
+        address diamond
     ) external returns (address);
 }

@@ -526,7 +526,7 @@ const setup = async () => {
           migration.address
         );
       });
-      it("Fails from invalid _encodedMigrationArgs", async () => {
+      it("Fails from invalid encodedMigrationArgs", async () => {
         const badEncodedMigrationArgs = "0x";
         await expect(
           meTokenRegistry.initResubscribe(
@@ -535,7 +535,7 @@ const setup = async () => {
             migration.address,
             badEncodedMigrationArgs
           )
-        ).to.be.revertedWith("Invalid _encodedMigrationArgs");
+        ).to.be.revertedWith("Invalid encodedMigrationArgs");
       });
       it("Passes when current and target hub have same asset", async () => {
         const tx = meTokenRegistry.callStatic.initResubscribe(

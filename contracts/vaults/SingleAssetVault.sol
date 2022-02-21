@@ -18,40 +18,34 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;
 
     constructor(
-        address _dao,
-        address _foundry,
-        IHub _hub,
-        IMeTokenRegistry _meTokenRegistry,
-        IMigrationRegistry _migrationRegistry
-    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
+        address dao,
+        address foundry,
+        IHub hub,
+        IMeTokenRegistry meTokenRegistry,
+        IMigrationRegistry migrationRegistry
+    ) Vault(dao, foundry, hub, meTokenRegistry, migrationRegistry) {}
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
-    /// @dev not adding reentrancy guard as no state changes after external call
-    function startMigration(address _meToken) external override {
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
-        );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
+    function startMigration(address meToken) external override {
+        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
 
-        require(msg.sender == (meToken_.migration), "!migration");
-        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
+        require(msg.sender == (info.migration), "!migration");
+        uint256 balance = info.balancePooled + info.balanceLocked;
 
-        if (
-            meToken_.migration != address(0) &&
-            address(this) != meToken_.migration
-        ) {
-            IERC20(hub_.asset).safeTransfer(meToken_.migration, balance);
+        if (info.migration != address(0) && address(this) != info.migration) {
+            IERC20(hubInfo.asset).safeTransfer(info.migration, balance);
         }
-        emit StartMigration(_meToken);
+        emit StartMigration(meToken);
     }
 
     // solhint-disable-next-line
     function isValid(
-        address _asset,
-        bytes memory /*_encodedArgs */
-    ) external pure override returns (bool) {
-        if (_asset == address(0)) {
+        address asset,
+        bytes memory /*encodedArgs */
+    ) public pure override returns (bool) {
+        if (asset == address(0)) {
             return false;
         }
         return true;

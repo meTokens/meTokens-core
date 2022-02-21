@@ -49,115 +49,114 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MAXFEE = 1e4; // 1%
 
     constructor(
-        address _dao,
-        address _foundry,
-        IHub _hub,
-        IMeTokenRegistry _meTokenRegistry,
-        IMigrationRegistry _migrationRegistry
-    ) Vault(_dao, _foundry, _hub, _meTokenRegistry, _migrationRegistry) {}
+        address dao,
+        address foundry,
+        IHub hub,
+        IMeTokenRegistry meTokenRegistry,
+        IMigrationRegistry migrationRegistry
+    ) Vault(dao, foundry, hub, meTokenRegistry, migrationRegistry) {}
 
-    function initMigration(address _meToken, bytes memory _encodedArgs)
+    function initMigration(address meToken, bytes memory encodedArgs)
         external
         override
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
 
-        require(hub_.asset != targetHub_.asset, "same asset");
+        require(hubInfo.asset != targetHubInfo.asset, "same asset");
 
         (uint256 soonest, uint24 fee) = abi.decode(
-            _encodedArgs,
+            encodedArgs,
             (uint256, uint24)
         );
-        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        usts_.fee = fee;
-        usts_.soonest = soonest;
+        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
+        usts.fee = fee;
+        usts.soonest = soonest;
     }
 
-    function poke(address _meToken) external override nonReentrant {
+    function poke(address meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
-        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
         if (
-            usts_.soonest != 0 &&
-            block.timestamp > usts_.soonest &&
-            !usts_.started
+            usts.soonest != 0 && block.timestamp > usts.soonest && !usts.started
         ) {
-            ISingleAssetVault(hub_.vault).startMigration(_meToken);
-            usts_.started = true;
-            _swap(_meToken);
+            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
+            usts.started = true;
+            _swap(meToken);
         }
     }
 
-    function finishMigration(address _meToken)
+    function finishMigration(address meToken)
         external
         override
         nonReentrant
         returns (uint256 amountOut)
     {
         require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
-        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        require(usts_.soonest < block.timestamp, "timestamp < soonest");
+        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
+        require(usts.soonest < block.timestamp, "timestamp < soonest");
 
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
 
-        // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
-        if (!usts_.started) {
-            ISingleAssetVault(hub_.vault).startMigration(_meToken);
-            usts_.started = true;
-            amountOut = _swap(_meToken);
+        // TODO: require migration hasn't finished, block.timestamp > meToken.startTime
+        if (!usts.started) {
+            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
+            usts.started = true;
+            amountOut = _swap(meToken);
         } else {
             // No swap, amountOut = amountIn
-            amountOut = meToken_.balancePooled + meToken_.balanceLocked;
+            amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
         }
 
         // Send asset to new vault only if there's a migration vault
-        IERC20(targetHub_.asset).transfer(targetHub_.vault, amountOut);
+        IERC20(targetHubInfo.asset).transfer(targetHubInfo.vault, amountOut);
 
         // reset mappings
-        delete _uniswapSingleTransfers[_meToken];
+        delete _uniswapSingleTransfers[meToken];
     }
 
-    function getDetails(address _meToken)
+    function getDetails(address meToken)
         external
         view
-        returns (UniswapSingleTransfer memory usts_)
+        returns (UniswapSingleTransfer memory usts)
     {
-        usts_ = _uniswapSingleTransfers[_meToken];
+        usts = _uniswapSingleTransfers[meToken];
     }
 
     // Kicks off meToken warmup period
-    function isValid(address _meToken, bytes memory _encodedArgs)
+    function isValid(address meToken, bytes memory encodedArgs)
         external
         view
         override
         returns (bool)
     {
-        // _encodedArgs empty
-        if (_encodedArgs.length == 0) return false;
-        (uint256 soon, uint24 fee) = abi.decode(
-            _encodedArgs,
-            (uint256, uint24)
-        );
+        // encodedArgs empty
+        if (encodedArgs.length == 0) return false;
+        (uint256 soon, uint24 fee) = abi.decode(encodedArgs, (uint256, uint24));
         // Too soon
         if (soon < block.timestamp) return false;
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
         );
         // MeToken not subscribed to a hub
-        if (meToken_.hubId == 0) return false;
+        if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
         if (fee == MINFEE || fee == MIDFEE || fee == MAXFEE) {
             return true;
@@ -166,15 +165,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
-    /// @dev parent call must have reentrancy check
-    function _swap(address _meToken) private returns (uint256 amountOut) {
-        UniswapSingleTransfer storage usts_ = _uniswapSingleTransfers[_meToken];
-        MeTokenInfo memory meToken_ = meTokenRegistry.getMeTokenDetails(
-            _meToken
+    function _swap(address meToken) private returns (uint256 amountOut) {
+        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
+        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
+            meToken
         );
-        HubInfo memory hub_ = hub.getHubDetails(meToken_.hubId);
-        HubInfo memory targetHub_ = hub.getHubDetails(meToken_.targetHubId);
-        uint256 amountIn = meToken_.balancePooled + meToken_.balanceLocked;
+        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = hub.getHubDetails(
+            meTokenInfo.targetHubId
+        );
+        uint256 amountIn = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Only swap if
         // - There are tokens to swap
@@ -183,23 +184,23 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         // - Current time is past the soonest it can swap, and time to swap has been set
         if (
             amountIn == 0 ||
-            !usts_.started ||
-            usts_.swapped ||
-            usts_.soonest == 0 ||
-            usts_.soonest > block.timestamp
+            !usts.started ||
+            usts.swapped ||
+            usts.soonest == 0 ||
+            usts.soonest > block.timestamp
         ) {
             return 0;
         }
 
         // Approve router to spend
-        IERC20(hub_.asset).approve(address(_router), amountIn);
+        IERC20(hubInfo.asset).approve(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
-                tokenIn: hub_.asset,
-                tokenOut: targetHub_.asset,
-                fee: usts_.fee,
+                tokenIn: hubInfo.asset,
+                tokenOut: targetHubInfo.asset,
+                fee: usts.fee,
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
@@ -207,12 +208,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 sqrtPriceLimitX96: 0
             });
 
-        usts_.swapped = true;
+        usts.swapped = true;
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
-        meTokenRegistry.updateBalances(_meToken, amountOut);
+        meTokenRegistry.updateBalances(meToken, amountOut);
     }
 }
