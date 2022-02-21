@@ -16,272 +16,269 @@ import {IVault} from "../interfaces/IVault.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {HubInfo, MeTokenInfo, Modifiers} from "../libs/Details.sol";
+import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @title meToken registry
 /// @author Carl Farterson (@carlfarterson)
-/// @notice This contract tracks basic information about all meTokens
+/// @notice This contract tracks basic meTokenInformation about all meTokens
 contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
     event Subscribe(
-        address indexed _meToken,
-        address indexed _owner,
-        uint256 _minted,
-        address _asset,
-        uint256 _assetsDeposited,
-        string _name,
-        string _symbol,
-        uint256 _hubId
+        address indexed meToken,
+        address indexed owner,
+        uint256 minted,
+        address asset,
+        uint256 assetsDeposited,
+        string name,
+        string symbol,
+        uint256 hubInfoId
     );
     event InitResubscribe(
-        address indexed _meToken,
-        uint256 _targetHubId,
-        address _migration,
-        bytes _encodedMigrationArgs
+        address indexed meToken,
+        uint256 targetHubId,
+        address migration,
+        bytes encodedMigrationArgs
     );
-    event CancelResubscribe(address indexed _meToken);
-    event FinishResubscribe(address indexed _meToken);
-    event UpdateBalances(address _meToken, uint256 _newBalance);
-    event TransferMeTokenOwnership(
-        address _from,
-        address _to,
-        address _meToken
-    );
-    event CancelTransferMeTokenOwnership(address _from, address _meToken);
-    event ClaimMeTokenOwnership(address _from, address _to, address _meToken);
-    event UpdateBalancePooled(bool _add, address _meToken, uint256 _amount);
-    event UpdateBalanceLocked(bool _add, address _meToken, uint256 _amount);
+    event CancelResubscribe(address indexed meToken);
+    event FinishResubscribe(address indexed meToken);
+    event UpdateBalances(address meToken, uint256 newBalance);
+    event TransferMeTokenOwnership(address from, address to, address meToken);
+    event CancelTransferMeTokenOwnership(address from, address meToken);
+    event ClaimMeTokenOwnership(address from, address to, address meToken);
+    event UpdateBalancePooled(bool add, address meToken, uint256 amount);
+    event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
 
     constructor() {}
 
     function subscribe(
-        string calldata _name,
-        string calldata _symbol,
-        uint256 _hubId,
-        uint256 _assetsDeposited
+        string calldata name,
+        string calldata symbol,
+        uint256 hubId,
+        uint256 assetsDeposited
     ) external nonReentrant {
-        require(!isOwner(msg.sender), "msg.sender already owns a meToken");
-        HubInfo memory hub_ = s.hubs[_hubId];
-        require(hub_.active, "Hub inactive");
-        require(!hub_.updating, "Hub updating");
+        address sender = LibMeta.msgSender();
+        require(!isOwner(sender), "msg.sender already owns a meToken");
+        HubInfo memory hubInfo = s.hubs[hubId];
+        require(hubInfo.active, "Hub inactive");
+        require(!hubInfo.updating, "Hub updating");
 
-        if (_assetsDeposited > 0) {
+        if (assetsDeposited > 0) {
             require(
-                IERC20(hub_.asset).transferFrom(
-                    msg.sender,
-                    hub_.vault,
-                    _assetsDeposited
+                IERC20(hubInfo.asset).transferFrom(
+                    sender,
+                    hubInfo.vault,
+                    assetsDeposited
                 ),
                 "transfer failed"
             );
         }
         // Create meToken erc20 contract
         address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
-            _name,
-            _symbol,
+            name,
+            symbol,
             address(this)
         );
 
         // Mint meToken to user
-        uint256 _meTokensMinted;
-        if (_assetsDeposited > 0) {
-            _meTokensMinted = ICurve(hub_.curve).viewMeTokensMinted(
-                _assetsDeposited, // _deposit_amount
-                _hubId, // _hubId
-                0, // _supply
-                0 // _balancePooled
+        uint256 meTokensMinted;
+        if (assetsDeposited > 0) {
+            meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
+                assetsDeposited, // deposit_amount
+                hubId, // hubId
+                0, // supply
+                0 // balancePooled
             );
-            IMeToken(meTokenAddr).mint(msg.sender, _meTokensMinted);
+            IMeToken(meTokenAddr).mint(sender, meTokensMinted);
         }
 
         // Register the address which created a meToken
-        s.meTokenOwners[msg.sender] = meTokenAddr;
+        s.meTokenOwners[sender] = meTokenAddr;
 
         // Add meToken to registry
-        MeTokenInfo storage meToken_ = s.meTokens[meTokenAddr];
-        meToken_.owner = msg.sender;
-        meToken_.hubId = _hubId;
-        meToken_.balancePooled = _assetsDeposited;
+        s.meTokens[meTokenAddr].owner = sender;
+        s.meTokens[meTokenAddr].hubId = hubId;
+        s.meTokens[meTokenAddr].balancePooled = assetsDeposited;
 
         emit Subscribe(
             meTokenAddr,
-            msg.sender,
-            _meTokensMinted,
-            hub_.asset,
-            _assetsDeposited,
-            _name,
-            _symbol,
-            _hubId
+            sender,
+            meTokensMinted,
+            hubInfo.asset,
+            assetsDeposited,
+            name,
+            symbol,
+            hubId
         );
     }
 
     function initResubscribe(
-        address _meToken,
-        uint256 _targetHubId,
-        address _migration,
-        bytes memory _encodedMigrationArgs
+        address meToken,
+        uint256 targetHubId,
+        address migration,
+        bytes memory encodedMigrationArgs
     ) external {
-        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
-        HubInfo memory hub_ = s.hubs[meToken_.hubId];
-        HubInfo memory targetHub_ = s.hubs[_targetHubId];
+        address sender = LibMeta.msgSender();
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        HubInfo memory targetHubInfo = s.hubs[targetHubId];
 
-        require(msg.sender == meToken_.owner, "!owner");
+        require(sender == meTokenInfo.owner, "!owner");
         require(
-            block.timestamp >= meToken_.endCooldown,
+            block.timestamp >= meTokenInfo.endCooldown,
             "Cooldown not complete"
         );
-        require(meToken_.hubId != _targetHubId, "same hub");
-        require(targetHub_.active, "targetHub inactive");
-        require(!hub_.updating, "hub updating");
-        require(!targetHub_.updating, "targetHub updating");
+        require(meTokenInfo.hubId != targetHubId, "same hub");
+        require(targetHubInfo.active, "targetHub inactive");
+        require(!hubInfo.updating, "hub updating");
+        require(!targetHubInfo.updating, "targetHub updating");
 
-        require(_migration != address(0), "migration address(0)");
+        require(migration != address(0), "migration address(0)");
 
         // Ensure the migration we're using is approved
         require(
             s.migrationRegistry.isApproved(
-                hub_.vault,
-                targetHub_.vault,
-                _migration
+                hubInfo.vault,
+                targetHubInfo.vault,
+                migration
             ),
             "!approved"
         );
         require(
-            IVault(_migration).isValid(_meToken, _encodedMigrationArgs),
-            "Invalid _encodedMigrationArgs"
+            IVault(migration).isValid(meToken, encodedMigrationArgs),
+            "Invalid encodedMigrationArgs"
         );
-        meToken_.startTime = block.timestamp + s.meTokenWarmup;
-        meToken_.endTime =
+        meTokenInfo.startTime = block.timestamp + s.meTokenWarmup;
+        meTokenInfo.endTime =
             block.timestamp +
             s.meTokenWarmup +
             s.meTokenDuration;
-        meToken_.endCooldown =
+        meTokenInfo.endCooldown =
             block.timestamp +
             s.meTokenWarmup +
             s.meTokenDuration +
             s.meTokenCooldown;
-        meToken_.targetHubId = _targetHubId;
-        meToken_.migration = _migration;
+        meTokenInfo.targetHubId = targetHubId;
+        meTokenInfo.migration = migration;
 
-        IMigration(_migration).initMigration(_meToken, _encodedMigrationArgs);
+        IMigration(migration).initMigration(meToken, encodedMigrationArgs);
 
         emit InitResubscribe(
-            _meToken,
-            _targetHubId,
-            _migration,
-            _encodedMigrationArgs
+            meToken,
+            targetHubId,
+            migration,
+            encodedMigrationArgs
         );
     }
 
-    function finishResubscribe(address _meToken)
+    function finishResubscribe(address meToken)
         external
         returns (MeTokenInfo memory)
     {
-        return LibMeToken.finishResubscribe(_meToken);
+        return LibMeToken.finishResubscribe(meToken);
     }
 
-    function cancelResubscribe(address _meToken) external {
-        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
-        require(msg.sender == meToken_.owner, "!owner");
-        require(meToken_.targetHubId != 0, "!resubscribing");
+    function cancelResubscribe(address meToken) external {
+        address sender = LibMeta.msgSender();
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        require(sender == meTokenInfo.owner, "!owner");
+        require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
-            block.timestamp < meToken_.startTime,
+            block.timestamp < meTokenInfo.startTime,
             "Resubscription has started"
         );
 
-        meToken_.startTime = 0;
-        meToken_.endTime = 0;
-        meToken_.targetHubId = 0;
-        meToken_.migration = address(0);
+        meTokenInfo.startTime = 0;
+        meTokenInfo.endTime = 0;
+        meTokenInfo.targetHubId = 0;
+        meTokenInfo.migration = address(0);
 
-        emit CancelResubscribe(_meToken);
+        emit CancelResubscribe(meToken);
     }
 
-    function updateBalances(address _meToken, uint256 _newBalance) external {
-        MeTokenInfo storage meToken_ = s.meTokens[_meToken];
-        require(msg.sender == meToken_.migration, "!migration");
-        uint256 balancePooled = meToken_.balancePooled;
-        uint256 balanceLocked = meToken_.balanceLocked;
+    function updateBalances(address meToken, uint256 newBalance) external {
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        address sender = LibMeta.msgSender();
+        require(sender == meTokenInfo.migration, "!migration");
+        uint256 balancePooled = meTokenInfo.balancePooled;
+        uint256 balanceLocked = meTokenInfo.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
         uint256 p = s.PRECISION;
 
-        meToken_.balancePooled =
-            (balancePooled * p * _newBalance) /
+        meTokenInfo.balancePooled =
+            (balancePooled * p * newBalance) /
             (oldBalance * p);
-        meToken_.balanceLocked =
-            (balanceLocked * p * _newBalance) /
+        meTokenInfo.balanceLocked =
+            (balanceLocked * p * newBalance) /
             (oldBalance * p);
 
-        emit UpdateBalances(_meToken, _newBalance);
+        emit UpdateBalances(meToken, newBalance);
     }
 
-    function transferMeTokenOwnership(address _newOwner) external {
+    function transferMeTokenOwnership(address newOwner) external {
+        address sender = LibMeta.msgSender();
         require(
-            s.pendingMeTokenOwners[msg.sender] == address(0),
+            s.pendingMeTokenOwners[sender] == address(0),
             "transfer ownership already pending"
         );
-        require(!isOwner(_newOwner), "_newOwner already owns a meToken");
-        require(_newOwner != address(0), "Cannot transfer to 0 address");
-        address meToken_ = s.meTokenOwners[msg.sender];
-        require(meToken_ != address(0), "meToken does not exist");
-        s.pendingMeTokenOwners[msg.sender] = _newOwner;
+        require(!isOwner(newOwner), "_newOwner already owns a meToken");
+        require(newOwner != address(0), "Cannot transfer to 0 address");
+        address meToken = s.meTokenOwners[sender];
+        require(meToken != address(0), "meToken does not exist");
+        s.pendingMeTokenOwners[sender] = newOwner;
 
-        emit TransferMeTokenOwnership(msg.sender, _newOwner, meToken_);
+        emit TransferMeTokenOwnership(sender, newOwner, meToken);
     }
 
     function cancelTransferMeTokenOwnership() external {
-        address _meToken = s.meTokenOwners[msg.sender];
-        require(_meToken != address(0), "meToken does not exist");
+        address sender = LibMeta.msgSender();
+        address meToken = s.meTokenOwners[sender];
+        require(meToken != address(0), "meToken does not exist");
 
         require(
-            s.pendingMeTokenOwners[msg.sender] != address(0),
+            s.pendingMeTokenOwners[sender] != address(0),
             "transferMeTokenOwnership() not initiated"
         );
 
-        delete s.pendingMeTokenOwners[msg.sender];
-        emit CancelTransferMeTokenOwnership(msg.sender, _meToken);
+        delete s.pendingMeTokenOwners[sender];
+        emit CancelTransferMeTokenOwnership(sender, meToken);
     }
 
-    function claimMeTokenOwnership(address _oldOwner) external {
-        require(!isOwner(msg.sender), "Already owns a meToken");
-        require(
-            msg.sender == s.pendingMeTokenOwners[_oldOwner],
-            "!_pendingOwner"
-        );
+    function claimMeTokenOwnership(address oldOwner) external {
+        address sender = LibMeta.msgSender();
+        require(!isOwner(sender), "Already owns a meToken");
+        require(sender == s.pendingMeTokenOwners[oldOwner], "!_pendingOwner");
 
-        address _meToken = s.meTokenOwners[_oldOwner];
+        address meToken = s.meTokenOwners[oldOwner];
 
-        s.meTokens[_meToken].owner = msg.sender;
-        s.meTokenOwners[msg.sender] = _meToken;
+        s.meTokens[meToken].owner = sender;
+        s.meTokenOwners[sender] = meToken;
 
-        delete s.meTokenOwners[_oldOwner];
-        delete s.pendingMeTokenOwners[_oldOwner];
+        delete s.meTokenOwners[oldOwner];
+        delete s.pendingMeTokenOwners[oldOwner];
 
-        emit ClaimMeTokenOwnership(_oldOwner, msg.sender, _meToken);
+        emit ClaimMeTokenOwnership(oldOwner, sender, meToken);
     }
 
-    function setMeTokenWarmup(uint256 _warmup)
+    function setMeTokenWarmup(uint256 warmup) external onlyDurationsController {
+        require(warmup != s.meTokenWarmup, "same warmup");
+        require(warmup + s.meTokenDuration < s.hubWarmup, "too long");
+        s.meTokenWarmup = warmup;
+    }
+
+    function setMeTokenDuration(uint256 duration)
         external
         onlyDurationsController
     {
-        require(_warmup != s.meTokenWarmup, "same warmup");
-        require(_warmup + s.meTokenDuration < s.hubWarmup, "too long");
-        s.meTokenWarmup = _warmup;
+        require(duration != s.meTokenDuration, "same duration");
+        require(s.meTokenWarmup + duration < s.hubWarmup, "too long");
+        s.meTokenDuration = duration;
     }
 
-    function setMeTokenDuration(uint256 _duration)
+    function setMeTokenCooldown(uint256 cooldown)
         external
         onlyDurationsController
     {
-        require(_duration != s.meTokenDuration, "same duration");
-        require(s.meTokenWarmup + _duration < s.hubWarmup, "too long");
-        s.meTokenDuration = _duration;
-    }
-
-    function setMeTokenCooldown(uint256 _cooldown)
-        external
-        onlyDurationsController
-    {
-        require(_cooldown != s.meTokenCooldown, "same cooldown");
-        s.meTokenCooldown = _cooldown;
+        require(cooldown != s.meTokenCooldown, "same cooldown");
+        s.meTokenCooldown = cooldown;
     }
 
     function meTokenWarmup() external view returns (uint256) {
@@ -296,27 +293,23 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
         return LibMeToken.cooldown();
     }
 
-    function getOwnerMeToken(address _owner) external view returns (address) {
-        return s.meTokenOwners[_owner];
+    function getOwnerMeToken(address owner) external view returns (address) {
+        return s.meTokenOwners[owner];
     }
 
-    function getPendingOwner(address _oldOwner)
-        external
-        view
-        returns (address)
-    {
-        return s.pendingMeTokenOwners[_oldOwner];
+    function getPendingOwner(address oldOwner) external view returns (address) {
+        return s.pendingMeTokenOwners[oldOwner];
     }
 
-    function getMeTokenDetails(address _meToken)
+    function getMeTokenDetails(address meToken)
         external
         view
         returns (MeTokenInfo memory)
     {
-        return LibMeToken.getMeToken(_meToken);
+        return LibMeToken.getMeToken(meToken);
     }
 
-    function isOwner(address _owner) public view returns (bool) {
-        return s.meTokenOwners[_owner] != address(0);
+    function isOwner(address owner) public view returns (bool) {
+        return s.meTokenOwners[owner] != address(0);
     }
 }

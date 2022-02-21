@@ -25,51 +25,51 @@ abstract contract Vault is IVault, ReentrancyGuard {
     }
 
     function handleDeposit(
-        address _from,
-        address _asset,
-        uint256 _depositAmount,
-        uint256 _feeAmount
+        address from,
+        address asset,
+        uint256 depositAmount,
+        uint256 feeAmount
     ) external override nonReentrant {
         require(msg.sender == diamond, "!diamond");
-        IERC20(_asset).safeTransferFrom(_from, address(this), _depositAmount);
-        if (_feeAmount > 0) {
-            accruedFees[_asset] += _feeAmount;
+        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
+        if (feeAmount > 0) {
+            accruedFees[asset] += feeAmount;
         }
-        emit HandleDeposit(_from, _asset, _depositAmount, _feeAmount);
+        emit HandleDeposit(from, asset, depositAmount, feeAmount);
     }
 
     function handleWithdrawal(
-        address _to,
-        address _asset,
-        uint256 _withdrawalAmount,
-        uint256 _feeAmount
+        address to,
+        address asset,
+        uint256 withdrawalAmount,
+        uint256 feeAmount
     ) external override nonReentrant {
         require(msg.sender == diamond, "!diamond");
-        IERC20(_asset).safeTransfer(_to, _withdrawalAmount);
-        if (_feeAmount > 0) {
-            accruedFees[_asset] += _feeAmount;
+        IERC20(asset).safeTransfer(to, withdrawalAmount);
+        if (feeAmount > 0) {
+            accruedFees[asset] += feeAmount;
         }
-        emit HandleWithdrawal(_to, _asset, _withdrawalAmount, _feeAmount);
+        emit HandleWithdrawal(to, asset, withdrawalAmount, feeAmount);
     }
 
     function claim(
-        address _asset,
-        bool _max,
-        uint256 _amount
+        address asset,
+        bool max,
+        uint256 amount
     ) external override nonReentrant {
         require(msg.sender == dao, "!DAO");
-        if (_max) {
-            _amount = accruedFees[_asset];
+        if (max) {
+            amount = accruedFees[asset];
         } else {
-            require(_amount > 0, "amount < 0");
-            require(_amount <= accruedFees[_asset], "amount > accrued fees");
+            require(amount > 0, "amount < 0");
+            require(amount <= accruedFees[asset], "amount > accrued fees");
         }
-        accruedFees[_asset] -= _amount;
-        IERC20(_asset).transfer(dao, _amount);
-        emit Claim(dao, _asset, _amount);
+        accruedFees[asset] -= amount;
+        IERC20(asset).transfer(dao, amount);
+        emit Claim(dao, asset, amount);
     }
 
-    function isValid(address _meToken, bytes memory _encodedArgs)
+    function isValid(address meToken, bytes memory encodedArgs)
         external
         virtual
         override

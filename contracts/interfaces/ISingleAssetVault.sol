@@ -5,10 +5,10 @@ pragma solidity ^0.8.0;
 /// @author Carl Farterson (@carlfarterson)
 interface ISingleAssetVault {
     /// @notice Event of starting a meTokens' migration to a new vault
-    /// @param _meToken address of meToken
-    event StartMigration(address _meToken);
+    /// @param meToken address of meToken
+    event StartMigration(address meToken);
 
     /// @notice Start a meTokens' migration to a new vault
-    /// @param _meToken address of meToken
-    function startMigration(address _meToken) external;
+    /// @param meToken address of meToken
+    function startMigration(address meToken) external;
 }

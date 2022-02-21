@@ -22,29 +22,27 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
     /// @dev not adding reentrancy guard as no state changes after external call
-    function startMigration(address _meToken) external override {
-        MeTokenInfo memory meToken_ = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(_meToken);
-        HubInfo memory hub_ = IHub(diamond).getHubDetails(meToken_.hubId);
+    function startMigration(address meToken) external override {
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
 
-        require(msg.sender == (meToken_.migration), "!migration");
-        uint256 balance = meToken_.balancePooled + meToken_.balanceLocked;
 
-        if (
-            meToken_.migration != address(0) &&
-            address(this) != meToken_.migration
-        ) {
-            IERC20(hub_.asset).safeTransfer(meToken_.migration, balance);
+        require(msg.sender == (info.migration), "!migration");
+        uint256 balance = info.balancePooled + info.balanceLocked;
+
+        if (info.migration != address(0) && address(this) != info.migration) {
+            IERC20(hubInfo.asset).safeTransfer(info.migration, balance);
         }
-        emit StartMigration(_meToken);
+        emit StartMigration(meToken);
     }
 
     // solhint-disable-next-line
     function isValid(
-        address _asset,
-        bytes memory /*_encodedArgs */
-    ) external pure override returns (bool) {
-        if (_asset == address(0)) {
+        address asset,
+        bytes memory /*encodedArgs */
+    ) public pure override returns (bool) {
+        if (asset == address(0)) {
             return false;
         }
         return true;

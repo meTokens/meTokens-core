@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "../interfaces/ICurve.sol";
-import "../libs/WeightedAverage.sol";
-import "../utils/ABDKMathQuad.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
@@ -32,56 +31,59 @@ contract StepwiseCurveABDK is ICurve {
         hub = _hub;
     }
 
-    function register(uint256 _hubId, bytes calldata _encodedDetails)
+    /// @inheritdoc ICurve
+    function register(uint256 hubId, bytes calldata encodedDetails)
         external
         override
     {
         require(msg.sender == hub, "!hub");
-        require(_encodedDetails.length > 0, "!_encodedDetails");
+        require(encodedDetails.length > 0, "!encodedDetails");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
-            _encodedDetails,
+            encodedDetails,
             (uint256, uint256)
         );
         require(stepX > 0 && stepX > PRECISION, "stepX not in range");
         require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
-        Stepwise storage stepwise_ = _stepwises[_hubId];
-        stepwise_.stepX = stepX;
-        stepwise_.stepY = stepY;
+        Stepwise storage stepwise = _stepwises[hubId];
+        stepwise.stepX = stepX;
+        stepwise.stepY = stepY;
     }
 
-    function initReconfigure(uint256 _hubId, bytes calldata _encodedDetails)
+    /// @inheritdoc ICurve
+    function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
         external
         override
     {
         require(msg.sender == hub, "!hub");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
-        // require(_encodedDetails.length > 0, "_encodedDetails empty");
+        // require(encodedDetails.length > 0, "encodedDetails empty");
 
         (uint256 targetStepX, uint256 targetStepY) = abi.decode(
-            _encodedDetails,
+            encodedDetails,
             (uint256, uint256)
         );
-        Stepwise storage stepwiseDetails = _stepwises[_hubId];
+        Stepwise storage stepwise = _stepwises[hubId];
         require(targetStepX > 0 && targetStepX > PRECISION, "!targetStepX");
-        require(targetStepX != stepwiseDetails.stepX, "targeStepX == stepX");
+        require(targetStepX != stepwise.stepX, "targeStepX == stepX");
 
         require(targetStepY > 0 && targetStepY > PRECISION, "!targetStepY");
-        require(targetStepY != stepwiseDetails.stepY, "targeStepY == stepY");
+        require(targetStepY != stepwise.stepY, "targeStepY == stepY");
 
-        stepwiseDetails.targetStepY = targetStepY;
-        stepwiseDetails.targetStepX = targetStepX;
+        stepwise.targetStepY = targetStepY;
+        stepwise.targetStepX = targetStepX;
     }
 
-    function finishReconfigure(uint256 _hubId) external override {
+    /// @inheritdoc ICurve
+    function finishReconfigure(uint256 hubId) external override {
         require(msg.sender == hub, "!hub");
-        Stepwise storage stepwise_ = _stepwises[_hubId];
-        stepwise_.stepX = stepwise_.targetStepX;
-        stepwise_.stepY = stepwise_.targetStepY;
-        stepwise_.targetStepX = 0;
-        stepwise_.targetStepY = 0;
+        Stepwise storage stepwise = _stepwises[hubId];
+        stepwise.stepX = stepwise.targetStepX;
+        stepwise.stepY = stepwise.targetStepY;
+        stepwise.targetStepX = 0;
+        stepwise.targetStepY = 0;
     }
 
     function getStepWiseDetails(uint256 stepwise)
@@ -92,6 +94,7 @@ contract StepwiseCurveABDK is ICurve {
         return _stepwises[stepwise];
     }
 
+    /// @inheritdoc ICurve
     function getCurveDetails(uint256 stepwise)
         external
         view
@@ -106,168 +109,168 @@ contract StepwiseCurveABDK is ICurve {
         ];
     }
 
+    /// @inheritdoc ICurve
     function viewMeTokensMinted(
-        uint256 _assetsDeposited, // assets deposited
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         meTokensMinted = _viewMeTokensMinted(
-            _assetsDeposited,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
-            _supply,
-            _balancePooled
+            assetsDeposited,
+            stepwise.stepX,
+            stepwise.stepY,
+            supply,
+            balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewTargetMeTokensMinted(
-        uint256 _assetsDeposited, // assets deposited
-        uint256 _hubId, // hubId
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         meTokensMinted = _viewMeTokensMinted(
-            _assetsDeposited,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
-            _supply,
-            _balancePooled
+            assetsDeposited,
+            stepwise.targetStepX,
+            stepwise.targetStepY,
+            supply,
+            balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewAssetsReturned(
-        uint256 _meTokensBurned,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
+        uint256 meTokensBurned,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         assetsReturned = _viewAssetsReturned(
-            _meTokensBurned,
-            stepwiseDetails.stepX,
-            stepwiseDetails.stepY,
-            _supply,
-            _balancePooled
+            meTokensBurned,
+            stepwise.stepX,
+            stepwise.stepY,
+            supply,
+            balancePooled
         );
     }
 
+    /// @inheritdoc ICurve
     function viewTargetAssetsReturned(
-        uint256 _meTokensBurned,
-        uint256 _hubId,
-        uint256 _supply,
-        uint256 _balancePooled
+        uint256 meTokensBurned,
+        uint256 hubId,
+        uint256 supply,
+        uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwiseDetails = _stepwises[_hubId];
+        Stepwise memory stepwise = _stepwises[hubId];
         assetsReturned = _viewAssetsReturned(
-            _meTokensBurned,
-            stepwiseDetails.targetStepX,
-            stepwiseDetails.targetStepY,
-            _supply,
-            _balancePooled
+            meTokensBurned,
+            stepwise.targetStepX,
+            stepwise.targetStepY,
+            supply,
+            balancePooled
         );
     }
 
-    /// @notice Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
+    /// @dev Given a deposit (in the connector token), length of stepX, height of stepY, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
-    /// @param _assetsDeposited, // assets deposited
-    /// @param _stepX, // length of step (aka supply duration)
-    /// @param _stepY, // height of step (aka price delta)
-    /// @param _supply, // current supply
-    /// @param _balancePooled // current collateral amount
+    /// @param assetsDeposited, // assets deposited
+    /// @param stepX, // length of step (aka supply duration)
+    /// @param stepY, // height of step (aka price delta)
+    /// @param supply, // current supply
+    /// @param balancePooled // current collateral amount
     /// @return amount of meTokens minted
     function _viewMeTokensMinted(
-        uint256 _assetsDeposited, // assets deposited
-        uint256 _stepX, // length of step (aka supply duration)
-        uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
+        uint256 assetsDeposited,
+        uint256 stepX,
+        uint256 stepY,
+        uint256 supply,
+        uint256 balancePooled
     ) private view returns (uint256) {
         // special case for 0 deposit amount
-        if (_assetsDeposited == 0) {
+        if (assetsDeposited == 0) {
             return 0;
         }
 
-        // bytes16 assetsDeposited_ = _assetsDeposited.fromUInt();
-        bytes16 stepX_ = _stepX.fromUInt();
-        bytes16 stepY_ = _stepY.fromUInt();
+        // bytes16 assetsDeposited = assetsDeposited.fromUInt();
+        bytes16 stpX = stepX.fromUInt();
+        bytes16 stpY = stepY.fromUInt();
 
-        bytes16 totalBalancePooled_ = (_balancePooled + _assetsDeposited)
+        bytes16 totalBalancePooled = (balancePooled + assetsDeposited)
             .fromUInt();
 
         // Note:  .toUInt().fromUInt() is used to round down
-        bytes16 steps = (_two.mul(totalBalancePooled_).mul(stepX_).mul(stepX_))
-            .div((stepX_).mul(stepY_))
+        bytes16 steps = (_two.mul(totalBalancePooled).mul(stpX).mul(stpX))
+            .div((stpX).mul(stpY))
             .sqrt()
-            .div(stepX_)
+            .div(stpX)
             .toUInt()
             .fromUInt();
         bytes16 stepBalance = (steps.mul(steps).add(steps))
-            .mul(stepX_)
-            .mul(stepY_)
+            .mul(stpX)
+            .mul(stpY)
             .div(_two);
 
         bytes16 supplyAfterMint;
-        if (stepBalance.cmp(totalBalancePooled_) > 0) {
-            bytes16 intres = (stepBalance.sub(totalBalancePooled_))
+        if (stepBalance.cmp(totalBalancePooled) > 0) {
+            bytes16 intres = (stepBalance.sub(totalBalancePooled))
                 .mul(_precision)
-                .div(stepY_.mul(steps));
-            supplyAfterMint = stepX_.mul(steps).sub(intres);
+                .div(stpY.mul(steps));
+            supplyAfterMint = stpX.mul(steps).sub(intres);
         } else {
-            supplyAfterMint = stepX_.mul(steps).add(
-                (totalBalancePooled_.sub(stepBalance)).div(
-                    stepY_.mul(steps.add(_one)).div(_precision)
+            supplyAfterMint = stpX.mul(steps).add(
+                (totalBalancePooled.sub(stepBalance)).div(
+                    stpY.mul(steps.add(_one)).div(_precision)
                 )
             );
         }
 
-        return supplyAfterMint.toUInt() - _supply;
+        return supplyAfterMint.toUInt() - supply;
     }
 
-    /// @notice Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
+    /// @dev Given an amount of meTokens to burn, length of stepX, height of stepY, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @param _meTokensBurned, // meTokens burned
-    /// @param _stepX, // length of step (aka supply duration)
-    /// @param _stepY, // height of step (aka price delta)
-    /// @param _supply, // current supply
-    /// @param _balancePooled // current collateral amount
-    /// @return amount of collateral tokens received
+    /// @param meTokensBurned   meTokens burned
+    /// @param stepX            length of step (aka supply duration)
+    /// @param stepY            height of step (aka price delta)
+    /// @param supply           current supply
+    /// @param balancePooled    current collateral amount
+    /// @return                 amount of collateral tokens received
     function _viewAssetsReturned(
-        uint256 _meTokensBurned, // meTokens burned
-        uint256 _stepX, // length of step (aka supply duration)
-        uint256 _stepY, // height of step (aka price delta)
-        uint256 _supply, // current supply
-        uint256 _balancePooled // current collateral amount
+        uint256 meTokensBurned,
+        uint256 stepX,
+        uint256 stepY,
+        uint256 supply,
+        uint256 balancePooled
     ) private view returns (uint256) {
         // validate input
         require(
-            _supply > 0 && _balancePooled > 0 && _meTokensBurned <= _supply,
+            supply > 0 && balancePooled > 0 && meTokensBurned <= supply,
             "!valid"
         );
         // special case for 0 sell amount
-        if (_meTokensBurned == 0) {
+        if (meTokensBurned == 0) {
             return 0;
         }
 
-        bytes16 meTokensBurned_ = _meTokensBurned.fromUInt();
-        bytes16 stepX_ = _stepX.fromUInt();
-        bytes16 stepY_ = _stepY.fromUInt();
-        bytes16 supply_ = _supply.fromUInt();
+        bytes16 tokenBurned = meTokensBurned.fromUInt();
+        bytes16 stpX = stepX.fromUInt();
+        bytes16 stpY = stepY.fromUInt();
+        bytes16 sply = supply.fromUInt();
         // .toUInt().fromUInt() is used to round down
-        bytes16 newSteps = supply_
-            .sub(meTokensBurned_)
-            .div(stepX_)
-            .toUInt()
-            .fromUInt();
-        bytes16 newSupplyInStep = supply_
-            .sub(meTokensBurned_)
-            .sub(newSteps.mul(stepX_))
+        bytes16 newSteps = sply.sub(tokenBurned).div(stpX).toUInt().fromUInt();
+        bytes16 newSupplyInStep = sply
+            .sub(tokenBurned)
+            .sub(newSteps.mul(stpX))
             .div(_precision);
         bytes16 newCollateralInBalance = (
-            newSteps.mul(stepX_).mul(stepY_).div(_precision)
-        ).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stepY_));
-        return _balancePooled - newCollateralInBalance.toUInt();
+            newSteps.mul(stpX).mul(stpY).div(_precision)
+        ).add((newSteps.add(_one)).mul(newSupplyInStep).mul(stpY));
+        return balancePooled - newCollateralInBalance.toUInt();
     }
 }
