@@ -90,7 +90,8 @@ async function main() {
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
-    deployer.address // DAO
+    DAO.address, // DAO
+    diamond.address
   );
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
 
