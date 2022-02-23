@@ -938,12 +938,6 @@ const setup = async () => {
         const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
-        const meTokenTotalSupply = await meToken.totalSupply();
-        console.log(` AVANT
-meTokenTotalSupply):${toETHNumber(meTokenTotalSupply)}
-meTokenDetails.balancePooled):${toETHNumber(meTokenDetails.balancePooled)} 
-meTokenDetails.balanceLocked):${toETHNumber(meTokenDetails.balanceLocked)} 
-`);
         const tx = await foundry.mint(
           meTokenAddr1,
           tokenDeposited,
@@ -1026,13 +1020,11 @@ meTokenDetails.balanceLocked):${toETHNumber(meTokenDetails.balanceLocked)}
         const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
-        const rawAssetsReturned = Number(
-          calculateCollateralReturned(
-            toETHNumber(ownerMeToken),
-            toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
-          ).toFixed(12)
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenDetails.balancePooled),
+          reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
@@ -1064,7 +1056,7 @@ meTokenDetails.balanceLocked):${toETHNumber(meTokenDetails.balanceLocked)}
           toETHNumber(
             meTokenDetails.balanceLocked.sub(newMeTokenDetails.balanceLocked)
           )
-        ).to.be.approximately(lockedAmount, 1e-15);
+        ).to.be.approximately(lockedAmount, 1e-13);
       });
     });
   });
