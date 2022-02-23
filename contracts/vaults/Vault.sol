@@ -11,7 +11,7 @@ import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 /// @title meTokens basic Vault
-/// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
+/// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
 abstract contract Vault is IVault, ReentrancyGuard {
     using SafeERC20 for IERC20;

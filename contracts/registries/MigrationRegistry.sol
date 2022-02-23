@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title migration registry
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 /// @notice Keeps track of all used migration strategies
 contract MigrationRegistry is Ownable {
     // Initial vault, target vault, migration vault, approved status

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title generic registry interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IRegistry {
     /// @notice Event of approving an address
     /// @param addr address to approve

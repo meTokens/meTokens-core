@@ -5,7 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";
 
 /// @title Registry
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 /// @notice Keeps track of approved addresses for a given Registry
 contract Registry is IRegistry, Ownable {
     // NOTE: approved vault factories could be for

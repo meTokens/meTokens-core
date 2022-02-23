@@ -5,7 +5,7 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
-/// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
+/// @author Carter Carlson (@cartercarlson), Chris Robison (@CBobRobison), @zgorizzo69
 contract StepwiseCurveABDK is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for int256;

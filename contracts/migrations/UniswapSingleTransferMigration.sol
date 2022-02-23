@@ -13,7 +13,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
-/// @author Carl Farterson (@carlfarterson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
+/// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
 /// @notice create a vault that instantly swaps token A for token B
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
@@ -159,7 +159,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
             meTokenInfo.targetHubId
         );
-        uint256 amountIn = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
+        uint256 amountIn = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Only swap if
         // - There are tokens to swap

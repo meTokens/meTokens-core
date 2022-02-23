@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title MeTokens foundry interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IFoundry {
     /// @notice Event of minting a meToken
     /// @param meToken         address of meToken minted

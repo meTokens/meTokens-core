@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title meToken interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 /// @dev Required for all meTokens
 interface IMeToken {
     // TODO: are these needed, or can we do IERC20?

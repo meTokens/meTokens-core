@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title meToken factory interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IMeTokenFactory {
     /// @notice Create a meToken
     /// @param name        name of meToken

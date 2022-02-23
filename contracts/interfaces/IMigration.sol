@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title Generic migration vault interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IMigration {
     /// @notice Method to trigger actions from the migration vault if needed
     /// @param meToken address of meToken

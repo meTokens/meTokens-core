@@ -6,7 +6,7 @@ import "./ICurve.sol";
 import "../libs/Details.sol";
 
 /// @title MeTokens hub interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IHub {
     /// @notice Event of registering a hub
     /// @param id                  unique hub identifer

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title Vanilla erc20 vault interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface ISingleAssetVault {
     /// @notice Event of starting a meTokens' migration to a new vault
     /// @param meToken address of meToken

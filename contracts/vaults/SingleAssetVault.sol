@@ -12,7 +12,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title Vault
-/// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
+/// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Implementation contract for SingleAssetFactory.sol
 contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;

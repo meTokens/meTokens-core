@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
 /// @title meToken registry interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IMeTokenRegistry {
     /// @notice Event of subscribing (creating) a new meToken
     /// @param meToken         address of created meToken

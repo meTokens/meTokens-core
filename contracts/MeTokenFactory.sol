@@ -5,7 +5,7 @@ import {IMeTokenFactory} from "./interfaces/IMeTokenFactory.sol";
 import {MeToken} from "./MeToken.sol";
 
 /// @title meToken factory
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 /// @notice This contract creates and deploys a users' meToken
 contract MeTokenFactory is IMeTokenFactory {
     /// @notice create a meToken

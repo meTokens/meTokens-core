@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title generic vault interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 abstract contract IVault {
     /// @notice Event when an asset is deposited to the vault
     /// @param from            address which is depositing the asset

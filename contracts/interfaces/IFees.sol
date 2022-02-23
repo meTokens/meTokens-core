@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title MeTokens protocol fee interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IFees {
     /// @notice Set meToken protocol BurnBuyer fee
     /// @param fee new fee

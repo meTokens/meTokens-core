@@ -19,7 +19,7 @@ import {HubInfo, MeTokenInfo, Modifiers} from "../libs/Details.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @title meToken registry
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 /// @notice This contract tracks basic meTokenInformation about all meTokens
 contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard {
     event Subscribe(

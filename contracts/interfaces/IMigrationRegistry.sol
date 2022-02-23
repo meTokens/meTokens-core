@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title meToken migration registry interface
-/// @author Carl Farterson (@carlfarterson)
+/// @author Carter Carlson (@cartercarlson)
 interface IMigrationRegistry {
     /// @notice Event of approving a meToken migration route
     /// @param initialVault    vault for meToken to start migration from
