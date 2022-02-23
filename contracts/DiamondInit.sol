@@ -10,7 +10,11 @@ import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {AppStorage} from "./libs/Details.sol";
 
+/// @title Diamond Init
+/// @author Carter Carlson (@cartercarlson), @zgorizzo69
+/// @notice Contract to initialize state variables, similar to OZ's initilize()
 contract DiamondInit {
+    address private immutable owner;
     struct Args {
         uint256 mintFee;
         uint256 burnBuyerFee;
@@ -25,10 +29,14 @@ contract DiamondInit {
         address meTokenFactory;
     }
 
+    constructor() {
+        owner = msg.sender;
+    }
+
     AppStorage internal s; // solhint-disable-line
 
-    // TODO: access control?
     function init(Args memory _args) external {
+        require(msg.sender == owner, "!owner");
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
