@@ -137,10 +137,7 @@ const setup = async () => {
         "UniswapSingleTransferMigration",
         undefined,
         account0.address,
-        foundry.address,
-        hub.address,
-        meTokenRegistry.address,
-        migrationRegistry.address
+        hub.address // diamond
       );
       await migrationRegistry.approve(
         singleAssetVault.address,

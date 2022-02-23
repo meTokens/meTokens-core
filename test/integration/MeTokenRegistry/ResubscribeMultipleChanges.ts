@@ -153,11 +153,8 @@ const setup = async () => {
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
         undefined,
-        account0.address,
-        foundry.address,
-        hub.address,
-        meTokenRegistry.address,
-        migrationRegistry.address
+        account0.address, // DAO
+        foundry.address // diamond
       );
       await migrationRegistry.approve(
         singleAssetVault.address,

@@ -1,19 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "../libs/Details.sol";
-import "../vaults/Vault.sol";
-import "../interfaces/IMigration.sol";
-import "../interfaces/ISingleAssetVault.sol";
-
 import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Vault} from "../vaults/Vault.sol";
-import {IMigration} from "../interfaces/IMigration.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
+import {IHub} from "../interfaces/IHub.sol";
+import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
@@ -48,25 +43,18 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
 
-    constructor(
-        address dao,
-        address foundry,
-        IHub hub,
-        IMeTokenRegistry meTokenRegistry,
-        IMigrationRegistry migrationRegistry
-    ) Vault(dao, foundry, hub, meTokenRegistry, migrationRegistry) {}
+    constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     function initMigration(address meToken, bytes memory encodedArgs)
         external
         override
     {
-        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        require(msg.sender == diamond, "!diamond");
 
-        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
-            meToken
-        );
-        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
-        HubInfo memory targetHubInfo = hub.getHubDetails(
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
             meTokenInfo.targetHubId
         );
 
@@ -84,10 +72,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     function poke(address meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
-            meToken
-        );
-        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
         if (
             usts.soonest != 0 && block.timestamp > usts.soonest && !usts.started
         ) {
@@ -103,19 +90,18 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         nonReentrant
         returns (uint256 amountOut)
     {
-        require(msg.sender == address(meTokenRegistry), "!meTokenRegistry");
+        require(msg.sender == diamond, "!diamond");
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         require(usts.soonest < block.timestamp, "timestamp < soonest");
 
-        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
-            meToken
-        );
-        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
-        HubInfo memory targetHubInfo = hub.getHubDetails(
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
             meTokenInfo.targetHubId
         );
 
-        // TODO: require migration hasn't finished, block.timestamp > meToken.startTime
+        // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts.started) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
@@ -152,9 +138,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         (uint256 soon, uint24 fee) = abi.decode(encodedArgs, (uint256, uint24));
         // Too soon
         if (soon < block.timestamp) return false;
-        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
-            meToken
-        );
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
@@ -165,17 +150,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
+    /// @dev parent call must have reentrancy check
     function _swap(address meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory meTokenInfo = meTokenRegistry.getMeTokenDetails(
-            meToken
-        );
-        HubInfo memory hubInfo = hub.getHubDetails(meTokenInfo.hubId);
-        HubInfo memory targetHubInfo = hub.getHubDetails(
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
+        HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
             meTokenInfo.targetHubId
         );
-        uint256 amountIn = meTokenInfo.balancePooled +
-            meTokenInfo.balanceLocked;
+        uint256 amountIn = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
 
         // Only swap if
         // - There are tokens to swap
@@ -214,6 +198,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         amountOut = _router.exactInputSingle(params);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
-        meTokenRegistry.updateBalances(meToken, amountOut);
+        IMeTokenRegistry(diamond).updateBalances(meToken, amountOut);
     }
 }

@@ -5,8 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vault} from "./Vault.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
-import {IHub} from "../interfaces/IHub.sol";
 import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IHub} from "../interfaces/IHub.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
@@ -17,25 +17,24 @@ import {HubInfo} from "../libs/LibHub.sol";
 contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;
 
-    constructor(
-        address dao,
-        address foundry,
-        IHub hub,
-        IMeTokenRegistry meTokenRegistry,
-        IMigrationRegistry migrationRegistry
-    ) Vault(dao, foundry, hub, meTokenRegistry, migrationRegistry) {}
+    constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     // After warmup period, if there's a migration vault,
     // Send meTokens' collateral to the migration
+    /// @dev not adding reentrancy guard as no state changes after external call
     function startMigration(address meToken) external override {
-        MeTokenInfo memory info = meTokenRegistry.getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = hub.getHubDetails(info.hubId);
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
+            .getMeTokenDetails(meToken);
+        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
 
-        require(msg.sender == (info.migration), "!migration");
-        uint256 balance = info.balancePooled + info.balanceLocked;
+        require(msg.sender == (meTokenInfo.migration), "!migration");
+        uint256 balance = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
 
-        if (info.migration != address(0) && address(this) != info.migration) {
-            IERC20(hubInfo.asset).safeTransfer(info.migration, balance);
+        if (
+            meTokenInfo.migration != address(0) &&
+            address(this) != meTokenInfo.migration
+        ) {
+            IERC20(hubInfo.asset).safeTransfer(meTokenInfo.migration, balance);
         }
         emit StartMigration(meToken);
     }

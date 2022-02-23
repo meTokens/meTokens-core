@@ -961,10 +961,7 @@ const setup = async () => {
           "UniswapSingleTransferMigration",
           undefined, //no libs
           account1.address, // DAO
-          foundry.address, // foundry
-          hub.address, // hub
-          meTokenRegistry.address, //IMeTokenRegistry
-          migrationRegistry.address //IMigrationRegistry
+          foundry.address // diamond
         );
         const block = await ethers.provider.getBlock("latest");
         // earliestSwapTime 10 hour
@@ -1096,11 +1093,8 @@ const setup = async () => {
         migration = await deploy<SameAssetTransferMigration>(
           "SameAssetTransferMigration",
           undefined,
-          account0.address,
-          foundry.address,
-          hub.address,
-          meTokenRegistry.address,
-          migrationRegistry.address
+          account0.address, // DAO
+          foundry.address // diamond
         );
 
         await migrationRegistry.approve(
@@ -1196,11 +1190,8 @@ const setup = async () => {
         migration = await deploy<UniswapSingleTransferMigration>(
           "UniswapSingleTransferMigration",
           undefined,
-          account0.address,
-          foundry.address,
-          hub.address,
-          meTokenRegistry.address,
-          migrationRegistry.address
+          account0.address, // DAO
+          foundry.address // diamond
         );
 
         await migrationRegistry.approve(

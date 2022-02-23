@@ -2,7 +2,6 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { getContractAt } from "../../utils/helpers";
@@ -12,6 +11,7 @@ import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
 import { MeToken } from "../../../artifacts/types/MeToken";
 import { FeesFacet } from "../../../artifacts/types/FeesFacet";
+import { Diamond } from "../../../artifacts/types/Diamond";
 
 const setup = async () => {
   describe("Vault.sol", () => {
@@ -22,9 +22,8 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let dao: SignerWithAddress;
-    let migrationRegistry: MigrationRegistry;
+    let diamond: Diamond;
     let foundry: FoundryFacet;
-    let hub: HubFacet;
     let meTokenRegistry: MeTokenRegistryFacet;
     let tokenHolder: Signer;
     let meToken: MeToken;
@@ -59,14 +58,13 @@ const setup = async () => {
 
       ({
         token,
-        hub,
+        diamond,
         foundry,
         tokenHolder,
         account0,
         account1,
         account2,
         meTokenRegistry,
-        migrationRegistry,
         singleAssetVault: vault,
         fee: fees,
       } = await hubSetup(
@@ -102,26 +100,18 @@ const setup = async () => {
 
     describe("Check initial state", () => {
       it("check initial state", async () => {
-        expect(await vault.owner()).to.be.equal(account0.address);
         expect(await vault.PRECISION()).to.be.equal(precision);
         expect(await vault.dao()).to.be.equal(dao.address);
-        expect(await vault.foundry()).to.be.equal(foundry.address);
-        expect(await vault.hub()).to.be.equal(hub.address);
-        expect(await vault.meTokenRegistry()).to.be.equal(
-          meTokenRegistry.address
-        );
-        expect(await vault.migrationRegistry()).to.be.equal(
-          migrationRegistry.address
-        );
+        expect(await vault.diamond()).to.be.equal(diamond.address);
         expect(await vault.accruedFees(DAI)).to.be.equal(0);
       });
     });
 
     describe("handleDeposit()", () => {
-      it("Reverts when not called by foundry", async () => {
+      it("Reverts when not called by diamond", async () => {
         await expect(
           vault.handleDeposit(account0.address, token.address, 1, 1)
-        ).to.be.revertedWith("!foundry");
+        ).to.be.revertedWith("!diamond");
       });
       it("Transfer asset from recipient to vault", async () => {
         const accountTokenBefore = await token.balanceOf(account0.address);
@@ -161,10 +151,10 @@ const setup = async () => {
 
     describe("handleWithdrawal()", () => {
       let burnFee: BigNumber;
-      it("Reverts when not called by foundry", async () => {
+      it("Reverts when not called by diamond", async () => {
         await expect(
           vault.handleWithdrawal(account0.address, token.address, 1, 1)
-        ).to.be.revertedWith("!foundry");
+        ).to.be.revertedWith("!diamond");
       });
       it("Transfer asset from vault to recipient", async () => {
         const accountTokenBefore = await token.balanceOf(account0.address);

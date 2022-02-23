@@ -173,11 +173,8 @@ const setup = async () => {
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
         undefined,
-        account0.address,
-        foundry.address,
-        hub.address,
-        meTokenRegistry.address,
-        migrationRegistry.address
+        account0.address, // DAO
+        foundry.address // diamond
       );
       await migration.deployed();
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -937,16 +934,7 @@ const setup = async () => {
         expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
       });
     });
-    describe("balancePool", () => {
-      xit("Fails updateBalancePooled() if not foundry", async () => {
-        // await expect(
-        //   meTokenRegistry.updateBalancePooled(
-        //     true,
-        //     meTokenAddr1,
-        //     account2.address
-        //   )
-        // ).to.revertedWith("!foundry");
-      });
+    describe("updateBalance", () => {
       it("updateBalancePooled()", async () => {
         await weth
           .connect(tokenHolder)
@@ -981,15 +969,6 @@ const setup = async () => {
         ).to.be.equal(amountDepositedAfterFee);
       });
 
-      xit("Fails updateBalanceLocked() if not foundry", async () => {
-        // await expect(
-        //   meTokenRegistry.updateBalanceLocked(
-        //     true,
-        //     meTokenAddr1,
-        //     account2.address
-        //   )
-        // ).to.revertedWith("!foundry");
-      });
       it("updateBalanceLocked()", async () => {
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
