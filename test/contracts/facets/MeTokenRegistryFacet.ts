@@ -969,7 +969,7 @@ const setup = async () => {
         ).to.be.equal(amountDepositedAfterFee);
       });
 
-      it("updateBalanceLocked()", async () => {
+      it("updateBalanceLocked() [TODO]", async () => {
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerMeToken = await meToken.balanceOf(account0.address);
@@ -1010,7 +1010,7 @@ const setup = async () => {
           newMeTokenDetails.balanceLocked.sub(meTokenDetails.balanceLocked)
         ).to.be.equal(lockedAmount);
       });
-      it("updateBalanceLocked() when owner burns", async () => {
+      it("updateBalanceLocked() when owner burns [TODO]", async () => {
         await weth
           .connect(tokenHolder)
           .transfer(account1.address, tokenDeposited);
