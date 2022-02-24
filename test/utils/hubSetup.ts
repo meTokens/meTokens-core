@@ -116,8 +116,8 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
         diamond
       )) as unknown as ICurve;
     case "StepwiseCurve":
-      return (await deploy<StepwiseCurveABDK>(
-        "StepwiseCurveABDK",
+      return (await deploy<StepwiseCurve>(
+        "StepwiseCurve",
         undefined,
         diamond
       )) as unknown as ICurve;
