@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @title meToken migration registry interface
+/// @title MeToken migration registry interface
 /// @author Carter Carlson (@cartercarlson)
 interface IMigrationRegistry {
     /// @notice Event of approving a meToken migration route

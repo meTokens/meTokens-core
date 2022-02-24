@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @title Vanilla erc20 vault interface
+/// @title Single Asset Vault interface
 /// @author Carter Carlson (@cartercarlson)
+/// @dev This builds on the basic IVault
 interface ISingleAssetVault {
     /// @notice Event of starting a meTokens' migration to a new vault
     /// @param meToken address of meToken
     event StartMigration(address meToken);
 
-    /// @notice Start a meTokens' migration to a new vault
+    /// @notice After warmup period, if there's a migration vault,
+    ///          send meTokens' collateral to the migration
+    /// @dev not adding reentrancy guard as no state changes after external call
     /// @param meToken address of meToken
     function startMigration(address meToken) external;
 }

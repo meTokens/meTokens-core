@@ -2,10 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
-import {IERC173} from "../interfaces/IERC173.sol";
 import {Modifiers} from "../libs/Details.sol";
 
-// TODO: IERC173
 contract OwnershipFacet is Modifiers {
     function setDiamondController(address newController)
         external

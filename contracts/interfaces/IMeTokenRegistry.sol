@@ -41,10 +41,6 @@ interface IMeTokenRegistry {
     /// @param meToken address of meToken
     event CancelResubscribe(address indexed meToken);
 
-    /// @notice Event of finishing a meToken resubscription
-    /// @param meToken address of meToken
-    event FinishResubscribe(address indexed meToken);
-
     /// @notice Event of updating a meToken's balancePooled and balanceLocked
     /// @param meToken     address of meToken
     /// @param newBalance  rate to multiply balances by
@@ -66,18 +62,6 @@ interface IMeTokenRegistry {
     /// @param to      address to own the meToken
     /// @param meToken address of meToken
     event ClaimMeTokenOwnership(address from, address to, address meToken);
-
-    /// @notice Event of updating a meToken's balancePooled
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
-    event UpdateBalancePooled(bool add, address meToken, uint256 amount);
-
-    /// @notice Event of updating a meToken's balanceLocked
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
-    event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
 
     /// @notice Create and subscribe a meToken to a hub
     /// @param name            name of meToken
@@ -119,26 +103,6 @@ interface IMeTokenRegistry {
     /// @param meToken     address of meToken
     /// @param newBalance  rate to multiply balances by
     function updateBalances(address meToken, uint256 newBalance) external;
-
-    /// @notice Update a meToken's balancePooled
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
-    function updateBalancePooled(
-        bool add,
-        address meToken,
-        uint256 amount
-    ) external;
-
-    /// @notice Update a meToken's balanceLocked
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
-    function updateBalanceLocked(
-        bool add,
-        address meToken,
-        uint256 amount
-    ) external;
 
     /// @notice Transfer meToken ownership to a new owner
     /// @param newOwner address to claim meToken ownership of msg.sender

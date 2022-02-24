@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC173} from "./interfaces/IERC173.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
@@ -59,6 +58,5 @@ contract DiamondInit {
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 }

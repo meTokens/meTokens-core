@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @title generic vault interface
+/// @title Generic vault interface
 /// @author Carter Carlson (@cartercarlson)
 abstract contract IVault {
     /// @notice Event when an asset is deposited to the vault

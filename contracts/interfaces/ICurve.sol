@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 /// @title Generic Curve interface
-/// @author Carter Carlson (@cartercarlson)
+/// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @dev Required for all Curves
 interface ICurve {
     /// @notice Event when curveDetails are updated from target values to actual values

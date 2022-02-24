@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import "./IVault.sol";
-import "./ICurve.sol";
-import "../libs/Details.sol";
+import {IVault} from "./IVault.sol";
+import {ICurve} from "./ICurve.sol";
+import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title MeTokens hub interface
 /// @author Carter Carlson (@cartercarlson)
@@ -105,7 +105,7 @@ interface IHub {
 
     /// @notice Finish updating a hub
     /// @param id  unique hub identifier
-    /// @return     details of hub
+    /// @return details of hub
     function finishUpdate(uint256 id) external returns (HubInfo memory);
 
     /// @notice Get the details of a hub

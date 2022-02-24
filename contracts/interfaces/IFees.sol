@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @title MeTokens protocol fee interface
+/// @title MeTokens fee interface
 /// @author Carter Carlson (@cartercarlson)
 interface IFees {
     /// @notice Set meToken protocol BurnBuyer fee
