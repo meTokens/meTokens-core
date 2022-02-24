@@ -159,7 +159,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
             meTokenInfo.targetHubId
         );
-        uint256 amountIn = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
+        uint256 amountIn = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Only swap if
         // - There are tokens to swap

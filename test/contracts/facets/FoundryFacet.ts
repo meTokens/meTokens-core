@@ -1,8 +1,8 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../artifacts/types/HubFacet";
-import { SameAssetTransferMigration } from "../../artifacts/types/SameAssetTransferMigration";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { SameAssetTransferMigration } from "../../../artifacts/types/SameAssetTransferMigration";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
@@ -12,20 +12,20 @@ import {
   fromETHNumber,
   getContractAt,
   toETHNumber,
-} from "../utils/helpers";
+} from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
-import { BancorABDK } from "../../artifacts/types/BancorABDK";
-import { ERC20 } from "../../artifacts/types/ERC20";
-import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
-import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
-import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { mineBlock } from "../utils/hardhatNode";
-import { MeToken } from "../../artifacts/types/MeToken";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { ERC20 } from "../../../artifacts/types/ERC20";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
+import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { mineBlock } from "../../utils/hardhatNode";
+import { MeToken } from "../../../artifacts/types/MeToken";
 import { expect } from "chai";
-import { UniswapSingleTransferMigration } from "../../artifacts/types/UniswapSingleTransferMigration";
-import { hubSetup } from "../utils/hubSetup";
-import { ICurve } from "../../artifacts/types";
+import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
+import { hubSetup } from "../../utils/hubSetup";
+import { ICurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("FoundryFacet.sol", () => {

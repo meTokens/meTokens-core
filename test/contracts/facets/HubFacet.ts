@@ -1,19 +1,22 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { HubFacet } from "../../artifacts/types/HubFacet";
-import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
-import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
+import { HubFacet } from "../../../artifacts/types/HubFacet";
+import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
+import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BancorABDK } from "../../artifacts/types/BancorABDK";
-import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { deploy, getContractAt } from "../utils/helpers";
-import { hubSetupWithoutRegister, tranferFromWhale } from "../utils/hubSetup";
+import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
+import { deploy, getContractAt } from "../../utils/helpers";
+import {
+  hubSetupWithoutRegister,
+  tranferFromWhale,
+} from "../../utils/hubSetup";
 import { expect } from "chai";
-import { mineBlock } from "../utils/hardhatNode";
-import { ERC20 } from "../../artifacts/types/ERC20";
+import { mineBlock } from "../../utils/hardhatNode";
+import { ERC20 } from "../../../artifacts/types/ERC20";
 import { Signer } from "ethers";
-import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
-import { MeToken } from "../../artifacts/types/MeToken";
-import { ICurve } from "../../artifacts/types";
+import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
+import { MeToken } from "../../../artifacts/types/MeToken";
+import { ICurve } from "../../../artifacts/types";
 
 /*
 const paginationFactory = await ethers.getContractFactory("Pagination", {});
