@@ -6,12 +6,12 @@ pragma solidity ^0.8.0;
 /// @dev This builds on the basic IVault
 interface ISingleAssetVault {
     /// @notice Event of starting a meTokens' migration to a new vault
-    /// @param meToken address of meToken
+    /// @param meToken Address of meToken
     event StartMigration(address meToken);
 
     /// @notice After warmup period, if there's a migration vault,
     ///          send meTokens' collateral to the migration
-    /// @dev not adding reentrancy guard as no state changes after external call
-    /// @param meToken address of meToken
+    /// @dev Reentrancy guard not needed as no state changes after external call
+    /// @param meToken Address of meToken
     function startMigration(address meToken) external;
 }

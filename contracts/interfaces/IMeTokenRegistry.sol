@@ -3,18 +3,18 @@ pragma solidity ^0.8.0;
 
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
-/// @title meToken registry interface
+/// @title MeToken registry interface
 /// @author Carter Carlson (@cartercarlson)
 interface IMeTokenRegistry {
     /// @notice Event of subscribing (creating) a new meToken
-    /// @param meToken         address of created meToken
-    /// @param owner           address of meToken owner
-    /// @param minted          amount of meToken minted to owner
-    /// @param asset           address of underlying asset
-    /// @param assetsDeposited amount of assets deposited
-    /// @param name            name of meToken
-    /// @param symbol          symbol of meToken
-    /// @param hubId           unique hub identifier
+    /// @param meToken         Address of created meToken
+    /// @param owner           Address of meToken owner
+    /// @param minted          Amount of meToken minted to owner
+    /// @param asset           Address of underlying asset
+    /// @param assetsDeposited Amount of assets deposited
+    /// @param name            Name of meToken
+    /// @param symbol          Symbol of meToken
+    /// @param hubId           Unique hub identifier
     event Subscribe(
         address indexed meToken,
         address indexed owner,
@@ -27,9 +27,9 @@ interface IMeTokenRegistry {
     );
 
     /// @notice Event of initializing a meToken subscription to a different hub
-    /// @param meToken                 address of meToken
-    /// @param targetHubId             target hub to suscribe to
-    /// @param migration               address of migration vault
+    /// @param meToken                 Address of meToken
+    /// @param targetHubId             Target hub to suscribe to
+    /// @param migration               Address of migration vault
     /// @param encodedMigrationArgs    additional encoded migration vault arguments
     event InitResubscribe(
         address indexed meToken,
@@ -38,36 +38,36 @@ interface IMeTokenRegistry {
         bytes encodedMigrationArgs
     );
     /// @notice Event of canceling a meToken resubscription
-    /// @param meToken address of meToken
+    /// @param meToken Address of meToken
     event CancelResubscribe(address indexed meToken);
 
     /// @notice Event of updating a meToken's balancePooled and balanceLocked
-    /// @param meToken     address of meToken
-    /// @param newBalance  rate to multiply balances by
+    /// @param meToken     Address of meToken
+    /// @param newBalance  Rate to multiply balances by
     event UpdateBalances(address meToken, uint256 newBalance);
 
     /// @notice Event of transfering meToken ownership to a new owner
-    /// @param from    address of current meToken owner
-    /// @param to      address to own the meToken
-    /// @param meToken address of meToken
+    /// @param from    Address of current meToken owner
+    /// @param to      Address to own the meToken
+    /// @param meToken Address of meToken
     event TransferMeTokenOwnership(address from, address to, address meToken);
 
     /// @notice Event of cancelling the transfer of meToken ownership
-    /// @param from    address of current meToken owner
-    /// @param meToken address of meToken
+    /// @param from    Address of current meToken owner
+    /// @param meToken Address of meToken
     event CancelTransferMeTokenOwnership(address from, address meToken);
 
     /// @notice Event of claiming the transfer of meToken ownership
-    /// @param from    address of current meToken owner
-    /// @param to      address to own the meToken
-    /// @param meToken address of meToken
+    /// @param from    Address of current meToken owner
+    /// @param to      Address to own the meToken
+    /// @param meToken Address of meToken
     event ClaimMeTokenOwnership(address from, address to, address meToken);
 
     /// @notice Create and subscribe a meToken to a hub
-    /// @param name            name of meToken
-    /// @param symbol          symbol of meToken
-    /// @param hubId           initial hub to subscribe to
-    /// @param assetsDeposited amount of assets deposited at meToken initialization
+    /// @param name            Name of meToken
+    /// @param symbol          Symbol of meToken
+    /// @param hubId           Initial hub to subscribe to
+    /// @param assetsDeposited Amount of assets deposited at meToken initialization
     function subscribe(
         string calldata name,
         string calldata symbol,
@@ -76,10 +76,10 @@ interface IMeTokenRegistry {
     ) external;
 
     /// @notice Initialize a meToken resubscription to a new hub
-    /// @param meToken                 address of meToken
-    /// @param targetHubId             hub which meToken is resubscribing to
-    /// @param migration               address of migration vault
-    /// @param encodedMigrationArgs    additional encoded migration vault arguments
+    /// @param meToken                 Address of meToken
+    /// @param targetHubId             Hub which meToken is resubscribing to
+    /// @param migration               Address of migration vault
+    /// @param encodedMigrationArgs    Additional encoded migration vault arguments
     function initResubscribe(
         address meToken,
         uint256 targetHubId,
@@ -88,53 +88,53 @@ interface IMeTokenRegistry {
     ) external;
 
     /// @notice Cancel a meToken resubscription
-    /// @dev can only be done during the warmup period
-    /// @param meToken address of meToken
+    /// @dev Can only be done during the warmup period
+    /// @param meToken Address of meToken
     function cancelResubscribe(address meToken) external;
 
     /// @notice Finish a meToken's resubscription to a new hub
-    /// @param meToken  address of meToken
-    /// @return         details of meToken
+    /// @param meToken  Address of meToken
+    /// @return         Details of meToken
     function finishResubscribe(address meToken)
         external
         returns (MeTokenInfo memory);
 
     /// @notice Update a meToken's balanceLocked and balancePooled
-    /// @param meToken     address of meToken
-    /// @param newBalance  rate to multiply balances by
+    /// @param meToken     Address of meToken
+    /// @param newBalance  Rate to multiply balances by
     function updateBalances(address meToken, uint256 newBalance) external;
 
     /// @notice Transfer meToken ownership to a new owner
-    /// @param newOwner address to claim meToken ownership of msg.sender
+    /// @param newOwner Address to claim meToken ownership of msg.sender
     function transferMeTokenOwnership(address newOwner) external;
 
     /// @notice Cancel the transfer of meToken ownership
     function cancelTransferMeTokenOwnership() external;
 
     /// @notice Claim the transfer of meToken ownership
-    /// @param from address of current meToken owner
+    /// @param from Address of current meToken owner
     function claimMeTokenOwnership(address from) external;
 
-    /// @notice View to return address of meToken owned by owner
-    /// @param owner   address of meToken owner
-    /// @return         address of meToken
+    /// @notice View to return Address of meToken owned by owner
+    /// @param owner    Address of meToken owner
+    /// @return         Address of meToken
     function getOwnerMeToken(address owner) external view returns (address);
 
-    /// @notice View to see the address to claim meToken ownership from from
-    /// @param from address to transfer meToken ownership
-    /// @return     address of pending meToken owner
+    /// @notice View to see the address to claim meToken ownership from
+    /// @param from Address to transfer meToken ownership
+    /// @return     Address of pending meToken owner
     function getPendingOwner(address from) external view returns (address);
 
     /// @notice View to get details of a meToken
-    /// @param meToken      address of meToken queried
-    /// @return meToken     details of meToken
+    /// @param meToken      Address of meToken queried
+    /// @return meToken     Details of meToken
     function getMeTokenDetails(address meToken)
         external
         view
         returns (MeTokenInfo memory);
 
     /// @notice View to return if an address owns a meToken or not
-    /// @param owner    address to query
-    /// @return         true if owns a meToken, else false
+    /// @param owner    Address to query
+    /// @return         True if owns a meToken, else false
     function isOwner(address owner) external view returns (bool);
 }

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-/// @title meToken factory interface
+/// @title MeToken factory interface
 /// @author Carter Carlson (@cartercarlson)
 interface IMeTokenFactory {
     /// @notice Create a meToken
-    /// @param name        name of meToken
-    /// @param symbol      symbol of meToken
-    /// @param diamond     address of diamond
+    /// @param name        Name of meToken
+    /// @param symbol      Symbol of meToken
+    /// @param diamond     Address of diamond
     function create(
         string calldata name,
         string calldata symbol,

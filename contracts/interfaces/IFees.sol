@@ -5,23 +5,23 @@ pragma solidity ^0.8.0;
 /// @author Carter Carlson (@cartercarlson)
 interface IFees {
     /// @notice Set meToken protocol BurnBuyer fee
-    /// @param fee new fee
+    /// @param fee New fee
     function setBurnBuyerFee(uint256 fee) external;
 
     /// @notice Set meToken protocol BurnOwner fee
-    /// @param fee new fee
+    /// @param fee New fee
     function setBurnOwnerFee(uint256 fee) external;
 
     /// @notice Set meToken protocol Transfer fee
-    /// @param fee new fee
+    /// @param fee New fee
     function setTransferFee(uint256 fee) external;
 
     /// @notice Set meToken protocol Interest fee
-    /// @param fee new fee
+    /// @param fee New fee
     function setInterestFee(uint256 fee) external;
 
     /// @notice Set meToken protocol Yield fee
-    /// @param fee new fee
+    /// @param fee New fee
     function setYieldFee(uint256 fee) external;
 
     /// @notice Get mint fee
