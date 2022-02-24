@@ -1,6 +1,6 @@
 import { Contract } from "@ethersproject/contracts";
 import { ethers, getNamedAccounts } from "hardhat";
-import { BancorABDK } from "../../artifacts/types/BancorABDK";
+import { BancorABDK, StepwiseCurveABDK } from "../../artifacts/types";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
@@ -23,7 +23,6 @@ import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
-import { BancorPower, StepwiseCurve } from "../../artifacts/types";
 
 export async function hubSetup(
   encodedCurveDetails: string,
@@ -115,15 +114,9 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
         undefined,
         diamond
       )) as unknown as ICurve;
-    case "BancorPower":
-      return (await deploy<BancorPower>(
-        "BancorPower",
-        undefined,
-        diamond
-      )) as unknown as ICurve;
     case "StepwiseCurve":
-      return (await deploy<StepwiseCurve>(
-        "StepwiseCurve",
+      return (await deploy<StepwiseCurveABDK>(
+        "StepwiseCurveABDK",
         undefined,
         diamond
       )) as unknown as ICurve;
