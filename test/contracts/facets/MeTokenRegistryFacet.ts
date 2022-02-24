@@ -91,9 +91,9 @@ const setup = async () => {
     let encodedMigrationArgs: string;
     let receipt: ContractReceipt;
 
-    const hubId = 1;
-    const hubId2 = 2;
-    const hubId3 = 3;
+    const hubId = 1; // DAI
+    const hubId2 = 2; // WETH
+    const hubId3 = 3; // USDT
     const MAX_WEIGHT = 1000000;
     const PRECISION = BigNumber.from(10).pow(18);
     const reserveWeight = MAX_WEIGHT / 2;
@@ -142,7 +142,6 @@ const setup = async () => {
         refundRatio,
         "BancorCurve"
       ));
-
       await hub.register(
         account0.address,
         WETH,
@@ -162,9 +161,6 @@ const setup = async () => {
         encodedVaultArgs
       );
       await hub.setHubWarmup(hubWarmup);
-      /*
-      await hub.setHubCooldown(coolDown);
-      await hub.setHubDuration(duration); */
       await meTokenRegistry.setMeTokenWarmup(warmup - 1);
       await meTokenRegistry.setMeTokenCooldown(coolDown + 1);
       await meTokenRegistry.setMeTokenDuration(duration - 1);
@@ -291,7 +287,6 @@ const setup = async () => {
         meTokenAddr1 = await meTokenRegistry.getOwnerMeToken(account1.address);
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         // should be greater than 0
-
         const calculatedRes = calculateTokenReturnedFromZero(
           20,
           toETHNumber(baseY),
@@ -465,7 +460,6 @@ const setup = async () => {
         );
         await expect(tx).to.be.revertedWith("same hub");
       });
-
       it("Fails if resubscribing to inactive hub", async () => {
         const meToken = meTokenAddr0;
         const targetHubId = 0; // inactive hub
@@ -480,9 +474,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
       it("Fails if current hub currently updating", async () => {
-        await (
-          await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x")
-        ).wait();
+        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -491,12 +483,10 @@ const setup = async () => {
           "0x"
         );
         await expect(tx).to.be.revertedWith("hub updating");
-        await (await hub.cancelUpdate(hubId)).wait();
+        await hub.cancelUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
-        await (
-          await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x")
-        ).wait();
+        await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x");
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -505,7 +495,7 @@ const setup = async () => {
           "0x"
         );
         await expect(tx).to.be.revertedWith("targetHub updating");
-        await (await hub.cancelUpdate(hubId2)).wait();
+        await hub.cancelUpdate(hubId2);
       });
       it("Fails if attempting to use an unapproved migration", async () => {
         await expect(
@@ -534,7 +524,7 @@ const setup = async () => {
           )
         ).to.be.revertedWith("Invalid encodedMigrationArgs");
       });
-      it("Passes when current and target hub have same asset", async () => {
+      it("Fails when current and target hub have same asset", async () => {
         const tx = meTokenRegistry.callStatic.initResubscribe(
           meToken,
           hubId3,
@@ -579,6 +569,7 @@ const setup = async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
           meTokenAddr0
         );
+
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
         expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
         expect(meTokenRegistryDetails.endCooldown).to.equal(
