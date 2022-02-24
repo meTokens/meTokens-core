@@ -11,17 +11,15 @@ import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
-/// @title Vault
+/// @title Single-Asset Vault
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
-/// @notice Implementation contract for SingleAssetFactory.sol
+/// @notice Vault which manages basic erc20-like collateral assets for MeTokens
 contract SingleAssetVault is Vault, ISingleAssetVault {
     using SafeERC20 for IERC20;
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
-    // After warmup period, if there's a migration vault,
-    // Send meTokens' collateral to the migration
-    /// @dev not adding reentrancy guard as no state changes after external call
+    /// @inheritdoc ISingleAssetVault
     function startMigration(address meToken) external override {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
             .getMeTokenDetails(meToken);
@@ -40,6 +38,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     }
 
     // solhint-disable-next-line
+    /// @inheritdoc Vault
     function isValid(
         address asset,
         bytes memory /*encodedArgs */

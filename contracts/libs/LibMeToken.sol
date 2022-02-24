@@ -17,11 +17,26 @@ struct MeTokenInfo {
 }
 
 library LibMeToken {
-    event UpdateBalances(address meToken, uint256 newBalance);
+    /// @notice Event of updating a meToken's balancePooled
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     event UpdateBalancePooled(bool add, address meToken, uint256 amount);
+
+    /// @notice Event of updating a meToken's balanceLocked
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
+
+    /// @notice Event of finishing a meToken resubscription
+    /// @param meToken address of meToken
     event FinishResubscribe(address indexed meToken);
 
+    /// @notice Update a meToken's balancePooled
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     function updateBalancePooled(
         bool add,
         address meToken,
@@ -38,6 +53,10 @@ library LibMeToken {
         emit UpdateBalancePooled(add, meToken, amount);
     }
 
+    /// @notice Update a meToken's balanceLocked
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     function updateBalanceLocked(
         bool add,
         address meToken,

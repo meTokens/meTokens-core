@@ -2,15 +2,15 @@
 pragma solidity ^0.8.0;
 
 /// @title MeTokens foundry interface
-/// @author Carter Carlson (@cartercarlson)
+/// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213)
 interface IFoundry {
     /// @notice Event of minting a meToken
-    /// @param meToken         address of meToken minted
-    /// @param asset           address of asset deposited
-    /// @param depositor       address to deposit asset
-    /// @param recipient       address to receive minted meTokens
-    /// @param assetsDeposited amount of assets deposited
-    /// @param meTokensMinted  amount of meTokens minted
+    /// @param meToken         Address of meToken minted
+    /// @param asset           Address of asset deposited
+    /// @param depositor       Address to deposit asset
+    /// @param recipient       Address to receive minted meTokens
+    /// @param assetsDeposited Amount of assets deposited
+    /// @param meTokensMinted  Amount of meTokens minted
     event Mint(
         address meToken,
         address asset,
@@ -21,12 +21,12 @@ interface IFoundry {
     );
 
     /// @notice Event of burning a meToken
-    /// @param meToken         address of meToken burned
-    /// @param asset           address of asset returned
-    /// @param burner          address to burn meTokens
-    /// @param recipient       address to receive underlying asset
-    /// @param meTokensBurned  amount of meTokens to burn
-    /// @param assetsReturned  amount of assets
+    /// @param meToken         Address of meToken burned
+    /// @param asset           Address of asset returned
+    /// @param burner          Address to burn meTokens
+    /// @param recipient       Address to receive underlying asset
+    /// @param meTokensBurned  Amount of meTokens to burn
+    /// @param assetsReturned  Amount of assets
     event Burn(
         address meToken,
         address asset,
@@ -37,10 +37,10 @@ interface IFoundry {
     );
 
     /// @notice Event of donating to meToken owner
-    /// @param meToken         address of meToken burned
-    /// @param asset           address of asset returned
+    /// @param meToken         Address of meToken burned
+    /// @param asset           Address of asset returned
     /// @param donor           address donating the asset
-    /// @param assetsDeposited amount of assets to c
+    /// @param assetsDeposited Amount of assets to c
     event Donate(
         address meToken,
         address asset,
@@ -49,9 +49,9 @@ interface IFoundry {
     );
 
     /// @notice Mint a meToken by depositing the underlying asset
-    /// @param meToken         address of meToken to mint
-    /// @param assetsDeposited amount of assets to deposit
-    /// @param recipient       address to receive minted meTokens
+    /// @param meToken         Address of meToken to mint
+    /// @param assetsDeposited Amount of assets to deposit
+    /// @param recipient       Address to receive minted meTokens
     function mint(
         address meToken,
         uint256 assetsDeposited,
@@ -59,9 +59,9 @@ interface IFoundry {
     ) external;
 
     /// @notice Burn a meToken to receive the underlying asset
-    /// @param meToken         address of meToken to burn
-    /// @param meTokensBurned  amount of meTokens to burn
-    /// @param recipient       address to receive the underlying assets
+    /// @param meToken         Address of meToken to burn
+    /// @param meTokensBurned  Amount of meTokens to burn
+    /// @param recipient       Address to receive the underlying assets
     function burn(
         address meToken,
         uint256 meTokensBurned,
@@ -69,7 +69,7 @@ interface IFoundry {
     ) external;
 
     /// @notice Donate a meToken's underlying asset to its owner
-    /// @param meToken         address of meToken to burn
-    /// @param assetsDeposited amount of asset to donate
+    /// @param meToken         Address of meToken to burn
+    /// @param assetsDeposited Amount of asset to donate
     function donate(address meToken, uint256 assetsDeposited) external;
 }

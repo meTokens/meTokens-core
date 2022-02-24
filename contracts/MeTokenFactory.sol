@@ -8,9 +8,6 @@ import {MeToken} from "./MeToken.sol";
 /// @author Carter Carlson (@cartercarlson)
 /// @notice This contract creates and deploys a meToken, owned by an address
 contract MeTokenFactory is IMeTokenFactory {
-    /// @notice Create a meToken
-    /// @param name     Name of meToken
-    /// @param symbol   Symbol of meToken
     function create(
         string calldata name,
         string calldata symbol,

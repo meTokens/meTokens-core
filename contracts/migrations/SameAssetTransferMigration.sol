@@ -36,6 +36,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
+    /// @inheritdoc IMigration
     function initMigration(
         address meToken,
         bytes memory /* encodedArgs */
@@ -54,6 +55,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         _sameAssetMigration[meToken].isMigrating = true;
     }
 
+    /// @inheritdoc IMigration
     function poke(address meToken) external override nonReentrant {
         SameAssetMigration storage usts = _sameAssetMigration[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
@@ -65,6 +67,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
+    /// @inheritdoc IMigration
     function finishMigration(address meToken)
         external
         override
@@ -104,6 +107,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     }
 
     // Kicks off meToken warmup period
+    /// @inheritdoc Vault
     function isValid(
         address meToken,
         bytes memory /* encodedArgs */

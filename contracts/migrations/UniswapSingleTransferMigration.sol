@@ -45,6 +45,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
+    /// @inheritdoc IMigration
     function initMigration(address meToken, bytes memory encodedArgs)
         external
         override
@@ -69,6 +70,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts.soonest = soonest;
     }
 
+    /// @inheritdoc IMigration
     function poke(address meToken) external override nonReentrant {
         // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
@@ -84,6 +86,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
     }
 
+    /// @inheritdoc IMigration
     function finishMigration(address meToken)
         external
         override
@@ -126,7 +129,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _uniswapSingleTransfers[meToken];
     }
 
-    // Kicks off meToken warmup period
+    /// @inheritdoc Vault
     function isValid(address meToken, bytes memory encodedArgs)
         external
         view
