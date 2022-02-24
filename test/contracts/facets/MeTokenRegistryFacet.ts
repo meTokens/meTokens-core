@@ -976,11 +976,13 @@ const setup = async () => {
         const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
-        const rawAssetsReturned = calculateCollateralReturned(
-          toETHNumber(buyerMeToken),
-          toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
-          reserveWeight / MAX_WEIGHT
+        const rawAssetsReturned = Number(
+          calculateCollateralReturned(
+            toETHNumber(buyerMeToken),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(meTokenDetails.balancePooled),
+            reserveWeight / MAX_WEIGHT
+          ).toFixed(12)
         );
         const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
         const lockedAmount = fromETHNumber(rawAssetsReturned - assetsReturned);
@@ -1063,7 +1065,7 @@ const setup = async () => {
           toETHNumber(
             meTokenDetails.balanceLocked.sub(newMeTokenDetails.balanceLocked)
           )
-        ).to.be.approximately(lockedAmount, 1e-15);
+        ).to.be.approximately(lockedAmount, 1e-13);
       });
     });
   });
