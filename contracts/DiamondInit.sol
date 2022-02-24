@@ -14,7 +14,6 @@ import {AppStorage} from "./libs/Details.sol";
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initilize()
 contract DiamondInit {
-    address private immutable owner;
     struct Args {
         uint256 mintFee;
         uint256 burnBuyerFee;
@@ -29,14 +28,16 @@ contract DiamondInit {
         address meTokenFactory;
     }
 
+    address private immutable _owner;
+
     constructor() {
-        owner = msg.sender;
+        _owner = msg.sender;
     }
 
     AppStorage internal s; // solhint-disable-line
 
     function init(Args memory _args) external {
-        require(msg.sender == owner, "!owner");
+        require(msg.sender == _owner, "!owner");
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
