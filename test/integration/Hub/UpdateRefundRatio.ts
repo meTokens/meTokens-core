@@ -73,7 +73,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         firstRefundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Pre-load owner and buyer w/ DAI

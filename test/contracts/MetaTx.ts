@@ -73,7 +73,7 @@ const setup = async () => {
         diamond,
         meTokenRegistry,
         foundry,
-      } = await hubSetupWithoutRegister("bancorABDK"));
+      } = await hubSetupWithoutRegister("BancorCurve"));
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",

@@ -26,12 +26,12 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
 import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import Decimal from "decimal.js";
-import { StepwiseCurveABDK } from "../../../artifacts/types";
+import { StepwiseCurve } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new curve", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let stepwiseCurveABDK: StepwiseCurveABDK;
+    let stepwiseCurve: StepwiseCurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -111,16 +111,16 @@ const setup = async () => {
         encodedBancorDetails,
         encodedVaultArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
-      stepwiseCurveABDK = await deploy<StepwiseCurveABDK>(
-        "StepwiseCurveABDK",
+      stepwiseCurve = await deploy<StepwiseCurve>(
+        "StepwiseCurve",
         undefined,
         hub.address
       );
 
-      await curveRegistry.approve(stepwiseCurveABDK.address);
+      await curveRegistry.approve(stepwiseCurve.address);
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
@@ -129,7 +129,7 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        stepwiseCurveABDK.address,
+        stepwiseCurve.address,
         refundRatio,
         encodedStepwiseDetails,
         encodedVaultArgs

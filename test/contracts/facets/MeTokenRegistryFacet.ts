@@ -140,7 +140,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       await hub.register(

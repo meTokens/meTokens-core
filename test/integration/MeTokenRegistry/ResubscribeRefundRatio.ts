@@ -80,7 +80,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Deploy uniswap migration and approve it to the registry

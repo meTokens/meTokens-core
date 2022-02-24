@@ -3,7 +3,7 @@ import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { deploy, getContractAt } from "../../utils/helpers";
 import {
@@ -35,7 +35,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let curve: ICurve;
-    let newCurve: BancorABDK;
+    let newCurve: BancorCurve;
     let foundry: FoundryFacet;
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
@@ -82,7 +82,7 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetupWithoutRegister("bancorABDK"));
+      } = await hubSetupWithoutRegister("BancorCurve"));
       ({ token, tokenHolder } = await tranferFromWhale(account1.address));
     });
 
@@ -394,8 +394,8 @@ const setup = async () => {
           ["uint256", "uint32"],
           [0, 0]
         );
-        const newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        const newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );
@@ -410,8 +410,8 @@ const setup = async () => {
       });
 
       it("should be able to initUpdate with new refundRatio", async () => {
-        newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );

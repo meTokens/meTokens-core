@@ -41,7 +41,7 @@ const setup = async () => {
           encodedCurveDetails,
           encodedVaultArgs,
           refundRatio,
-          "bancorABDK"
+          "BancorCurve"
         ));
     });
     it("create() with same params always produce different MeTokens", async () => {

@@ -108,7 +108,7 @@ const setup = async () => {
         encodedCurveDetails1,
         encodedVaultArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);

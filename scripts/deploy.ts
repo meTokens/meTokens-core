@@ -13,7 +13,7 @@ import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
-  BancorABDK,
+  BancorCurve,
   CurveRegistry,
   MeTokenFactory,
   MigrationRegistry,
@@ -95,8 +95,8 @@ async function main() {
   );
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
 
-  const curve = await deploy<BancorABDK>(
-    "BancorABDK",
+  const curve = await deploy<BancorCurve>(
+    "BancorCurve",
     undefined,
     diamond.address
   );
@@ -297,7 +297,7 @@ async function main() {
       deployer.address,
       diamondCutFacet.address,
     ]);
-    await verifyContract("BancorABDK", curve.address, [diamond.address]);
+    await verifyContract("BancorCurve", curve.address, [diamond.address]);
 
     for (let i = 0; i < contracts.length; ++i) {
       try {

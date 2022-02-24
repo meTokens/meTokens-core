@@ -1,6 +1,7 @@
 import { Contract } from "@ethersproject/contracts";
 import { ethers, getNamedAccounts } from "hardhat";
-import { BancorABDK } from "../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../artifacts/types/BancorCurve";
+import { StepwiseCurve } from "../../artifacts/types/StepwiseCurve";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
@@ -23,7 +24,6 @@ import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
 import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
-import { BancorPower, StepwiseCurve } from "../../artifacts/types";
 
 export async function hubSetup(
   encodedCurveDetails: string,
@@ -109,15 +109,9 @@ export async function hubSetup(
 }
 async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
   switch (curveType) {
-    case "BancorABDK":
-      return (await deploy<BancorABDK>(
-        "BancorABDK",
-        undefined,
-        diamond
-      )) as unknown as ICurve;
-    case "BancorPower":
-      return (await deploy<BancorPower>(
-        "BancorPower",
+    case "BancorCurve":
+      return (await deploy<BancorCurve>(
+        "BancorCurve",
         undefined,
         diamond
       )) as unknown as ICurve;
@@ -128,8 +122,8 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
         diamond
       )) as unknown as ICurve;
     default:
-      return (await deploy<BancorABDK>(
-        "BancorABDK",
+      return (await deploy<BancorCurve>(
+        "BancorCurve",
         undefined,
         diamond
       )) as unknown as ICurve;

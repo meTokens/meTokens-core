@@ -90,7 +90,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Register 2nd hub to which we'll migrate to

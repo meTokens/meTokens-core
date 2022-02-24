@@ -108,7 +108,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultDAIArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       targetVault = await deploy<SingleAssetVault>(

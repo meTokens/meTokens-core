@@ -12,7 +12,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
@@ -32,7 +32,7 @@ const setup = async () => {
   describe("HubFacet - update CurveDetails", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let curve: ICurve;
-    let updatedBancorABDK: BancorABDK;
+    let updatedBancorCurve: BancorCurve;
     let curveRegistry: CurveRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -91,7 +91,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Pre-load owner and buyer w/ DAI
@@ -165,16 +165,16 @@ const setup = async () => {
           [updatedBaseY, updatedReserveWeight]
         );
 
-        updatedBancorABDK = await deploy<BancorABDK>(
-          "BancorABDK",
+        updatedBancorCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );
 
-        await curveRegistry.approve(updatedBancorABDK.address);
+        await curveRegistry.approve(updatedBancorCurve.address);
         await hub.initUpdate(
           firstHubId,
-          updatedBancorABDK.address,
+          updatedBancorCurve.address,
           0,
           updatedEncodedCurveDetails
         );
@@ -593,16 +593,16 @@ const setup = async () => {
           .burn(meToken.address, metokenToBurn, account0.address);
 
         const balDaiAfterBurn = await token.balanceOf(account0.address);
-        const currentCurve = await getContractAt<BancorABDK>(
-          "BancorABDK",
+        const currentCurve = await getContractAt<BancorCurve>(
+          "BancorCurve",
           curve
         );
-        const hubTargetCurve = await getContractAt<BancorABDK>(
-          "BancorABDK",
+        const hubTargetCurve = await getContractAt<BancorCurve>(
+          "BancorCurve",
           targetCurve
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+        expect(updatedBancorCurve.address).to.equal(currentCurve.address);
         expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
@@ -685,16 +685,16 @@ const setup = async () => {
           .burn(meToken.address, metokenToBurn, account2.address);
 
         const balDaiAfterBurn = await token.balanceOf(account2.address);
-        const currentCurve = await getContractAt<BancorABDK>(
-          "BancorABDK",
+        const currentCurve = await getContractAt<BancorCurve>(
+          "BancorCurve",
           curve
         );
-        const hubTargetCurve = await getContractAt<BancorABDK>(
-          "BancorABDK",
+        const hubTargetCurve = await getContractAt<BancorCurve>(
+          "BancorCurve",
           targetCurve
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+        expect(updatedBancorCurve.address).to.equal(currentCurve.address);
         expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
@@ -739,7 +739,7 @@ const setup = async () => {
         );
         const block2 = await ethers.provider.getBlock("latest");
         const details = await hub.getHubDetails(1);
-        expect(details.curve).to.equal(updatedBancorABDK.address);
+        expect(details.curve).to.equal(updatedBancorCurve.address);
         expect(details.targetCurve).to.equal(ethers.constants.AddressZero);
         expect(details.endTime).to.be.gt(0);
         expect(details.endTime).to.be.gt(block.timestamp);
@@ -755,11 +755,11 @@ const setup = async () => {
         it("Assets received based on initial curveDetails", async () => {
           const details = await hub.getHubDetails(1);
 
-          const currentCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const currentCurve = await getContractAt<BancorCurve>(
+            "BancorCurve",
             details.curve
           );
-          expect(currentCurve.address).to.equal(updatedBancorABDK.address);
+          expect(currentCurve.address).to.equal(updatedBancorCurve.address);
 
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
@@ -1207,16 +1207,16 @@ const setup = async () => {
             .burn(meToken.address, metokenToBurn, account0.address);
 
           const balDaiAfterBurn = await token.balanceOf(account0.address);
-          const currentCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const currentCurve = await getContractAt<BancorCurve>(
+            "BancorCurve",
             curve
           );
-          const hubTargetCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const hubTargetCurve = await getContractAt<BancorCurve>(
+            "BancorCurve",
             targetCurve
           );
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+          expect(updatedBancorCurve.address).to.equal(currentCurve.address);
           expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;
@@ -1305,16 +1305,16 @@ const setup = async () => {
             .burn(meToken.address, metokenToBurn, account2.address);
 
           const balDaiAfterBurn = await token.balanceOf(account2.address);
-          const currentCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const currentCurve = await getContractAt<BancorCurve>(
+            "BancorCurve",
             curve
           );
-          const hubTargetCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const hubTargetCurve = await getContractAt<BancorCurve>(
+            "BancorCurve",
             targetCurve
           );
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+          expect(updatedBancorCurve.address).to.equal(currentCurve.address);
           expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;

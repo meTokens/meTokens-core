@@ -8,7 +8,7 @@ import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { MeToken } from "../../../artifacts/types/MeToken";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import { ICurve } from "../../../artifacts/types";
 
@@ -20,7 +20,7 @@ describe("Generic Curve", () => {
   let account0: SignerWithAddress;
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
-  let _curve: BancorABDK;
+  let _curve: BancorCurve;
   let meTokenRegistry: MeTokenRegistryFacet;
   let foundry: FoundryFacet;
   let token: ERC20;
@@ -61,7 +61,7 @@ describe("Generic Curve", () => {
     //   WeightedAverage: weightedAverage.address,
     // });
     // hub = await deploy<Hub>("Hub");
-    // _curve = await deploy<BancorABDK>("BancorABDK", undefined, hub.address);
+    // _curve = await deploy<BancorCurve>("BancorCurve", undefined, hub.address);
     // ({
     //   token,
     //   tokenHolder,

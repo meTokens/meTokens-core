@@ -15,7 +15,7 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
@@ -98,7 +98,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initRefundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Prefund owner/buyer w/ DAI
@@ -941,8 +941,8 @@ const setup = async () => {
         // refund ratio stays the same
         const targetRefundRatio = 200000;
 
-        const newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        const newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );

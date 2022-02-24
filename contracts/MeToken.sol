@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/// @title meToken
+/// @title MeToken
 /// @author Carter Carlson (@cartercarlson)
 /// @notice Base erc20-like meToken contract used for all meTokens
 contract MeToken is ERC20Burnable {

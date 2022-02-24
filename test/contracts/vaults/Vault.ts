@@ -71,7 +71,7 @@ const setup = async () => {
         encodedCurveDetails,
         encodedVaultArgs,
         initRefundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       await fees.setMintFee(1e8);
