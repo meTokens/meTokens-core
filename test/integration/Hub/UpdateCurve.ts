@@ -665,7 +665,7 @@ const setup = async () => {
         meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
-        const metokenToBurn = balAfter.div(2);
+        const metokenToBurn = balAfter; //.div(2);
         const {
           active,
           refundRatio,
@@ -726,8 +726,8 @@ const setup = async () => {
 
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
 
-        updatedStepX = ethers.utils.parseEther("5");
-        updatedStepY = ethers.utils.parseEther("1.256");
+        updatedStepX = ethers.utils.parseEther("1.000000001");
+        updatedStepY = ethers.utils.parseEther("1.00000001");
         encodedStepwiseDetails = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint256"],
           [updatedStepX, updatedStepY]
@@ -1133,6 +1133,17 @@ const setup = async () => {
             calcWAvgRes,
             0.000000000001
           );
+          // Need to burn to avoid migration problems
+          await foundry
+            .connect(account3)
+            .burn(meToken.address, balAfter, account1.address);
+          await foundry
+            .connect(account2)
+            .burn(
+              meToken.address,
+              await meToken.balanceOf(account1.address),
+              account2.address
+            );
         });
       });
       describe("Cooldown", () => {
@@ -1158,7 +1169,7 @@ const setup = async () => {
           );
           await token
             .connect(account1)
-            .transfer(account0.address, ethers.utils.parseEther("100"));
+            .transfer(account0.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1176,15 +1187,6 @@ const setup = async () => {
             toETHNumber(updatedStepX),
             toETHNumber(updatedStepY)
           );
-          console.log(`
-          calculateStepwiseTokenReturned
-          tokenDepositedInETH:${tokenDepositedInETH}
-          meTokenDetails.balancePooled:${toETHNumber(
-            meTokenDetails.balancePooled
-          )}
-          meTokenTotalSupply:${toETHNumber(meTokenTotalSupply)}
-          calcTargetTokenReturn:${calcTargetTokenReturn}
-          `);
           // send token to owner
           await foundry.mint(meToken.address, tokenDeposited, account0.address);
           const balDaiAfterMint = await token.balanceOf(account0.address);
@@ -1227,10 +1229,6 @@ const setup = async () => {
           await foundry
             .connect(account0)
             .burn(meToken.address, metokenToBurn, account0.address);
-          console.log(`
-            after burn 
-            meTokenTotalSupply:${toETHNumber(await meToken.totalSupply())} 
-            `);
           const balDaiAfterBurn = await token.balanceOf(account0.address);
           const currentCurve = await getContractAt<BancorABDK>(
             "BancorABDK",
@@ -1263,7 +1261,7 @@ const setup = async () => {
           ).to.be.approximately(assetsReturned, 0.0000000001);
         });
         it("burn() and mint() by buyer should use the targetCurve", async () => {
-          const tokenDepositedInETH = 10;
+          const tokenDepositedInETH = 1000;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
           );
@@ -1287,23 +1285,10 @@ const setup = async () => {
             toETHNumber(updatedStepX),
             toETHNumber(updatedStepY)
           );
-          console.log(`
-          BEFORE MINT
-          tokenDepositedInETH:${tokenDepositedInETH}
-          meTokenDetails.balancePooled:${toETHNumber(
-            meTokenDetails.balancePooled
-          )}
-          meTokenTotalSupply:${toETHNumber(meTokenTotalSupply)}
-          calcTargetTokenReturn:${calcTargetTokenReturn}
-          `);
           // send token to owner
           await foundry
             .connect(account2)
             .mint(meToken.address, tokenDeposited, account2.address);
-          console.log(`
-            AFTER MINT
-            
-            `);
           const balDaiAfterMint = await token.balanceOf(account2.address);
           const balAfter = await meToken.balanceOf(account2.address);
 

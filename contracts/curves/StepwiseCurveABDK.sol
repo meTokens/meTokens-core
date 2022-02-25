@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {ICurve} from "../interfaces/ICurve.sol";
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
-import "hardhat/console.sol";
 
 /// @title Stepwise curve registry and calculator
 /// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
@@ -197,7 +196,6 @@ contract StepwiseCurveABDK is ICurve {
         if (assetsDeposited == 0) {
             return 0;
         }
-        console.log("## stepX:%s stepY:%s", stepX, stepY);
         // bytes16 assetsDeposited = assetsDeposited.fromUInt();
         bytes16 stpX = stepX.fromUInt();
         bytes16 stpY = stepY.fromUInt();
@@ -230,11 +228,6 @@ contract StepwiseCurveABDK is ICurve {
                 )
             );
         }
-        console.log(
-            "## supplyAfterMint:%s supply:%s",
-            supplyAfterMint.toUInt(),
-            supply
-        );
         return supplyAfterMint.toUInt() - supply;
     }
 
