@@ -207,8 +207,8 @@ contract HubFacet is Modifiers {
         s.hubCooldown = cooldown;
     }
 
-    function getHubDetails(uint256 id) external view returns (HubInfo memory) {
-        return LibHub.getHub(id);
+    function getHubInfo(uint256 id) external view returns (HubInfo memory) {
+        return LibHub.getHubInfo(id);
     }
 
     function count() external view returns (uint256) {

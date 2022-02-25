@@ -54,7 +54,11 @@ library LibHub {
         return hubInfo;
     }
 
-    function getHub(uint256 id) internal view returns (HubInfo memory hubInfo) {
+    function getHubInfo(uint256 id)
+        internal
+        view
+        returns (HubInfo memory hubInfo)
+    {
         AppStorage storage s = LibAppStorage.diamondStorage();
         hubInfo.active = s.hubs[id].active;
         hubInfo.owner = s.hubs[id].owner;

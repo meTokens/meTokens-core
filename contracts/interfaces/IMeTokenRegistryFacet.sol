@@ -141,10 +141,10 @@ interface IMeTokenRegistryFacet {
     /// @return     Address of pending meToken owner
     function getPendingOwner(address from) external view returns (address);
 
-    /// @notice View to get details of a meToken
+    /// @notice View to get information for a meToken
     /// @param meToken      Address of meToken queried
     /// @return meToken     Details of meToken
-    function getMeTokenDetails(address meToken)
+    function getMeTokenInfo(address meToken)
         external
         view
         returns (MeTokenInfo memory);

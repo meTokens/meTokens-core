@@ -44,11 +44,11 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         require(msg.sender == diamond, "!diamond");
 
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubDetails(
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.hubId
         );
-        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubDetails(
+        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
@@ -61,8 +61,8 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     function poke(address meToken) external override nonReentrant {
         SameAssetMigration storage usts = _sameAssetMigration[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubDetails(
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.hubId
         );
         if (usts.isMigrating && !usts.started) {
@@ -83,11 +83,11 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         require(usts.isMigrating, "!migrating");
 
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubDetails(
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.hubId
         );
-        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubDetails(
+        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
@@ -119,7 +119,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         bytes memory /* encodedArgs */
     ) external view override returns (bool) {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenDetails(meToken);
+            .getMeTokenInfo(meToken);
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         return true;

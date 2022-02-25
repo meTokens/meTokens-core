@@ -77,7 +77,7 @@ library LibMeToken {
         // solhint-disable-next-line
         IMigration(meTokenInfo.migration).finishMigration(meToken);
 
-        // Finish updating metoken details
+        // Finish updating metoken info
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
         meTokenInfo.hubId = meTokenInfo.targetHubId;
@@ -88,7 +88,7 @@ library LibMeToken {
         return meTokenInfo;
     }
 
-    function getMeToken(address token)
+    function getMeTokenInfo(address token)
         internal
         view
         returns (MeTokenInfo memory meToken)

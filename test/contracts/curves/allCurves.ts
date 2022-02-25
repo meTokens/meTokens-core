@@ -131,18 +131,18 @@ const setup = async () => {
   ];
 
   // we create a new curve of type "BancorCurve" and register it to a new hub (hubID = 2)
-  // along with encoded details for the curve and the vault
-  let hubDetails = await addHubSetup(...addArgs);
+  // along with encoded info for the curve and the vault
+  let hubInfo = await addHubSetup(...addArgs);
   let testCurve = {
     signers: [account0, account1, account2],
-    curve: hubDetails.curve,
+    curve: hubInfo.curve,
     newCurve: curve,
     hub,
     precision: 0.000000000001,
   };
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight1.toString()]
@@ -156,13 +156,13 @@ const setup = async () => {
   });
 
   // Second Bancor curve
-  addArgs[10] = hubDetails.curve;
+  addArgs[10] = hubInfo.curve;
   addArgs[6] = encodedCurveDetails2;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
-  hubDetails = await addHubSetup(...addArgs);
+  // we register a new hub with the same curve deployed before but with new encoded curve info
+  hubInfo = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight2.toString()]
@@ -177,11 +177,11 @@ const setup = async () => {
 
   // Third Bancor curve
   addArgs[6] = encodedCurveDetails3;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
-  hubDetails = await addHubSetup(...addArgs);
+  // we register a new hub with the same curve deployed before but with new encoded curve info
+  hubInfo = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight3.toString()]
@@ -196,11 +196,11 @@ const setup = async () => {
 
   // Fourth Bancor curve
   addArgs[6] = encodedCurveDetails4;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
-  hubDetails = await addHubSetup(...addArgs);
+  // we register a new hub with the same curve deployed before but with new encoded curve info
+  hubInfo = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight4.toString()]
@@ -215,11 +215,11 @@ const setup = async () => {
 
   // fifth Bancor curve
   addArgs[6] = encodedCurveDetails5;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
-  hubDetails = await addHubSetup(...addArgs);
+  // we register a new hub with the same curve deployed before but with new encoded curve info
+  hubInfo = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight5.toString()]
@@ -234,11 +234,11 @@ const setup = async () => {
 
   // sixth Bancor curve
   addArgs[6] = encodedCurveDetails6;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
-  hubDetails = await addHubSetup(...addArgs);
+  // we register a new hub with the same curve deployed before but with new encoded curve info
+  hubInfo = await addHubSetup(...addArgs);
   curves.push({
     ...testCurve,
-    hubId: hubDetails.hubId,
+    hubId: hubInfo.hubId,
     encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
       ["uint32"],
       [targetReserveWeight6.toString()]

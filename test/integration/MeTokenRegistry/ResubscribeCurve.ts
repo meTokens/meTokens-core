@@ -199,11 +199,11 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.startTime).to.be.gt(block.timestamp);
+        expect(meTokenInfo.startTime).to.be.gt(block.timestamp);
       });
       it("mint() [buyer]: meTokens received based on initial Curve", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
@@ -239,7 +239,7 @@ const setup = async () => {
 
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const buyerDAIBefore = await dai.balanceOf(account1.address);
@@ -247,7 +247,7 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
@@ -289,7 +289,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const ownerDAIBefore = await dai.balanceOf(account0.address);
@@ -297,13 +297,13 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
 
         await foundry
           .connect(account0)
@@ -336,20 +336,20 @@ const setup = async () => {
 
     describe("Duration", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        await mineBlock(metokenDetails.startTime.toNumber() + 2);
+        await mineBlock(meTokenInfo.startTime.toNumber() + 2);
 
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.startTime).to.be.lt(block.timestamp);
+        expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
       });
       it("mint() [buyer]: meTokens received based on weighted average of Curves", async () => {
         const vaultDAIBefore = await dai.balanceOf(singleAssetVault.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -363,7 +363,7 @@ const setup = async () => {
         );
         const calculatedTargetReturn = calculateStepwiseTokenReturned(
           tokenDepositedInETH,
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           0,
           toETHNumber(stepX),
           toETHNumber(stepY)
@@ -372,8 +372,8 @@ const setup = async () => {
         const calcWAvgRe = weightedAverageSimulation(
           calculatedReturn,
           calculatedTargetReturn,
-          meTokenDetails.startTime.toNumber(),
-          meTokenDetails.endTime.toNumber(),
+          meTokenInfo.startTime.toNumber(),
+          meTokenInfo.endTime.toNumber(),
           block.timestamp + 1
         );
 
@@ -408,7 +408,7 @@ const setup = async () => {
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerWETHBefore = await weth.balanceOf(account1.address);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -417,7 +417,7 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const targetAssetsReturned = calculateStepwiseCollateralReturned(
@@ -425,7 +425,7 @@ const setup = async () => {
           toETHNumber(stepY),
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled)
         );
 
         await foundry
@@ -435,8 +435,8 @@ const setup = async () => {
         const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
-          meTokenDetails.startTime.toNumber(),
-          meTokenDetails.endTime.toNumber(),
+          meTokenInfo.startTime.toNumber(),
+          meTokenInfo.endTime.toNumber(),
           block.timestamp + 1
         );
 
@@ -478,7 +478,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
@@ -489,7 +489,7 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const targetAssetsReturned = calculateStepwiseCollateralReturned(
@@ -497,20 +497,20 @@ const setup = async () => {
           toETHNumber(stepY),
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled)
         );
 
         const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
           targetAssetsReturned,
-          meTokenDetails.startTime.toNumber(),
-          meTokenDetails.endTime.toNumber(),
+          meTokenInfo.startTime.toNumber(),
+          meTokenInfo.endTime.toNumber(),
           block.timestamp + 1
         );
         const assetsReturned =
           calcWAvgRes +
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
 
         await foundry
           .connect(account0)
@@ -545,13 +545,13 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        await mineBlock(metokenDetails.endTime.toNumber() + 2);
+        await mineBlock(meTokenInfo.endTime.toNumber() + 2);
 
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.endTime).to.be.lt(block.timestamp);
+        expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
       });
       it("mint() [buyer]: assets received based on target Curve", async () => {
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
@@ -559,12 +559,12 @@ const setup = async () => {
         const meTokenTotalSupplyBefore = await meToken.totalSupply();
         expect(meTokenTotalSupplyBefore).to.be.equal(0);
 
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const calculatedTargetReturn = calculateStepwiseTokenReturned(
           tokenDepositedInETH,
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           toETHNumber(meTokenTotalSupplyBefore),
           toETHNumber(stepX),
           toETHNumber(stepY)
@@ -596,7 +596,7 @@ const setup = async () => {
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerWETHBefore = await weth.balanceOf(account1.address);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -605,7 +605,7 @@ const setup = async () => {
           toETHNumber(stepY),
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled)
         );
 
         await foundry
@@ -648,7 +648,7 @@ const setup = async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         const vaultWETHBefore = await weth.balanceOf(singleAssetVault.address);
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
@@ -658,7 +658,7 @@ const setup = async () => {
           toETHNumber(stepY),
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled)
         );
 
         await foundry
@@ -668,7 +668,7 @@ const setup = async () => {
         const assetsReturned =
           targetAssetsReturned +
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const ownerWETHAfter = await weth.balanceOf(account0.address);

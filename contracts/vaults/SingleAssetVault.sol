@@ -22,8 +22,8 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     /// @inheritdoc ISingleAssetVault
     function startMigration(address meToken) external override {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubDetails(
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.hubId
         );
 

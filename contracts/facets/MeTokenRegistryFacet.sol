@@ -304,13 +304,13 @@ contract MeTokenRegistryFacet is
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function getMeTokenDetails(address meToken)
+    function getMeTokenInfo(address meToken)
         external
         view
         override
         returns (MeTokenInfo memory)
     {
-        return LibMeToken.getMeToken(meToken);
+        return LibMeToken.getMeTokenInfo(meToken);
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
