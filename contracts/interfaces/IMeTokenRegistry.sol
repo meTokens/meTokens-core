@@ -41,6 +41,22 @@ interface IMeTokenRegistry {
     /// @param meToken Address of meToken
     event CancelResubscribe(address indexed meToken);
 
+    /// @notice Event of finishing a meToken resubscription
+    /// @param meToken address of meToken
+    event FinishResubscribe(address indexed meToken);
+
+    /// @notice Event of updating a meToken's balancePooled
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
+    event UpdateBalancePooled(bool add, address meToken, uint256 amount);
+
+    /// @notice Event of updating a meToken's balanceLocked
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
+    event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
+
     /// @notice Event of updating a meToken's balancePooled and balanceLocked
     /// @param meToken     Address of meToken
     /// @param newBalance  Rate to multiply balances by
