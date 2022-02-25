@@ -32,7 +32,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
         if (
             meTokenInfo.migration != address(0) &&
-            address(this) != meTokenInfo.migration
+            meTokenInfo.migration != address(this)
         ) {
             IERC20(hubInfo.asset).safeTransfer(meTokenInfo.migration, balance);
         }
