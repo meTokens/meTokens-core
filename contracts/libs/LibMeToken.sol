@@ -67,7 +67,7 @@ library LibMeToken {
             "block.timestamp < endTime"
         );
         // Update balancePooled / balanceLocked
-        // solhint-disable-next-line
+
         IMigration(meTokenInfo.migration).finishMigration(meToken);
 
         // Finish updating metoken details

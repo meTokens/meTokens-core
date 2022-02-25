@@ -39,7 +39,6 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         emit StartMigration(meToken);
     }
 
-    // solhint-disable-next-line
     function isValid(
         address asset,
         bytes memory /*encodedArgs */
