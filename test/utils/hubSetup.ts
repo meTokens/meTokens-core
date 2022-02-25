@@ -106,7 +106,10 @@ export async function hubSetup(
     tokenWhale,
   };
 }
-async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
+export async function getCurve(
+  curveType: string,
+  diamond: string
+): Promise<ICurve> {
   switch (curveType) {
     case "BancorABDK":
       return (await deploy<BancorABDK>(
