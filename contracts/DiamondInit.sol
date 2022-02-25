@@ -25,7 +25,7 @@ contract DiamondInit {
         address meTokenFactory;
     }
 
-    AppStorage internal s;
+    AppStorage internal s; // solhint-disable-line
 
     // TODO: access control?
     function init(Args memory _args) external {
