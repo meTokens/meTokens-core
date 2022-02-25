@@ -5,8 +5,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {IHub} from "../interfaces/IHub.sol";
-import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
+import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 /// @title MeTokens Basic Vault

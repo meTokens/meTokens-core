@@ -5,7 +5,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
 /// @title MeToken registry interface
 /// @author Carter Carlson (@cartercarlson)
-interface IMeTokenRegistry {
+interface IMeTokenRegistryFacet {
     /// @notice Event of subscribing (creating) a new meToken
     /// @param meToken         Address of created meToken
     /// @param owner           Address of meToken owner
@@ -141,10 +141,10 @@ interface IMeTokenRegistry {
     /// @return     Address of pending meToken owner
     function getPendingOwner(address from) external view returns (address);
 
-    /// @notice View to get details of a meToken
+    /// @notice View to get information for a meToken
     /// @param meToken      Address of meToken queried
     /// @return meToken     Details of meToken
-    function getMeTokenDetails(address meToken)
+    function getMeTokenInfo(address meToken)
         external
         view
         returns (MeTokenInfo memory);

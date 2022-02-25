@@ -8,22 +8,26 @@ import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
-import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
-import {IHub} from "../interfaces/IHub.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
-import {HubInfo, MeTokenInfo, Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @title meToken registry
 /// @author Carter Carlson (@cartercarlson)
 /// @notice This contract tracks basic meTokenInformation about all meTokens
-contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
+contract MeTokenRegistryFacet is
+    Modifiers,
+    ReentrancyGuard,
+    IMeTokenRegistryFacet
+{
     constructor() {}
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function subscribe(
         string calldata name,
         string calldata symbol,
@@ -85,7 +89,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         );
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function initResubscribe(
         address meToken,
         uint256 targetHubId,
@@ -145,7 +149,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         );
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function cancelResubscribe(address meToken) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
@@ -164,7 +168,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         emit CancelResubscribe(meToken);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function finishResubscribe(address meToken)
         external
         override
@@ -173,7 +177,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         return LibMeToken.finishResubscribe(meToken);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function updateBalances(address meToken, uint256 newBalance)
         external
         override
@@ -196,7 +200,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         emit UpdateBalances(meToken, newBalance);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function transferMeTokenOwnership(address newOwner) external override {
         address sender = LibMeta.msgSender();
         require(
@@ -212,7 +216,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         emit TransferMeTokenOwnership(sender, newOwner, meToken);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function cancelTransferMeTokenOwnership() external override {
         address sender = LibMeta.msgSender();
         address meToken = s.meTokenOwners[sender];
@@ -227,7 +231,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         emit CancelTransferMeTokenOwnership(sender, meToken);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function claimMeTokenOwnership(address oldOwner) external override {
         address sender = LibMeta.msgSender();
         require(!isOwner(sender), "Already owns a meToken");
@@ -279,7 +283,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         return LibMeToken.cooldown();
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function getOwnerMeToken(address owner)
         external
         view
@@ -289,7 +293,7 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         return s.meTokenOwners[owner];
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function getPendingOwner(address oldOwner)
         external
         view
@@ -299,17 +303,17 @@ contract MeTokenRegistryFacet is Modifiers, ReentrancyGuard, IMeTokenRegistry {
         return s.pendingMeTokenOwners[oldOwner];
     }
 
-    /// @inheritdoc IMeTokenRegistry
-    function getMeTokenDetails(address meToken)
+    /// @inheritdoc IMeTokenRegistryFacet
+    function getMeTokenInfo(address meToken)
         external
         view
         override
         returns (MeTokenInfo memory)
     {
-        return LibMeToken.getMeToken(meToken);
+        return LibMeToken.getMeTokenInfo(meToken);
     }
 
-    /// @inheritdoc IMeTokenRegistry
+    /// @inheritdoc IMeTokenRegistryFacet
     function isOwner(address owner) public view override returns (bool) {
         return s.meTokenOwners[owner] != address(0);
     }

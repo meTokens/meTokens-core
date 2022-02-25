@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import {Modifiers} from "../libs/Details.sol";
-import {IHub} from "../interfaces/IHub.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
-import {IFoundry} from "../interfaces/IFoundry.sol";
+import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 
 contract HubFacet is Modifiers {
     event Register(
@@ -207,8 +207,8 @@ contract HubFacet is Modifiers {
         s.hubCooldown = cooldown;
     }
 
-    function getHubDetails(uint256 id) external view returns (HubInfo memory) {
-        return LibHub.getHub(id);
+    function getHubInfo(uint256 id) external view returns (HubInfo memory) {
+        return LibHub.getHubInfo(id);
     }
 
     function count() external view returns (uint256) {

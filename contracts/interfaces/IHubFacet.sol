@@ -7,7 +7,7 @@ import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title MeTokens hub interface
 /// @author Carter Carlson (@cartercarlson)
-interface IHub {
+interface IHubFacet {
     /// @notice Event of registering a hub
     /// @param id                  Unique hub identifer
     /// @param owner               Address to own hub
@@ -108,10 +108,10 @@ interface IHub {
     /// @return    Details of hub
     function finishUpdate(uint256 id) external returns (HubInfo memory);
 
-    /// @notice Get the details of a hub
+    /// @notice Get the information of a hub
     /// @param id   Unique hub identifier
     /// @return     Details of hub
-    function getHubDetails(uint256 id) external view returns (HubInfo memory);
+    function getHubInfo(uint256 id) external view returns (HubInfo memory);
 
     /// @notice Counter of hubs registered
     /// @return uint256

@@ -57,7 +57,7 @@ export const curvesTestsHelper = async ({
     meTokenSupply: number
   ) => number;
   verifyCurveDetails: (
-    detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+    info: [BigNumber, BigNumber, BigNumber, BigNumber]
   ) => void;
 }) => {
   const one = ethers.utils.parseEther("1");
@@ -268,11 +268,10 @@ export const curvesTestsHelper = async ({
       encodedReconfigureValueSet
     );
 
-    const detail = await curve.getCurveDetails(hubId);
-    verifyCurveDetails(detail);
+    const info = await curve.getCurveDetails(hubId);
+    verifyCurveDetails(info);
   });
   it("viewTargetMeTokensMinted() from 0 supply should work", async () => {
-    //  const detail = await curve.getCurveDetails(hubId);
     let amount = one.mul(2);
     let estimate = await curve.viewTargetMeTokensMinted(amount, hubId, 0, 0);
     const calculatedRes = calculateTargetTokenReturnedFromZero(2, 0, 0);

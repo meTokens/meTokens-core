@@ -398,12 +398,12 @@ export const getCalculationFuncsForBancorCurves = (
       );
     },
     verifyCurveDetails: (
-      detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+      info: [BigNumber, BigNumber, BigNumber, BigNumber]
     ) => {
       const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
 
-      expect(detail[2]).to.equal(targetBaseY);
-      expect(detail[3]).to.equal(targetReserveWeight);
+      expect(info[2]).to.equal(targetBaseY);
+      expect(info[3]).to.equal(targetReserveWeight);
     },
   };
 };
@@ -556,12 +556,12 @@ export const getCalculationFuncsForStepwiseCurves = (
         targetStepY
       ),
     verifyCurveDetails: (
-      detail: [BigNumber, BigNumber, BigNumber, BigNumber]
+      info: [BigNumber, BigNumber, BigNumber, BigNumber]
     ) => {
-      expect(toETHNumber(detail[0])).to.equal(stepX);
-      expect(toETHNumber(detail[1])).to.equal(stepY);
-      expect(toETHNumber(detail[2])).to.equal(targetStepX);
-      expect(toETHNumber(detail[3])).to.equal(targetStepY);
+      expect(toETHNumber(info[0])).to.equal(stepX);
+      expect(toETHNumber(info[1])).to.equal(stepY);
+      expect(toETHNumber(info[2])).to.equal(targetStepX);
+      expect(toETHNumber(info[3])).to.equal(targetStepY);
     },
   };
 };

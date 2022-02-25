@@ -159,11 +159,11 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.startTime).to.be.gt(block.timestamp);
+        expect(meTokenInfo.startTime).to.be.gt(block.timestamp);
       });
       it("burn() [owner]: assets received do not apply refundRatio", async () => {
         await foundry
@@ -178,7 +178,7 @@ const setup = async () => {
           .burn(meToken.address, ownerMeTokenBefore, account0.address);
 
         const totalSupply = await meToken.totalSupply();
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -190,8 +190,8 @@ const setup = async () => {
         expect(ownerMeTokenAfter).to.equal(0);
         expect(ownerDAIAfter.sub(ownerDAIBefore)).to.equal(tokenDeposited);
         expect(vaultDAIAfter).to.equal(0);
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
       });
       it("burn() [buyer]: assets received based on initial refundRatio", async () => {
         await foundry
@@ -210,7 +210,7 @@ const setup = async () => {
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerDAIAfter = await dai.balanceOf(account1.address);
         const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -220,20 +220,20 @@ const setup = async () => {
         expect(buyerMeTokenAfter).to.equal(0);
         expect(buyerDAIAfter.sub(buyerDAIBefore)).to.equal(refundAmount);
         expect(vaultDAIBefore.sub(vaultDAIAfter)).to.equal(refundAmount);
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.gt(0); // due to refund ratio
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.gt(0); // due to refund ratio
       });
     });
 
     describe("Duration", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        await mineBlock(metokenDetails.startTime.toNumber() + 2);
+        await mineBlock(meTokenInfo.startTime.toNumber() + 2);
 
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.startTime).to.be.lt(block.timestamp);
+        expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
       });
       it("burn() [owner]: assets received do not apply refundRatio", async () => {
         const vaultDAIBeforeMint = await dai.balanceOf(
@@ -272,7 +272,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -286,8 +286,8 @@ const setup = async () => {
         expect(ownerWETHAfter.sub(ownerWETHBefore)).to.equal(
           migrationWETHBefore
         ); // as all token deposited goes to owner plus swap tokens
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
       });
       it("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
         const tx = await foundry
@@ -311,8 +311,8 @@ const setup = async () => {
           .burn(meToken.address, buyerMeTokenBefore, account1.address);
 
         const { startTime, endTime, targetHubId } =
-          await meTokenRegistry.getMeTokenDetails(meToken.address);
-        const { refundRatio: targetRefundRatio } = await hub.getHubDetails(
+          await meTokenRegistry.getMeTokenInfo(meToken.address);
+        const { refundRatio: targetRefundRatio } = await hub.getHubInfo(
           targetHubId
         );
         const block = await ethers.provider.getBlock("latest");
@@ -331,7 +331,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const totalSupply = await meToken.totalSupply();
@@ -346,8 +346,8 @@ const setup = async () => {
         expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault do not receive any funds
         expect(vaultWETHBefore).to.equal(vaultWETHAfter); // as vault do not receive any funds
         expect(migrationDAIBefore).to.equal(migrationDAIAfter); // as migration receives new fund in weth
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.equal(
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(
           tokenDeposited.sub(refundAmount)
         );
         expect(buyerWETHAfter.sub(buyerWETHBefore)).to.equal(refundAmount);
@@ -359,13 +359,13 @@ const setup = async () => {
 
     describe("Cooldown", () => {
       before(async () => {
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        await mineBlock(metokenDetails.endTime.toNumber() + 2);
+        await mineBlock(meTokenInfo.endTime.toNumber() + 2);
 
         const block = await ethers.provider.getBlock("latest");
-        expect(metokenDetails.endTime).to.be.lt(block.timestamp);
+        expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
       });
       it("burn() [owner]: assets received do not apply refundRatio", async () => {
         const migrationWETHBeforeMint = await weth.balanceOf(migration.address);
@@ -405,7 +405,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -418,8 +418,8 @@ const setup = async () => {
 
         expect(vaultWETHAfter).to.equal(0); // as all token deposited goes to owner incl migration
         expect(ownerWETHAfter.sub(ownerWETHBefore)).to.equal(vaultWETHBefore); // as all token deposited goes to owner plus migration
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
       });
       it("burn() [buyer]: assets received based on targetRefundRatio", async () => {
         const vaultWETHBeforeMint = await weth.balanceOf(
@@ -458,7 +458,7 @@ const setup = async () => {
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const metokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -472,8 +472,8 @@ const setup = async () => {
         expect(migrationWETHAfter).to.equal(migrationWETHBefore); // as migration receives no funds
         expect(vaultWETHAfter).to.equal(tokenDeposited.sub(refundAmount)); // refund ration token remains in vault
         expect(buyerWETHAfter.sub(buyerWETHBefore)).to.equal(refundAmount); // buyer only receives refund ratio
-        expect(metokenDetails.balancePooled).to.equal(0);
-        expect(metokenDetails.balanceLocked).to.equal(
+        expect(meTokenInfo.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(
           tokenDeposited.sub(refundAmount)
         );
       });
