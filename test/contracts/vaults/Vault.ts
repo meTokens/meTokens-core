@@ -259,6 +259,14 @@ const setup = async () => {
         );
       });
     });
+
+    describe("Negative tests", () => {
+      it("should revert startMigration() when sender is not migration", async () => {
+        await expect(vault.startMigration(meToken.address)).to.be.revertedWith(
+          "!migration"
+        );
+      });
+    });
   });
 };
 
