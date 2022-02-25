@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /// @title MeTokens fee interface
 /// @author Carter Carlson (@cartercarlson)
-interface IFees {
+interface IFeesFacet {
     /// @notice Event of setting the Mint fee for meTokens protocol
     /// @param rate New fee rate
     event SetMintFee(uint256 rate);

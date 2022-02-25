@@ -7,7 +7,7 @@ import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title MeTokens hub interface
 /// @author Carter Carlson (@cartercarlson)
-interface IHub {
+interface IHubFacet {
     /// @notice Event of registering a hub
     /// @param id                  Unique hub identifer
     /// @param owner               Address to own hub

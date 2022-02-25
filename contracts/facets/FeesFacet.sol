@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import {Modifiers} from "../libs/Details.sol";
-import {IFees} from "../interfaces/IFees.sol";
+import {IFeesFacet} from "../interfaces/IFeesFacet.sol";
 
-contract FeesFacet is Modifiers, IFees {
-    /// @inheritdoc IFees
+contract FeesFacet is Modifiers, IFeesFacet {
+    /// @inheritdoc IFeesFacet
     function setMintFee(uint256 rate) external override onlyFeesController {
         require(rate != s.mintFee && rate < s.PRECISION, "out of range");
         s.mintFee = rate;
         emit SetMintFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function setBurnBuyerFee(uint256 rate)
         external
         override
@@ -23,7 +23,7 @@ contract FeesFacet is Modifiers, IFees {
         emit SetBurnBuyerFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function setBurnOwnerFee(uint256 rate)
         external
         override
@@ -34,53 +34,53 @@ contract FeesFacet is Modifiers, IFees {
         emit SetBurnOwnerFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function setTransferFee(uint256 rate) external override onlyFeesController {
         require(rate != s.transferFee && rate < s.PRECISION, "out of range");
         s.transferFee = rate;
         emit SetTransferFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function setInterestFee(uint256 rate) external override onlyFeesController {
         require(rate != s.interestFee && rate < s.PRECISION, "out of range");
         s.interestFee = rate;
         emit SetInterestFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function setYieldFee(uint256 rate) external override onlyFeesController {
         require(rate != s.yieldFee && rate < s.PRECISION, "out of range");
         s.yieldFee = rate;
         emit SetYieldFee(rate);
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function mintFee() external view override returns (uint256) {
         return s.mintFee;
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function burnBuyerFee() external view override returns (uint256) {
         return s.burnBuyerFee;
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function burnOwnerFee() external view override returns (uint256) {
         return s.burnOwnerFee;
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function transferFee() external view override returns (uint256) {
         return s.transferFee;
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function interestFee() external view override returns (uint256) {
         return s.interestFee;
     }
 
-    /// @inheritdoc IFees
+    /// @inheritdoc IFeesFacet
     function yieldFee() external view override returns (uint256) {
         return s.yieldFee;
     }

@@ -5,7 +5,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
 /// @title MeToken registry interface
 /// @author Carter Carlson (@cartercarlson)
-interface IMeTokenRegistry {
+interface IMeTokenRegistryFacet {
     /// @notice Event of subscribing (creating) a new meToken
     /// @param meToken         Address of created meToken
     /// @param owner           Address of meToken owner

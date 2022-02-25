@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /// @title MeTokens foundry interface
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213)
-interface IFoundry {
+interface IFoundryFacet {
     /// @notice Event of minting a meToken
     /// @param meToken         Address of meToken minted
     /// @param asset           Address of asset deposited

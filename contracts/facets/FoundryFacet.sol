@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
-import {IFoundry} from "../interfaces/IFoundry.sol";
+import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
@@ -14,7 +14,7 @@ import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import {Modifiers} from "../libs/Details.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
-contract FoundryFacet is IFoundry, Modifiers {
+contract FoundryFacet is IFoundryFacet, Modifiers {
     // MINT FLOW CHART
     /****************************************************************************
     //                                                                         //
@@ -127,7 +127,7 @@ contract FoundryFacet is IFoundry, Modifiers {
     //                                                                         //
     ****************************************************************************/
 
-    /// @inheritdoc IFoundry
+    /// @inheritdoc IFoundryFacet
     function burn(
         address meToken,
         uint256 meTokensBurned,
