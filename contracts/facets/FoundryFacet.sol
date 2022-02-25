@@ -11,7 +11,7 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
-import {Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
 contract FoundryFacet is IFoundryFacet, Modifiers {

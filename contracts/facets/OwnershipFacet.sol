@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
-import {Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
 contract OwnershipFacet is Modifiers {
     function setDiamondController(address newController)

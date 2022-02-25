@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import {Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";

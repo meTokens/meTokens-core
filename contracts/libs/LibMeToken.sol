@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage} from "./Details.sol";
+import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 
 struct MeTokenInfo {
