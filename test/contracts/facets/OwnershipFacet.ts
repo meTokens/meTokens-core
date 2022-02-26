@@ -72,7 +72,7 @@ const setup = async () => {
           ownershipFacet
             .connect(oldDiamondController)
             .setDiamondController(oldDiamondController.address)
-        ).to.be.revertedWith("same diamondController");
+        ).to.be.revertedWith("same");
       });
       it("should change diamond controller", async () => {
         await ownershipFacet
@@ -109,7 +109,7 @@ const setup = async () => {
       it("should revert when new forwarder is same as old", async () => {
         await expect(
           ownershipFacet.setTrustedForwarder(ethers.constants.AddressZero)
-        ).to.be.revertedWith("same trustedForwarder");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new trusted forwarder", async () => {
         await ownershipFacet.setTrustedForwarder(forwarder.address);
@@ -146,7 +146,7 @@ const setup = async () => {
       it("should revert when new fee controller is same as old", async () => {
         await expect(
           ownershipFacet.setFeesController(oldFeeController.address)
-        ).to.be.revertedWith("same feesController");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new fee controller", async () => {
         await ownershipFacet.setFeesController(newFeeController.address);
@@ -185,7 +185,7 @@ const setup = async () => {
       it("should revert when new duration controller is same as old", async () => {
         await expect(
           ownershipFacet.setDurationsController(oldDurationController.address)
-        ).to.be.revertedWith("same durationsController");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new duration controller", async () => {
         await ownershipFacet.setDurationsController(
@@ -226,7 +226,7 @@ const setup = async () => {
       it("should revert when new meToken registry controller is same as old", async () => {
         await expect(
           ownershipFacet.setMeTokenRegistryController(oldMTRController.address)
-        ).to.be.revertedWith("same meTokenRegistryController");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new meToken registry controller", async () => {
         await ownershipFacet.setMeTokenRegistryController(
@@ -267,7 +267,7 @@ const setup = async () => {
       it("should revert when new register controller is same as old", async () => {
         await expect(
           ownershipFacet.setRegisterController(oldRegisterController.address)
-        ).to.be.revertedWith("same registerController");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new register controller", async () => {
         await ownershipFacet.setRegisterController(
@@ -308,7 +308,7 @@ const setup = async () => {
       it("should revert when new deactivate controller is same as old", async () => {
         await expect(
           ownershipFacet.setDeactivateController(oldRegisterController.address)
-        ).to.be.revertedWith("same deactivateController");
+        ).to.be.revertedWith("same");
       });
       it("should be able to set new deactivate controller", async () => {
         await ownershipFacet.setDeactivateController(
