@@ -851,32 +851,6 @@ const setup = async () => {
         await expect(hub.deactivate(hubId)).to.be.revertedWith("!active");
       });
     });
-
-    describe("setRegisterer()", () => {
-      xit("Pending tests");
-      // it("should revert when sender is not registerer", async () => {
-      //   await expect(
-      //     hub.connect(account1).setRegisterer(account1.address)
-      //   ).to.be.revertedWith("!registerer");
-      // });
-      // it("should revert when new registerer is same as old", async () => {
-      //   await expect(hub.setHubRegisterer(account0.address)).to.be.revertedWith(
-      //     "_registerer == registerer"
-      //   );
-      // });
-      // it("should be able to change registerer", async () => {
-      //   await hub.setHubRegisterer(account1.address);
-      //   expect(await hub.registerer()).to.be.equal(account1.address);
-      // });
-      // after(async () => {
-      //   await expect(
-      //     hub.connect(account0).setRegisterer(account0.address)
-      //   ).to.be.revertedWith("!registerer");
-      //   // set registerer back to account0
-      //   await hub.connect(account1).setRegisterer(account0.address);
-      //   expect(await hub.registerer()).to.be.equal(account0.address);
-      // });
-    });
   });
 };
 
