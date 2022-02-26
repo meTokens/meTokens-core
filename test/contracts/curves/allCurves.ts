@@ -6,12 +6,16 @@ import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { getCalculationFuncsForBancorCurves } from "../../utils/helpers";
+import {
+  deploy,
+  getCalculationFuncsForBancorCurves,
+  getCalculationFuncsForStepwiseCurves,
+} from "../../utils/helpers";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { addHubSetup, hubSetup } from "../../utils/hubSetup";
+import { addHubSetup, getCurve, hubSetup } from "../../utils/hubSetup";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { Diamond } from "../../../artifacts/types";
+import { Diamond, StepwiseCurveABDK } from "../../../artifacts/types";
 
 /* describe("All curves", () => {
   before("setup curves instance", async () => {});
@@ -21,7 +25,6 @@ const setup = async () => {
   let DAI: string;
   let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
-  let migrationRegistry: MigrationRegistry;
   let hub: HubFacet;
   let diamond: Diamond;
   let account0: SignerWithAddress;
@@ -95,7 +98,6 @@ const setup = async () => {
     tokenAddr,
     hub,
     diamond,
-    migrationRegistry,
     vaultRegistry,
     account0,
     account1,
@@ -251,121 +253,183 @@ const setup = async () => {
       MAX_WEIGHT
     ),
   });
-  // Bancor Power
-  addArgs[3] = "BancorPower";
 
-  // First Power curve
-  addArgs[6] = encodedCurveDetails1;
-  // we create a new curve of type "BancorPower" and register it to the hub
-  // along with encoded details for this curve
+  // stepwise ABDK curves
+
+  // First stepwise curve
+  let stepX = 4;
+  let stepY = 2;
+  addArgs[3] = "StepwiseCurve";
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+  addArgs[10] = undefined;
+  let targetStepX = 8;
+  let targetStepY = 15;
+
   hubDetails = await addHubSetup(...addArgs);
-  // we set this new curve as the default curve
-  testCurve = { ...testCurve, curve: hubDetails.curve };
+  const stepwiseCurve = await getCurve("StepwiseCurve", diamond.address);
+  await curveRegistry.approve(stepwiseCurve.address);
+  testCurve.newCurve = stepwiseCurve as unknown as ICurve;
+  testCurve.curve = hubDetails.curve;
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight1.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY1,
-      reserveWeight1,
-      targetReserveWeight1,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-  // Second Power curve
-  addArgs[10] = testCurve.curve;
-  addArgs[6] = encodedCurveDetails2;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
+
+  // Second stepwise curve
+  stepX = 5;
+  stepY = 6;
+  addArgs[10] = hubDetails.curve;
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 4;
+  targetStepY = 2;
+
   hubDetails = await addHubSetup(...addArgs);
+  //testCurve.curve = hubDetails.curve;
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight2.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY2,
-      reserveWeight2,
-      targetReserveWeight2,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-  // third power curve
-  addArgs[6] = encodedCurveDetails3;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
+
+  // third stepwise curve
+  stepX = 4568;
+  stepY = 600;
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 40000;
+  targetStepY = 2;
+
   hubDetails = await addHubSetup(...addArgs);
+  testCurve.curve = hubDetails.curve;
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight3.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY3,
-      reserveWeight3,
-      targetReserveWeight3,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-  // fourth power curve
-  addArgs[6] = encodedCurveDetails4;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
+
+  // fourth stepwise curve
+  stepX = 468;
+  stepY = 60;
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345;
+  targetStepY = 256;
+
   hubDetails = await addHubSetup(...addArgs);
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight4.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY4,
-      reserveWeight4,
-      targetReserveWeight4,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-  // fifth power curve
-  addArgs[6] = encodedCurveDetails5;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
+
+  // fifth stepwise curve
+  stepX = 468;
+  stepY = 600;
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345;
+  targetStepY = 956;
+
   hubDetails = await addHubSetup(...addArgs);
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight5.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY5,
-      reserveWeight5,
-      targetReserveWeight5,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-  // sixth power curve
-  addArgs[6] = encodedCurveDetails6;
-  // we register a new hub with the same curve deployed before but with new encoded curve details
+
+  // sixth stepwise curve
+  stepX = 12345000000000;
+  stepY = 956;
+  addArgs[6] = ethers.utils.defaultAbiCoder.encode(
+    ["uint256", "uint256"],
+    [one.mul(stepX), one.mul(stepY)]
+  );
+
+  targetStepX = 12345000000001;
+  targetStepY = 957;
+
   hubDetails = await addHubSetup(...addArgs);
+
   curves.push({
     ...testCurve,
     hubId: hubDetails.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight6.toString()]
+    ...getCalculationFuncsForStepwiseCurves(
+      stepX,
+      stepY,
+      targetStepX,
+      targetStepY
     ),
-    ...getCalculationFuncsForBancorCurves(
-      baseY6,
-      reserveWeight6,
-      targetReserveWeight6,
-      MAX_WEIGHT
+    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
+      ["uint256", "uint256"],
+      [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
+
   return curves;
 };
 setup().then((tests) => {
