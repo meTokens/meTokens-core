@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage} from "./Details.sol";
+import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 
 struct HubInfo {
@@ -54,7 +54,11 @@ library LibHub {
         return hubInfo;
     }
 
-    function getHub(uint256 id) internal view returns (HubInfo memory hubInfo) {
+    function getHubInfo(uint256 id)
+        internal
+        view
+        returns (HubInfo memory hubInfo)
+    {
         AppStorage storage s = LibAppStorage.diamondStorage();
         hubInfo.active = s.hubs[id].active;
         hubInfo.owner = s.hubs[id].owner;

@@ -3,12 +3,12 @@ import { HubFacet } from "../../../artifacts/types/HubFacet";
 import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
 import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { deploy, getContractAt } from "../../utils/helpers";
 import {
   hubSetupWithoutRegister,
-  tranferFromWhale,
+  transferFromWhale,
 } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../../utils/hardhatNode";
@@ -35,13 +35,13 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let curve: ICurve;
-    let newCurve: BancorABDK;
+    let newCurve: BancorCurve;
     let foundry: FoundryFacet;
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
     let encodedVaultDAIArgs: string;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let token: ERC20;
     let dai: ERC20;
     let tokenHolder: Signer;
@@ -67,7 +67,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -82,8 +82,8 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetupWithoutRegister("bancorABDK"));
-      ({ token, tokenHolder } = await tranferFromWhale(account1.address));
+      } = await hubSetupWithoutRegister("BancorCurve"));
+      ({ token, tokenHolder } = await transferFromWhale(account1.address));
     });
 
     describe("Initial state", () => {
@@ -94,20 +94,20 @@ const setup = async () => {
         expect(await hub.hubDuration()).to.be.equal(0);
         expect(await hub.hubCooldown()).to.be.equal(0);
         // expect(await hub.registerer()).to.be.equal(account0.address);
-        const details = await hub.getHubDetails(0);
-        expect(details.active).to.be.equal(false);
-        expect(details.owner).to.be.equal(ethers.constants.AddressZero);
-        expect(details.vault).to.be.equal(ethers.constants.AddressZero);
-        expect(details.asset).to.be.equal(ethers.constants.AddressZero);
-        expect(details.curve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.refundRatio).to.be.equal(0);
-        expect(details.updating).to.be.equal(false);
-        expect(details.startTime).to.be.equal(0);
-        expect(details.endTime).to.be.equal(0);
-        expect(details.endCooldown).to.be.equal(0);
-        expect(details.reconfigure).to.be.equal(false);
-        expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.targetRefundRatio).to.be.equal(0);
+        const info = await hub.getHubInfo(0);
+        expect(info.active).to.be.equal(false);
+        expect(info.owner).to.be.equal(ethers.constants.AddressZero);
+        expect(info.vault).to.be.equal(ethers.constants.AddressZero);
+        expect(info.asset).to.be.equal(ethers.constants.AddressZero);
+        expect(info.curve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.refundRatio).to.be.equal(0);
+        expect(info.updating).to.be.equal(false);
+        expect(info.startTime).to.be.equal(0);
+        expect(info.endTime).to.be.equal(0);
+        expect(info.endCooldown).to.be.equal(0);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetCurve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.targetRefundRatio).to.be.equal(0);
       });
     });
 
@@ -123,7 +123,7 @@ const setup = async () => {
               singleAssetVault.address,
               curve.address,
               refundRatio1,
-              encodedCurveDetails,
+              encodedCurveInfo,
               encodedVaultDAIArgs
             )
         ).to.be.revertedWith("!registerController");
@@ -136,7 +136,7 @@ const setup = async () => {
           singleAssetVault.address,
           account0.address, // random unapproved address
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("curve !approved");
@@ -148,13 +148,13 @@ const setup = async () => {
           account0.address, // random unapproved address
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("vault !approved");
       });
-      it("should revert from invalid encodedCurveDetails", async () => {
-        // Invalid _encodedCurveDetails for particular curve
+      it("should revert from invalid encodedCurveInfo", async () => {
+        // Invalid _encodedCurveInfo for particular curve
         await expect(
           hub.register(
             account0.address,
@@ -162,10 +162,10 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            "0x", // invalid _encodedCurveDetails
+            "0x", // invalid _encodedCurveInfo
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedDetails");
+        ).to.be.revertedWith("!encodedCurveInfo");
         await expect(
           hub.register(
             account0.address,
@@ -173,10 +173,10 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveDetails
+            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveInfo
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedDetails");
+        ).to.be.revertedWith("!encodedCurveInfo");
       });
       it("should revert from invalid encodedVaultArgs", async () => {
         // Invalid _encodedVaultArgs
@@ -186,7 +186,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs // invalid _encodedVaultArgs
         );
         await expect(tx).to.be.revertedWith("asset !valid");
@@ -199,7 +199,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           10 ** 7,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio > MAX");
@@ -211,7 +211,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           0,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio == 0");
@@ -223,7 +223,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await tx.wait();
@@ -237,24 +237,24 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            encodedCurveDetails,
+            encodedCurveInfo,
             encodedVaultDAIArgs
           );
         expect(await hub.count()).to.be.equal(hubId);
-        const details = await hub.getHubDetails(hubId);
-        expect(details.active).to.be.equal(true);
-        expect(details.owner).to.be.equal(account0.address);
-        expect(details.vault).to.be.equal(singleAssetVault.address);
-        expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(curve.address);
-        expect(details.refundRatio).to.be.equal(refundRatio1);
-        expect(details.updating).to.be.equal(false);
-        expect(details.startTime).to.be.equal(0);
-        expect(details.endTime).to.be.equal(0);
-        expect(details.endCooldown).to.be.equal(0);
-        expect(details.reconfigure).to.be.equal(false);
-        expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.targetRefundRatio).to.be.equal(0);
+        const info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.curve).to.be.equal(curve.address);
+        expect(info.refundRatio).to.be.equal(refundRatio1);
+        expect(info.updating).to.be.equal(false);
+        expect(info.startTime).to.be.equal(0);
+        expect(info.endTime).to.be.equal(0);
+        expect(info.endCooldown).to.be.equal(0);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetCurve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.targetRefundRatio).to.be.equal(0);
       });
     });
 
@@ -335,7 +335,7 @@ const setup = async () => {
       it("should revert when sender is not owner", async () => {
         const tx = hub
           .connect(account1)
-          .initUpdate(hubId, curve.address, refundRatio2, encodedCurveDetails);
+          .initUpdate(hubId, curve.address, refundRatio2, encodedCurveInfo);
         await expect(tx).to.be.revertedWith("!owner");
       });
 
@@ -351,13 +351,13 @@ const setup = async () => {
           hubId,
           curve.address,
           10 ** 7,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const tx2 = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio1,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(tx1).to.be.revertedWith("targetRefundRatio >= MAX");
         await expect(tx2).to.be.revertedWith(
@@ -365,8 +365,8 @@ const setup = async () => {
         );
       });
 
-      it("should revert on ICurve.initReconfigure() from invalid encodedCurveDetails", async () => {
-        const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      it("should revert on ICurve.initReconfigure() from invalid encodedCurveInfo", async () => {
+        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint32"],
           [0]
         );
@@ -374,7 +374,7 @@ const setup = async () => {
           hubId,
           ethers.constants.AddressZero,
           0,
-          badEncodedCurveDetails
+          badEncodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("!reserveWeight");
       });
@@ -384,18 +384,18 @@ const setup = async () => {
           hubId,
           account0.address, // invalid curve address
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("targetCurve !approved");
       });
 
-      it("should revert on ICurve.register() from invalid encodedCurveDetails", async () => {
-        const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      it("should revert on ICurve.register() from invalid encodedCurveInfo", async () => {
+        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [0, 0]
         );
-        const newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        const newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );
@@ -404,14 +404,14 @@ const setup = async () => {
           hubId,
           newCurve.address,
           refundRatio2,
-          badEncodedCurveDetails
+          badEncodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("!baseY");
       });
 
       it("should be able to initUpdate with new refundRatio", async () => {
-        newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );
@@ -420,7 +420,7 @@ const setup = async () => {
           hubId,
           newCurve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
@@ -435,26 +435,26 @@ const setup = async () => {
             hubId,
             newCurve.address,
             refundRatio2,
-            encodedCurveDetails,
+            encodedCurveInfo,
             false,
             expectedStartTime,
             expectedEndTime,
             expectedEndCooldownTime
           );
-        const details = await hub.getHubDetails(hubId);
-        expect(details.active).to.be.equal(true);
-        expect(details.owner).to.be.equal(account0.address);
-        expect(details.vault).to.be.equal(singleAssetVault.address);
-        expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(curve.address);
-        expect(details.refundRatio).to.be.equal(refundRatio1);
-        expect(details.updating).to.be.equal(true);
-        expect(details.startTime).to.be.equal(expectedStartTime);
-        expect(details.endTime).to.be.equal(expectedEndTime);
-        expect(details.endCooldown).to.be.equal(expectedEndCooldownTime);
-        expect(details.reconfigure).to.be.equal(false);
-        expect(details.targetCurve).to.be.equal(newCurve.address);
-        expect(details.targetRefundRatio).to.be.equal(refundRatio2);
+        const info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.curve).to.be.equal(curve.address);
+        expect(info.refundRatio).to.be.equal(refundRatio1);
+        expect(info.updating).to.be.equal(true);
+        expect(info.startTime).to.be.equal(expectedStartTime);
+        expect(info.endTime).to.be.equal(expectedEndTime);
+        expect(info.endCooldown).to.be.equal(expectedEndCooldownTime);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetCurve).to.be.equal(newCurve.address);
+        expect(info.targetRefundRatio).to.be.equal(refundRatio2);
       });
 
       it("should revert to called during warmup, duration, and cooldown", async () => {
@@ -463,69 +463,69 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
-        const details = await hub.getHubDetails(hubId);
+        const info = await hub.getHubInfo(hubId);
 
         await expect(txBeforeStartTime).to.be.revertedWith("already updating");
         let block = await ethers.provider.getBlock("latest");
 
         // fast fwd to startTime | warmup
-        await mineBlock(details.startTime.toNumber() + 1);
+        await mineBlock(info.startTime.toNumber() + 1);
         const txAfterStartTime = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txAfterStartTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
-        expect(details.startTime).to.be.lt(block.timestamp);
+        expect(info.startTime).to.be.lt(block.timestamp);
 
         // fast fwd to endTime - 1
-        await mineBlock(details.endTime.toNumber() - 1);
+        await mineBlock(info.endTime.toNumber() - 1);
         const txBeforeEndTime = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txBeforeEndTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
-        expect(details.endTime).to.be.gte(block.timestamp);
+        expect(info.endTime).to.be.gte(block.timestamp);
 
         // fast fwd to endTime | duration
-        await mineBlock(details.endTime.toNumber() + 1);
+        await mineBlock(info.endTime.toNumber() + 1);
         const txAfterEndTime = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txAfterEndTime).to.be.revertedWith("Still cooling down");
         block = await ethers.provider.getBlock("latest");
-        expect(details.endTime).to.be.lt(block.timestamp);
+        expect(info.endTime).to.be.lt(block.timestamp);
 
         // fast fwd to endCooldown - 2
-        await mineBlock(details.endCooldown.toNumber() - 2);
+        await mineBlock(info.endCooldown.toNumber() - 2);
         const txBeforeEndCooldown = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txBeforeEndCooldown).to.be.revertedWith(
           "Still cooling down"
         );
         block = await ethers.provider.getBlock("latest");
-        expect(details.endTime).to.be.lt(block.timestamp);
+        expect(info.endTime).to.be.lt(block.timestamp);
       });
 
-      it("should first finishUpdate (if not) before next initUpdate and set correct Hub details", async () => {
-        let details = await hub.getHubDetails(hubId);
+      it("should first finishUpdate (if not) before next initUpdate and set correct Hub info", async () => {
+        let info = await hub.getHubInfo(hubId);
 
         // fast fwd to endCooldown - 2
-        await mineBlock(details.endCooldown.toNumber());
+        await mineBlock(info.endCooldown.toNumber());
         const txAfterEndCooldown = await hub.initUpdate(
           hubId,
           ethers.constants.AddressZero,
@@ -535,7 +535,7 @@ const setup = async () => {
 
         const receipt = await txAfterEndCooldown.wait();
         let block = await ethers.provider.getBlock("latest");
-        expect(details.endCooldown).to.be.lte(block.timestamp);
+        expect(info.endCooldown).to.be.lte(block.timestamp);
 
         block = await ethers.provider.getBlock(receipt.blockNumber);
         const expectedStartTime = block.timestamp + duration;
@@ -558,20 +558,20 @@ const setup = async () => {
             expectedEndCooldownTime
           );
 
-        details = await hub.getHubDetails(hubId);
-        expect(details.active).to.be.equal(true);
-        expect(details.owner).to.be.equal(account0.address);
-        expect(details.vault).to.be.equal(singleAssetVault.address);
-        expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(newCurve.address);
-        expect(details.refundRatio).to.be.equal(refundRatio2);
-        expect(details.updating).to.be.equal(true);
-        expect(details.startTime).to.be.equal(expectedStartTime);
-        expect(details.endTime).to.be.equal(expectedEndTime);
-        expect(details.endCooldown).to.be.equal(expectedEndCooldownTime);
-        expect(details.reconfigure).to.be.equal(false);
-        expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.targetRefundRatio).to.be.equal(refundRatio1);
+        info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.curve).to.be.equal(newCurve.address);
+        expect(info.refundRatio).to.be.equal(refundRatio2);
+        expect(info.updating).to.be.equal(true);
+        expect(info.startTime).to.be.equal(expectedStartTime);
+        expect(info.endTime).to.be.equal(expectedEndTime);
+        expect(info.endCooldown).to.be.equal(expectedEndCooldownTime);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetCurve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.targetRefundRatio).to.be.equal(refundRatio1);
       });
     });
 
@@ -586,27 +586,27 @@ const setup = async () => {
 
         await expect(tx).to.emit(hub, "CancelUpdate").withArgs(hubId);
 
-        const details = await hub.getHubDetails(hubId);
-        expect(details.active).to.be.equal(true);
-        expect(details.owner).to.be.equal(account0.address);
-        expect(details.vault).to.be.equal(singleAssetVault.address);
-        expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(newCurve.address);
-        expect(details.refundRatio).to.be.equal(refundRatio2);
-        expect(details.updating).to.be.equal(false);
-        expect(details.startTime).to.be.equal(0);
-        expect(details.endTime).to.be.equal(0);
-        expect(details.endCooldown).to.be.equal(0);
-        expect(details.reconfigure).to.be.equal(false);
-        expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.targetRefundRatio).to.be.equal(0);
+        const info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.curve).to.be.equal(newCurve.address);
+        expect(info.refundRatio).to.be.equal(refundRatio2);
+        expect(info.updating).to.be.equal(false);
+        expect(info.startTime).to.be.equal(0);
+        expect(info.endTime).to.be.equal(0);
+        expect(info.endCooldown).to.be.equal(0);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetCurve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.targetRefundRatio).to.be.equal(0);
       });
       it("should revert when not updating", async () => {
         await expect(hub.cancelUpdate(hubId)).to.be.revertedWith("!updating");
       });
       it("should revert after warmup period", async () => {
         // create a update
-        const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint32"],
           [reserveWeight / 2]
         );
@@ -614,7 +614,7 @@ const setup = async () => {
           hubId,
           ethers.constants.AddressZero,
           0,
-          newEncodedCurveDetails
+          newEncodedCurveInfo
         );
         const receipt = await tx.wait();
 
@@ -630,32 +630,32 @@ const setup = async () => {
             hubId,
             ethers.constants.AddressZero,
             0,
-            newEncodedCurveDetails,
+            newEncodedCurveInfo,
             true,
             expectedStartTime,
             expectedEndTime,
             expectedEndCooldownTime
           );
 
-        const details = await hub.getHubDetails(hubId);
-        expect(details.active).to.be.equal(true);
-        expect(details.owner).to.be.equal(account0.address);
-        expect(details.vault).to.be.equal(singleAssetVault.address);
-        expect(details.asset).to.be.equal(DAI);
-        expect(details.curve).to.be.equal(newCurve.address);
-        expect(details.refundRatio).to.be.equal(refundRatio2);
-        expect(details.updating).to.be.equal(true);
-        expect(details.startTime).to.be.equal(expectedStartTime);
-        expect(details.endTime).to.be.equal(expectedEndTime);
-        expect(details.endCooldown).to.be.equal(expectedEndCooldownTime);
-        expect(details.reconfigure).to.be.equal(true);
-        expect(details.targetCurve).to.be.equal(ethers.constants.AddressZero);
-        expect(details.targetRefundRatio).to.be.equal(0);
+        const info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.curve).to.be.equal(newCurve.address);
+        expect(info.refundRatio).to.be.equal(refundRatio2);
+        expect(info.updating).to.be.equal(true);
+        expect(info.startTime).to.be.equal(expectedStartTime);
+        expect(info.endTime).to.be.equal(expectedEndTime);
+        expect(info.endCooldown).to.be.equal(expectedEndCooldownTime);
+        expect(info.reconfigure).to.be.equal(true);
+        expect(info.targetCurve).to.be.equal(ethers.constants.AddressZero);
+        expect(info.targetRefundRatio).to.be.equal(0);
 
         // increase time beyond warmup period
-        await mineBlock(details.startTime.toNumber() + 1);
+        await mineBlock(info.startTime.toNumber() + 1);
         block = await ethers.provider.getBlock("latest");
-        expect(details.startTime).to.be.lt(block.timestamp);
+        expect(info.startTime).to.be.lt(block.timestamp);
 
         // revert on cancelUpdate
         const cancelUpdateTx = hub.cancelUpdate(hubId);
@@ -666,11 +666,11 @@ const setup = async () => {
     describe("finishUpdate()", () => {
       it("should revert before endTime, during warmup and duration", async () => {
         // increase time before endTime
-        const details = await hub.getHubDetails(hubId);
+        const info = await hub.getHubInfo(hubId);
 
-        await mineBlock(details.endTime.toNumber() - 2);
+        await mineBlock(info.endTime.toNumber() - 2);
         const block = await ethers.provider.getBlock("latest");
-        expect(details.endTime).to.be.gt(block.timestamp);
+        expect(info.endTime).to.be.gt(block.timestamp);
 
         // revert on finishUpdate
         await expect(hub.finishUpdate(hubId)).to.be.revertedWith(
@@ -678,9 +678,9 @@ const setup = async () => {
         );
       });
 
-      it("should correctly set HubDetails when called during cooldown", async () => {
+      it("should correctly set HubInfo when called during cooldown", async () => {
         // increase time after endTime
-        const oldDetails = await hub.getHubDetails(hubId);
+        const oldDetails = await hub.getHubInfo(hubId);
         await mineBlock(oldDetails.endTime.toNumber() + 2);
         const block = await ethers.provider.getBlock("latest");
         expect(oldDetails.endTime).to.be.lt(block.timestamp);
@@ -692,7 +692,7 @@ const setup = async () => {
           .to.emit(hub, "FinishUpdate")
           .withArgs(hubId);
 
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.active).to.be.equal(true);
         expect(newDetails.owner).to.be.equal(account0.address);
         expect(newDetails.vault).to.be.equal(singleAssetVault.address);
@@ -713,10 +713,10 @@ const setup = async () => {
       describe("finishUpdate() from mint | burn", () => {
         let toggle = false; // for generating different weight each time
         beforeEach(async () => {
-          const oldDetails = await hub.getHubDetails(hubId);
+          const oldDetails = await hub.getHubInfo(hubId);
           await mineBlock(oldDetails.endCooldown.toNumber() + 10);
 
-          const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+          const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
             ["uint32"],
             [reserveWeight / (toggle ? 2 : 1)]
           );
@@ -725,16 +725,16 @@ const setup = async () => {
             hubId,
             ethers.constants.AddressZero,
             0,
-            newEncodedCurveDetails
+            newEncodedCurveInfo
           );
           await tx.wait();
 
           // increase time after endTime
-          const details = await hub.getHubDetails(hubId);
-          await mineBlock(details.endTime.toNumber() + 2);
+          const info = await hub.getHubInfo(hubId);
+          await mineBlock(info.endTime.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
-          expect(details.endTime).to.be.lt(block.timestamp);
-          expect(details.endCooldown).to.be.gt(block.timestamp);
+          expect(info.endTime).to.be.lt(block.timestamp);
+          expect(info.endCooldown).to.be.gt(block.timestamp);
         });
 
         it("should trigger finishUpdate() once when mint() called during cooldown", async () => {
@@ -761,10 +761,10 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when mint() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getHubDetails(hubId);
-          await mineBlock(details.endCooldown.toNumber() + 2);
+          const info = await hub.getHubInfo(hubId);
+          await mineBlock(info.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
-          expect(details.endCooldown).to.be.lt(block.timestamp);
+          expect(info.endCooldown).to.be.lt(block.timestamp);
 
           const amount = ethers.utils.parseEther("100");
 
@@ -778,10 +778,10 @@ const setup = async () => {
 
         it("should trigger finishUpdate() once after cooldown when burn() called if no mint() / burn() called during cooldown", async () => {
           // increase time after endCooldown
-          const details = await hub.getHubDetails(hubId);
-          await mineBlock(details.endCooldown.toNumber() + 2);
+          const info = await hub.getHubInfo(hubId);
+          await mineBlock(info.endCooldown.toNumber() + 2);
           const block = await ethers.provider.getBlock("latest");
-          expect(details.endCooldown).to.be.lt(block.timestamp);
+          expect(info.endCooldown).to.be.lt(block.timestamp);
 
           const amount = ethers.utils.parseEther("10");
 
@@ -816,7 +816,7 @@ const setup = async () => {
           .to.emit(hub, "TransferHubOwnership")
           .withArgs(hubId, account1.address);
 
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.owner).to.be.equal(account1.address);
       });
       after(async () => {
@@ -824,14 +824,14 @@ const setup = async () => {
         await hub
           .connect(account1)
           .transferHubOwnership(hubId, account0.address);
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.owner).to.be.equal(account0.address);
       });
     });
 
     describe("deactivate()", () => {
       before(async () => {
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.active).to.equal(true);
       });
       it("should revert when sender isn't owner", async () => {
@@ -844,7 +844,7 @@ const setup = async () => {
 
         await expect(tx).to.emit(hub, "Deactivate").withArgs(hubId);
 
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.active).to.equal(false);
       });
       it("should revert when hub already inactive", async () => {

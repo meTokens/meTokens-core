@@ -112,7 +112,7 @@ const setup = async () => {
       ({ DAI, WETH, USDT } = await getNamedAccounts());
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
-      const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -137,10 +137,10 @@ const setup = async () => {
         account3,
         tokenHolder,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
       await hub.register(
         account0.address,
@@ -148,7 +148,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio, //refund ratio
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs
       );
       await hub.register(
@@ -157,7 +157,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio, //refund ratio
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs
       );
       await hub.setHubWarmup(hubWarmup);
@@ -240,7 +240,7 @@ const setup = async () => {
           .to.equal(0)
           .to.be.equal(calculatedRes)
           .to.be.equal(meTokensMinted);
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.owner).to.equal(account0.address);
@@ -280,7 +280,7 @@ const setup = async () => {
         tx.wait();
         const balAfter = await token.balanceOf(account1.address);
         expect(balBefore.sub(balAfter)).equal(assetsDeposited);
-        const hubDetail = await hub.getHubDetails(hubId);
+        const hubDetail = await hub.getHubInfo(hubId);
         const balVault = await token.balanceOf(hubDetail.vault);
         expect(balVault).equal(assetsDeposited);
         // assert token infos
@@ -319,7 +319,7 @@ const setup = async () => {
         expect(await meToken.totalSupply()).to.be.equal(
           estimateCalculateTokenReturnedFromZero
         );
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr1
         );
         expect(meTokenRegistryDetails.owner).to.equal(account1.address);
@@ -543,13 +543,13 @@ const setup = async () => {
           )
         ).to.be.revertedWith("migration address(0)");
       });
-      it("Successfully calls IMigration.initMigration() and set correct resubscription details", async () => {
+      it("Successfully calls IMigration.initMigration() and set correct resubscription info", async () => {
         // exiting hub is active
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         expect(
-          (await hub.getHubDetails(meTokenRegistryDetails.hubId)).active
+          (await hub.getHubInfo(meTokenRegistryDetails.hubId)).active
         ).to.equal(true);
         tx = await meTokenRegistry.initResubscribe(
           meToken,
@@ -559,14 +559,14 @@ const setup = async () => {
         );
         receipt = await tx.wait();
       });
-      it("Successfully sets meToken resubscription details", async () => {
+      it("Successfully sets meToken resubscription info", async () => {
         const block = await ethers.provider.getBlock(receipt.blockNumber);
         const expectedStartTime = block.timestamp + warmup;
         const expectedEndTime = block.timestamp + warmup + duration;
         const expectedEndCooldownTime =
           block.timestamp + warmup + duration + coolDown;
 
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
 
@@ -610,16 +610,16 @@ const setup = async () => {
           meTokenRegistry.connect(account1).cancelResubscribe(meTokenAddr1)
         ).to.be.revertedWith("!resubscribing");
       });
-      it("Successfully resets meToken details", async () => {
+      it("Successfully resets meToken info", async () => {
         block = await ethers.provider.getBlock("latest");
         expect(
-          (await meTokenRegistry.getMeTokenDetails(meTokenAddr0)).startTime
+          (await meTokenRegistry.getMeTokenInfo(meTokenAddr0)).startTime
         ).to.be.gt(block.timestamp);
         tx = await meTokenRegistry.cancelResubscribe(meTokenAddr0);
         await tx.wait();
       });
-      it("Successfully resets meToken details", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+      it("Successfully resets meToken info", async () => {
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
@@ -635,15 +635,16 @@ const setup = async () => {
           .withArgs(meTokenAddr0);
       });
       it("should be able to resubscribe | migrate from inactive hub", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         await hub.deactivate(meTokenRegistryDetails.hubId);
         expect(
-          (await hub.getHubDetails(meTokenRegistryDetails.hubId)).active
+          (await hub.getHubInfo(meTokenRegistryDetails.hubId)).active
         ).to.equal(false);
-        const oldMeTokenRegistryDetails =
-          await meTokenRegistry.getMeTokenDetails(meTokenAddr0);
+        const oldMeTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+          meTokenAddr0
+        );
         // forward time after start time
         await mineBlock(oldMeTokenRegistryDetails.endCooldown.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
@@ -664,7 +665,7 @@ const setup = async () => {
         await tx.wait();
       });
       it("Fails if resubscription already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         // forward time after start time
@@ -685,7 +686,7 @@ const setup = async () => {
         ).to.be.revertedWith("No targetHubId");
       });
       it("Fails if updating but cooldown not reached", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         // forward time before endTime
@@ -697,7 +698,7 @@ const setup = async () => {
         ).to.be.revertedWith("block.timestamp < endTime");
       });
       it("Successfully calls IMigration.finishMigration()", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         // forward time before endTime
@@ -708,8 +709,8 @@ const setup = async () => {
         tx = await meTokenRegistry.finishResubscribe(meTokenAddr0);
         await tx.wait();
       });
-      it("Successfully updates meToken details", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+      it("Successfully updates meToken info", async () => {
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
@@ -753,7 +754,7 @@ const setup = async () => {
       });
 
       it("Successfully call updateBalances() from migration", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr1
         );
         // forward time before endTime
@@ -775,20 +776,18 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .withArgs(meTokenAddr1);
 
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
-          meTokenAddr1
-        );
-        expect(meTokenDetails.owner).to.equal(account1.address);
-        expect(meTokenDetails.hubId).to.equal(targetHubId);
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meTokenAddr1);
+        expect(meTokenInfo.owner).to.equal(account1.address);
+        expect(meTokenInfo.hubId).to.equal(targetHubId);
         // TODO check args
-        // expect(meTokenDetails.balancePooled).to.equal();
-        // expect(meTokenDetails.balanceLocked).to.equal();
-        expect(meTokenDetails.startTime).to.equal(0);
-        expect(meTokenDetails.endTime).to.equal(0);
+        // expect(meTokenInfo.balancePooled).to.equal();
+        // expect(meTokenInfo.balanceLocked).to.equal();
+        expect(meTokenInfo.startTime).to.equal(0);
+        expect(meTokenInfo.endTime).to.equal(0);
         // TODO check next line
-        // expect(meTokenDetails.endCooldown).to.equal(0);
-        expect(meTokenDetails.targetHubId).to.equal(0);
-        expect(meTokenDetails.migration).to.equal(ethers.constants.AddressZero);
+        // expect(meTokenInfo.endCooldown).to.equal(0);
+        expect(meTokenInfo.targetHubId).to.equal(0);
+        expect(meTokenInfo.migration).to.equal(ethers.constants.AddressZero);
       });
     });
 
@@ -897,8 +896,8 @@ const setup = async () => {
         expect(
           await meTokenRegistry.getOwnerMeToken(account2.address)
         ).to.equal(meTokenAddr0);
-        const details = await meTokenRegistry.getMeTokenDetails(meTokenAddr0);
-        expect(details.owner).to.equal(account2.address);
+        const info = await meTokenRegistry.getMeTokenInfo(meTokenAddr0);
+        expect(info.owner).to.equal(account2.address);
         expect(
           await meTokenRegistry.getPendingOwner(account0.address)
         ).to.equal(ethers.constants.AddressZero);
@@ -935,7 +934,7 @@ const setup = async () => {
           ethers.constants.MaxUint256
         );
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const tx = await foundry.mint(
@@ -952,11 +951,11 @@ const setup = async () => {
         await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalancePooled")
           .withArgs(true, meTokenAddr1, amountDepositedAfterFee);
-        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(
-          newMeTokenDetails.balancePooled.sub(meTokenDetails.balancePooled)
+          newMeTokenInfo.balancePooled.sub(meTokenInfo.balancePooled)
         ).to.be.equal(amountDepositedAfterFee);
       });
 
@@ -964,14 +963,14 @@ const setup = async () => {
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerMeToken = await meToken.balanceOf(account0.address);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const rawAssetsReturned = Number(
           calculateCollateralReturned(
             toETHNumber(buyerMeToken),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
+            toETHNumber(meTokenInfo.balancePooled),
             reserveWeight / MAX_WEIGHT
           ).toFixed(12)
         );
@@ -991,16 +990,16 @@ const setup = async () => {
           // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meTokenAddr1, lockedAmount);
-        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(
           toETHNumber(
-            meTokenDetails.balancePooled.sub(newMeTokenDetails.balancePooled)
+            meTokenInfo.balancePooled.sub(newMeTokenInfo.balancePooled)
           )
         ).to.be.approximately(rawAssetsReturned, 1e-15);
         expect(
-          newMeTokenDetails.balanceLocked.sub(meTokenDetails.balanceLocked)
+          newMeTokenInfo.balanceLocked.sub(meTokenInfo.balanceLocked)
         ).to.be.equal(lockedAmount);
       });
       it("updateBalanceLocked() when owner burns [TODO]", async () => {
@@ -1017,19 +1016,19 @@ const setup = async () => {
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
         const ownerMeToken = await meToken.balanceOf(account1.address);
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
           (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
         const lockedAmount = assetsReturned - rawAssetsReturned;
 
         const tx = await foundry
@@ -1044,17 +1043,17 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalanceLocked");
         // TODO fails in next line, loosing precision
         // .withArgs(false, meTokenAddr1, fromETHNumber(lockedAmount));
-        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(
           toETHNumber(
-            meTokenDetails.balancePooled.sub(newMeTokenDetails.balancePooled)
+            meTokenInfo.balancePooled.sub(newMeTokenInfo.balancePooled)
           )
         ).to.be.approximately(rawAssetsReturned, 1e-15);
         expect(
           toETHNumber(
-            meTokenDetails.balanceLocked.sub(newMeTokenDetails.balanceLocked)
+            meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
           )
         ).to.be.approximately(lockedAmount, 1e-13);
       });

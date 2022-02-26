@@ -15,7 +15,7 @@ import {
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
-import { BancorABDK } from "../../../artifacts/types/BancorABDK";
+import { BancorCurve } from "../../../artifacts/types/BancorCurve";
 import { ERC20 } from "../../../artifacts/types/ERC20";
 import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
 import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
@@ -46,7 +46,7 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let migrationRegistry: MigrationRegistry;
     let curveRegistry: CurveRegistry;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
 
     const hubId = 1;
@@ -77,7 +77,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -95,10 +95,10 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         initRefundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Prefund owner/buyer w/ DAI
@@ -140,9 +140,7 @@ const setup = async () => {
 
       const balBefore = await dai.balanceOf(account0.address);
       const tokenBalBefore = await meToken.balanceOf(account2.address);
-      const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
-        meToken.address
-      );
+      const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meToken.address);
       // gas savings
       const totalSupply = await meToken.totalSupply();
 
@@ -151,7 +149,7 @@ const setup = async () => {
         amount,
         hubId,
         totalSupply,
-        meTokenDetails.balancePooled
+        meTokenInfo.balancePooled
       );
       await foundry.mint(meToken.address, amount, account2.address);
 
@@ -160,7 +158,7 @@ const setup = async () => {
       expect(balBefore.sub(balAfter)).equal(amount);
       expect(tokenBalAfter.sub(tokenBalBefore)).equal(meTokensMinted);
 
-      const hubDetail = await hub.getHubDetails(hubId);
+      const hubDetail = await hub.getHubInfo(hubId);
       const balVault = await dai.balanceOf(hubDetail.vault);
       expect(balVault).equal(amount);
 
@@ -201,12 +199,12 @@ const setup = async () => {
           await meToken.balanceOf(account0.address),
           account0.address
         );
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.equal(0);
-        expect(meTokenDetails.balanceLocked).to.equal(0);
-        expect(meTokenDetails.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
       });
 
       describe("buyer mint and transfer a portion to an owner that burns it and then the buyer burns the remaining", () => {
@@ -247,7 +245,7 @@ const setup = async () => {
             toETHNumber(await meToken.balanceOf(account0.address)),
             toETHNumber(await meToken.totalSupply()),
             toETHNumber(
-              (await meTokenRegistry.getMeTokenDetails(meToken.address))
+              (await meTokenRegistry.getMeTokenInfo(meToken.address))
                 .balancePooled
             ),
             reserveWeight / MAX_WEIGHT
@@ -272,7 +270,7 @@ const setup = async () => {
             toETHNumber(await meToken.balanceOf(account1.address)),
             toETHNumber(await meToken.totalSupply()),
             toETHNumber(
-              (await meTokenRegistry.getMeTokenDetails(meToken.address))
+              (await meTokenRegistry.getMeTokenInfo(meToken.address))
                 .balancePooled
             ),
             reserveWeight / MAX_WEIGHT
@@ -353,7 +351,7 @@ const setup = async () => {
             toETHNumber(await meToken.balanceOf(account1.address)),
             toETHNumber(await meToken.totalSupply()),
             toETHNumber(
-              (await meTokenRegistry.getMeTokenDetails(meToken.address))
+              (await meTokenRegistry.getMeTokenInfo(meToken.address))
                 .balancePooled
             ),
             reserveWeight / MAX_WEIGHT
@@ -380,20 +378,20 @@ const setup = async () => {
         it("owner burns", async () => {
           const ownerMeToken = await meToken.balanceOf(account0.address);
           const meTokenTotalSupply = await meToken.totalSupply();
-          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+          const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
             meToken.address
           );
           const DAIBefore = await token.balanceOf(account0.address);
           const rawAssetsReturned = calculateCollateralReturned(
             toETHNumber(ownerMeToken),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
+            toETHNumber(meTokenInfo.balancePooled),
             reserveWeight / MAX_WEIGHT
           );
           const assetsReturned =
             rawAssetsReturned +
             (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
-              toETHNumber(meTokenDetails.balanceLocked);
+              toETHNumber(meTokenInfo.balanceLocked);
 
           await foundry.burn(meToken.address, ownerMeToken, account0.address);
 
@@ -420,12 +418,12 @@ const setup = async () => {
           await meToken.balanceOf(account0.address),
           account0.address
         );
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.equal(0);
-        expect(meTokenDetails.balanceLocked).to.equal(0);
-        expect(meTokenDetails.balancePooled).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
       });
       it("multiple mints by owner", async () => {
         const numberOfMints = 50;
@@ -444,7 +442,7 @@ const setup = async () => {
           } else {
             const meTokenTotalSupply = await meToken.totalSupply();
             const balancePooled = (
-              await meTokenRegistry.getMeTokenDetails(meToken.address)
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
             ).balancePooled;
 
             targetTokenReturn += calculateTokenReturned(
@@ -485,7 +483,7 @@ const setup = async () => {
           }
           const meTokenTotalSupply = await meToken.totalSupply();
           const balancePooled = (
-            await meTokenRegistry.getMeTokenDetails(meToken.address)
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
           targetCollateralReturn += calculateCollateralReturned(
             toETHNumber(singleBurnAmount),
@@ -525,7 +523,7 @@ const setup = async () => {
           } else {
             const meTokenTotalSupply = await meToken.totalSupply();
             const balancePooled = (
-              await meTokenRegistry.getMeTokenDetails(meToken.address)
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
             ).balancePooled;
 
             targetTokenReturn += calculateTokenReturned(
@@ -572,7 +570,7 @@ const setup = async () => {
           }
           const meTokenTotalSupply = await meToken.totalSupply();
           const balancePooled = (
-            await meTokenRegistry.getMeTokenDetails(meToken.address)
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
           targetCollateralReturn += calculateCollateralReturned(
             toETHNumber(singleBurnAmount),
@@ -758,7 +756,7 @@ const setup = async () => {
         await foundry
           .connect(account1)
           .mint(meToken.address, tokenDeposited, account1.address);
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
@@ -774,7 +772,7 @@ const setup = async () => {
             await meToken.balanceOf(account1.address),
             account1.address
           );
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(meTokenRegistryDetails.balancePooled).to.equal(0);
@@ -786,7 +784,7 @@ const setup = async () => {
         await foundry
           .connect(account1)
           .mint(meToken.address, tokenDeposited, account1.address);
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(meTokenRegistryDetails.balanceLocked).to.be.gt(0);
@@ -803,7 +801,7 @@ const setup = async () => {
             await meToken.balanceOf(account1.address),
             account1.address
           );
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.be.equal(0);
@@ -823,7 +821,7 @@ const setup = async () => {
             await meToken.balanceOf(account2.address),
             account2.address
           );
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.be.equal(0);
@@ -849,7 +847,7 @@ const setup = async () => {
             await meToken.balanceOf(account1.address),
             account1.address
           );
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.be.gt(0);
@@ -880,7 +878,7 @@ const setup = async () => {
             account2.address
           );
 
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.be.gt(0);
@@ -911,7 +909,7 @@ const setup = async () => {
             account1.address
           );
 
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         expect(await meToken.totalSupply()).to.be.equal(0);
@@ -941,8 +939,8 @@ const setup = async () => {
         // refund ratio stays the same
         const targetRefundRatio = 200000;
 
-        const newCurve = await deploy<BancorABDK>(
-          "BancorABDK",
+        const newCurve = await deploy<BancorCurve>(
+          "BancorCurve",
           undefined,
           hub.address
         );
@@ -953,7 +951,7 @@ const setup = async () => {
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
 
-        const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [baseY, reserveWeight]
         );
@@ -976,12 +974,12 @@ const setup = async () => {
           hubId,
           newCurve.address,
           targetRefundRatio,
-          encodedCurveDetails
+          encodedCurveInfo
         );
       });
       it("mint() Should work the same right after the migration ", async () => {
         // metoken should be registered
-        let hubDetail = await hub.getHubDetails(hubId);
+        let hubDetail = await hub.getHubInfo(hubId);
         expect(hubDetail.reconfigure).to.be.false;
         expect(hubDetail.updating).to.be.true;
 
@@ -1001,7 +999,7 @@ const setup = async () => {
         expect(balTokenAfter).to.be.gt(balTokenBefore);
         expect(balBefore.sub(balAfter)).equal(amount);
 
-        hubDetail = await hub.getHubDetails(hubId);
+        hubDetail = await hub.getHubInfo(hubId);
         const balVaultAfter = await dai.balanceOf(hubDetail.vault);
         expect(balVaultAfter.sub(balVaultBefore)).equal(amount);
 
@@ -1022,7 +1020,7 @@ const setup = async () => {
         const balBefore = await meToken.balanceOf(account2.address);
         const balDaiBefore = await dai.balanceOf(account2.address);
 
-        const hubDetail = await hub.getHubDetails(hubId);
+        const hubDetail = await hub.getHubInfo(hubId);
         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
         await foundry
           .connect(account2)
@@ -1043,7 +1041,7 @@ const setup = async () => {
         let block = await ethers.provider.getBlock("latest");
         await mineBlock(block.timestamp + 60 * 60);
 
-        const hubDetail = await hub.getHubDetails(hubId);
+        const hubDetail = await hub.getHubInfo(hubId);
         block = await ethers.provider.getBlock("latest");
         expect(hubDetail.startTime).to.be.lt(block.timestamp);
         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
@@ -1068,13 +1066,13 @@ const setup = async () => {
         );
       });
       after(async () => {
-        const oldDetails = await hub.getHubDetails(hubId);
+        const oldDetails = await hub.getHubInfo(hubId);
         await mineBlock(oldDetails.endTime.toNumber() + 2);
         const block = await ethers.provider.getBlock("latest");
         expect(oldDetails.endTime).to.be.lt(block.timestamp);
 
         await hub.finishUpdate(hubId);
-        const newDetails = await hub.getHubDetails(hubId);
+        const newDetails = await hub.getHubInfo(hubId);
         expect(newDetails.updating).to.be.equal(false);
       });
     });
@@ -1087,7 +1085,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         migration = await deploy<SameAssetTransferMigration>(
@@ -1114,7 +1112,7 @@ const setup = async () => {
             encodedMigrationArgs
           );
         expect(
-          (await meTokenRegistry.getMeTokenDetails(meToken.address)).migration
+          (await meTokenRegistry.getMeTokenInfo(meToken.address)).migration
         ).to.equal(migration.address);
       });
       it("should revert when meToken is resubscribing", async () => {
@@ -1123,7 +1121,7 @@ const setup = async () => {
         );
       });
       it("should be able to donate", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
@@ -1133,7 +1131,7 @@ const setup = async () => {
 
         const oldVaultBalance = await dai.balanceOf(singleAssetVault.address);
         const oldAccountBalance = await dai.balanceOf(account0.address);
-        const oldMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const oldMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const oldAccruedFee = await singleAssetVault.accruedFees(dai.address);
@@ -1154,18 +1152,18 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
-        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const newVaultBalance = await dai.balanceOf(singleAssetVault.address);
         const newAccountBalance = await dai.balanceOf(account0.address);
         const newAccruedFee = await singleAssetVault.accruedFees(dai.address);
 
-        expect(oldMeTokenDetails.balanceLocked.add(assetsDeposited)).to.equal(
-          newMeTokenDetails.balanceLocked
+        expect(oldMeTokenInfo.balanceLocked.add(assetsDeposited)).to.equal(
+          newMeTokenInfo.balanceLocked
         );
-        expect(oldMeTokenDetails.balancePooled).to.equal(
-          newMeTokenDetails.balancePooled
+        expect(oldMeTokenInfo.balancePooled).to.equal(
+          newMeTokenInfo.balancePooled
         );
         expect(oldVaultBalance.add(assetsDeposited)).to.equal(newVaultBalance);
         expect(oldAccountBalance.sub(assetsDeposited)).to.equal(
@@ -1184,7 +1182,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         migration = await deploy<UniswapSingleTransferMigration>(
@@ -1216,7 +1214,7 @@ const setup = async () => {
             encodedMigrationArgs
           );
         expect(
-          (await meTokenRegistry.getMeTokenDetails(meToken.address)).migration
+          (await meTokenRegistry.getMeTokenInfo(meToken.address)).migration
         ).to.equal(migration.address);
         const migrationDetails = await migration.getDetails(meToken.address);
         await mineBlock(migrationDetails.soonest.toNumber() + 2);
@@ -1239,7 +1237,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const oldAccountBalance = await weth.balanceOf(account0.address);
-        const oldMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const oldMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const oldAccruedFee = await singleAssetVault.accruedFees(weth.address);
@@ -1260,7 +1258,7 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
-        const newMeTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const newDAIVaultBalance = await dai.balanceOf(
@@ -1272,11 +1270,11 @@ const setup = async () => {
         const newAccountBalance = await weth.balanceOf(account0.address);
         const newAccruedFee = await singleAssetVault.accruedFees(weth.address);
 
-        expect(oldMeTokenDetails.balanceLocked.add(assetsDeposited)).to.equal(
-          newMeTokenDetails.balanceLocked
+        expect(oldMeTokenInfo.balanceLocked.add(assetsDeposited)).to.equal(
+          newMeTokenInfo.balanceLocked
         );
-        expect(oldMeTokenDetails.balancePooled).to.equal(
-          newMeTokenDetails.balancePooled
+        expect(oldMeTokenInfo.balancePooled).to.equal(
+          newMeTokenInfo.balancePooled
         );
         expect(oldDAIVaultBalance).to.equal(newDAIVaultBalance);
         expect(oldWETHVaultBalance.add(assetsDeposited)).to.equal(

@@ -5,12 +5,13 @@ import {ICurve} from "../interfaces/ICurve.sol";
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
 /// @title Stepwise curve registry and calculator
-/// @author Carl Farterson (@carlfarterson), Chris Robison (@CBobRobison), @zgorizzo69
-contract StepwiseCurveABDK is ICurve {
+/// @author Carter Carlson (@cartercarlson), Chris Robison (@CBobRobison), @zgorizzo69
+contract StepwiseCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for int256;
     using ABDKMathQuad for bytes16;
-    struct Stepwise {
+
+    struct CurveInfo {
         uint256 stepX;
         uint256 stepY;
         uint256 targetStepX;
@@ -24,7 +25,7 @@ contract StepwiseCurveABDK is ICurve {
     bytes16 private immutable _two = (2 * PRECISION).fromUInt();
 
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Stepwise) private _stepwises;
+    mapping(uint256 => CurveInfo) private _curves;
 
     constructor(address _hub) {
         require(_hub != address(0), "!hub");
@@ -32,80 +33,80 @@ contract StepwiseCurveABDK is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function register(uint256 hubId, bytes calldata encodedDetails)
+    function register(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
-        require(encodedDetails.length > 0, "!encodedDetails");
+        require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
-            encodedDetails,
+            encodedCurveInfo,
             (uint256, uint256)
         );
         require(stepX > 0 && stepX > PRECISION, "stepX not in range");
         require(stepY > 0 && stepY > PRECISION, "stepY not in range");
 
-        Stepwise storage stepwise = _stepwises[hubId];
-        stepwise.stepX = stepX;
-        stepwise.stepY = stepY;
+        CurveInfo storage curveInfo = _curves[hubId];
+        curveInfo.stepX = stepX;
+        curveInfo.stepY = stepY;
     }
 
     /// @inheritdoc ICurve
-    function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
+    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
-        // require(encodedDetails.length > 0, "encodedDetails empty");
+        // require(encodedCurveInfo.length > 0, "encodedCurveInfo empty");
 
         (uint256 targetStepX, uint256 targetStepY) = abi.decode(
-            encodedDetails,
+            encodedCurveInfo,
             (uint256, uint256)
         );
-        Stepwise storage stepwise = _stepwises[hubId];
+        CurveInfo storage curveInfo = _curves[hubId];
         require(targetStepX > 0 && targetStepX > PRECISION, "!targetStepX");
-        require(targetStepX != stepwise.stepX, "targeStepX == stepX");
+        require(targetStepX != curveInfo.stepX, "targeStepX == stepX");
 
         require(targetStepY > 0 && targetStepY > PRECISION, "!targetStepY");
-        require(targetStepY != stepwise.stepY, "targeStepY == stepY");
+        require(targetStepY != curveInfo.stepY, "targeStepY == stepY");
 
-        stepwise.targetStepY = targetStepY;
-        stepwise.targetStepX = targetStepX;
+        curveInfo.targetStepY = targetStepY;
+        curveInfo.targetStepX = targetStepX;
     }
 
     /// @inheritdoc ICurve
     function finishReconfigure(uint256 hubId) external override {
         require(msg.sender == hub, "!hub");
-        Stepwise storage stepwise = _stepwises[hubId];
-        stepwise.stepX = stepwise.targetStepX;
-        stepwise.stepY = stepwise.targetStepY;
-        stepwise.targetStepX = 0;
-        stepwise.targetStepY = 0;
+        CurveInfo storage curveInfo = _curves[hubId];
+        curveInfo.stepX = curveInfo.targetStepX;
+        curveInfo.stepY = curveInfo.targetStepY;
+        curveInfo.targetStepX = 0;
+        curveInfo.targetStepY = 0;
     }
 
-    function getStepWiseDetails(uint256 stepwise)
+    function getCurveInfoStepwise(uint256 curveInfo)
         external
         view
-        returns (Stepwise memory)
+        returns (CurveInfo memory)
     {
-        return _stepwises[stepwise];
+        return _curves[curveInfo];
     }
 
     /// @inheritdoc ICurve
-    function getCurveDetails(uint256 stepwise)
+    function getCurveInfo(uint256 curveInfo)
         external
         view
         override
         returns (uint256[4] memory)
     {
         return [
-            _stepwises[stepwise].stepX,
-            _stepwises[stepwise].stepY,
-            _stepwises[stepwise].targetStepX,
-            _stepwises[stepwise].targetStepY
+            _curves[curveInfo].stepX,
+            _curves[curveInfo].stepY,
+            _curves[curveInfo].targetStepX,
+            _curves[curveInfo].targetStepY
         ];
     }
 
@@ -116,11 +117,11 @@ contract StepwiseCurveABDK is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwise = _stepwises[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         meTokensMinted = _viewMeTokensMinted(
             assetsDeposited,
-            stepwise.stepX,
-            stepwise.stepY,
+            curveInfo.stepX,
+            curveInfo.stepY,
             supply,
             balancePooled
         );
@@ -133,11 +134,11 @@ contract StepwiseCurveABDK is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Stepwise memory stepwise = _stepwises[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         meTokensMinted = _viewMeTokensMinted(
             assetsDeposited,
-            stepwise.targetStepX,
-            stepwise.targetStepY,
+            curveInfo.targetStepX,
+            curveInfo.targetStepY,
             supply,
             balancePooled
         );
@@ -150,11 +151,11 @@ contract StepwiseCurveABDK is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwise = _stepwises[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            stepwise.stepX,
-            stepwise.stepY,
+            curveInfo.stepX,
+            curveInfo.stepY,
             supply,
             balancePooled
         );
@@ -167,11 +168,11 @@ contract StepwiseCurveABDK is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Stepwise memory stepwise = _stepwises[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            stepwise.targetStepX,
-            stepwise.targetStepY,
+            curveInfo.targetStepX,
+            curveInfo.targetStepY,
             supply,
             balancePooled
         );
@@ -196,7 +197,6 @@ contract StepwiseCurveABDK is ICurve {
         if (assetsDeposited == 0) {
             return 0;
         }
-
         // bytes16 assetsDeposited = assetsDeposited.fromUInt();
         bytes16 stpX = stepX.fromUInt();
         bytes16 stpY = stepY.fromUInt();
@@ -229,7 +229,6 @@ contract StepwiseCurveABDK is ICurve {
                 )
             );
         }
-
         return supplyAfterMint.toUInt() - supply;
     }
 

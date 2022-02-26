@@ -2,11 +2,13 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
-/// @title migration registry
-/// @author Carl Farterson (@carlfarterson)
-/// @notice Keeps track of all used migration strategies
-contract MigrationRegistry is Ownable {
+/// @title Migration Registry
+/// @author Carter Carlson (@cartercarlson)
+/// @notice Contract which manages all migration routes for when a meToken
+///         changes its' base asset
+contract MigrationRegistry is Ownable, IMigrationRegistry {
     // Initial vault, target vault, migration vault, approved status
     mapping(address => mapping(address => mapping(address => bool)))
         private _migrations;
@@ -15,31 +17,33 @@ contract MigrationRegistry is Ownable {
         address initialVault,
         address targetVault,
         address migration
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(
             !_migrations[initialVault][targetVault][migration],
             "migration already approved"
         );
         _migrations[initialVault][targetVault][migration] = true;
+        emit Approve(initialVault, targetVault, migration);
     }
 
     function unapprove(
         address initialVault,
         address targetVault,
         address migration
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(
             _migrations[initialVault][targetVault][migration],
             "migration not approved"
         );
         _migrations[initialVault][targetVault][migration] = false;
+        emit Unapprove(initialVault, targetVault, migration);
     }
 
     function isApproved(
         address initialVault,
         address targetVault,
         address migration
-    ) external view returns (bool) {
+    ) external view override returns (bool) {
         return _migrations[initialVault][targetVault][migration];
     }
 }

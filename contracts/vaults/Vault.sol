@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.0;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {IHub} from "../interfaces/IHub.sol";
-import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
+import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
-/// @title meTokens basic Vault
-/// @author Carl Farterson (@carlfarterson), Parv Garg (@parv3213), @zgorizzo69
+/// @title MeTokens Basic Vault
+/// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
 abstract contract Vault is IVault, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -24,6 +23,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         diamond = _diamond;
     }
 
+    /// @inheritdoc IVault
     function handleDeposit(
         address from,
         address asset,
@@ -38,6 +38,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         emit HandleDeposit(from, asset, depositAmount, feeAmount);
     }
 
+    /// @inheritdoc IVault
     function handleWithdrawal(
         address to,
         address asset,
@@ -52,6 +53,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         emit HandleWithdrawal(to, asset, withdrawalAmount, feeAmount);
     }
 
+    /// @inheritdoc IVault
     function claim(
         address asset,
         bool max,
@@ -69,6 +71,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         emit Claim(dao, asset, amount);
     }
 
+    /// @inheritdoc IVault
     function isValid(address meToken, bytes memory encodedArgs)
         external
         virtual

@@ -2,16 +2,14 @@
 pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
-import {IERC173} from "../interfaces/IERC173.sol";
-import {Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
-// TODO: IERC173
 contract OwnershipFacet is Modifiers {
     function setDiamondController(address newController)
         external
         onlyDiamondController
     {
-        require(newController != s.diamondController, "same diamondController");
+        _sameAsPreviousError(s.diamondController, newController);
         s.diamondController = newController;
     }
 
@@ -19,7 +17,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDiamondController
     {
-        require(forwarder != s.trustedForwarder, "same trustedForwarder");
+        _sameAsPreviousError(s.trustedForwarder, forwarder);
         s.trustedForwarder = forwarder;
     }
 
@@ -27,7 +25,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyFeesController
     {
-        require(newController != s.feesController, "same feesController");
+        _sameAsPreviousError(s.feesController, newController);
         s.feesController = newController;
     }
 
@@ -35,10 +33,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(
-            newController != s.durationsController,
-            "same durationsController"
-        );
+        _sameAsPreviousError(s.durationsController, newController);
         s.durationsController = newController;
     }
 
@@ -46,10 +41,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyMeTokenRegistryController
     {
-        require(
-            newController != s.meTokenRegistryController,
-            "same meTokenRegistryController"
-        );
+        _sameAsPreviousError(s.meTokenRegistryController, newController);
         s.meTokenRegistryController = newController;
     }
 
@@ -57,10 +49,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyRegisterController
     {
-        require(
-            newController != s.registerController,
-            "same registerController"
-        );
+        _sameAsPreviousError(s.registerController, newController);
         s.registerController = newController;
     }
 
@@ -68,10 +57,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDeactivateController
     {
-        require(
-            newController != s.deactivateController,
-            "same deactivateController"
-        );
+        _sameAsPreviousError(s.deactivateController, newController);
         s.deactivateController = newController;
     }
 
@@ -101,5 +87,9 @@ contract OwnershipFacet is Modifiers {
 
     function deactivateController() external view returns (address) {
         return s.deactivateController;
+    }
+
+    function _sameAsPreviousError(address _old, address _new) internal pure {
+        require(_old != _new, "same");
     }
 }

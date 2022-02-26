@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibAppStorage, AppStorage} from "./Details.sol";
+import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 
 struct MeTokenInfo {
@@ -17,11 +17,14 @@ struct MeTokenInfo {
 }
 
 library LibMeToken {
-    event UpdateBalances(address meToken, uint256 newBalance);
     event UpdateBalancePooled(bool add, address meToken, uint256 amount);
     event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
     event FinishResubscribe(address indexed meToken);
 
+    /// @notice Update a meToken's balancePooled
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     function updateBalancePooled(
         bool add,
         address meToken,
@@ -38,6 +41,10 @@ library LibMeToken {
         emit UpdateBalancePooled(add, meToken, amount);
     }
 
+    /// @notice Update a meToken's balanceLocked
+    /// @param add     boolean that is true if adding to balance, false if subtracting
+    /// @param meToken address of meToken
+    /// @param amount  amount to add/subtract
     function updateBalanceLocked(
         bool add,
         address meToken,
@@ -70,7 +77,7 @@ library LibMeToken {
 
         IMigration(meTokenInfo.migration).finishMigration(meToken);
 
-        // Finish updating metoken details
+        // Finish updating metoken info
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
         meTokenInfo.hubId = meTokenInfo.targetHubId;
@@ -81,7 +88,7 @@ library LibMeToken {
         return meTokenInfo;
     }
 
-    function getMeToken(address token)
+    function getMeTokenInfo(address token)
         internal
         view
         returns (MeTokenInfo memory meToken)

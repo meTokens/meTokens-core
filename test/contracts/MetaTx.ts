@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { TypedDataDomain } from "@ethersproject/abstract-signer";
-import { hubSetupWithoutRegister, tranferFromWhale } from "../utils/hubSetup";
+import { hubSetupWithoutRegister, transferFromWhale } from "../utils/hubSetup";
 import {
   HubFacet,
   MinimalForwarder,
@@ -28,7 +28,7 @@ const setup = async () => {
     let hubId: BigNumber;
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let token: ERC20;
     let diamond: Diamond;
     let forwarder: MinimalForwarder;
@@ -58,7 +58,7 @@ const setup = async () => {
       const MAX_WEIGHT = 1000000;
       const reserveWeight = MAX_WEIGHT / 2;
       const baseY = PRECISION.div(1000);
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -73,7 +73,7 @@ const setup = async () => {
         diamond,
         meTokenRegistry,
         foundry,
-      } = await hubSetupWithoutRegister("bancorABDK"));
+      } = await hubSetupWithoutRegister("BancorCurve"));
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",
@@ -98,7 +98,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs
       );
 
@@ -151,7 +151,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
       expect(await forwarder.getNonce(message.from)).to.equal(1);
@@ -163,7 +163,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs
       );
       if (!data) {
@@ -270,7 +270,7 @@ const setup = async () => {
     });
     it("should mint", async () => {
       const amount = ethers.utils.parseEther("20");
-      const res = await tranferFromWhale(account1.address, DAI, DAIWhale);
+      const res = await transferFromWhale(account1.address, DAI, DAIWhale);
       token = res.token;
       await token.connect(account1).approve(singleAssetVault.address, amount);
 

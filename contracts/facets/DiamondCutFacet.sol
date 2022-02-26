@@ -8,7 +8,7 @@ pragma solidity ^0.8.0;
 
 import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
-import {Modifiers} from "../libs/Details.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
 contract DiamondCutFacet is IDiamondCut, Modifiers {
     /// @notice Add/replace/remove any number of functions and optionally execute
