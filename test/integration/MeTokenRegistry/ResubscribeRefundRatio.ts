@@ -1,23 +1,25 @@
+import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
+import { BigNumber, Signer } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   deploy,
   getContractAt,
   weightedAverageSimulation,
 } from "../../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Signer } from "ethers";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { hubSetup } from "../../utils/hubSetup";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { expect } from "chai";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock } from "../../utils/hardhatNode";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
-import { ICurve } from "../../../artifacts/types";
+import {
+  FoundryFacet,
+  HubFacet,
+  MeTokenRegistryFacet,
+  MeToken,
+  ERC20,
+  MigrationRegistry,
+  SingleAssetVault,
+  UniswapSingleTransferMigration,
+  ICurve,
+} from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {

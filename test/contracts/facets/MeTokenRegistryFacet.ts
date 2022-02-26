@@ -1,8 +1,14 @@
+import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { ERC20 } from "../../../artifacts/types/ERC20";
+import { Address } from "hardhat-deploy/dist/types";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import {
+  BigNumber,
+  ContractReceipt,
+  ContractTransaction,
+  Signer,
+} from "ethers";
+import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateCollateralReturned,
   calculateTokenReturnedFromZero,
@@ -11,23 +17,19 @@ import {
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { hubSetup } from "../../utils/hubSetup";
-import {
-  BigNumber,
-  ContractReceipt,
-  ContractTransaction,
-  Signer,
-} from "ethers";
-import { expect } from "chai";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import { mineBlock } from "../../utils/hardhatNode";
-import { Address } from "hardhat-deploy/dist/types";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
-import { ICurve } from "../../../artifacts/types";
+import {
+  MeTokenRegistryFacet,
+  HubFacet,
+  FoundryFacet,
+  FeesFacet,
+  MeToken,
+  ERC20,
+  MigrationRegistry,
+  SingleAssetVault,
+  UniswapSingleTransferMigration,
+  ICurve,
+} from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
   DAI: string,

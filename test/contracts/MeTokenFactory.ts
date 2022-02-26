@@ -1,14 +1,16 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { ethers, getNamedAccounts } from "hardhat";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { ethers, getNamedAccounts } from "hardhat";
-import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
-import { MeToken } from "../../artifacts/types/MeToken";
-import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
-import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
-import { mineBlock, setAutomine } from "../utils/hardhatNode";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { getContractAt } from "../utils/helpers";
 import { hubSetup } from "../utils/hubSetup";
+import { mineBlock, setAutomine } from "../utils/hardhatNode";
+import {
+  FoundryFacet,
+  MeTokenRegistryFacet,
+  MeToken,
+  MeTokenFactory,
+} from "../../artifacts/types";
 
 const setup = async () => {
   let meTokenFactory: MeTokenFactory;

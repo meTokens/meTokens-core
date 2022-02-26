@@ -1,4 +1,8 @@
 import { ethers, getNamedAccounts } from "hardhat";
+import { BigNumber, Signer } from "ethers";
+import { expect } from "chai";
+import Decimal from "decimal.js";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateCollateralReturned,
@@ -9,21 +13,19 @@ import {
   calculateTokenReturnedFromZero,
   fromETHNumber,
 } from "../../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Signer } from "ethers";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { expect } from "chai";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
-import { FeesFacet } from "../../../artifacts/types/FeesFacet";
-import Decimal from "decimal.js";
-import { ICurve } from "../../../artifacts/types";
+import {
+  FoundryFacet,
+  HubFacet,
+  MeTokenRegistryFacet,
+  FeesFacet,
+  MeToken,
+  ERC20,
+  MigrationRegistry,
+  SingleAssetVault,
+  UniswapSingleTransferMigration,
+  ICurve,
+} from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {

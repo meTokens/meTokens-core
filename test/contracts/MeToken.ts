@@ -1,10 +1,9 @@
-import { ethers, getNamedAccounts } from "hardhat";
-import { getContractAt } from "../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
-import { MeToken } from "../../artifacts/types/MeToken";
 import { expect } from "chai";
+import { ethers, getNamedAccounts } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../utils/hubSetup";
+import { getContractAt } from "../utils/helpers";
+import { MeTokenRegistryFacet, MeToken } from "../../artifacts/types";
 
 const setup = async () => {
   let DAI: string;

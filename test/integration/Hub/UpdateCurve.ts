@@ -1,4 +1,7 @@
+import { expect } from "chai";
+import { BigNumber, Signer } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateTokenReturned,
@@ -10,17 +13,6 @@ import {
   calculateStepwiseCollateralReturned,
   calculateStepwiseTokenReturned,
 } from "../../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Signer } from "ethers";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { BancorCurve } from "../../../artifacts/types/BancorCurve";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { expect } from "chai";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import {
   mineBlock,
   passDays,
@@ -28,8 +20,18 @@ import {
   passSeconds,
   setAutomine,
 } from "../../utils/hardhatNode";
-import { ICurve } from "../../../artifacts/types/ICurve";
-import { StepwiseCurve } from "../../../artifacts/types";
+import {
+  FoundryFacet,
+  HubFacet,
+  MeTokenRegistryFacet,
+  MeToken,
+  ERC20,
+  CurveRegistry,
+  BancorCurve,
+  SingleAssetVault,
+  StepwiseCurve,
+  ICurve,
+} from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update CurveInfo", () => {

@@ -1,9 +1,8 @@
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { HubFacet } from "../../../../artifacts/types/HubFacet";
-import { ICurve } from "../../../../artifacts/types/ICurve";
 import { toETHNumber } from "../../../utils/helpers";
+import { HubFacet, ICurve } from "../../../../artifacts/types";
 
 export const curvesTestsHelper = async ({
   curve,

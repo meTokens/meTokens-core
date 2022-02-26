@@ -1,20 +1,22 @@
+import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { deploy, getContractAt } from "../../utils/helpers";
 import { Signer, BigNumber } from "ethers";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { MeToken } from "../../../artifacts/types/MeToken";
+import { deploy, getContractAt } from "../../utils/helpers";
 import { impersonate, mineBlock } from "../../utils/hardhatNode";
-import { UniswapSingleTransferMigration } from "../../../artifacts/types/UniswapSingleTransferMigration";
 import { hubSetup } from "../../utils/hubSetup";
-import { expect } from "chai";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
-import { ICurve } from "../../../artifacts/types";
+import {
+  FoundryFacet,
+  HubFacet,
+  MeTokenRegistryFacet,
+  MeToken,
+  ERC20,
+  VaultRegistry,
+  MigrationRegistry,
+  SingleAssetVault,
+  UniswapSingleTransferMigration,
+  ICurve,
+} from "../../../artifacts/types";
 
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {

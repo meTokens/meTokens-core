@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Registry } from "../../../artifacts/types/Registry";
-import { deploy } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { deploy } from "../../utils/helpers";
+import { Registry } from "../../../artifacts/types";
 
 describe("Registry.sol", () => {
   let registry: Registry;

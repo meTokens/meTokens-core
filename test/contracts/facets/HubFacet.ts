@@ -1,33 +1,25 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BancorCurve } from "../../../artifacts/types/BancorCurve";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { expect } from "chai";
+import { Signer } from "ethers";
 import {
   hubSetupWithoutRegister,
   transferFromWhale,
 } from "../../utils/hubSetup";
-import { expect } from "chai";
 import { mineBlock } from "../../utils/hardhatNode";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { Signer } from "ethers";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { ICurve } from "../../../artifacts/types";
+import { deploy, getContractAt } from "../../utils/helpers";
+import {
+  HubFacet,
+  FoundryFacet,
+  MeTokenRegistryFacet,
+  MeToken,
+  ERC20,
+  CurveRegistry,
+  BancorCurve,
+  SingleAssetVault,
+  ICurve,
+} from "../../../artifacts/types";
 
-/*
-const paginationFactory = await ethers.getContractFactory("Pagination", {});
-const paginationLib = await paginationFactory.deploy();
-
-const policyFactory = await ethers.getContractFactory("PolicyLib", {
-  libraries: {
-    Pagination: paginationLib.address,
-  },
-});
-*/
 const setup = async () => {
   describe("HubFacet.sol", () => {
     let DAI: string;

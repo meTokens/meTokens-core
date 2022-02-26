@@ -1,29 +1,31 @@
-import { Contract } from "@ethersproject/contracts";
-import { ethers, getNamedAccounts } from "hardhat";
-import { BancorCurve } from "../../artifacts/types/BancorCurve";
-import { StepwiseCurve } from "../../artifacts/types/StepwiseCurve";
-import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
-import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
-import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
-import { MigrationRegistry } from "../../artifacts/types/MigrationRegistry";
-import { SingleAssetVault } from "../../artifacts/types/SingleAssetVault";
-import { DiamondCutFacet } from "../../artifacts/types/DiamondCutFacet";
-import { Diamond } from "../../artifacts/types/Diamond";
-import { DiamondInit } from "../../artifacts/types/DiamondInit";
-import { HubFacet } from "../../artifacts/types/HubFacet";
-import { FoundryFacet } from "../../artifacts/types/FoundryFacet";
-import { FeesFacet } from "../../artifacts/types/FeesFacet";
-import { MeTokenRegistryFacet } from "../../artifacts/types/MeTokenRegistryFacet";
-import { DiamondLoupeFacet } from "../../artifacts/types/DiamondLoupeFacet";
-import { OwnershipFacet } from "../../artifacts/types/OwnershipFacet";
-import { getSelectors } from "../../scripts/libraries/helpers";
-import { ERC20 } from "../../artifacts/types/ERC20";
-import { deploy, getContractAt } from "./helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { impersonate } from "./hardhatNode";
 import { Signer } from "ethers";
-import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
+import { ethers, getNamedAccounts } from "hardhat";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { Contract } from "@ethersproject/contracts";
+import { deploy, getContractAt } from "./helpers";
+import { impersonate } from "./hardhatNode";
+import { getSelectors } from "../../scripts/libraries/helpers";
+import {
+  Diamond,
+  DiamondInit,
+  DiamondCutFacet,
+  DiamondLoupeFacet,
+  OwnershipFacet,
+  ICurve,
+  FoundryFacet,
+  HubFacet,
+  MeTokenRegistryFacet,
+  FeesFacet,
+  ERC20,
+  MeTokenFactory,
+  StepwiseCurve,
+  BancorCurve,
+  VaultRegistry,
+  MigrationRegistry,
+  CurveRegistry,
+  SingleAssetVault,
+} from "../../artifacts/types";
 
 export async function hubSetup(
   encodedCurveInfo: string,

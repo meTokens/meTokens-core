@@ -1,8 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { FeesFacet } from "../../../artifacts/types/FeesFacet";
 import { hubSetupWithoutRegister } from "../../utils/hubSetup";
+import { FeesFacet } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("FeesFacet.sol", () => {

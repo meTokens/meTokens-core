@@ -1,17 +1,18 @@
 import { ethers, getNamedAccounts } from "hardhat";
-import { expect } from "chai";
-import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
-import { getContractAt } from "../../utils/helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { hubSetup } from "../../utils/hubSetup";
-import { ERC20 } from "../../../artifacts/types/ERC20";
 import { BigNumber, ContractTransaction, Signer } from "ethers";
-import { MeToken } from "../../../artifacts/types/MeToken";
-import { FeesFacet } from "../../../artifacts/types/FeesFacet";
-import { Diamond } from "../../../artifacts/types/Diamond";
+import { expect } from "chai";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { getContractAt } from "../../utils/helpers";
+import { hubSetup } from "../../utils/hubSetup";
+import {
+  Diamond,
+  FoundryFacet,
+  MeTokenRegistryFacet,
+  FeesFacet,
+  ERC20,
+  MeToken,
+  SingleAssetVault,
+} from "../../../artifacts/types";
 
 const setup = async () => {
   describe("Vault.sol", () => {

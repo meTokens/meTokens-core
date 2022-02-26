@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { WeightedAverage } from "../../../artifacts/types/WeightedAverage";
 import {
   deploy,
   toETHNumber,
   weightedAverageSimulation,
 } from "../../utils/helpers";
+import { WeightedAverage } from "../../../artifacts/types";
 
 describe("WeightedAverage.sol", () => {
   let wa: WeightedAverage;

@@ -1,25 +1,19 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { ethers, getNamedAccounts } from "hardhat";
-import { CurveRegistry } from "../../../artifacts/types/CurveRegistry";
-import { ERC20 } from "../../../artifacts/types/ERC20";
-import { FoundryFacet } from "../../../artifacts/types/FoundryFacet";
-import { HubFacet } from "../../../artifacts/types/HubFacet";
-import { MeTokenRegistryFacet } from "../../../artifacts/types/MeTokenRegistryFacet";
-import { VaultRegistry } from "../../../artifacts/types/VaultRegistry";
 import {
-  deploy,
   getCalculationFuncsForBancorCurves,
   getCalculationFuncsForStepwiseCurves,
 } from "../../utils/helpers";
-import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, getCurve, hubSetup } from "../../utils/hubSetup";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
-import { ICurve } from "../../../artifacts/types/ICurve";
-import { Diamond, StepwiseCurve } from "../../../artifacts/types";
+import {
+  ICurve,
+  Diamond,
+  HubFacet,
+  VaultRegistry,
+  CurveRegistry,
+} from "../../../artifacts/types";
 
-/* describe("All curves", () => {
-  before("setup curves instance", async () => {});
-}); */
 const setup = async () => {
   let curves = new Array();
   let DAI: string;

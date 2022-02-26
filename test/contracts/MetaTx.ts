@@ -1,7 +1,9 @@
+import { BigNumber } from "ethers";
 import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { TypedDataDomain } from "@ethersproject/abstract-signer";
+import { deploy, getContractAt } from "../utils/helpers";
 import { hubSetupWithoutRegister, transferFromWhale } from "../utils/hubSetup";
 import {
   HubFacet,
@@ -15,8 +17,6 @@ import {
   Diamond,
   OwnershipFacet,
 } from "../../artifacts/types";
-import { BigNumber } from "ethers";
-import { deploy, getContractAt } from "../utils/helpers";
 
 const setup = async () => {
   describe("Meta Transactions", () => {
