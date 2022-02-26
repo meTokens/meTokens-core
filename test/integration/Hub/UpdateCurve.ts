@@ -7,6 +7,8 @@ import {
   getContractAt,
   toETHNumber,
   weightedAverageSimulation,
+  calculateStepwiseCollateralReturned,
+  calculateStepwiseTokenReturned,
 } from "../../utils/helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Signer } from "ethers";
@@ -27,12 +29,13 @@ import {
   setAutomine,
 } from "../../utils/hardhatNode";
 import { ICurve } from "../../../artifacts/types/ICurve";
+import { StepwiseCurveABDK } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update CurveDetails", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let curve: ICurve;
-    let updatedBancorABDK: BancorABDK;
+    let stepwise: StepwiseCurveABDK;
     let curveRegistry: CurveRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -47,25 +50,23 @@ const setup = async () => {
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
     let baseYNum: number;
-    let updatedBaseYNum: number;
-    let updatedBaseY: BigNumber;
+    let stepY: BigNumber;
+    let stepX: BigNumber;
     let reserveWeight: number;
-    let updatedReserveWeight: number;
-    const MAX_WEIGHT = 1000000;
-    let encodedCurveDetails: string;
+    let updatedStepY: BigNumber;
+    let updatedStepX: BigNumber;
+    let encodedStepwiseDetails: string;
     const firstHubId = 1;
     const refundRatio = 5000;
+    const MAX_WEIGHT = 1000000;
     before(async () => {
-      updatedBaseYNum = 10000;
-      updatedBaseY = one.mul(updatedBaseYNum);
-      updatedReserveWeight = MAX_WEIGHT / 10;
       baseYNum = 1000;
       baseY = one.mul(baseYNum);
       reserveWeight = MAX_WEIGHT / 2;
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -148,7 +149,7 @@ const setup = async () => {
       it("should revert initUpdate() if targetCurve is the current curve", async () => {
         const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
+          [one.mul(10), 450000]
         );
         await expect(
           hub.initUpdate(
@@ -160,23 +161,25 @@ const setup = async () => {
         ).to.be.revertedWith("targetCurve==curve");
       });
       it("Assets received based on initial initialCurveDetails", async () => {
-        const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
+        stepX = ethers.utils.parseEther("2");
+        stepY = ethers.utils.parseEther("1.5");
+        encodedStepwiseDetails = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint256"],
+          [stepX, stepY]
         );
 
-        updatedBancorABDK = await deploy<BancorABDK>(
-          "BancorABDK",
+        stepwise = await deploy<StepwiseCurveABDK>(
+          "StepwiseCurveABDK",
           undefined,
           hub.address
         );
 
-        await curveRegistry.approve(updatedBancorABDK.address);
+        await curveRegistry.approve(stepwise.address);
         await hub.initUpdate(
           firstHubId,
-          updatedBancorABDK.address,
+          stepwise.address,
           0,
-          updatedEncodedCurveDetails
+          encodedStepwiseDetails
         );
 
         const tokenDepositedInETH = 100;
@@ -341,11 +344,12 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetAssetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateStepwiseCollateralReturned(
+          toETHNumber(stepX),
+          toETHNumber(stepY),
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenDetails.balancePooled)
         );
 
         await foundry
@@ -404,11 +408,13 @@ const setup = async () => {
           toETHNumber(meTokenDetails.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetAssetsReturned = calculateCollateralReturned(
+
+        const targetAssetsReturned = calculateStepwiseCollateralReturned(
+          toETHNumber(stepX),
+          toETHNumber(stepY),
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenDetails.balancePooled)
         );
         const meTokenDetailsBeforeBurn =
           await meTokenRegistry.getMeTokenDetails(meToken.address);
@@ -466,11 +472,12 @@ const setup = async () => {
           reserveWeight / MAX_WEIGHT
         );
 
-        const calcTargetTokenReturn = calculateTokenReturned(
+        const calcTargetTokenReturn = calculateStepwiseTokenReturned(
           tokenDepositedInETH,
-          toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(stepX),
+          toETHNumber(stepY)
         );
         const { active, updating, startTime, endTime } =
           await hub.getHubDetails(1);
@@ -522,7 +529,6 @@ const setup = async () => {
           hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
         ).to.be.revertedWith("Still cooling down");
       });
-
       it("burn() and mint() by owner should use the targetCurveDetails", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
@@ -539,11 +545,12 @@ const setup = async () => {
           meToken.address
         );
         // the updated curve should be applied
-        const calcTargetTokenReturn = calculateTokenReturned(
+        const calcTargetTokenReturn = calculateStepwiseTokenReturned(
           tokenDepositedInETH,
-          toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(stepX),
+          toETHNumber(stepY)
         );
         // send token to owner
         await foundry.mint(meToken.address, tokenDeposited, account0.address);
@@ -572,13 +579,13 @@ const setup = async () => {
           curve,
           targetCurve,
         } = await hub.getHubDetails(1);
-        const targetAssetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateStepwiseCollateralReturned(
+          toETHNumber(stepX),
+          toETHNumber(stepY),
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenDetails.balancePooled)
         );
-
         const meTokenDetailsBeforeBurn =
           await meTokenRegistry.getMeTokenDetails(meToken.address);
 
@@ -596,7 +603,7 @@ const setup = async () => {
           targetCurve
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+        expect(stepwise.address).to.equal(currentCurve.address);
         expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
@@ -630,11 +637,12 @@ const setup = async () => {
           meToken.address
         );
         // the updated curve should be applied
-        const calcTargetTokenReturn = calculateTokenReturned(
+        const calcTargetTokenReturn = calculateStepwiseTokenReturned(
           tokenDepositedInETH,
-          toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(stepX),
+          toETHNumber(stepY)
         );
         // send token to owner
         await foundry
@@ -657,7 +665,7 @@ const setup = async () => {
         meTokenDetails = await meTokenRegistry.getMeTokenDetails(
           meToken.address
         );
-        const metokenToBurn = balAfter.div(2);
+        const metokenToBurn = balAfter; //.div(2);
         const {
           active,
           refundRatio,
@@ -667,11 +675,12 @@ const setup = async () => {
           curve,
           targetCurve,
         } = await hub.getHubDetails(1);
-        const targetAssetsReturned = calculateCollateralReturned(
+        const targetAssetsReturned = calculateStepwiseCollateralReturned(
+          toETHNumber(stepX),
+          toETHNumber(stepY),
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
-          updatedReserveWeight / MAX_WEIGHT
+          toETHNumber(meTokenDetails.balancePooled)
         );
 
         await foundry
@@ -688,7 +697,7 @@ const setup = async () => {
           targetCurve
         );
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+        expect(stepwise.address).to.equal(currentCurve.address);
         expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
@@ -714,26 +723,25 @@ const setup = async () => {
         );
         const block = await ethers.provider.getBlock("latest");
         expect(block.timestamp).to.be.gt(endTime);
-        //expect(block.timestamp).to.be.lt(endCooldown);
 
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
-        reserveWeight = updatedReserveWeight;
-        updatedReserveWeight = 750000;
 
-        encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [updatedReserveWeight]
+        updatedStepX = ethers.utils.parseEther("1.000000001");
+        updatedStepY = ethers.utils.parseEther("1.00000001");
+        encodedStepwiseDetails = ethers.utils.defaultAbiCoder.encode(
+          ["uint256", "uint256"],
+          [updatedStepX, updatedStepY]
         );
 
         await hub.initUpdate(
           1,
           ethers.constants.AddressZero,
           0,
-          encodedCurveDetails
+          encodedStepwiseDetails
         );
         const block2 = await ethers.provider.getBlock("latest");
         const details = await hub.getHubDetails(1);
-        expect(details.curve).to.equal(updatedBancorABDK.address);
+        expect(details.curve).to.equal(stepwise.address);
         expect(details.targetCurve).to.equal(ethers.constants.AddressZero);
         expect(details.endTime).to.be.gt(0);
         expect(details.endTime).to.be.gt(block.timestamp);
@@ -749,11 +757,11 @@ const setup = async () => {
         it("Assets received based on initial curveDetails", async () => {
           const details = await hub.getHubDetails(1);
 
-          const currentCurve = await getContractAt<BancorABDK>(
-            "BancorABDK",
+          const currentCurve = await getContractAt<StepwiseCurveABDK>(
+            "StepwiseCurveABDK",
             details.curve
           );
-          expect(currentCurve.address).to.equal(updatedBancorABDK.address);
+          expect(currentCurve.address).to.equal(stepwise.address);
 
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
@@ -769,11 +777,12 @@ const setup = async () => {
           const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
-          const calculatedReturn = calculateTokenReturned(
+          const calculatedReturn = calculateStepwiseTokenReturned(
             tokenDepositedInETH,
-            toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(stepX),
+            toETHNumber(stepY)
           );
 
           await foundry
@@ -875,17 +884,19 @@ const setup = async () => {
             meToken.address
           );
 
-          const rawAssetsReturned = calculateCollateralReturned(
+          const rawAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(stepX),
+            toETHNumber(stepY),
             toETHNumber(balAfter),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
-          const targetAssetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY),
             toETHNumber(balAfter),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
           await foundry
             .connect(account2)
@@ -939,17 +950,19 @@ const setup = async () => {
             meToken.address
           );
           const metokenToBurn = balAfter.div(2);
-          const rawAssetsReturned = calculateCollateralReturned(
+          const rawAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(stepX),
+            toETHNumber(stepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
-          const targetAssetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
 
           await foundry
@@ -1006,17 +1019,19 @@ const setup = async () => {
             meToken.address
           );
           const metokenToBurn = balAfter.div(2);
-          const rawAssetsReturned = calculateCollateralReturned(
+          const rawAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(stepX),
+            toETHNumber(stepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
-          const targetAssetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
           const meTokenDetailsBeforeBurn =
             await meTokenRegistry.getMeTokenDetails(meToken.address);
@@ -1070,18 +1085,20 @@ const setup = async () => {
           const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
             meToken.address
           );
-          const calcTokenReturn = calculateTokenReturned(
+          const calcTokenReturn = calculateStepwiseTokenReturned(
             tokenDepositedInETH,
-            toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
-            reserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(stepX),
+            toETHNumber(stepY)
           );
 
-          const calcTargetTokenReturn = calculateTokenReturned(
+          const calcTargetTokenReturn = calculateStepwiseTokenReturned(
             tokenDepositedInETH,
-            toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY)
           );
           const { active, updating, startTime, endTime } =
             await hub.getHubDetails(1);
@@ -1114,8 +1131,19 @@ const setup = async () => {
           );
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calcWAvgRes,
-            0.0000000000001
+            0.000000000001
           );
+          // Need to burn to avoid migration problems
+          await foundry
+            .connect(account3)
+            .burn(meToken.address, balAfter, account1.address);
+          await foundry
+            .connect(account2)
+            .burn(
+              meToken.address,
+              await meToken.balanceOf(account1.address),
+              account2.address
+            );
         });
       });
       describe("Cooldown", () => {
@@ -1141,7 +1169,7 @@ const setup = async () => {
           );
           await token
             .connect(account1)
-            .transfer(account0.address, ethers.utils.parseEther("100"));
+            .transfer(account0.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1152,11 +1180,12 @@ const setup = async () => {
             meToken.address
           );
           // the updated curve should be applied
-          const calcTargetTokenReturn = calculateTokenReturned(
+          const calcTargetTokenReturn = calculateStepwiseTokenReturned(
             tokenDepositedInETH,
-            toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY)
           );
           // send token to owner
           await foundry.mint(meToken.address, tokenDeposited, account0.address);
@@ -1186,11 +1215,12 @@ const setup = async () => {
             curve,
             targetCurve,
           } = await hub.getHubDetails(1);
-          const targetAssetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
 
           const meTokenDetailsBeforeBurn =
@@ -1199,7 +1229,6 @@ const setup = async () => {
           await foundry
             .connect(account0)
             .burn(meToken.address, metokenToBurn, account0.address);
-
           const balDaiAfterBurn = await token.balanceOf(account0.address);
           const currentCurve = await getContractAt<BancorABDK>(
             "BancorABDK",
@@ -1210,7 +1239,7 @@ const setup = async () => {
             targetCurve
           );
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+          expect(stepwise.address).to.equal(currentCurve.address);
           expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;
@@ -1229,10 +1258,10 @@ const setup = async () => {
           // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
-          ).to.be.approximately(assetsReturned, 0.00000000001);
+          ).to.be.approximately(assetsReturned, 0.0000000001);
         });
         it("burn() and mint() by buyer should use the targetCurve", async () => {
-          const tokenDepositedInETH = 10;
+          const tokenDepositedInETH = 1000;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
           );
@@ -1249,11 +1278,12 @@ const setup = async () => {
             meToken.address
           );
           // the updated curve should be applied
-          const calcTargetTokenReturn = calculateTokenReturned(
+          const calcTargetTokenReturn = calculateStepwiseTokenReturned(
             tokenDepositedInETH,
-            toETHNumber(meTokenTotalSupply),
             toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY)
           );
           // send token to owner
           await foundry
@@ -1288,11 +1318,12 @@ const setup = async () => {
             curve,
             targetCurve,
           } = await hub.getHubDetails(1);
-          const targetAssetsReturned = calculateCollateralReturned(
+          const targetAssetsReturned = calculateStepwiseCollateralReturned(
+            toETHNumber(updatedStepX),
+            toETHNumber(updatedStepY),
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenDetails.balancePooled),
-            updatedReserveWeight / MAX_WEIGHT
+            toETHNumber(meTokenDetails.balancePooled)
           );
           await foundry
             .connect(account2)
@@ -1308,7 +1339,7 @@ const setup = async () => {
             targetCurve
           );
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorABDK.address).to.equal(currentCurve.address);
+          expect(stepwise.address).to.equal(currentCurve.address);
           expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;
