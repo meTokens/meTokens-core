@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @dev Required for all Curves
 interface ICurve {
-    /// @notice Event when curveDetails are updated from target values to actual values
+    /// @notice Event when curveInfo is updated from target values to actual values
     event Updated(uint256 indexed hubId);
 
     /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
@@ -16,19 +16,19 @@ interface ICurve {
     /// @param encodedDetails  Encoded Curve arguments
     function register(uint256 hubId, bytes calldata encodedDetails) external;
 
-    /// @notice Initialize reconfiguring curveDetails for a hub
+    /// @notice Initialize reconfiguring curveInfo for a hub
     /// @param hubId           Unique hub identifier
     /// @param encodedDetails  Encoded target Curve arguments
     function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
         external;
 
-    /// @notice Finish reconfiguring curveDetails for a hub
+    /// @notice Finish reconfiguring curveInfo for a hub
     /// @param hubId Unique hub identifier
     function finishReconfigure(uint256 hubId) external;
 
-    /// @notice Get curveDetails for a hub
-    /// @return curveDetails (TODO: curve w/ more than 4 curveDetails)
-    function getCurveDetails(uint256 hubId)
+    /// @notice Get curveInfo for a hub
+    /// @return curveInfo (TODO: curve w/ more than 4 curveInfo)
+    function getCurveInfo(uint256 hubId)
         external
         view
         returns (uint256[4] memory);

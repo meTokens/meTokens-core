@@ -268,7 +268,7 @@ export const curvesTestsHelper = async ({
       encodedReconfigureValueSet
     );
 
-    const info = await curve.getCurveDetails(hubId);
+    const info = await curve.getCurveInfo(hubId);
     verifyCurveDetails(info);
   });
   it("viewTargetMeTokensMinted() from 0 supply should work", async () => {

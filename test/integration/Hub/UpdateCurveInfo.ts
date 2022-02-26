@@ -264,7 +264,7 @@ const setup = async () => {
       before(async () => {
         await passHours(1);
       });
-      it("Assets received for buyer based on weighted average  of curveDetails on burning full supply ", async () => {
+      it("Assets received for buyer based on weighted average of curveInfo on burning full supply ", async () => {
         //move forward  3 Days
         await passDays(3);
         const tokenDepositedInETH = 100;
@@ -311,7 +311,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
-      it("Assets received for buyer based on weighted average  of curveDetails on not burning full supply ", async () => {
+      it("Assets received for buyer based on weighted average of curveInfo on not burning full supply ", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -373,7 +373,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.000000000000001);
       });
-      it("Assets received for owner based on weighted average  of curveDetails on not burning full supply ", async () => {
+      it("Assets received for owner based on weighted average  of curveInfo on not burning full supply ", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -445,7 +445,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.0000000000001);
       });
-      it("mint(): assets received based on weighted average of curveDetails", async () => {
+      it("mint(): assets received based on weighted average of curveInfo", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -741,7 +741,7 @@ const setup = async () => {
         expect(block2.timestamp).to.be.lt(info.startTime);
       });
       describe("Warmup", () => {
-        it("Assets received based on initial curveDetails", async () => {
+        it("Assets received based on initial curveInfo", async () => {
           const info = await hub.getHubInfo(1);
 
           const currentCurve = await getContractAt<BancorCurve>(

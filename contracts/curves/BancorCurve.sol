@@ -10,7 +10,7 @@ contract BancorCurve is ICurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
-    struct Bancor {
+    struct CurveInfo {
         uint256 baseY;
         uint256 targetBaseY;
         uint32 reserveWeight;
@@ -24,7 +24,7 @@ contract BancorCurve is ICurve {
     address public hub;
 
     // NOTE: keys are their respective hubId
-    mapping(uint256 => Bancor) private _bancors;
+    mapping(uint256 => CurveInfo) private _curves;
 
     constructor(address _hub) {
         require(_hub != address(0), "!hub");
@@ -49,9 +49,9 @@ contract BancorCurve is ICurve {
             "!reserveWeight"
         );
 
-        Bancor storage bancor = _bancors[hubId];
-        bancor.baseY = baseY;
-        bancor.reserveWeight = reserveWeight;
+        CurveInfo storage curveInfo = _curves[hubId];
+        curveInfo.baseY = baseY;
+        curveInfo.reserveWeight = reserveWeight;
     }
 
     /// @inheritdoc ICurve
@@ -62,51 +62,51 @@ contract BancorCurve is ICurve {
         require(msg.sender == hub, "!hub");
 
         uint32 targetReserveWeight = abi.decode(encodedDetails, (uint32));
-        Bancor storage bancor = _bancors[hubId];
+        CurveInfo storage curveInfo = _curves[hubId];
 
         require(targetReserveWeight > 0, "!reserveWeight");
         require(
-            targetReserveWeight != bancor.reserveWeight,
+            targetReserveWeight != curveInfo.reserveWeight,
             "targetWeight!=Weight"
         );
 
         // targetBaseX = (old baseY * oldR) / newR
-        uint256 targetBaseY = (bancor.baseY * bancor.reserveWeight) /
+        uint256 targetBaseY = (curveInfo.baseY * curveInfo.reserveWeight) /
             targetReserveWeight;
-        bancor.targetBaseY = targetBaseY;
-        bancor.targetReserveWeight = targetReserveWeight;
+        curveInfo.targetBaseY = targetBaseY;
+        curveInfo.targetReserveWeight = targetReserveWeight;
     }
 
     /// @inheritdoc ICurve
     function finishReconfigure(uint256 hubId) external override {
         require(msg.sender == hub, "!hub");
-        Bancor storage bancor = _bancors[hubId];
-        bancor.reserveWeight = bancor.targetReserveWeight;
-        bancor.baseY = bancor.targetBaseY;
-        bancor.targetReserveWeight = 0;
-        bancor.targetBaseY = 0;
+        CurveInfo storage curveInfo = _curves[hubId];
+        curveInfo.reserveWeight = curveInfo.targetReserveWeight;
+        curveInfo.baseY = curveInfo.targetBaseY;
+        curveInfo.targetReserveWeight = 0;
+        curveInfo.targetBaseY = 0;
     }
 
-    function getBancorDetails(uint256 hubId)
+    function getCurveInfoBancor(uint256 hubId)
         external
         view
-        returns (Bancor memory)
+        returns (CurveInfo memory)
     {
-        return _bancors[hubId];
+        return _curves[hubId];
     }
 
     /// @inheritdoc ICurve
-    function getCurveDetails(uint256 hubId)
+    function getCurveInfo(uint256 hubId)
         external
         view
         override
         returns (uint256[4] memory)
     {
         return [
-            _bancors[hubId].baseY,
-            uint256(_bancors[hubId].reserveWeight),
-            _bancors[hubId].targetBaseY,
-            uint256(_bancors[hubId].targetReserveWeight)
+            _curves[hubId].baseY,
+            uint256(_curves[hubId].reserveWeight),
+            _curves[hubId].targetBaseY,
+            uint256(_curves[hubId].targetReserveWeight)
         ];
     }
 
@@ -117,20 +117,20 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Bancor memory bancor = _bancors[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
 
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                bancor.reserveWeight,
+                curveInfo.reserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                bancor.reserveWeight,
-                bancor.baseY
+                curveInfo.reserveWeight,
+                curveInfo.baseY
             );
         }
     }
@@ -142,19 +142,19 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
-        Bancor memory bancor = _bancors[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                bancor.targetReserveWeight,
+                curveInfo.targetReserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                bancor.targetReserveWeight,
-                bancor.targetBaseY
+                curveInfo.targetReserveWeight,
+                curveInfo.targetBaseY
             );
         }
     }
@@ -166,10 +166,10 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Bancor memory bancor = _bancors[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            bancor.reserveWeight,
+            curveInfo.reserveWeight,
             supply,
             balancePooled
         );
@@ -182,10 +182,10 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        Bancor memory bancor = _bancors[hubId];
+        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            bancor.targetReserveWeight,
+            curveInfo.targetReserveWeight,
             supply,
             balancePooled
         );

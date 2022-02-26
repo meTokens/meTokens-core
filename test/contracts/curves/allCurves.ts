@@ -15,7 +15,7 @@ import { MigrationRegistry } from "../../../artifacts/types/MigrationRegistry";
 import { addHubSetup, getCurve, hubSetup } from "../../utils/hubSetup";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import { ICurve } from "../../../artifacts/types/ICurve";
-import { Diamond, StepwiseCurveABDK } from "../../../artifacts/types";
+import { Diamond, StepwiseCurve } from "../../../artifacts/types";
 
 /* describe("All curves", () => {
   before("setup curves instance", async () => {});

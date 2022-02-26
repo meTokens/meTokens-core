@@ -38,7 +38,7 @@ interface IHubFacet {
     /// @param targetRefundRatio      Target rate to refund burners
     /// @param encodedCurveDetails    Additional encoded curve details
     /// @param reconfigure            Boolean to show if we're changing the
-    ///                                 curveDetails but not the curve address
+    ///                                 curveInfo but not the curve address
     /// @param startTime              Timestamp to start updating
     /// @param endTime                Timestamp to end updating
     /// @param endCooldown            Timestamp to allow another update
