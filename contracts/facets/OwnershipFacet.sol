@@ -11,7 +11,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDiamondController
     {
-        require(newController != s.diamondController, "same diamondController");
+        sameAsPreviousError(s.diamondController, newController);
         s.diamondController = newController;
     }
 
@@ -19,7 +19,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDiamondController
     {
-        require(forwarder != s.trustedForwarder, "same trustedForwarder");
+        sameAsPreviousError(s.trustedForwarder, forwarder);
         s.trustedForwarder = forwarder;
     }
 
@@ -27,7 +27,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyFeesController
     {
-        require(newController != s.feesController, "same feesController");
+        sameAsPreviousError(s.feesController, newController);
         s.feesController = newController;
     }
 
@@ -35,10 +35,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDurationsController
     {
-        require(
-            newController != s.durationsController,
-            "same durationsController"
-        );
+        sameAsPreviousError(s.durationsController, newController);
         s.durationsController = newController;
     }
 
@@ -46,10 +43,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyMeTokenRegistryController
     {
-        require(
-            newController != s.meTokenRegistryController,
-            "same meTokenRegistryController"
-        );
+        sameAsPreviousError(s.meTokenRegistryController, newController);
         s.meTokenRegistryController = newController;
     }
 
@@ -57,10 +51,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyRegisterController
     {
-        require(
-            newController != s.registerController,
-            "same registerController"
-        );
+        sameAsPreviousError(s.registerController, newController);
         s.registerController = newController;
     }
 
@@ -68,10 +59,7 @@ contract OwnershipFacet is Modifiers {
         external
         onlyDeactivateController
     {
-        require(
-            newController != s.deactivateController,
-            "same deactivateController"
-        );
+        sameAsPreviousError(s.deactivateController, newController);
         s.deactivateController = newController;
     }
 
@@ -101,5 +89,9 @@ contract OwnershipFacet is Modifiers {
 
     function deactivateController() external view returns (address) {
         return s.deactivateController;
+    }
+
+    function sameAsPreviousError(address _old, address _new) internal pure {
+        require(_old != _new, "same");
     }
 }

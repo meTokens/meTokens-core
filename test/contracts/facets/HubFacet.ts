@@ -8,7 +8,7 @@ import { SingleAssetVault } from "../../../artifacts/types/SingleAssetVault";
 import { deploy, getContractAt } from "../../utils/helpers";
 import {
   hubSetupWithoutRegister,
-  tranferFromWhale,
+  transferFromWhale,
 } from "../../utils/hubSetup";
 import { expect } from "chai";
 import { mineBlock } from "../../utils/hardhatNode";
@@ -83,7 +83,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetupWithoutRegister("bancorABDK"));
-      ({ token, tokenHolder } = await tranferFromWhale(account1.address));
+      ({ token, tokenHolder } = await transferFromWhale(account1.address));
     });
 
     describe("Initial state", () => {
