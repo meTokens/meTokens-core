@@ -29,7 +29,7 @@ import {
 import { ICurve } from "../../../artifacts/types/ICurve";
 
 const setup = async () => {
-  describe("HubFacet - update CurveDetails", () => {
+  describe("HubFacet - update CurveInfo", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let curve: ICurve;
     let updatedBancorCurve: BancorCurve;
@@ -52,7 +52,7 @@ const setup = async () => {
     let reserveWeight: number;
     let updatedReserveWeight: number;
     const MAX_WEIGHT = 1000000;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     const firstHubId = 1;
     const refundRatio = 5000;
     before(async () => {
@@ -65,7 +65,7 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -88,7 +88,7 @@ const setup = async () => {
         account3,
         meTokenRegistry,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         refundRatio,
         "BancorCurve"
@@ -146,21 +146,16 @@ const setup = async () => {
 
     describe("Warmup", () => {
       it("should revert initUpdate() if targetCurve is the current curve", async () => {
-        const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [updatedBaseY, updatedReserveWeight]
         );
         await expect(
-          hub.initUpdate(
-            firstHubId,
-            curve.address,
-            0,
-            updatedEncodedCurveDetails
-          )
+          hub.initUpdate(firstHubId, curve.address, 0, updatedEncodedCurveInfo)
         ).to.be.revertedWith("targetCurve==curve");
       });
-      it("Assets received based on initial initialCurveDetails", async () => {
-        const updatedEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      it("Assets received based on initial initialCurveInfo", async () => {
+        const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [updatedBaseY, updatedReserveWeight]
         );
@@ -176,7 +171,7 @@ const setup = async () => {
           firstHubId,
           updatedBancorCurve.address,
           0,
-          updatedEncodedCurveDetails
+          updatedEncodedCurveInfo
         );
 
         const tokenDepositedInETH = 100;
@@ -527,7 +522,7 @@ const setup = async () => {
         ).to.be.revertedWith("Still cooling down");
       });
 
-      it("burn() and mint() by owner should use the targetCurveDetails", async () => {
+      it("burn() and mint() by owner should use the targetCurveInfo", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -617,7 +612,7 @@ const setup = async () => {
           toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
         ).to.be.approximately(assetsReturned, 0.00000000001);
       });
-      it("burn() and mint() by buyer should use the targetCurveDetails", async () => {
+      it("burn() and mint() by buyer should use the targetCurveInfo", async () => {
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -715,7 +710,7 @@ const setup = async () => {
         reserveWeight = updatedReserveWeight;
         updatedReserveWeight = 750000;
 
-        encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint32"],
           [updatedReserveWeight]
         );
@@ -724,7 +719,7 @@ const setup = async () => {
           1,
           ethers.constants.AddressZero,
           0,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const block2 = await ethers.provider.getBlock("latest");
         const info = await hub.getHubInfo(1);

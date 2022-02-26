@@ -18,7 +18,7 @@ export const curvesTestsHelper = async ({
   calculateCollateralReturned,
   calculateTargetCollateralReturned,
   calculateTargetTokenReturnedFromZero,
-  verifyCurveDetails,
+  verifyCurveInfo,
 }: {
   curve: ICurve;
   newCurve: ICurve;
@@ -56,9 +56,7 @@ export const curvesTestsHelper = async ({
     balancePooled: number,
     meTokenSupply: number
   ) => number;
-  verifyCurveDetails: (
-    info: [BigNumber, BigNumber, BigNumber, BigNumber]
-  ) => void;
+  verifyCurveInfo: (info: [BigNumber, BigNumber, BigNumber, BigNumber]) => void;
 }) => {
   const one = ethers.utils.parseEther("1");
 
@@ -77,29 +75,27 @@ export const curvesTestsHelper = async ({
       curve.register(hubId, ethers.constants.HashZero)
     ).to.be.revertedWith("!hub");
   });
-  it("Reverts w/ incorrect encodedDetails", async () => {
+  it("Reverts w/ incorrect encodedCurveInfo", async () => {
     await expect(
       hub.initUpdate(hubId, newCurve.address, 0, ethers.utils.toUtf8Bytes("a"))
     ).to.be.reverted;
   });
-  it("Reverts w/ invalid encodedDetails", async () => {
-    let encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+  it("Reverts w/ invalid encodedCurveInfo", async () => {
+    let encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [0, 500000]
     );
     // first param must be > 0
-    await expect(
-      hub.initUpdate(hubId, newCurve.address, 0, encodedCurveDetails)
-    ).to.be.reverted;
+    await expect(hub.initUpdate(hubId, newCurve.address, 0, encodedCurveInfo))
+      .to.be.reverted;
 
     // second param must be > 0
-    encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+    encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
       ["uint256", "uint32"],
       [100, 0]
     );
-    await expect(
-      hub.initUpdate(hubId, newCurve.address, 0, encodedCurveDetails)
-    ).to.be.reverted;
+    await expect(hub.initUpdate(hubId, newCurve.address, 0, encodedCurveInfo))
+      .to.be.reverted;
   });
 
   it("viewMeTokensMinted() from 0 supply should work", async () => {
@@ -269,7 +265,7 @@ export const curvesTestsHelper = async ({
     );
 
     const info = await curve.getCurveInfo(hubId);
-    verifyCurveDetails(info);
+    verifyCurveInfo(info);
   });
   it("viewTargetMeTokensMinted() from 0 supply should work", async () => {
     let amount = one.mul(2);

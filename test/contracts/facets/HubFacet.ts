@@ -41,7 +41,7 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let curveRegistry: CurveRegistry;
     let encodedVaultDAIArgs: string;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let token: ERC20;
     let dai: ERC20;
     let tokenHolder: Signer;
@@ -67,7 +67,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -123,7 +123,7 @@ const setup = async () => {
               singleAssetVault.address,
               curve.address,
               refundRatio1,
-              encodedCurveDetails,
+              encodedCurveInfo,
               encodedVaultDAIArgs
             )
         ).to.be.revertedWith("!registerController");
@@ -136,7 +136,7 @@ const setup = async () => {
           singleAssetVault.address,
           account0.address, // random unapproved address
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("curve !approved");
@@ -148,13 +148,13 @@ const setup = async () => {
           account0.address, // random unapproved address
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("vault !approved");
       });
-      it("should revert from invalid encodedCurveDetails", async () => {
-        // Invalid _encodedCurveDetails for particular curve
+      it("should revert from invalid encodedCurveInfo", async () => {
+        // Invalid _encodedCurveInfo for particular curve
         await expect(
           hub.register(
             account0.address,
@@ -162,10 +162,10 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            "0x", // invalid _encodedCurveDetails
+            "0x", // invalid _encodedCurveInfo
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedDetails");
+        ).to.be.revertedWith("!encodedCurveInfo");
         await expect(
           hub.register(
             account0.address,
@@ -173,10 +173,10 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveDetails
+            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveInfo
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedDetails");
+        ).to.be.revertedWith("!encodedCurveInfo");
       });
       it("should revert from invalid encodedVaultArgs", async () => {
         // Invalid _encodedVaultArgs
@@ -186,7 +186,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs // invalid _encodedVaultArgs
         );
         await expect(tx).to.be.revertedWith("asset !valid");
@@ -199,7 +199,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           10 ** 7,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio > MAX");
@@ -211,7 +211,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           0,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio == 0");
@@ -223,7 +223,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio1,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
         await tx.wait();
@@ -237,7 +237,7 @@ const setup = async () => {
             singleAssetVault.address,
             curve.address,
             refundRatio1,
-            encodedCurveDetails,
+            encodedCurveInfo,
             encodedVaultDAIArgs
           );
         expect(await hub.count()).to.be.equal(hubId);
@@ -335,7 +335,7 @@ const setup = async () => {
       it("should revert when sender is not owner", async () => {
         const tx = hub
           .connect(account1)
-          .initUpdate(hubId, curve.address, refundRatio2, encodedCurveDetails);
+          .initUpdate(hubId, curve.address, refundRatio2, encodedCurveInfo);
         await expect(tx).to.be.revertedWith("!owner");
       });
 
@@ -351,13 +351,13 @@ const setup = async () => {
           hubId,
           curve.address,
           10 ** 7,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const tx2 = hub.initUpdate(
           hubId,
           curve.address,
           refundRatio1,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(tx1).to.be.revertedWith("targetRefundRatio >= MAX");
         await expect(tx2).to.be.revertedWith(
@@ -365,8 +365,8 @@ const setup = async () => {
         );
       });
 
-      it("should revert on ICurve.initReconfigure() from invalid encodedCurveDetails", async () => {
-        const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      it("should revert on ICurve.initReconfigure() from invalid encodedCurveInfo", async () => {
+        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint32"],
           [0]
         );
@@ -374,7 +374,7 @@ const setup = async () => {
           hubId,
           ethers.constants.AddressZero,
           0,
-          badEncodedCurveDetails
+          badEncodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("!reserveWeight");
       });
@@ -384,13 +384,13 @@ const setup = async () => {
           hubId,
           account0.address, // invalid curve address
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("targetCurve !approved");
       });
 
-      it("should revert on ICurve.register() from invalid encodedCurveDetails", async () => {
-        const badEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      it("should revert on ICurve.register() from invalid encodedCurveInfo", async () => {
+        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [0, 0]
         );
@@ -404,7 +404,7 @@ const setup = async () => {
           hubId,
           newCurve.address,
           refundRatio2,
-          badEncodedCurveDetails
+          badEncodedCurveInfo
         );
         await expect(tx).to.be.revertedWith("!baseY");
       });
@@ -420,7 +420,7 @@ const setup = async () => {
           hubId,
           newCurve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
@@ -435,7 +435,7 @@ const setup = async () => {
             hubId,
             newCurve.address,
             refundRatio2,
-            encodedCurveDetails,
+            encodedCurveInfo,
             false,
             expectedStartTime,
             expectedEndTime,
@@ -463,7 +463,7 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         const info = await hub.getHubInfo(hubId);
 
@@ -476,7 +476,7 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txAfterStartTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
@@ -488,7 +488,7 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txBeforeEndTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
@@ -500,7 +500,7 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txAfterEndTime).to.be.revertedWith("Still cooling down");
         block = await ethers.provider.getBlock("latest");
@@ -512,7 +512,7 @@ const setup = async () => {
           hubId,
           curve.address,
           refundRatio2,
-          encodedCurveDetails
+          encodedCurveInfo
         );
         await expect(txBeforeEndCooldown).to.be.revertedWith(
           "Still cooling down"
@@ -606,7 +606,7 @@ const setup = async () => {
       });
       it("should revert after warmup period", async () => {
         // create a update
-        const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint32"],
           [reserveWeight / 2]
         );
@@ -614,7 +614,7 @@ const setup = async () => {
           hubId,
           ethers.constants.AddressZero,
           0,
-          newEncodedCurveDetails
+          newEncodedCurveInfo
         );
         const receipt = await tx.wait();
 
@@ -630,7 +630,7 @@ const setup = async () => {
             hubId,
             ethers.constants.AddressZero,
             0,
-            newEncodedCurveDetails,
+            newEncodedCurveInfo,
             true,
             expectedStartTime,
             expectedEndTime,
@@ -716,7 +716,7 @@ const setup = async () => {
           const oldDetails = await hub.getHubInfo(hubId);
           await mineBlock(oldDetails.endCooldown.toNumber() + 10);
 
-          const newEncodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+          const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
             ["uint32"],
             [reserveWeight / (toggle ? 2 : 1)]
           );
@@ -725,7 +725,7 @@ const setup = async () => {
             hubId,
             ethers.constants.AddressZero,
             0,
-            newEncodedCurveDetails
+            newEncodedCurveInfo
           );
           await tx.wait();
 

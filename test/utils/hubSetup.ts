@@ -26,7 +26,7 @@ import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
 
 export async function hubSetup(
-  encodedCurveDetails: string,
+  encodedCurveInfo: string,
   encodedVaultArgs: string,
   refundRatio: number,
   curveStr: string,
@@ -82,7 +82,7 @@ export async function hubSetup(
     singleAssetVault.address,
     curve.address,
     refundRatio, //refund ratio
-    encodedCurveDetails,
+    encodedCurveInfo,
     encodedVaultArgs
   );
   return {
@@ -325,7 +325,7 @@ export async function addHubSetup(
   curveType: string,
   curveRegistry: CurveRegistry,
   vaultRegistry: VaultRegistry,
-  encodedCurveDetails: string,
+  encodedCurveInfo: string,
   encodedVaultArgs: string,
   refundRatio: number,
   daoAddress?: string,
@@ -369,7 +369,7 @@ export async function addHubSetup(
     singleAssetVault.address,
     curve.address,
     refundRatio, //refund ratio
-    encodedCurveDetails,
+    encodedCurveInfo,
     encodedVaultArgs
   );
   const hubId = (await hub.count()).toNumber();

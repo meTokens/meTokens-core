@@ -41,8 +41,8 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedCurveDetails1: string;
-    let encodedCurveDetails2: string;
+    let encodedCurveInfo1: string;
+    let encodedCurveInfo2: string;
     let fees: FeesFacet;
 
     const hubId1 = 1;
@@ -75,11 +75,11 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails1 = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo1 = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY1, reserveWeight1]
       );
-      encodedCurveDetails2 = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo2 = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY2, reserveWeight2]
       );
@@ -105,7 +105,7 @@ const setup = async () => {
         meTokenRegistry,
         fee: fees,
       } = await hubSetup(
-        encodedCurveDetails1,
+        encodedCurveInfo1,
         encodedVaultArgs,
         refundRatio,
         "BancorCurve"
@@ -120,7 +120,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails2,
+        encodedCurveInfo2,
         encodedVaultArgs
       );
 

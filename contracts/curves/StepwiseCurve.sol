@@ -33,15 +33,15 @@ contract StepwiseCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function register(uint256 hubId, bytes calldata encodedDetails)
+    function register(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
-        require(encodedDetails.length > 0, "!encodedDetails");
+        require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
         (uint256 stepX, uint256 stepY) = abi.decode(
-            encodedDetails,
+            encodedCurveInfo,
             (uint256, uint256)
         );
         require(stepX > 0 && stepX > PRECISION, "stepX not in range");
@@ -53,17 +53,17 @@ contract StepwiseCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
+    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
 
         // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
-        // require(encodedDetails.length > 0, "encodedDetails empty");
+        // require(encodedCurveInfo.length > 0, "encodedCurveInfo empty");
 
         (uint256 targetStepX, uint256 targetStepY) = abi.decode(
-            encodedDetails,
+            encodedCurveInfo,
             (uint256, uint256)
         );
         CurveInfo storage curveInfo = _curves[hubId];

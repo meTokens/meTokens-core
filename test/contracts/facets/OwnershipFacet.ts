@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetupWithoutRegister } from "../../utils/hubSetup";
 import {
@@ -17,30 +17,13 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let hub: HubFacet;
     let hubId: BigNumber;
-    let encodedVaultDAIArgs: string;
-    let encodedCurveDetails: string;
     let diamond: Diamond;
     let forwarder: MinimalForwarder;
     let ownershipFacet: OwnershipFacet;
-    let DAI: string;
 
     before("setup", async () => {
-      ({ DAI } = await getNamedAccounts());
-      encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
-        ["address"],
-        [DAI]
-      );
-      const PRECISION = ethers.utils.parseEther("1");
-      const MAX_WEIGHT = 1000000;
-      const reserveWeight = MAX_WEIGHT / 2;
-      const baseY = PRECISION.div(1000);
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-
       ({ hub, account0, account1, diamond } = await hubSetupWithoutRegister(
-        "bancorABDK"
+        "BancorCurve"
       ));
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(

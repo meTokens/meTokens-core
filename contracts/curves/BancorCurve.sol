@@ -32,15 +32,15 @@ contract BancorCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function register(uint256 hubId, bytes calldata encodedDetails)
+    function register(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
-        require(encodedDetails.length > 0, "!encodedDetails");
+        require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
-            encodedDetails,
+            encodedCurveInfo,
             (uint256, uint32)
         );
         require(baseY > 0, "!baseY");
@@ -55,13 +55,13 @@ contract BancorCurve is ICurve {
     }
 
     /// @inheritdoc ICurve
-    function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
+    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
     {
         require(msg.sender == hub, "!hub");
 
-        uint32 targetReserveWeight = abi.decode(encodedDetails, (uint32));
+        uint32 targetReserveWeight = abi.decode(encodedCurveInfo, (uint32));
         CurveInfo storage curveInfo = _curves[hubId];
 
         require(targetReserveWeight > 0, "!reserveWeight");

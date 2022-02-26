@@ -28,7 +28,7 @@ const setup = async () => {
     let hubId: BigNumber;
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let token: ERC20;
     let diamond: Diamond;
     let forwarder: MinimalForwarder;
@@ -58,7 +58,7 @@ const setup = async () => {
       const MAX_WEIGHT = 1000000;
       const reserveWeight = MAX_WEIGHT / 2;
       const baseY = PRECISION.div(1000);
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -98,7 +98,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs
       );
 
@@ -151,7 +151,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultDAIArgs
         );
       expect(await forwarder.getNonce(message.from)).to.equal(1);
@@ -163,7 +163,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs
       );
       if (!data) {

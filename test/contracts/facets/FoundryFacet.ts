@@ -46,7 +46,7 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let migrationRegistry: MigrationRegistry;
     let curveRegistry: CurveRegistry;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
 
     const hubId = 1;
@@ -77,7 +77,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -95,7 +95,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         initRefundRatio,
         "BancorCurve"
@@ -951,7 +951,7 @@ const setup = async () => {
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
 
-        const encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+        const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
           ["uint256", "uint32"],
           [baseY, reserveWeight]
         );
@@ -974,7 +974,7 @@ const setup = async () => {
           hubId,
           newCurve.address,
           targetRefundRatio,
-          encodedCurveDetails
+          encodedCurveInfo
         );
       });
       it("mint() Should work the same right after the migration ", async () => {
@@ -1085,7 +1085,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         migration = await deploy<SameAssetTransferMigration>(
@@ -1182,7 +1182,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           refundRatio,
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         migration = await deploy<UniswapSingleTransferMigration>(

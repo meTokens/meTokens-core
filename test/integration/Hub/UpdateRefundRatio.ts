@@ -40,7 +40,7 @@ const setup = async () => {
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const firstRefundRatio = 5000;
@@ -50,7 +50,7 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -70,7 +70,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         firstRefundRatio,
         "BancorCurve"
@@ -136,7 +136,7 @@ const setup = async () => {
         // fast fwd a little bit
         await passDays(1);
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -220,7 +220,7 @@ const setup = async () => {
       });
       it("should revert initUpdate() if already updating", async () => {
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -506,7 +506,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -593,7 +593,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();

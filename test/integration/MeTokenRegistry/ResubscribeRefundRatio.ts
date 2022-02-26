@@ -39,7 +39,7 @@ const setup = async () => {
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
@@ -56,7 +56,7 @@ const setup = async () => {
       let WETH;
       ({ DAI, WETH } = await getNamedAccounts());
 
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -77,7 +77,7 @@ const setup = async () => {
         account2,
         meTokenRegistry,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         initialRefundRatio.toNumber(),
         "BancorCurve"
@@ -121,7 +121,7 @@ const setup = async () => {
         singleAssetVault.address,
         curve.address,
         targetRefundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs
       );
       await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week

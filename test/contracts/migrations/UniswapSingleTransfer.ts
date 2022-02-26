@@ -57,7 +57,7 @@ const setup = async () => {
     const duration = 4 * 60 * 24 * 24; // 4 days
     const coolDown = 5 * 60 * 24 * 24; // 5 days
 
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedMigrationArgs: string;
     let badEncodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
@@ -72,7 +72,7 @@ const setup = async () => {
 
     before(async () => {
       ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -105,7 +105,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs,
         refundRatio,
         "BancorCurve"
@@ -126,7 +126,7 @@ const setup = async () => {
         targetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultWETHArgs
       );
       // Deploy uniswap migration and approve it to the registry

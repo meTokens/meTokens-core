@@ -397,9 +397,7 @@ export const getCalculationFuncsForBancorCurves = (
         targetReserveWeight / MAX_WEIGHT
       );
     },
-    verifyCurveDetails: (
-      info: [BigNumber, BigNumber, BigNumber, BigNumber]
-    ) => {
+    verifyCurveInfo: (info: [BigNumber, BigNumber, BigNumber, BigNumber]) => {
       const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
 
       expect(info[2]).to.equal(targetBaseY);
@@ -555,9 +553,7 @@ export const getCalculationFuncsForStepwiseCurves = (
         targetStepX,
         targetStepY
       ),
-    verifyCurveDetails: (
-      info: [BigNumber, BigNumber, BigNumber, BigNumber]
-    ) => {
+    verifyCurveInfo: (info: [BigNumber, BigNumber, BigNumber, BigNumber]) => {
       expect(toETHNumber(info[0])).to.equal(stepX);
       expect(toETHNumber(info[1])).to.equal(stepY);
       expect(toETHNumber(info[2])).to.equal(targetStepX);

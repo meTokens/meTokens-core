@@ -9,14 +9,14 @@ import {HubInfo} from "../libs/LibHub.sol";
 /// @author Carter Carlson (@cartercarlson)
 interface IHubFacet {
     /// @notice Event of registering a hub
-    /// @param id                  Unique hub identifer
-    /// @param owner               Address to own hub
-    /// @param asset               Address of underlying asset
-    /// @param vault               Address of vault
-    /// @param curve               Address of curve
-    /// @param refundRatio         Rate to refund burners
-    /// @param encodedCurveDetails Additional encoded curve details
-    /// @param encodedVaultArgs    Additional encoded vault arguments
+    /// @param id               Unique hub identifer
+    /// @param owner            Address to own hub
+    /// @param asset            Address of underlying asset
+    /// @param vault            Address of vault
+    /// @param curve            Address of curve
+    /// @param refundRatio      Rate to refund burners
+    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param encodedVaultArgs Additional encoded vault arguments
     event Register(
         uint256 id,
         address owner,
@@ -24,7 +24,7 @@ interface IHubFacet {
         address vault,
         address curve,
         uint256 refundRatio,
-        bytes encodedCurveDetails,
+        bytes encodedCurveInfo,
         bytes encodedVaultArgs
     );
 
@@ -33,20 +33,20 @@ interface IHubFacet {
     event Deactivate(uint256 id);
 
     /// @notice Event of initializing a hub update
-    /// @param id                     Unique hub identifier
-    /// @param targetCurve            Address of target curve
-    /// @param targetRefundRatio      Target rate to refund burners
-    /// @param encodedCurveDetails    Additional encoded curve details
-    /// @param reconfigure            Boolean to show if we're changing the
-    ///                                 curveInfo but not the curve address
-    /// @param startTime              Timestamp to start updating
-    /// @param endTime                Timestamp to end updating
-    /// @param endCooldown            Timestamp to allow another update
+    /// @param id                   Unique hub identifier
+    /// @param targetCurve          Address of target curve
+    /// @param targetRefundRatio    Target rate to refund burners
+    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param reconfigure          Boolean to show if we're changing the
+    ///                               curveInfo but not the curve address
+    /// @param startTime            Timestamp to start updating
+    /// @param endTime              Timestamp to end updating
+    /// @param endCooldown          Timestamp to allow another update
     event InitUpdate(
         uint256 id,
         address targetCurve,
         uint256 targetRefundRatio,
-        bytes encodedCurveDetails,
+        bytes encodedCurveInfo,
         bool reconfigure,
         uint256 startTime,
         uint256 endTime,
@@ -72,7 +72,7 @@ interface IHubFacet {
     /// @param vault               Address of vault
     /// @param curve               Address of curve
     /// @param refundRatio         rate to refund burners
-    /// @param encodedCurveDetails Additional encoded curve details
+    /// @param encodedCurveInfo Additional encoded curve details
     /// @param encodedVaultArgs    Additional encoded vault arguments
     function register(
         address owner,
@@ -80,7 +80,7 @@ interface IHubFacet {
         IVault vault,
         ICurve curve,
         uint256 refundRatio,
-        bytes memory encodedCurveDetails,
+        bytes memory encodedCurveInfo,
         bytes memory encodedVaultArgs
     ) external;
 
@@ -90,12 +90,12 @@ interface IHubFacet {
     /// @param id                  Unique hub identifier
     /// @param targetCurve         Address of target curve
     /// @param targetRefundRatio   Target rate to refund burners
-    /// @param encodedCurveDetails Additional encoded curve details
+    /// @param encodedCurveInfo Additional encoded curve details
     function initUpdate(
         uint256 id,
         address targetCurve,
         uint256 targetRefundRatio,
-        bytes memory encodedCurveDetails
+        bytes memory encodedCurveInfo
     ) external;
 
     /// @notice Cancel a hub update

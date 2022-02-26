@@ -12,14 +12,14 @@ interface ICurve {
     /// BancorZero Curve registry
     /// @dev Curve need to be encoded as the Hub may register Curves for different curves
     ///      that may contain different Curve arguments
-    /// @param hubId           Unique hub identifier
-    /// @param encodedDetails  Encoded Curve arguments
-    function register(uint256 hubId, bytes calldata encodedDetails) external;
+    /// @param hubId            Unique hub identifier
+    /// @param encodedCurveInfo Encoded curveInfo
+    function register(uint256 hubId, bytes calldata encodedCurveInfo) external;
 
     /// @notice Initialize reconfiguring curveInfo for a hub
-    /// @param hubId           Unique hub identifier
-    /// @param encodedDetails  Encoded target Curve arguments
-    function initReconfigure(uint256 hubId, bytes calldata encodedDetails)
+    /// @param hubId            Unique hub identifier
+    /// @param encodedCurveInfo Encoded target curveInfo
+    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         external;
 
     /// @notice Finish reconfiguring curveInfo for a hub

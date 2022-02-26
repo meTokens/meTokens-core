@@ -46,7 +46,7 @@ const setup = async () => {
   let baseY1 = one.mul(1000);
   let reserveWeight1 = MAX_WEIGHT / 2;
   let targetReserveWeight1 = MAX_WEIGHT - 20000;
-  let encodedCurveDetails1 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo1 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY1, reserveWeight1]
   );
@@ -54,7 +54,7 @@ const setup = async () => {
   let baseY2 = one.mul(100);
   let reserveWeight2 = MAX_WEIGHT / 10;
   let targetReserveWeight2 = reserveWeight2 + 20000;
-  let encodedCurveDetails2 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo2 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY2, reserveWeight2]
   );
@@ -62,7 +62,7 @@ const setup = async () => {
   let baseY3 = one.mul(1);
   let reserveWeight3 = 100000;
   let targetReserveWeight3 = reserveWeight3 + 10000;
-  let encodedCurveDetails3 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo3 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY3, reserveWeight3]
   );
@@ -70,7 +70,7 @@ const setup = async () => {
   let baseY4 = one.mul(1);
   let reserveWeight4 = 100000;
   let targetReserveWeight4 = reserveWeight4 + 10000;
-  let encodedCurveDetails4 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo4 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY4, reserveWeight4]
   );
@@ -78,7 +78,7 @@ const setup = async () => {
   let baseY5 = one.mul(1);
   let reserveWeight5 = 500000;
   let targetReserveWeight5 = 333333;
-  let encodedCurveDetails5 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo5 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY5, reserveWeight5]
   );
@@ -86,7 +86,7 @@ const setup = async () => {
   let baseY6 = one.mul(1);
   let reserveWeight6 = 250000;
   let targetReserveWeight6 = 333333;
-  let encodedCurveDetails6 = ethers.utils.defaultAbiCoder.encode(
+  let encodedCurveInfo6 = ethers.utils.defaultAbiCoder.encode(
     ["uint256", "uint32"],
     [baseY6, reserveWeight6]
   );
@@ -102,12 +102,7 @@ const setup = async () => {
     account0,
     account1,
     account2,
-  } = await hubSetup(
-    encodedCurveDetails1,
-    encodedVaultArgs,
-    5000,
-    "BancorCurve"
-  ));
+  } = await hubSetup(encodedCurveInfo1, encodedVaultArgs, 5000, "BancorCurve"));
   let addArgs: [
     string,
     HubFacet,
@@ -127,7 +122,7 @@ const setup = async () => {
     "BancorCurve",
     curveRegistry,
     vaultRegistry,
-    encodedCurveDetails1,
+    encodedCurveInfo1,
     encodedVaultArgs,
     5000,
     account0.address,
@@ -161,7 +156,7 @@ const setup = async () => {
 
   // Second Bancor curve
   addArgs[10] = hubInfo.curve;
-  addArgs[6] = encodedCurveDetails2;
+  addArgs[6] = encodedCurveInfo2;
   // we register a new hub with the same curve deployed before but with new encoded curve info
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -180,7 +175,7 @@ const setup = async () => {
   });
 
   // Third Bancor curve
-  addArgs[6] = encodedCurveDetails3;
+  addArgs[6] = encodedCurveInfo3;
   // we register a new hub with the same curve deployed before but with new encoded curve info
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -198,7 +193,7 @@ const setup = async () => {
     ),
   });
   // Fourth ABDK curve
-  addArgs[6] = encodedCurveDetails4;
+  addArgs[6] = encodedCurveInfo4;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -216,7 +211,7 @@ const setup = async () => {
     ),
   });
   // fifth ABDK curve
-  addArgs[6] = encodedCurveDetails5;
+  addArgs[6] = encodedCurveInfo5;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -234,7 +229,7 @@ const setup = async () => {
     ),
   });
   // sixth ABDK curve
-  addArgs[6] = encodedCurveDetails6;
+  addArgs[6] = encodedCurveInfo6;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
