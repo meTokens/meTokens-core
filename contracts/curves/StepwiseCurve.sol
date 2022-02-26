@@ -197,7 +197,6 @@ contract StepwiseCurve is ICurve {
         if (assetsDeposited == 0) {
             return 0;
         }
-
         // bytes16 assetsDeposited = assetsDeposited.fromUInt();
         bytes16 stpX = stepX.fromUInt();
         bytes16 stpY = stepY.fromUInt();
@@ -230,7 +229,6 @@ contract StepwiseCurve is ICurve {
                 )
             );
         }
-
         return supplyAfterMint.toUInt() - supply;
     }
 

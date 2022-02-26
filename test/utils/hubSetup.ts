@@ -71,7 +71,7 @@ export async function hubSetup(
     account2,
     account3,
   } = await hubSetupWithoutRegister(curveStr, fees);
-  const { token, tokenAddr, tokenHolder, tokenWhale } = await tranferFromWhale(
+  const { token, tokenAddr, tokenHolder, tokenWhale } = await transferFromWhale(
     account1.address,
     erc20Address,
     erc20Whale
@@ -107,7 +107,10 @@ export async function hubSetup(
     tokenWhale,
   };
 }
-async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
+export async function getCurve(
+  curveType: string,
+  diamond: string
+): Promise<ICurve> {
   switch (curveType) {
     case "BancorCurve":
       return (await deploy<BancorCurve>(
@@ -129,7 +132,7 @@ async function getCurve(curveType: string, diamond: string): Promise<ICurve> {
       )) as unknown as ICurve;
   }
 }
-export async function tranferFromWhale(
+export async function transferFromWhale(
   recipientAddr: string,
   erc20Address?: string,
   erc20Whale?: string

@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { TypedDataDomain } from "@ethersproject/abstract-signer";
-import { hubSetupWithoutRegister, tranferFromWhale } from "../utils/hubSetup";
+import { hubSetupWithoutRegister, transferFromWhale } from "../utils/hubSetup";
 import {
   HubFacet,
   MinimalForwarder,
@@ -270,7 +270,7 @@ const setup = async () => {
     });
     it("should mint", async () => {
       const amount = ethers.utils.parseEther("20");
-      const res = await tranferFromWhale(account1.address, DAI, DAIWhale);
+      const res = await transferFromWhale(account1.address, DAI, DAIWhale);
       token = res.token;
       await token.connect(account1).approve(singleAssetVault.address, amount);
 
