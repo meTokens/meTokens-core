@@ -5,8 +5,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Vault} from "../vaults/Vault.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
-import {IHub} from "../interfaces/IHub.sol";
-import {IMeTokenRegistry} from "../interfaces/IMeTokenRegistry.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
+import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
@@ -21,7 +21,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
 /// @title Same asset vault migrator
-/// @author Parv Garg (@parv3213), Carl Farterson (@carlfarterson)
+/// @author Parv Garg (@parv3213), Carter Carlson (@cartercarlson)
 /// @notice create a vault to hold an asset if a meToken is resubscribing
 ///         to a different hub with the same asset
 contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
@@ -36,16 +36,19 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
+    /// @inheritdoc IMigration
     function initMigration(
         address meToken,
         bytes memory /* encodedArgs */
     ) external override {
         require(msg.sender == diamond, "!diamond");
 
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
-        HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
+            meTokenInfo.hubId
+        );
+        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
@@ -54,17 +57,21 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         _sameAssetMigration[meToken].isMigrating = true;
     }
 
+    /// @inheritdoc IMigration
     function poke(address meToken) external override nonReentrant {
         SameAssetMigration storage usts = _sameAssetMigration[meToken];
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
+            meTokenInfo.hubId
+        );
         if (usts.isMigrating && !usts.started) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
         }
     }
 
+    /// @inheritdoc IMigration
     function finishMigration(address meToken)
         external
         override
@@ -75,10 +82,12 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         SameAssetMigration storage usts = _sameAssetMigration[meToken];
         require(usts.isMigrating, "!migrating");
 
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(meToken);
-        HubInfo memory hubInfo = IHub(diamond).getHubDetails(meTokenInfo.hubId);
-        HubInfo memory targetHubInfo = IHub(diamond).getHubDetails(
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
+            .getMeTokenInfo(meToken);
+        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
+            meTokenInfo.hubId
+        );
+        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
@@ -104,12 +113,13 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     }
 
     // Kicks off meToken warmup period
+    /// @inheritdoc Vault
     function isValid(
         address meToken,
         bytes memory /* encodedArgs */
     ) external view override returns (bool) {
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistry(diamond)
-            .getMeTokenDetails(meToken);
+        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
+            .getMeTokenInfo(meToken);
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         return true;

@@ -57,7 +57,7 @@ const setup = async () => {
     const duration = 4 * 60 * 24 * 24; // 4 days
     const coolDown = 5 * 60 * 24 * 24; // 5 days
 
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedMigrationArgs: string;
     let badEncodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
@@ -72,7 +72,7 @@ const setup = async () => {
 
     before(async () => {
       ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -105,10 +105,10 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultDAIArgs,
         refundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       targetVault = await deploy<SingleAssetVault>(
@@ -126,7 +126,7 @@ const setup = async () => {
         targetVault.address,
         curve.address,
         refundRatio,
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultWETHArgs
       );
       // Deploy uniswap migration and approve it to the registry
@@ -346,7 +346,7 @@ const setup = async () => {
         ).to.be.revertedWith("!diamond");
       });
       it("Should not trigger startsMigration() if already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -401,7 +401,7 @@ const setup = async () => {
         expect(migrationDetails.fee).to.equal(fees);
         expect(migrationDetails.soonest).to.equal(earliestSwapTime);
 
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
@@ -413,7 +413,7 @@ const setup = async () => {
         ).to.be.revertedWith("timestamp < soonest");
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
-        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         migrationDetails = await migration.getDetails(meToken.address);
@@ -425,7 +425,7 @@ const setup = async () => {
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
-        meTokenRegistryDetails = await meTokenRegistry.getMeTokenDetails(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         await expect(tx)
@@ -505,13 +505,13 @@ const setup = async () => {
           ).to.equal(amount);
         });
         it("From soonest => endTime: assets transferred to/from migration vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+          const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
             meToken.address
           );
 
-          await mineBlock(meTokenDetails.startTime.toNumber() + 2);
+          await mineBlock(meTokenInfo.startTime.toNumber() + 2);
           block = await ethers.provider.getBlock("latest");
-          expect(meTokenDetails.startTime).to.be.lt(block.timestamp);
+          expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
 
           const initialVaultDAIBefore = await dai.balanceOf(
             initialVault.address
@@ -549,13 +549,13 @@ const setup = async () => {
           expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
         });
         it("After endTime: assets transferred to/from target vault", async () => {
-          const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+          const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
             meToken.address
           );
 
-          await mineBlock(meTokenDetails.endTime.toNumber() + 2);
+          await mineBlock(meTokenInfo.endTime.toNumber() + 2);
           block = await ethers.provider.getBlock("latest");
-          expect(meTokenDetails.endTime).to.be.lt(block.timestamp);
+          expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
 
           const initialVaultDAIBefore = await dai.balanceOf(
             initialVault.address

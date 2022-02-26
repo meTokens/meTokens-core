@@ -40,7 +40,7 @@ const setup = async () => {
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
-    let encodedCurveDetails: string;
+    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const firstRefundRatio = 5000;
@@ -50,7 +50,7 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
+      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
       );
@@ -70,10 +70,10 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveDetails,
+        encodedCurveInfo,
         encodedVaultArgs,
         firstRefundRatio,
-        "bancorABDK"
+        "BancorCurve"
       ));
 
       // Pre-load owner and buyer w/ DAI
@@ -136,7 +136,7 @@ const setup = async () => {
         // fast fwd a little bit
         await passDays(1);
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -220,7 +220,7 @@ const setup = async () => {
       });
       it("should revert initUpdate() if already updating", async () => {
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveDetails)
+          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -248,20 +248,20 @@ const setup = async () => {
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(balAfter),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
           (toETHNumber(balAfter) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
 
         await foundry
           .connect(account0)
@@ -270,7 +270,7 @@ const setup = async () => {
         expect(balBefore).to.equal(balAfterBurn);
         const balDaiAfter = await token.balanceOf(account0.address);
 
-        const { active, updating } = await hub.getHubDetails(1);
+        const { active, updating } = await hub.getHubInfo(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
 
@@ -299,7 +299,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -310,7 +310,7 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(balAfter),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
 
@@ -321,7 +321,7 @@ const setup = async () => {
           startTime,
           endTime,
           targetRefundRatio,
-        } = await hub.getHubDetails(1);
+        } = await hub.getHubInfo(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
 
@@ -353,7 +353,7 @@ const setup = async () => {
 
     describe("During cooldown", () => {
       it("initUpdate() cannot be called", async () => {
-        const { active, updating, endTime } = await hub.getHubDetails(1);
+        const { active, updating, endTime } = await hub.getHubInfo(1);
         expect(active).to.be.true;
         expect(updating).to.be.true;
         const block = await ethers.provider.getBlock("latest");
@@ -387,7 +387,7 @@ const setup = async () => {
           endTime,
           endCooldown,
           targetRefundRatio,
-        } = await hub.getHubDetails(1);
+        } = await hub.getHubInfo(1);
         // update has been finished by calling mint function as we passed the end time
         expect(targetRefundRatio).to.equal(0);
         expect(refundRatio).to.equal(targetedRefundRatio);
@@ -399,20 +399,20 @@ const setup = async () => {
         expect(vaultBalAfterMint.sub(vaultBalBefore)).to.equal(tokenDeposited);
 
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(balAfter),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
           (toETHNumber(balAfter) / toETHNumber(meTokenTotalSupply)) *
-            toETHNumber(meTokenDetails.balanceLocked);
+            toETHNumber(meTokenInfo.balanceLocked);
 
         await foundry
           .connect(account0)
@@ -452,7 +452,7 @@ const setup = async () => {
           singleAssetVault.address
         );
         const meTokenTotalSupply = await meToken.totalSupply();
-        const meTokenDetails = await meTokenRegistry.getMeTokenDetails(
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
 
@@ -461,7 +461,7 @@ const setup = async () => {
         const rawAssetsReturned = calculateCollateralReturned(
           toETHNumber(balAfter),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenDetails.balancePooled),
+          toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
 
@@ -480,7 +480,7 @@ const setup = async () => {
           endTime,
           endCooldown,
           targetRefundRatio,
-        } = await hub.getHubDetails(1);
+        } = await hub.getHubInfo(1);
 
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -506,7 +506,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -523,7 +523,7 @@ const setup = async () => {
 
         let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
-        const detBefore = await hub.getHubDetails(hubId);
+        const detBefore = await hub.getHubInfo(hubId);
 
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
@@ -534,7 +534,7 @@ const setup = async () => {
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
-        const detAfterInit = await hub.getHubDetails(hubId);
+        const detAfterInit = await hub.getHubInfo(hubId);
 
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
@@ -542,7 +542,7 @@ const setup = async () => {
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
 
         await hub.finishUpdate(hubId);
-        const detAfterUpdate = await hub.getHubDetails(hubId);
+        const detAfterUpdate = await hub.getHubInfo(hubId);
 
         expect(detAfterUpdate.active).to.be.true;
         expect(detAfterUpdate.updating).to.be.false;
@@ -560,7 +560,7 @@ const setup = async () => {
           endTime,
           endCooldown,
           targetRefundRatio,
-        } = await hub.getHubDetails(1);
+        } = await hub.getHubInfo(1);
 
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -579,7 +579,7 @@ const setup = async () => {
           ethers.utils.toUtf8Bytes("")
         );
 
-        const detAfterInit = await hub.getHubDetails(1);
+        const detAfterInit = await hub.getHubInfo(1);
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
         expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio);
@@ -593,7 +593,7 @@ const setup = async () => {
           singleAssetVault.address,
           curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveDetails,
+          encodedCurveInfo,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -607,7 +607,7 @@ const setup = async () => {
 
         let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
-        const detBefore = await hub.getHubDetails(hubId);
+        const detBefore = await hub.getHubInfo(hubId);
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
         expect(detBefore.targetRefundRatio).to.equal(0);
@@ -617,7 +617,7 @@ const setup = async () => {
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
-        const detAfterInit = await hub.getHubDetails(hubId);
+        const detAfterInit = await hub.getHubInfo(hubId);
 
         expect(detAfterInit.active).to.be.true;
         expect(detAfterInit.updating).to.be.true;
@@ -633,7 +633,7 @@ const setup = async () => {
           ethers.utils.toUtf8Bytes("")
         );
 
-        const detAfterUpdate = await hub.getHubDetails(hubId);
+        const detAfterUpdate = await hub.getHubInfo(hubId);
         expect(detAfterUpdate.active).to.be.true;
         expect(detAfterUpdate.updating).to.be.true;
         expect(detAfterUpdate.refundRatio).to.equal(targetedRefundRatio);

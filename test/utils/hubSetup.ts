@@ -1,6 +1,7 @@
 import { Contract } from "@ethersproject/contracts";
 import { ethers, getNamedAccounts } from "hardhat";
-import { BancorABDK, StepwiseCurveABDK } from "../../artifacts/types";
+import { BancorCurve } from "../../artifacts/types/BancorCurve";
+import { StepwiseCurve } from "../../artifacts/types/StepwiseCurve";
 import { MeTokenFactory } from "../../artifacts/types/MeTokenFactory";
 import { CurveRegistry } from "../../artifacts/types/CurveRegistry";
 import { VaultRegistry } from "../../artifacts/types/VaultRegistry";
@@ -25,7 +26,7 @@ import { ICurve } from "../../artifacts/types/ICurve";
 import { expect } from "chai";
 
 export async function hubSetup(
-  encodedCurveDetails: string,
+  encodedCurveInfo: string,
   encodedVaultArgs: string,
   refundRatio: number,
   curveStr: string,
@@ -81,7 +82,7 @@ export async function hubSetup(
     singleAssetVault.address,
     curve.address,
     refundRatio, //refund ratio
-    encodedCurveDetails,
+    encodedCurveInfo,
     encodedVaultArgs
   );
   return {
@@ -111,21 +112,21 @@ export async function getCurve(
   diamond: string
 ): Promise<ICurve> {
   switch (curveType) {
-    case "BancorABDK":
-      return (await deploy<BancorABDK>(
-        "BancorABDK",
+    case "BancorCurve":
+      return (await deploy<BancorCurve>(
+        "BancorCurve",
         undefined,
         diamond
       )) as unknown as ICurve;
     case "StepwiseCurve":
-      return (await deploy<StepwiseCurveABDK>(
-        "StepwiseCurveABDK",
+      return (await deploy<StepwiseCurve>(
+        "StepwiseCurve",
         undefined,
         diamond
       )) as unknown as ICurve;
     default:
-      return (await deploy<BancorABDK>(
-        "BancorABDK",
+      return (await deploy<BancorCurve>(
+        "BancorCurve",
         undefined,
         diamond
       )) as unknown as ICurve;
@@ -324,7 +325,7 @@ export async function addHubSetup(
   curveType: string,
   curveRegistry: CurveRegistry,
   vaultRegistry: VaultRegistry,
-  encodedCurveDetails: string,
+  encodedCurveInfo: string,
   encodedVaultArgs: string,
   refundRatio: number,
   daoAddress?: string,
@@ -368,7 +369,7 @@ export async function addHubSetup(
     singleAssetVault.address,
     curve.address,
     refundRatio, //refund ratio
-    encodedCurveDetails,
+    encodedCurveInfo,
     encodedVaultArgs
   );
   const hubId = (await hub.count()).toNumber();

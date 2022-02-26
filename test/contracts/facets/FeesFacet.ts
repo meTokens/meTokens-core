@@ -16,7 +16,7 @@ const setup = async () => {
     const yieldFee = 10000000;
     let account1: SignerWithAddress;
     before(async () => {
-      ({ fee: fees, account1 } = await hubSetupWithoutRegister("bancorABDK", [
+      ({ fee: fees, account1 } = await hubSetupWithoutRegister("BancorCurve", [
         mintFee,
         burnBuyerFee,
         burnOwnerFee,

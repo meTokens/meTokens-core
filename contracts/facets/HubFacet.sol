@@ -4,12 +4,12 @@ pragma solidity ^0.8.0;
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import {Modifiers} from "../libs/Details.sol";
-import {IHub} from "../interfaces/IHub.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
-import {IFoundry} from "../interfaces/IFoundry.sol";
+import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 
 contract HubFacet is Modifiers {
     event Register(
@@ -19,7 +19,7 @@ contract HubFacet is Modifiers {
         address vault,
         address curve,
         uint256 refundRatio,
-        bytes encodedCurveDetails,
+        bytes encodedCurveInfo,
         bytes encodedVaultArgs
     );
     event Deactivate(uint256 id);
@@ -27,7 +27,7 @@ contract HubFacet is Modifiers {
         uint256 id,
         address targetCurve,
         uint256 targetRefundRatio,
-        bytes encodedCurveDetails,
+        bytes encodedCurveInfo,
         bool reconfigure,
         uint256 startTime,
         uint256 endTime,
@@ -43,7 +43,7 @@ contract HubFacet is Modifiers {
         IVault vault,
         ICurve curve,
         uint256 refundRatio,
-        bytes memory encodedCurveDetails,
+        bytes memory encodedCurveInfo,
         bytes memory encodedVaultArgs
     ) external onlyRegisterController {
         require(s.curveRegistry.isApproved(address(curve)), "curve !approved");
@@ -56,7 +56,7 @@ contract HubFacet is Modifiers {
 
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;
-        curve.register(id, encodedCurveDetails);
+        curve.register(id, encodedCurveInfo);
         // Save the hub to the registry
         HubInfo storage hubInfo = s.hubs[s.hubCount];
         hubInfo.active = true;
@@ -72,7 +72,7 @@ contract HubFacet is Modifiers {
             address(vault),
             address(curve),
             refundRatio,
-            encodedCurveDetails,
+            encodedCurveInfo,
             encodedVaultArgs
         );
     }
@@ -93,7 +93,7 @@ contract HubFacet is Modifiers {
         uint256 id,
         address targetCurve,
         uint256 targetRefundRatio,
-        bytes memory encodedCurveDetails
+        bytes memory encodedCurveInfo
     ) external {
         HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
@@ -106,7 +106,7 @@ contract HubFacet is Modifiers {
         require(block.timestamp >= hubInfo.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (targetRefundRatio != 0) || (encodedCurveDetails.length > 0),
+            (targetRefundRatio != 0) || (encodedCurveInfo.length > 0),
             "Nothing to update"
         );
 
@@ -123,9 +123,9 @@ contract HubFacet is Modifiers {
         }
 
         bool reconfigure;
-        if (encodedCurveDetails.length > 0) {
+        if (encodedCurveInfo.length > 0) {
             if (targetCurve == address(0)) {
-                ICurve(hubInfo.curve).initReconfigure(id, encodedCurveDetails);
+                ICurve(hubInfo.curve).initReconfigure(id, encodedCurveInfo);
                 reconfigure = true;
             } else {
                 require(
@@ -133,7 +133,7 @@ contract HubFacet is Modifiers {
                     "targetCurve !approved"
                 );
                 require(targetCurve != hubInfo.curve, "targetCurve==curve");
-                ICurve(targetCurve).register(id, encodedCurveDetails);
+                ICurve(targetCurve).register(id, encodedCurveInfo);
                 hubInfo.targetCurve = targetCurve;
             }
         }
@@ -152,7 +152,7 @@ contract HubFacet is Modifiers {
             id,
             targetCurve,
             targetRefundRatio,
-            encodedCurveDetails,
+            encodedCurveInfo,
             reconfigure,
             hubInfo.startTime,
             hubInfo.endTime,
@@ -207,8 +207,8 @@ contract HubFacet is Modifiers {
         s.hubCooldown = cooldown;
     }
 
-    function getHubDetails(uint256 id) external view returns (HubInfo memory) {
-        return LibHub.getHub(id);
+    function getHubInfo(uint256 id) external view returns (HubInfo memory) {
+        return LibHub.getHubInfo(id);
     }
 
     function count() external view returns (uint256) {
