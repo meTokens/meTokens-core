@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 import {ICurve} from "../interfaces/ICurve.sol";
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";

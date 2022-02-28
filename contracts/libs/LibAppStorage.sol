@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 import {IRegistry} from "../interfaces/IRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
