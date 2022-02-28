@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 /// @title Single Asset Vault interface
 /// @author Carter Carlson (@cartercarlson)

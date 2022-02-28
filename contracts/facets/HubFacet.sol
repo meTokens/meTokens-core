@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";

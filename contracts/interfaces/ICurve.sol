@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 /// @title Generic Curve interface
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
