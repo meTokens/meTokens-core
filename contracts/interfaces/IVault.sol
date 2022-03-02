@@ -18,13 +18,13 @@ abstract contract IVault {
     /// @param asset            Address of asset
     /// @param depositAmount    Amount of assets deposited
     /// @param feeAmount        Amount of fees paid
-    /// @param encodedArgs      Additional encoded arguments
+    /// @param encodedVaultArgs Additional encoded arguments
     function handleDeposit(
         address from,
         address asset,
         uint256 depositAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory encodedVaultArgs
     ) external virtual;
 
     /// @notice Withdraw an asset from the vault
@@ -32,13 +32,13 @@ abstract contract IVault {
     /// @param asset                Address of asset
     /// @param withdrawalAmount     Amount of assets withdrawn
     /// @param feeAmount            Amount of fees paid
-    /// @param encodedArgs          Additional encoded arguments
+    /// @param encodedVaultArgs     Additional encoded arguments
     function handleWithdrawal(
         address to,
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory encodedVaultArgs
     ) external virtual;
 
     /// @notice Claim the accrued fees of an asset
@@ -53,10 +53,10 @@ abstract contract IVault {
 
     /// @notice View to see if an asset with encoded arguments passed
     ///           when a vault is registered to a new hub
-    /// @param asset        Address of asset
-    /// @param encodedArgs  Additional encoded arguments
-    /// @return             True if asset & encoded args are valid, else false
-    function isValid(address asset, bytes memory encodedArgs)
+    /// @param asset            Address of asset
+    /// @param encodedVaultArgs Additional encoded arguments
+    /// @return                 True if asset & encoded args are valid, else false
+    function isValid(address asset, bytes memory encodedVaultArgs)
         external
         virtual
         returns (bool);

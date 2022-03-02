@@ -29,7 +29,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         address asset,
         uint256 depositAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory encodedArgs
     ) external virtual override;
 
     /// @inheritdoc IVault
@@ -38,7 +38,7 @@ abstract contract Vault is IVault, ReentrancyGuard {
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory encodedArgs
     ) external virtual override;
 
     /// @inheritdoc IVault
@@ -64,8 +64,5 @@ abstract contract Vault is IVault, ReentrancyGuard {
         external
         virtual
         override
-        returns (bool)
-    {
-        return true;
-    }
+        returns (bool);
 }

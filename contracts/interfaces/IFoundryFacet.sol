@@ -52,33 +52,33 @@ interface IFoundryFacet {
     /// @param meToken          Address of meToken to mint
     /// @param assetsDeposited  Amount of assets to deposit
     /// @param recipient        Address to receive minted meTokens
-    /// @param encodedArgs      Additional encoded arguments
+    /// @param encodedVaultArgs Additional encoded arguments
     function mint(
         address meToken,
         uint256 assetsDeposited,
         address recipient,
-        bytes32 encodedArgs
+        bytes memory encodedVaultArgs
     ) external;
 
     /// @notice Burn a meToken to receive the underlying asset
     /// @param meToken          Address of meToken to burn
     /// @param meTokensBurned   Amount of meTokens to burn
     /// @param recipient        Address to receive the underlying assets
-    /// @param encodedArgs      Additional encoded arguments
+    /// @param encodedVaultArgs Additional encoded arguments
     function burn(
         address meToken,
         uint256 meTokensBurned,
         address recipient,
-        bytes32 encodedArgs
+        bytes memory encodedVaultArgs
     ) external;
 
     /// @notice Donate a meToken's underlying asset to its owner
     /// @param meToken          Address of meToken to burn
     /// @param assetsDeposited  Amount of asset to donate
-    /// @param encodedArgs      Additional encoded arguments
+    /// @param encodedVaultArgs Additional encoded arguments
     function donate(
         address meToken,
         uint256 assetsDeposited,
-        bytes32 encodedArgs
+        bytes memory encodedVaultArgs
     ) external;
 }

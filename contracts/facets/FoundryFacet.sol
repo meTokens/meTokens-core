@@ -40,7 +40,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         address meToken,
         uint256 assetsDeposited,
         address recipient,
-        bytes32 encodedArgs
+        bytes memory encodedArgs
     ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -133,7 +133,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         address meToken,
         uint256 meTokensBurned,
         address recipient,
-        bytes32 encodedArgs
+        bytes memory encodedArgs
     ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -232,7 +232,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     function donate(
         address meToken,
         uint256 assetsDeposited,
-        bytes32 additionalArgs
+        bytes memory encodedArgs
     ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -242,7 +242,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         IVault vault = IVault(hubInfo.vault);
         address asset = hubInfo.asset;
 
-        vault.handleDeposit(sender, asset, assetsDeposited, 0, additionalArgs);
+        vault.handleDeposit(sender, asset, assetsDeposited, 0, encodedArgs);
 
         LibMeToken.updateBalanceLocked(true, meToken, assetsDeposited);
 

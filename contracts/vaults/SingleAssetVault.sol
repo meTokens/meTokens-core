@@ -45,7 +45,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         address asset,
         uint256 depositAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory /* encodedArgs */
     ) external override nonReentrant {
         require(msg.sender == diamond, "!diamond");
         IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
@@ -60,7 +60,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount,
-        bytes32 encodedArgs
+        bytes memory /* encodedArgs */
     ) external override nonReentrant {
         require(msg.sender == diamond, "!diamond");
         IERC20(asset).safeTransfer(to, withdrawalAmount);
