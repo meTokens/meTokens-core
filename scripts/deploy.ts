@@ -287,11 +287,8 @@ async function main() {
     const TASK_VERIFY = "verify";
 
     await verifyContract("singleAssetVault", singleAssetVault.address, [
-      DAO.address, // DAO
-      diamond.address, // foundry
-      diamond.address, // hub
-      diamond.address, //IMeTokenRegistry
-      migrationRegistry.address, //IMigrationRegistry
+      DAO.address,
+      diamond.address,
     ]);
     await verifyContract("Diamond", diamond.address, [
       deployer.address,
