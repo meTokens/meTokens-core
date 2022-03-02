@@ -18,7 +18,11 @@ import {HubInfo} from "../libs/LibHub.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
+abstract contract UniswapSingleTransferMigration is
+    ReentrancyGuard,
+    Vault,
+    IMigration
+{
     struct UniswapSingleTransfer {
         // The earliest time that the swap can occur
         uint256 soonest;

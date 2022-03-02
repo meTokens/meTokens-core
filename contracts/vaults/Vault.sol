@@ -28,30 +28,18 @@ abstract contract Vault is IVault, ReentrancyGuard {
         address from,
         address asset,
         uint256 depositAmount,
-        uint256 feeAmount
-    ) external override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleDeposit(from, asset, depositAmount, feeAmount);
-    }
+        uint256 feeAmount,
+        bytes32 encodedArgs
+    ) external virtual override;
 
     /// @inheritdoc IVault
     function handleWithdrawal(
         address to,
         address asset,
         uint256 withdrawalAmount,
-        uint256 feeAmount
-    ) external override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
-        IERC20(asset).safeTransfer(to, withdrawalAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleWithdrawal(to, asset, withdrawalAmount, feeAmount);
-    }
+        uint256 feeAmount,
+        bytes32 encodedArgs
+    ) external virtual override;
 
     /// @inheritdoc IVault
     function claim(
@@ -76,5 +64,8 @@ abstract contract Vault is IVault, ReentrancyGuard {
         external
         virtual
         override
-        returns (bool);
+        returns (bool)
+    {
+        return true;
+    }
 }

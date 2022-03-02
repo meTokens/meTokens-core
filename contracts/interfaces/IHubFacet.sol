@@ -67,13 +67,13 @@ interface IHubFacet {
     event FinishUpdate(uint256 id);
 
     /// @notice Register a new hub
-    /// @param owner               Address to own hub
-    /// @param asset               Address of vault asset
-    /// @param vault               Address of vault
-    /// @param curve               Address of curve
-    /// @param refundRatio         rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
-    /// @param encodedVaultArgs    Additional encoded vault arguments
+    /// @param owner                Address to own hub
+    /// @param asset                Address of vault asset
+    /// @param vault                Address of vault
+    /// @param curve                Address of curve
+    /// @param refundRatio          Rate to refund burners
+    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param encodedVaultArgs     Additional encoded vault arguments
     function register(
         address owner,
         address asset,
@@ -84,13 +84,16 @@ interface IHubFacet {
         bytes memory encodedVaultArgs
     ) external;
 
+    /// @notice Deactivate a hub, which prevents a meToken from subscribing
+    ///     to it
+    /// @param id Unique hub identifier
     function deactivate(uint256 id) external;
 
     /// @notice Intialize a hub update
-    /// @param id                  Unique hub identifier
-    /// @param targetCurve         Address of target curve
-    /// @param targetRefundRatio   Target rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param id                   Unique hub identifier
+    /// @param targetCurve          Address of target curve
+    /// @param targetRefundRatio    Target rate to refund burners
+    /// @param encodedCurveInfo     Additional encoded curve details
     function initUpdate(
         uint256 id,
         address targetCurve,
@@ -105,27 +108,49 @@ interface IHubFacet {
 
     /// @notice Finish updating a hub
     /// @param id  Unique hub identifier
-    /// @return    Details of hub
-    function finishUpdate(uint256 id) external returns (HubInfo memory);
+    function finishUpdate(uint256 id) external;
 
-    /// @notice Get the information of a hub
-    /// @param id   Unique hub identifier
-    /// @return     Details of hub
+    /// @notice Transfer the ownership of a hub
+    /// @param id       Unique hub identifier
+    /// @param newOwner Address to own the hub
+    function transferHubOwnership(uint256 id, address newOwner) external;
+
+    /// @notice Get the time period for a hub to warm up, which is the time
+    ///     difference between initUpdate() is called and when the update
+    ///     is live
+    /// @param amount   Amount of time, in seconds
+    function setHubWarmup(uint256 amount) external;
+
+    /// @notice Set the time period for a hub to update, which is the time
+    ///     difference etween when the update is live and when finishUpdate()
+    ///     is called
+    /// @param amount   Amount of time, in seconds
+    function setHubDuration(uint256 amount) external;
+
+    /// @notice Set the time period for a hub to cooldown, which is the time
+    ///     difference between when finishUpdate() is called and when initUpdate()
+    ///     can be called again
+    /// @param amount   Amount of time, in seconds
+    function setHubCooldown(uint256 amount) external;
+
+    /// @notice View to get information for a hub
+    /// @param id Unique hub identifier
+    /// @return Information of hub
     function getHubInfo(uint256 id) external view returns (HubInfo memory);
 
     /// @notice Counter of hubs registered
-    /// @return uint256
+    /// @return uint256 Unique hub count
     function count() external view returns (uint256);
 
-    function warmup() external view returns (uint256);
+    /// @notice Get the hub warmup period
+    /// @return Period of hub warmup, in seconds
+    function hubWarmup() external view returns (uint256);
 
-    function setWarmup(uint256 warmup) external;
+    /// @notice Get the hub duration period
+    /// @return Period of hub duration, in seconds
+    function hubDuration() external view returns (uint256);
 
-    function duration() external view returns (uint256);
-
-    function setDuration(uint256 duration) external;
-
-    function cooldown() external view returns (uint256);
-
-    function setCooldown(uint256 cooldown) external;
+    /// @notice Get the hub cooldown period
+    /// @return Period of hub cooldown, in seconds
+    function hubCooldown() external view returns (uint256);
 }

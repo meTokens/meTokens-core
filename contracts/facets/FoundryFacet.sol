@@ -35,11 +35,12 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     //                                              .sub(fees)                 //
     //                                                                         //
     ****************************************************************************/
-
+    /// @inheritdoc IFoundryFacet
     function mint(
         address meToken,
         uint256 assetsDeposited,
-        address recipient
+        address recipient,
+        bytes32 encodedArgs
     ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -80,7 +81,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             vault = IVault(meTokenInfo.migration);
             asset = s.hubs[meTokenInfo.targetHubId].asset;
         }
-        vault.handleDeposit(sender, asset, assetsDeposited, fee);
+        vault.handleDeposit(sender, asset, assetsDeposited, fee, encodedArgs);
 
         LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
         // Mint meToken to user
@@ -131,7 +132,8 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     function burn(
         address meToken,
         uint256 meTokensBurned,
-        address recipient
+        address recipient,
+        bytes32 encodedArgs
     ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -191,18 +193,30 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         uint256 fee = (assetsReturned * feeRate) / s.PRECISION;
         assetsReturned = assetsReturned - fee;
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
+        address asset;
 
         if (
             meTokenInfo.migration != address(0) &&
             block.timestamp > meTokenInfo.startTime
         ) {
-            vault = IVault(meTokenInfo.migration);
             asset = s.hubs[meTokenInfo.targetHubId].asset;
+            IVault(meTokenInfo.migration).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee,
+                encodedArgs
+            );
+        } else {
+            asset = hubInfo.asset;
+            IVault(hubInfo.vault).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee,
+                encodedArgs
+            );
         }
-
-        vault.handleWithdrawal(recipient, asset, assetsReturned, fee);
 
         emit Burn(
             meToken,
@@ -214,10 +228,12 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         );
     }
 
-    function donate(address meToken, uint256 assetsDeposited)
-        external
-        override
-    {
+    /// @inheritdoc IFoundryFacet
+    function donate(
+        address meToken,
+        uint256 assetsDeposited,
+        bytes32 additionalArgs
+    ) external override {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
@@ -226,14 +242,13 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         IVault vault = IVault(hubInfo.vault);
         address asset = hubInfo.asset;
 
-        vault.handleDeposit(sender, asset, assetsDeposited, 0);
+        vault.handleDeposit(sender, asset, assetsDeposited, 0, additionalArgs);
 
         LibMeToken.updateBalanceLocked(true, meToken, assetsDeposited);
 
         emit Donate(meToken, asset, sender, assetsDeposited);
     }
 
-    // NOTE: for now this does not include fees
     function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
         private
         view

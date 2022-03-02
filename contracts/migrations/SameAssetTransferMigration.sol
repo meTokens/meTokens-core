@@ -24,7 +24,11 @@ import {HubInfo} from "../libs/LibHub.sol";
 /// @author Parv Garg (@parv3213), Carter Carlson (@cartercarlson)
 /// @notice create a vault to hold an asset if a meToken is resubscribing
 ///         to a different hub with the same asset
-contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
+abstract contract SameAssetTransferMigration is
+    ReentrancyGuard,
+    Vault,
+    IMigration
+{
     struct SameAssetMigration {
         // if migration is active
         bool isMigrating;
