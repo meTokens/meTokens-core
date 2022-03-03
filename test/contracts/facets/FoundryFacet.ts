@@ -153,7 +153,7 @@ const setup = async () => {
         totalSupply,
         meTokenInfo.balancePooled
       );
-      await foundry.mint(meToken.address, amount, account2.address);
+      await foundry.mint(meToken.address, amount, account2.address, "0x");
 
       const tokenBalAfter = await meToken.balanceOf(account2.address);
       const balAfter = await dai.balanceOf(account0.address);
@@ -179,7 +179,7 @@ const setup = async () => {
       const balDaiBefore = await dai.balanceOf(account2.address);
       await foundry
         .connect(account2)
-        .burn(meToken.address, balBefore, account2.address);
+        .burn(meToken.address, balBefore, account2.address, "0x");
       const balAfter = await meToken.balanceOf(account2.address);
       const balDaiAfter = await dai.balanceOf(account2.address);
       expect(balAfter).equal(0);
@@ -195,11 +195,12 @@ const setup = async () => {
     describe("mint transfer burn", () => {
       before(async () => {
         // mint some to owner and burn. To make balance pool and locked 0
-        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.mint(meToken.address, 1, account0.address, "0x");
         await foundry.burn(
           meToken.address,
           await meToken.balanceOf(account0.address),
-          account0.address
+          account0.address,
+          "0x"
         );
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -222,7 +223,7 @@ const setup = async () => {
           // burn mints some
           await foundry
             .connect(account1)
-            .mint(meToken.address, PRECISION, account1.address);
+            .mint(meToken.address, PRECISION, account1.address, "0x");
           collateralDeposited = PRECISION;
 
           // buyer transfer half to owner
@@ -256,7 +257,8 @@ const setup = async () => {
           await foundry.burn(
             meToken.address,
             await meToken.balanceOf(account0.address),
-            account0.address
+            account0.address,
+            "0x"
           );
 
           const DAIAfter = await token.balanceOf(account0.address);
@@ -285,7 +287,8 @@ const setup = async () => {
             .burn(
               meToken.address,
               await meToken.balanceOf(account1.address),
-              account1.address
+              account1.address,
+              "0x"
             );
 
           const DAIAfter = await token.balanceOf(account1.address);
@@ -297,13 +300,14 @@ const setup = async () => {
         });
         it("owner can claim the remaining balanceLocked", async () => {
           // mint some to owner
-          await foundry.mint(meToken.address, 1, account0.address);
+          await foundry.mint(meToken.address, 1, account0.address, "0x00");
 
           const ownerBalanceBefore = await token.balanceOf(account0.address);
           await foundry.burn(
             meToken.address,
             await meToken.balanceOf(account0.address),
-            account0.address
+            account0.address,
+            "0x"
           );
           const ownerBalanceAfter = await token.balanceOf(account0.address);
 
@@ -330,7 +334,12 @@ const setup = async () => {
           );
 
           // owner mints some
-          await foundry.mint(meToken.address, PRECISION, account0.address);
+          await foundry.mint(
+            meToken.address,
+            PRECISION,
+            account0.address,
+            "0x"
+          );
           collateralDeposited = PRECISION;
 
           // owner transfer half to buyer
@@ -366,7 +375,8 @@ const setup = async () => {
             .burn(
               meToken.address,
               await meToken.balanceOf(account1.address),
-              account1.address
+              account1.address,
+              "0x"
             );
 
           const DAIAfter = await token.balanceOf(account1.address);
@@ -395,7 +405,12 @@ const setup = async () => {
             (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
               toETHNumber(meTokenInfo.balanceLocked);
 
-          await foundry.burn(meToken.address, ownerMeToken, account0.address);
+          await foundry.burn(
+            meToken.address,
+            ownerMeToken,
+            account0.address,
+            "0x"
+          );
 
           const DAIAfter = await token.balanceOf(account0.address);
           collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
@@ -414,11 +429,12 @@ const setup = async () => {
     describe("multiple burn and mint", () => {
       before(async () => {
         // mint some to owner and burn. To make balance pool and locked 0
-        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.mint(meToken.address, 1, account0.address, "0x");
         await foundry.burn(
           meToken.address,
           await meToken.balanceOf(account0.address),
-          account0.address
+          account0.address,
+          "0x"
         );
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -454,7 +470,12 @@ const setup = async () => {
               reserveWeight / MAX_WEIGHT
             );
           }
-          await foundry.mint(meToken.address, PRECISION, account0.address);
+          await foundry.mint(
+            meToken.address,
+            PRECISION,
+            account0.address,
+            "0x"
+          );
         }
         const ownerBalanceAfter = await token.balanceOf(account0.address);
         const vaultBalanceAfter = await token.balanceOf(
@@ -496,7 +517,8 @@ const setup = async () => {
           await foundry.burn(
             meToken.address,
             singleBurnAmount,
-            account0.address
+            account0.address,
+            "0x"
           );
         }
         const ownerBalanceAfter = await token.balanceOf(account0.address);
@@ -537,7 +559,7 @@ const setup = async () => {
           }
           await foundry
             .connect(account1)
-            .mint(meToken.address, PRECISION, account1.address);
+            .mint(meToken.address, PRECISION, account1.address, "0x");
         }
         const buyerBalanceAfter = await token.balanceOf(account1.address);
         const vaultBalanceAfter = await token.balanceOf(
@@ -582,7 +604,7 @@ const setup = async () => {
           );
           await foundry
             .connect(account1)
-            .burn(meToken.address, singleBurnAmount, account1.address);
+            .burn(meToken.address, singleBurnAmount, account1.address, "0x");
         }
         assetsReturned =
           (targetCollateralReturn * initRefundRatio) / MAX_WEIGHT;
@@ -602,13 +624,14 @@ const setup = async () => {
 
       it("owner can claim the remaining balanceLocked", async () => {
         // mint some to owner
-        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.mint(meToken.address, 1, account0.address, "0x");
 
         const ownerBalanceBefore = await token.balanceOf(account0.address);
         await foundry.burn(
           meToken.address,
           await meToken.balanceOf(account0.address),
-          account0.address
+          account0.address,
+          "0x"
         );
         const ownerBalanceAfter = await token.balanceOf(account0.address);
 
@@ -719,7 +742,7 @@ const setup = async () => {
         // Mint meToken
         await foundry
           .connect(account2)
-          .mint(meToken.address, amount1, account2.address);
+          .mint(meToken.address, amount1, account2.address, "0x");
         // Compare expected meTokens minted to actual held
         const meTokensMinted = await meToken.balanceOf(account2.address);
         expect(meTokensMinted).to.equal(expectedMeTokensMinted);
@@ -751,13 +774,14 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account2.address),
-            account2.address
+            account2.address,
+            "0x"
           );
 
         // when mints
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
@@ -772,7 +796,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account1.address),
-            account1.address
+            account1.address,
+            "0x"
           );
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -785,7 +810,7 @@ const setup = async () => {
         // when mints
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
@@ -801,7 +826,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account1.address),
-            account1.address
+            account1.address,
+            "0x"
           );
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -814,14 +840,15 @@ const setup = async () => {
         // mint some to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account2.address);
+          .mint(meToken.address, tokenDeposited, account2.address, "0x");
 
         await foundry
           .connect(account2)
           .burn(
             meToken.address,
             await meToken.balanceOf(account2.address),
-            account2.address
+            account2.address,
+            "0x"
           );
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -834,12 +861,12 @@ const setup = async () => {
         // mint some to buyer
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
 
         // mint some to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account2.address);
+          .mint(meToken.address, tokenDeposited, account2.address, "0x");
 
         // burn buyer shares
         await foundry
@@ -847,7 +874,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account1.address),
-            account1.address
+            account1.address,
+            "0x"
           );
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -863,13 +891,14 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account2.address),
-            account2.address
+            account2.address,
+            "0x"
           );
 
         // mint some to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account2.address);
+          .mint(meToken.address, tokenDeposited, account2.address, "0x");
 
         // burn some owner shares
         await foundry
@@ -877,7 +906,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             (await meToken.balanceOf(account2.address)).div(2),
-            account2.address
+            account2.address,
+            "0x"
           );
 
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
@@ -894,13 +924,14 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account2.address),
-            account2.address
+            account2.address,
+            "0x"
           );
 
         // mint some to buyer
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
 
         // burn from buyer
         await foundry
@@ -908,7 +939,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account1.address),
-            account1.address
+            account1.address,
+            "0x"
           );
 
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
@@ -922,7 +954,7 @@ const setup = async () => {
         // mint some to buyer
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
       });
       after(async () => {
         await foundry
@@ -930,7 +962,8 @@ const setup = async () => {
           .burn(
             meToken.address,
             await meToken.balanceOf(account1.address),
-            account1.address
+            account1.address,
+            "0x"
           );
       });
     });
@@ -995,7 +1028,7 @@ const setup = async () => {
 
         await foundry
           .connect(account2)
-          .mint(meToken.address, amount, account2.address);
+          .mint(meToken.address, amount, account2.address, "0x");
         const balAfter = await dai.balanceOf(account2.address);
         const balTokenAfter = await meToken.balanceOf(account2.address);
         expect(balTokenAfter).to.be.gt(balTokenBefore);
@@ -1026,7 +1059,7 @@ const setup = async () => {
         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
         await foundry
           .connect(account2)
-          .burn(meToken.address, balBefore, account2.address);
+          .burn(meToken.address, balBefore, account2.address, "0x");
         const balAfter = await meToken.balanceOf(account2.address);
         const balDaiAfter = await dai.balanceOf(account2.address);
         expect(balAfter).equal(0);
@@ -1051,7 +1084,7 @@ const setup = async () => {
 
         await foundry
           .connect(account2)
-          .mint(meToken.address, amount, account2.address);
+          .mint(meToken.address, amount, account2.address, "0x");
         const balAfter = await dai.balanceOf(account2.address);
         expect(balBefore.sub(balAfter)).equal(amount);
 
@@ -1118,9 +1151,9 @@ const setup = async () => {
         ).to.equal(migration.address);
       });
       it("should revert when meToken is resubscribing", async () => {
-        await expect(foundry.donate(meToken.address, 10)).to.be.revertedWith(
-          "meToken resubscribing"
-        );
+        await expect(
+          foundry.donate(meToken.address, 10, "0x")
+        ).to.be.revertedWith("meToken resubscribing");
       });
       it("should be able to donate", async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
@@ -1139,7 +1172,7 @@ const setup = async () => {
         const oldAccruedFee = await singleAssetVault.accruedFees(dai.address);
 
         const assetsDeposited = 10;
-        const tx = await foundry.donate(meToken.address, assetsDeposited);
+        const tx = await foundry.donate(meToken.address, assetsDeposited, "0x");
 
         await expect(tx)
           .to.emit(foundry, "Donate")
@@ -1149,8 +1182,6 @@ const setup = async () => {
             account0.address,
             assetsDeposited
           )
-          .to.emit(singleAssetVault, "HandleDeposit")
-          .withArgs(account0.address, dai.address, assetsDeposited, 0)
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
@@ -1225,9 +1256,9 @@ const setup = async () => {
         expect(migrationDetails.soonest).to.be.lt(block.timestamp);
       });
       it("should revert when meToken is resubscribing", async () => {
-        await expect(foundry.donate(meToken.address, 10)).to.be.revertedWith(
-          "meToken resubscribing"
-        );
+        await expect(
+          foundry.donate(meToken.address, 10, "0x")
+        ).to.be.revertedWith("meToken resubscribing");
       });
       it("should be able to donate", async () => {
         await meTokenRegistry.finishResubscribe(meToken.address);
@@ -1245,7 +1276,7 @@ const setup = async () => {
         const oldAccruedFee = await singleAssetVault.accruedFees(weth.address);
 
         const assetsDeposited = 10;
-        const tx = await foundry.donate(meToken.address, assetsDeposited);
+        const tx = await foundry.donate(meToken.address, assetsDeposited, "0x");
 
         await expect(tx)
           .to.emit(foundry, "Donate")
@@ -1255,8 +1286,6 @@ const setup = async () => {
             account0.address,
             assetsDeposited
           )
-          .to.emit(singleAssetVault, "HandleDeposit")
-          .withArgs(account0.address, weth.address, assetsDeposited, 0)
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 

@@ -734,7 +734,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .mint(meToken.address, amount, account2.address);
+            .mint(meToken.address, amount, account2.address, "0x");
 
           await tx.wait();
           await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
@@ -745,7 +745,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .burn(meToken.address, amount, account2.address);
+            .burn(meToken.address, amount, account2.address, "0x");
 
           await tx.wait();
           await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
@@ -762,7 +762,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .mint(meToken.address, amount, account2.address);
+            .mint(meToken.address, amount, account2.address, "0x");
 
           await tx.wait();
           await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);
@@ -779,7 +779,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .burn(meToken.address, amount, account2.address);
+            .burn(meToken.address, amount, account2.address, "0x");
 
           await tx.wait();
           await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubId);

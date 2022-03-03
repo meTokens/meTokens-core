@@ -942,7 +942,8 @@ const setup = async () => {
         const tx = await foundry.mint(
           meTokenAddr1,
           tokenDeposited,
-          account0.address
+          account0.address,
+          "0x"
         );
         await tx.wait();
 
@@ -982,7 +983,8 @@ const setup = async () => {
         const tx = await foundry.burn(
           meTokenAddr1,
           buyerMeToken,
-          account0.address
+          account0.address,
+          "0x"
         );
         await tx.wait();
 
@@ -1013,7 +1015,7 @@ const setup = async () => {
           .approve(singleAssetVault.address, ethers.constants.MaxUint256);
         await foundry
           .connect(account1)
-          .mint(meTokenAddr1, tokenDeposited, account1.address);
+          .mint(meTokenAddr1, tokenDeposited, account1.address, "0x");
 
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
@@ -1035,7 +1037,7 @@ const setup = async () => {
 
         const tx = await foundry
           .connect(account1)
-          .burn(meTokenAddr1, ownerMeToken, account1.address);
+          .burn(meTokenAddr1, ownerMeToken, account1.address, "0x");
         await tx.wait();
 
         await expect(tx)

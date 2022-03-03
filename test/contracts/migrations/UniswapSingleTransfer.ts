@@ -493,7 +493,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .mint(meToken.address, amount, account2.address);
+            .mint(meToken.address, amount, account2.address, "0x");
           await tx.wait();
 
           await expect(tx).to.be.emit(dai, "Transfer");
@@ -526,7 +526,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .mint(meToken.address, amount, account2.address);
+            .mint(meToken.address, amount, account2.address, "0x");
           await tx.wait();
 
           await expect(tx).to.be.emit(dai, "Transfer");
@@ -574,7 +574,7 @@ const setup = async () => {
 
           const tx = await foundry
             .connect(account2)
-            .mint(meToken.address, amount, account2.address);
+            .mint(meToken.address, amount, account2.address, "0x");
           await tx.wait();
 
           await expect(tx).to.be.emit(weth, "Transfer");

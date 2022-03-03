@@ -170,14 +170,14 @@ const setup = async () => {
       it("burn() [owner]: assets received do not apply refundRatio", async () => {
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         const ownerMeTokenBefore = await meToken.balanceOf(account0.address);
         const ownerDAIBefore = await dai.balanceOf(account0.address);
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeTokenBefore, account0.address);
+          .burn(meToken.address, ownerMeTokenBefore, account0.address, "0x");
 
         const totalSupply = await meToken.totalSupply();
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
@@ -198,7 +198,7 @@ const setup = async () => {
       it("burn() [buyer]: assets received based on initial refundRatio", async () => {
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
 
         const buyerMeTokenBefore = await meToken.balanceOf(account1.address);
         const buyerDAIBefore = await dai.balanceOf(account1.address);
@@ -206,7 +206,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1) // non owner
-          .burn(meToken.address, buyerMeTokenBefore, account1.address);
+          .burn(meToken.address, buyerMeTokenBefore, account1.address, "0x");
 
         const totalSupply = await meToken.totalSupply();
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
@@ -243,7 +243,7 @@ const setup = async () => {
         );
         const tx = await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         await tx.wait();
 
@@ -264,7 +264,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeTokenBefore, account0.address);
+          .burn(meToken.address, ownerMeTokenBefore, account0.address, "0x");
 
         const totalSupply = await meToken.totalSupply();
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
@@ -294,7 +294,7 @@ const setup = async () => {
       it("burn() [buyer]: assets received based on weighted average refundRatio", async () => {
         const tx = await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
 
         await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
 
@@ -310,7 +310,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1) // non owner
-          .burn(meToken.address, buyerMeTokenBefore, account1.address);
+          .burn(meToken.address, buyerMeTokenBefore, account1.address, "0x");
 
         const { startTime, endTime, targetHubId } =
           await meTokenRegistry.getMeTokenInfo(meToken.address);
@@ -374,7 +374,7 @@ const setup = async () => {
 
         const tx = await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         await tx.wait();
 
@@ -397,7 +397,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeTokenBefore, account0.address);
+          .burn(meToken.address, ownerMeTokenBefore, account0.address, "0x");
 
         const totalSupply = await meToken.totalSupply();
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
@@ -430,7 +430,7 @@ const setup = async () => {
 
         const tx = await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
 
         await tx.wait();
 
@@ -450,7 +450,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .burn(meToken.address, buyerMeTokenBefore, account1.address);
+          .burn(meToken.address, buyerMeTokenBefore, account1.address, "0x");
 
         const totalSupply = await meToken.totalSupply();
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);

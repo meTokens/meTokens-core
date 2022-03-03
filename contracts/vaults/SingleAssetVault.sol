@@ -39,36 +39,6 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
         emit StartMigration(meToken);
     }
 
-    /// @inheritdoc Vault
-    function handleDeposit(
-        address from,
-        address asset,
-        uint256 depositAmount,
-        uint256 feeAmount,
-        bytes memory /* encodedArgs */
-    ) external override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-    }
-
-    /// @inheritdoc Vault
-    function handleWithdrawal(
-        address to,
-        address asset,
-        uint256 withdrawalAmount,
-        uint256 feeAmount,
-        bytes memory /* encodedArgs */
-    ) external override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
-        IERC20(asset).safeTransfer(to, withdrawalAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-    }
-
     // solhint-disable-next-line
     /// @inheritdoc Vault
     function isValid(

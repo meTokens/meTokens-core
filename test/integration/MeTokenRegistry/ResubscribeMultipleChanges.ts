@@ -227,7 +227,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const vaultDAIAfter = await dai.balanceOf(singleAssetVault.address);
@@ -264,7 +264,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .burn(meToken.address, buyerMeToken, account1.address);
+          .burn(meToken.address, buyerMeToken, account1.address, "0x");
 
         const buyerMeTokenAfter = await meToken.balanceOf(account1.address);
         const buyerDAIAfter = await dai.balanceOf(account1.address);
@@ -317,7 +317,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeToken, account0.address);
+          .burn(meToken.address, ownerMeToken, account0.address, "0x");
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const ownerDAIAfter = await dai.balanceOf(account0.address);
@@ -390,7 +390,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         await mineBlock(block.timestamp + 1);
         await setAutomine(true);
@@ -441,7 +441,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .burn(meToken.address, buyerMeToken, account1.address);
+          .burn(meToken.address, buyerMeToken, account1.address, "0x");
 
         const calcWAvgRes = weightedAverageSimulation(
           rawAssetsReturned,
@@ -534,7 +534,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeToken, account0.address);
+          .burn(meToken.address, ownerMeToken, account0.address, "0x");
 
         await mineBlock(block.timestamp + 1);
         await setAutomine(true);
@@ -593,7 +593,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
 
         const ownerMeTokenAfter = await meToken.balanceOf(account0.address);
         const vaultWETHAfter = await weth.balanceOf(singleAssetVault.address);
@@ -631,7 +631,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .burn(meToken.address, buyerMeToken, account1.address);
+          .burn(meToken.address, buyerMeToken, account1.address, "0x");
 
         const assetsReturned =
           (targetAssetsReturned * targetRefundRatio.toNumber()) / MAX_WEIGHT;
@@ -684,7 +684,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, ownerMeToken, account0.address);
+          .burn(meToken.address, ownerMeToken, account0.address, "0x");
 
         const assetsReturned =
           targetAssetsReturned +

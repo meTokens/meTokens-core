@@ -102,7 +102,7 @@ const setup = async () => {
       const vaultBalBefore = await token.balanceOf(singleAssetVault.address);
       await foundry
         .connect(account2)
-        .mint(meTokenAddr, tokenDeposited, account2.address);
+        .mint(meTokenAddr, tokenDeposited, account2.address, "0x");
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
       //setWarmup for 2 days
@@ -156,7 +156,7 @@ const setup = async () => {
 
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
         const balAfter = await meToken.balanceOf(account0.address);
         const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
 
@@ -167,7 +167,7 @@ const setup = async () => {
         //send half burnt by owner
         await foundry
           .connect(account0)
-          .burn(meToken.address, balAfter, account0.address);
+          .burn(meToken.address, balAfter, account0.address, "0x");
         const balDaiAfter = await token.balanceOf(account0.address);
         const vaultBalAfterBurn = await token.balanceOf(
           singleAssetVault.address
@@ -182,7 +182,7 @@ const setup = async () => {
 
         await foundry
           .connect(account1)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, tokenDeposited, account1.address, "0x");
         const vaultBalAfterMint = await token.balanceOf(
           singleAssetVault.address
         );
@@ -198,7 +198,7 @@ const setup = async () => {
         //send half burnt by buyer
         await foundry
           .connect(account1)
-          .burn(meToken.address, balAcc1After, account1.address);
+          .burn(meToken.address, balAcc1After, account1.address, "0x");
         const balDaiAcc1After = await token.balanceOf(account1.address);
 
         const vaultBalAfterBuyerBurn = await token.balanceOf(
@@ -243,7 +243,7 @@ const setup = async () => {
         // send token to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
         const balAfter = await meToken.balanceOf(account0.address);
         const vaultBalAfterMint = await token.balanceOf(
           singleAssetVault.address
@@ -269,7 +269,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, balAfter, account0.address);
+          .burn(meToken.address, balAfter, account0.address, "0x");
         const balAfterBurn = await meToken.balanceOf(account0.address);
         expect(balBefore).to.equal(balAfterBurn);
         const balDaiAfter = await token.balanceOf(account0.address);
@@ -296,7 +296,7 @@ const setup = async () => {
         // send token to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account2.address);
+          .mint(meToken.address, tokenDeposited, account2.address, "0x");
         const balDaiAfterMint = await token.balanceOf(account2.address);
         const balAfter = await meToken.balanceOf(account2.address);
         const vaultBalAfterMint = await token.balanceOf(
@@ -341,7 +341,7 @@ const setup = async () => {
 
         await foundry
           .connect(account2)
-          .burn(meToken.address, balAfter, account2.address);
+          .burn(meToken.address, balAfter, account2.address, "0x");
 
         await mineBlock(block.timestamp + 1);
         await setAutomine(true);
@@ -383,7 +383,7 @@ const setup = async () => {
         // send token to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account0.address);
+          .mint(meToken.address, tokenDeposited, account0.address, "0x");
         const {
           active,
           updating,
@@ -420,7 +420,7 @@ const setup = async () => {
 
         await foundry
           .connect(account0)
-          .burn(meToken.address, balAfter, account0.address);
+          .burn(meToken.address, balAfter, account0.address, "0x");
         const balAfterBurn = await meToken.balanceOf(account0.address);
         expect(balBefore).to.equal(balAfterBurn);
         const balDaiAfter = await token.balanceOf(account0.address);
@@ -449,7 +449,7 @@ const setup = async () => {
         // send token to owner
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account2.address);
+          .mint(meToken.address, tokenDeposited, account2.address, "0x");
         const balDaiBefore = await token.balanceOf(account2.address);
         const balAfter = await meToken.balanceOf(account2.address);
         const vaultBalAfterMint = await token.balanceOf(
@@ -474,7 +474,7 @@ const setup = async () => {
 
         await foundry
           .connect(account2)
-          .burn(meToken.address, balAfter, account2.address);
+          .burn(meToken.address, balAfter, account2.address, "0x");
         const balDaiAfter = await token.balanceOf(account2.address);
 
         const {

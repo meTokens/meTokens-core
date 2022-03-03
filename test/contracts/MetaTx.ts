@@ -277,7 +277,8 @@ const setup = async () => {
       const { data } = await foundry.populateTransaction.mint(
         meToken.address,
         amount,
-        account0.address
+        account0.address,
+        "0x"
       );
       if (!data) {
         throw Error("No data");
@@ -329,7 +330,8 @@ const setup = async () => {
       const { data } = await foundry.populateTransaction.burn(
         meToken.address,
         amount,
-        account0.address
+        account0.address,
+        "0x"
       );
       if (!data) {
         throw Error("No data");

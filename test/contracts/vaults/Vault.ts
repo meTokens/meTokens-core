@@ -111,7 +111,7 @@ const setup = async () => {
     describe("handleDeposit()", () => {
       it("Reverts when not called by diamond", async () => {
         await expect(
-          vault.handleDeposit(account0.address, token.address, 1, 1)
+          vault.handleDeposit(account0.address, token.address, 1, 1, "0x")
         ).to.be.revertedWith("!diamond");
       });
       it("Transfer asset from recipient to vault", async () => {
@@ -121,7 +121,8 @@ const setup = async () => {
         tx = await foundry.mint(
           meToken.address,
           tokenDeposited,
-          account0.address
+          account0.address,
+          "0x"
         );
         await tx.wait();
 
@@ -138,23 +139,13 @@ const setup = async () => {
       it("Increments accruedFees", async () => {
         expect(await vault.accruedFees(token.address)).to.equal(accruedFee);
       });
-      it("Emits HandleDeposit()", async () => {
-        await expect(tx)
-          .to.emit(vault, "HandleDeposit")
-          .withArgs(
-            account0.address,
-            token.address,
-            tokenDeposited,
-            accruedFee
-          );
-      });
     });
 
     describe("handleWithdrawal()", () => {
       let burnFee: BigNumber;
       it("Reverts when not called by diamond", async () => {
         await expect(
-          vault.handleWithdrawal(account0.address, token.address, 1, 1)
+          vault.handleWithdrawal(account0.address, token.address, 1, 1, "0x")
         ).to.be.revertedWith("!diamond");
       });
       it("Transfer asset from vault to recipient", async () => {
@@ -164,7 +155,8 @@ const setup = async () => {
         tx = await foundry.burn(
           meToken.address,
           await meToken.totalSupply(),
-          account0.address
+          account0.address,
+          "0x"
         );
         await tx.wait();
 
@@ -184,16 +176,6 @@ const setup = async () => {
       });
       it("Increments accruedFees", async () => {
         expect(await vault.accruedFees(token.address)).to.equal(accruedFee);
-      });
-      it("Emits HandleWithdrawal()", async () => {
-        await expect(tx)
-          .to.emit(vault, "HandleWithdrawal")
-          .withArgs(
-            account0.address,
-            token.address,
-            tokenDeposited.sub(accruedFee),
-            burnFee
-          );
       });
     });
 
@@ -215,7 +197,12 @@ const setup = async () => {
       });
 
       it("should revert when try to claim more than accruedFees[_asset]", async () => {
-        await foundry.mint(meToken.address, tokenDeposited, account1.address);
+        await foundry.mint(
+          meToken.address,
+          tokenDeposited,
+          account1.address,
+          "0x"
+        );
         accruedFee = (await fees.mintFee()).mul(tokenDeposited).div(precision);
 
         await expect(
