@@ -9,7 +9,7 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
-struct AppStorageUpgradedMock {
+struct AppStorageMock {
     // Fees-specific
     uint256 mintFee;
     uint256 burnBuyerFee;
@@ -52,11 +52,11 @@ struct AppStorageUpgradedMock {
     address totallyNewAddress;
 }
 
-library LibAppStorageUpgradedMock {
+library LibAppStorageMock {
     function diamondStorage()
         internal
         pure
-        returns (AppStorageUpgradedMock storage ds)
+        returns (AppStorageMock storage ds)
     {
         assembly {
             ds.slot := 0
@@ -64,7 +64,7 @@ library LibAppStorageUpgradedMock {
     }
 
     function initControllers(address _firstController) internal {
-        AppStorageUpgradedMock storage s = diamondStorage();
+        AppStorageMock storage s = diamondStorage();
         s.diamondController = _firstController;
         s.feesController = _firstController;
         s.durationsController = _firstController;
@@ -74,8 +74,8 @@ library LibAppStorageUpgradedMock {
     }
 }
 
-contract ModifiersUpgradedMock {
-    AppStorageUpgradedMock internal s;
+contract ModifiersMock {
+    AppStorageMock internal s;
 
     modifier onlyDiamondController() {
         require(

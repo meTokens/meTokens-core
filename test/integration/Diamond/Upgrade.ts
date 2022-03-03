@@ -11,7 +11,7 @@ import {
   SingleAssetVault,
   Diamond,
   DiamondLoupeFacet,
-  FeesFacetUpgradedMock,
+  FeesFacetMock,
   IDiamondCut,
   FeesFacet,
   OwnershipFacet,
@@ -29,7 +29,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let diamondCut: IDiamondCut;
-    let updatedFeesFacet: FeesFacetUpgradedMock;
+    let updatedFeesFacet: FeesFacetMock;
     const one = ethers.utils.parseEther("1");
     const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
     let baseY: BigNumber;
@@ -104,9 +104,7 @@ const setup = async () => {
 
     describe("facet", () => {
       it("add a new one should work", async () => {
-        updatedFeesFacet = await deploy<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock"
-        );
+        updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
         const setTotallyNewAddressSigHash =
           updatedFeesFacet.interface.getSighash(
             updatedFeesFacet.interface.functions[
@@ -148,8 +146,8 @@ const setup = async () => {
           .to.be.an("array")
           .to.members([totallyNewAddressSigHash, setTotallyNewAddressSigHash]);
         // call to new facet works
-        const updatedFees = await getContractAt<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock",
+        const updatedFees = await getContractAt<FeesFacetMock>(
+          "FeesFacetMock",
           diamond.address
         );
         await updatedFees.setTotallyNewAddress(account2.address);
@@ -207,8 +205,8 @@ const setup = async () => {
         const yieldFee = await feesFacet.yieldFee();
         expect(yieldFee).to.equal(12);
         // call to new facet works
-        const updatedFees = await getContractAt<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock",
+        const updatedFees = await getContractAt<FeesFacetMock>(
+          "FeesFacetMock",
           diamond.address
         );
 
@@ -255,8 +253,8 @@ const setup = async () => {
         const yieldFee = await feesFacet.yieldFee();
         expect(yieldFee).to.equal(14);
         // call to new facet works
-        const updatedFees = await getContractAt<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock",
+        const updatedFees = await getContractAt<FeesFacetMock>(
+          "FeesFacetMock",
           diamond.address
         );
         await expect(updatedFees.interestPlusYieldFee()).to.revertedWith(
@@ -349,9 +347,7 @@ const setup = async () => {
         );
       });
       it("add a new one with init data should work", async () => {
-        updatedFeesFacet = await deploy<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock"
-        );
+        updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
         const diamondInit = await deploy<DiamondInit>("DiamondInit");
         const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
@@ -413,8 +409,8 @@ const setup = async () => {
         );
         expect(funcs).to.be.an("array").to.contain(interestPlusYieldFee);
         // call to new facet works
-        const updatedFees = await getContractAt<FeesFacetUpgradedMock>(
-          "FeesFacetUpgradedMock",
+        const updatedFees = await getContractAt<FeesFacetMock>(
+          "FeesFacetMock",
           diamond.address
         );
 
