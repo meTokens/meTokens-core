@@ -145,6 +145,14 @@ const setup = async () => {
         expect(funcs)
           .to.be.an("array")
           .to.members([totallyNewAddressSigHash, setTotallyNewAddressSigHash]);
+
+        // Ensure a new func that wasn't added to cut won't be recognized by
+        // the diamond, even though the func exists on the facet
+        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        );
+        expect(funcs).to.be.an("array").to.not.contain(interestPlusYieldFee);
+
         // call to new facet works
         const updatedFees = await getContractAt<FeesFacetMock>(
           "FeesFacetMock",
@@ -162,6 +170,7 @@ const setup = async () => {
         const newOwner = await ownFacet.deactivateController();
         expect(newOwner).to.equal(account3.address);
       });
+
       it("add only a function should work", async () => {
         const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
@@ -213,6 +222,7 @@ const setup = async () => {
         const intPlusYieldFee = await updatedFees.interestPlusYieldFee();
         expect(intPlusYieldFee).to.equal(42);
       });
+
       it("remove only a function should work", async () => {
         const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
@@ -261,6 +271,7 @@ const setup = async () => {
           "Diamond: Function does not exist"
         );
       });
+
       it("update a function should work", async () => {
         const setInterestFee = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["setInterestFee(uint256)"]
@@ -300,6 +311,7 @@ const setup = async () => {
         interestFee = await feesFacet.interestFee();
         expect(interestFee).to.equal(43);
       });
+
       it("add same a function should revert", async () => {
         const totallyNewAddressSigHash = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["totallyNewAddress()"]
@@ -323,6 +335,7 @@ const setup = async () => {
           "LibDiamondCut: Can't add function that already exists"
         );
       });
+
       it("removing non existing function should revert", async () => {
         const add = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["add(uint256,uint256)"]
@@ -346,6 +359,7 @@ const setup = async () => {
           "LibDiamondCut: Can't remove function that doesn't exist"
         );
       });
+
       it("add a new one with init data should work", async () => {
         updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
         const diamondInit = await deploy<DiamondInit>("DiamondInit");
