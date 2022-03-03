@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {ModifiersUpdated} from "./LibAppStorageUpdated.sol";
+import {ModifiersUpgradedMock} from "./LibAppStorageUpgradedMock.sol";
 
-contract UpdatedFeesFacet is ModifiersUpdated {
+contract FeesFacetUpgradedMock is ModifiersUpgradedMock {
     function setInterestFee(uint256 rate) external onlyFeesController {
         require(rate != s.interestFee && rate < s.PRECISION, "out of range");
         s.interestFee = rate + 42;
