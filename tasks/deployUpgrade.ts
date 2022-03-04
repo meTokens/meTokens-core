@@ -8,8 +8,7 @@ import {
 } from "@ethersproject/contracts";
 import { Signer } from "@ethersproject/abstract-signer";
 
-import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
-import { IDiamondCut } from "../artifacts/types/IDiamondCut";
+import { OwnershipFacet, IDiamondCut } from "../artifacts/types";
 import { getSelectors, getSighashes } from "../scripts/libraries/helpers";
 
 import { HardhatRuntimeEnvironment } from "hardhat/types";
