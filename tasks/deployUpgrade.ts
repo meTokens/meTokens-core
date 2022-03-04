@@ -14,6 +14,7 @@ import { getSelectors, getSighashes } from "../scripts/libraries/helpers";
 
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { sendToMultisig } from "../scripts/libraries/multisig";
+const fs = require("fs");
 
 export interface FacetsAndAddSelectors {
   facetName: string;
@@ -23,6 +24,7 @@ export interface FacetsAndAddSelectors {
 
 type FacetCutType = { Add: 0; Replace: 1; Remove: 2 };
 const FacetCutAction: FacetCutType = { Add: 0, Replace: 1, Remove: 2 };
+const deployDir = "deployment";
 
 export interface DeployUpgradeTaskArgs {
   diamondUpgrader: string;
@@ -136,7 +138,8 @@ task(
       }
 
       //Create the cut
-      const deployedFacets = [];
+      const deployedFacets: { path: string; name: string; address: string }[] =
+        [];
       const cut: Cut[] = [];
 
       for (let index = 0; index < facetsAndAddSelectors.length; index++) {
@@ -152,7 +155,12 @@ task(
           `Deployed Facet Address for ${facet.facetName}:`,
           deployedFacet.address
         );
-        deployedFacets.push(deployedFacet);
+        // TODO: verify deployed facets
+        deployedFacets.push({
+          path: `contracts/facets/${facet.facetName}.sol:${facet.facetName}`,
+          name: `${facet.facetName} Contract Address: `,
+          address: deployedFacet.address,
+        });
 
         const newSelectors = getSighashes(facet.addSelectors, hre.ethers);
         const removeSelectors = getSighashes(facet.removeSelectors, hre.ethers);
@@ -196,6 +204,17 @@ task(
             functionSelectors: removeSelectors,
           });
         }
+      }
+
+      // Save new deployed facets
+      if (deployedFacets.length > 0) {
+        const path = `${deployDir}/script-${hre.network.name}.json`;
+        const j = fs.readFileSync(path);
+        const parsed = JSON.parse(j);
+        for (let i = 0; i < deployedFacets.length; i++) {
+          parsed[deployedFacets[i].name] = deployedFacets[i].address;
+        }
+        fs.writeFileSync(path, JSON.stringify(parsed, undefined, 2));
       }
 
       console.log(cut);
