@@ -41,7 +41,7 @@ jobs:
           CI: true
 
       - name: Compile
-        run: yarn compile
+        run: yarn compileCI
         env:
           CI: true
 

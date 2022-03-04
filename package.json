@@ -15,6 +15,7 @@
   "author": "meTokens DAO",
   "license": "Apache-2.0",
   "scripts": {
+    "compileCI": "TS_NODE_TRANSPILE_ONLY=1 yarn hardhat compile",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
