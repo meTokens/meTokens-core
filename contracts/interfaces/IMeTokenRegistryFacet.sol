@@ -131,6 +131,29 @@ interface IMeTokenRegistryFacet {
     /// @param from Address of current meToken owner
     function claimMeTokenOwnership(address from) external;
 
+    /// @notice Get the time period for a meToken to warmup, which is the time
+    ///     difference between when initResubscribe() is called and when the
+    ///     resubscription is live
+    function setMeTokenWarmup(uint256 amount) external;
+
+    /// @notice Get the time period for a meToken to resubscribe, which is the time
+    ///     difference between when the resubscription is live and when
+    ///     finishResubscription() can be called
+    function setMeTokenDuration(uint256 amount) external;
+
+    /// @notice Get the time period for a meToken to cooldown, which is the time
+    ///     difference between when finishResubscription can be called and when
+    ///     initResubscribe() can be called again
+    function setMeTokenCooldown(uint256 amount) external;
+
+    /// @notice View to get information for a meToken
+    /// @param meToken      Address of meToken queried
+    /// @return meToken     Details of meToken
+    function getMeTokenInfo(address meToken)
+        external
+        view
+        returns (MeTokenInfo memory);
+
     /// @notice View to return Address of meToken owned by owner
     /// @param owner    Address of meToken owner
     /// @return         Address of meToken
@@ -141,13 +164,17 @@ interface IMeTokenRegistryFacet {
     /// @return     Address of pending meToken owner
     function getPendingOwner(address from) external view returns (address);
 
-    /// @notice View to get information for a meToken
-    /// @param meToken      Address of meToken queried
-    /// @return meToken     Details of meToken
-    function getMeTokenInfo(address meToken)
-        external
-        view
-        returns (MeTokenInfo memory);
+    /// @notice Get the meToken resubscribe warmup period
+    /// @return Period of meToken warmup, in seconds
+    function meTokenWarmup() external view returns (uint256);
+
+    /// @notice Get the meToken resubscribe duration period
+    /// @return Period of the meToken resubscribe duration, in seconds
+    function meTokenDuration() external view returns (uint256);
+
+    /// @notice Get the meToken resubcribe cooldown period
+    /// @return Period of the meToken resubscribe cooldown, in seconds
+    function meTokenCooldown() external view returns (uint256);
 
     /// @notice View to return if an address owns a meToken or not
     /// @param owner    Address to query

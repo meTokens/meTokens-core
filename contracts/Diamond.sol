@@ -8,9 +8,9 @@ pragma solidity 0.8.9;
 * Implementation of a diamond.
 /******************************************************************************/
 
-import {LibDiamond} from "./libs/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {LibAppStorage} from "./libs/LibAppStorage.sol";
+import {LibDiamond} from "./libs/LibDiamond.sol";
 
 contract Diamond {
     constructor(address firstController, address diamondCutFacet) payable {

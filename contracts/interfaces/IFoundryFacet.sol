@@ -39,8 +39,8 @@ interface IFoundryFacet {
     /// @notice Event of donating to meToken owner
     /// @param meToken         Address of meToken burned
     /// @param asset           Address of asset returned
-    /// @param donor           address donating the asset
-    /// @param assetsDeposited Amount of assets to c
+    /// @param donor           Address donating the asset
+    /// @param assetsDeposited Amount of asset to donate
     event Donate(
         address meToken,
         address asset,
@@ -49,9 +49,9 @@ interface IFoundryFacet {
     );
 
     /// @notice Mint a meToken by depositing the underlying asset
-    /// @param meToken         Address of meToken to mint
-    /// @param assetsDeposited Amount of assets to deposit
-    /// @param recipient       Address to receive minted meTokens
+    /// @param meToken          Address of meToken to mint
+    /// @param assetsDeposited  Amount of assets to deposit
+    /// @param recipient        Address to receive minted meTokens
     function mint(
         address meToken,
         uint256 assetsDeposited,
@@ -59,9 +59,9 @@ interface IFoundryFacet {
     ) external;
 
     /// @notice Burn a meToken to receive the underlying asset
-    /// @param meToken         Address of meToken to burn
-    /// @param meTokensBurned  Amount of meTokens to burn
-    /// @param recipient       Address to receive the underlying assets
+    /// @param meToken          Address of meToken to burn
+    /// @param meTokensBurned   Amount of meTokens to burn
+    /// @param recipient        Address to receive the underlying assets
     function burn(
         address meToken,
         uint256 meTokensBurned,
@@ -69,7 +69,7 @@ interface IFoundryFacet {
     ) external;
 
     /// @notice Donate a meToken's underlying asset to its owner
-    /// @param meToken         Address of meToken to burn
-    /// @param assetsDeposited Amount of asset to donate
+    /// @param meToken          Address of meToken to burn
+    /// @param assetsDeposited  Amount of asset to donate
     function donate(address meToken, uint256 assetsDeposited) external;
 }

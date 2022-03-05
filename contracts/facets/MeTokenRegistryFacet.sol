@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ICurve} from "../interfaces/ICurve.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
+import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
+import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
+import {IVault} from "../interfaces/IVault.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
-import {IMigration} from "../interfaces/IMigration.sol";
-import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
-import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
-import {IHubFacet} from "../interfaces/IHubFacet.sol";
-import {IVault} from "../interfaces/IVault.sol";
-import {ICurve} from "../interfaces/ICurve.sol";
-import {IMeToken} from "../interfaces/IMeToken.sol";
-import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
+import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
 /// @title meToken registry
 /// @author Carter Carlson (@cartercarlson)
 /// @notice This contract tracks basic meTokenInformation about all meTokens
 contract MeTokenRegistryFacet is
+    IMeTokenRegistryFacet,
     Modifiers,
-    ReentrancyGuard,
-    IMeTokenRegistryFacet
+    ReentrancyGuard
 {
     constructor() {}
 
@@ -248,12 +248,14 @@ contract MeTokenRegistryFacet is
         emit ClaimMeTokenOwnership(oldOwner, sender, meToken);
     }
 
+    /// @inheritdoc IMeTokenRegistryFacet
     function setMeTokenWarmup(uint256 warmup) external onlyDurationsController {
         require(warmup != s.meTokenWarmup, "same warmup");
         require(warmup + s.meTokenDuration < s.hubWarmup, "too long");
         s.meTokenWarmup = warmup;
     }
 
+    /// @inheritdoc IMeTokenRegistryFacet
     function setMeTokenDuration(uint256 duration)
         external
         onlyDurationsController
@@ -263,6 +265,7 @@ contract MeTokenRegistryFacet is
         s.meTokenDuration = duration;
     }
 
+    /// @inheritdoc IMeTokenRegistryFacet
     function setMeTokenCooldown(uint256 cooldown)
         external
         onlyDurationsController
@@ -271,16 +274,14 @@ contract MeTokenRegistryFacet is
         s.meTokenCooldown = cooldown;
     }
 
-    function meTokenWarmup() external view returns (uint256) {
-        return LibMeToken.warmup();
-    }
-
-    function meTokenDuration() external view returns (uint256) {
-        return LibMeToken.duration();
-    }
-
-    function meTokenCooldown() external view returns (uint256) {
-        return LibMeToken.cooldown();
+    /// @inheritdoc IMeTokenRegistryFacet
+    function getMeTokenInfo(address meToken)
+        external
+        view
+        override
+        returns (MeTokenInfo memory)
+    {
+        return LibMeToken.getMeTokenInfo(meToken);
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
@@ -304,13 +305,18 @@ contract MeTokenRegistryFacet is
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function getMeTokenInfo(address meToken)
-        external
-        view
-        override
-        returns (MeTokenInfo memory)
-    {
-        return LibMeToken.getMeTokenInfo(meToken);
+    function meTokenWarmup() external view returns (uint256) {
+        return LibMeToken.warmup();
+    }
+
+    /// @inheritdoc IMeTokenRegistryFacet
+    function meTokenDuration() external view returns (uint256) {
+        return LibMeToken.duration();
+    }
+
+    /// @inheritdoc IMeTokenRegistryFacet
+    function meTokenCooldown() external view returns (uint256) {
+        return LibMeToken.cooldown();
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
