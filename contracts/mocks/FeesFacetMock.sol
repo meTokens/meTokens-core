@@ -24,7 +24,7 @@ contract FeesFacetMock is ModifiersMock {
         return s.interestFee + s.yieldFee;
     }
 
-    function add(uint256 x, uint256 y) external view returns (uint256) {
+    function add(uint256 x, uint256 y) external pure returns (uint256) {
         return x + y;
     }
 }

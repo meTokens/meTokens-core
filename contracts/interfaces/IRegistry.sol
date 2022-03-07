@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-/// @title generic registry interface
+/// @title Generic registry interface
 /// @author Carter Carlson (@cartercarlson)
 interface IRegistry {
     /// @notice Event of approving an address

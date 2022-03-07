@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 /// @title Generic vault interface
 /// @author Carter Carlson (@cartercarlson)
-abstract contract IVault {
+interface IVault {
     /// @notice Event of depositing an asset to the vault
     /// @param from            Address which is depositing the asset
     /// @param asset           Address of asset
@@ -34,9 +34,6 @@ abstract contract IVault {
     /// @param amount      Amount of asset
     event Claim(address recipient, address asset, uint256 amount);
 
-    /// @dev key: addr of asset, value: cumulative fees paid in the asset
-    mapping(address => uint256) public accruedFees;
-
     /// @notice Claim the accrued fees of an asset
     /// @param asset   Address of asset
     /// @param max     True if claiming all accrued fees of the asset, else false
@@ -45,7 +42,7 @@ abstract contract IVault {
         address asset,
         bool max,
         uint256 amount
-    ) external virtual;
+    ) external;
 
     /// @notice Deposit an asset to the vault
     /// @param from            Address which is depositing the asset
@@ -57,7 +54,7 @@ abstract contract IVault {
         address asset,
         uint256 depositAmount,
         uint256 feeAmount
-    ) external virtual;
+    ) external;
 
     /// @notice Withdraw an asset from the vault
     /// @param to                  Address which will receive the asset
@@ -68,7 +65,7 @@ abstract contract IVault {
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount
-    ) external virtual;
+    ) external;
 
     /// @notice View to see if an asset with encoded arguments passed
     ///           when a vault is registered to a new hub
@@ -77,6 +74,5 @@ abstract contract IVault {
     /// @return             True if asset & encoded args are valid, else false
     function isValid(address asset, bytes memory encodedArgs)
         external
-        virtual
         returns (bool);
 }

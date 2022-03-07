@@ -2,17 +2,17 @@
 pragma solidity 0.8.9;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IVault} from "../interfaces/IVault.sol";
-import {IMigration} from "../interfaces/IMigration.sol";
-import {IMeToken} from "../interfaces/IMeToken.sol";
-import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
+import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
+import {IMigration} from "../interfaces/IMigration.sol";
+import {IVault} from "../interfaces/IVault.sol";
 
-import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
+import {LibMeta} from "../libs/LibMeta.sol";
+import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
-import {LibMeta} from "../libs/LibMeta.sol";
 
 contract FoundryFacet is IFoundryFacet, Modifiers {
     // MINT FLOW CHART
@@ -35,7 +35,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     //                                              .sub(fees)                 //
     //                                                                         //
     ****************************************************************************/
-
+    /// @inheritdoc IFoundryFacet
     function mint(
         address meToken,
         uint256 assetsDeposited,
@@ -214,6 +214,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         );
     }
 
+    /// @inheritdoc IFoundryFacet
     function donate(address meToken, uint256 assetsDeposited)
         external
         override
@@ -233,7 +234,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         emit Donate(meToken, asset, sender, assetsDeposited);
     }
 
-    // NOTE: for now this does not include fees
     function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
         private
         view

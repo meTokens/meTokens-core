@@ -1,42 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import {LibMeta} from "../libs/LibMeta.sol";
-import {LibDiamond} from "../libs/LibDiamond.sol";
-import {LibHub, HubInfo} from "../libs/LibHub.sol";
-import {Modifiers} from "../libs/LibAppStorage.sol";
-import {IHubFacet} from "../interfaces/IHubFacet.sol";
-import {IVault} from "../interfaces/IVault.sol";
-import {IRegistry} from "../interfaces/IRegistry.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
+import {IHubFacet} from "../interfaces/IHubFacet.sol";
+import {IRegistry} from "../interfaces/IRegistry.sol";
+import {IVault} from "../interfaces/IVault.sol";
+import {LibDiamond} from "../libs/LibDiamond.sol";
+import {LibHub, HubInfo} from "../libs/LibHub.sol";
+import {LibMeta} from "../libs/LibMeta.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
-contract HubFacet is Modifiers {
-    event Register(
-        uint256 id,
-        address owner,
-        address asset,
-        address vault,
-        address curve,
-        uint256 refundRatio,
-        bytes encodedCurveInfo,
-        bytes encodedVaultArgs
-    );
-    event Deactivate(uint256 id);
-    event InitUpdate(
-        uint256 id,
-        address targetCurve,
-        uint256 targetRefundRatio,
-        bytes encodedCurveInfo,
-        bool reconfigure,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 endCooldown
-    );
-    event FinishUpdate(uint256 id);
-    event CancelUpdate(uint256 id);
-    event TransferHubOwnership(uint256 id, address newOwner);
-
+contract HubFacet is IHubFacet, Modifiers {
+    /// @inheritdoc IHubFacet
     function register(
         address owner,
         address asset,
@@ -45,7 +21,7 @@ contract HubFacet is Modifiers {
         uint256 refundRatio,
         bytes memory encodedCurveInfo,
         bytes memory encodedVaultArgs
-    ) external onlyRegisterController {
+    ) external override onlyRegisterController {
         require(s.curveRegistry.isApproved(address(curve)), "curve !approved");
         require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
         require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio > MAX");
@@ -77,7 +53,8 @@ contract HubFacet is Modifiers {
         );
     }
 
-    function deactivate(uint256 id) external {
+    /// @inheritdoc IHubFacet
+    function deactivate(uint256 id) external override {
         address sender = LibMeta.msgSender();
         HubInfo storage hubInfo = s.hubs[id];
         require(
@@ -89,12 +66,13 @@ contract HubFacet is Modifiers {
         emit Deactivate(id);
     }
 
+    /// @inheritdoc IHubFacet
     function initUpdate(
         uint256 id,
         address targetCurve,
         uint256 targetRefundRatio,
         bytes memory encodedCurveInfo
-    ) external {
+    ) external override {
         HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
         require(sender == hubInfo.owner, "!owner");
@@ -160,11 +138,13 @@ contract HubFacet is Modifiers {
         );
     }
 
-    function finishUpdate(uint256 id) external {
+    /// @inheritdoc IHubFacet
+    function finishUpdate(uint256 id) external override {
         LibHub.finishUpdate(id);
     }
 
-    function cancelUpdate(uint256 id) external {
+    /// @inheritdoc IHubFacet
+    function cancelUpdate(uint256 id) external override {
         HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
         require(sender == hubInfo.owner, "!owner");
@@ -182,7 +162,11 @@ contract HubFacet is Modifiers {
         emit CancelUpdate(id);
     }
 
-    function transferHubOwnership(uint256 id, address newOwner) external {
+    /// @inheritdoc IHubFacet
+    function transferHubOwnership(uint256 id, address newOwner)
+        external
+        override
+    {
         HubInfo storage hubInfo = s.hubs[id];
         address sender = LibMeta.msgSender();
         require(sender == hubInfo.owner, "!owner");
@@ -192,38 +176,63 @@ contract HubFacet is Modifiers {
         emit TransferHubOwnership(id, newOwner);
     }
 
-    function setHubWarmup(uint256 warmup) external onlyDurationsController {
+    /// @inheritdoc IHubFacet
+    function setHubWarmup(uint256 warmup)
+        external
+        override
+        onlyDurationsController
+    {
         require(warmup != s.hubWarmup, "same warmup");
         s.hubWarmup = warmup;
     }
 
-    function setHubDuration(uint256 duration) external onlyDurationsController {
+    /// @inheritdoc IHubFacet
+    function setHubDuration(uint256 duration)
+        external
+        override
+        onlyDurationsController
+    {
         require(duration != s.hubDuration, "same duration");
         s.hubDuration = duration;
     }
 
-    function setHubCooldown(uint256 cooldown) external onlyDurationsController {
+    /// @inheritdoc IHubFacet
+    function setHubCooldown(uint256 cooldown)
+        external
+        override
+        onlyDurationsController
+    {
         require(cooldown != s.hubCooldown, "same cooldown");
         s.hubCooldown = cooldown;
     }
 
-    function getHubInfo(uint256 id) external view returns (HubInfo memory) {
+    /// @inheritdoc IHubFacet
+    function getHubInfo(uint256 id)
+        external
+        view
+        override
+        returns (HubInfo memory)
+    {
         return LibHub.getHubInfo(id);
     }
 
-    function count() external view returns (uint256) {
+    /// @inheritdoc IHubFacet
+    function count() external view override returns (uint256) {
         return s.hubCount;
     }
 
-    function hubWarmup() external view returns (uint256) {
+    /// @inheritdoc IHubFacet
+    function hubWarmup() external view override returns (uint256) {
         return LibHub.warmup();
     }
 
-    function hubDuration() external view returns (uint256) {
+    /// @inheritdoc IHubFacet
+    function hubDuration() external view override returns (uint256) {
         return LibHub.duration();
     }
 
-    function hubCooldown() external view returns (uint256) {
+    /// @inheritdoc IHubFacet
+    function hubCooldown() external view override returns (uint256) {
         return LibHub.cooldown();
     }
 }

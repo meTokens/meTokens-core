@@ -2,16 +2,16 @@
 pragma solidity 0.8.9;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IRegistry} from "./interfaces/IRegistry.sol";
-import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
-import {LibDiamond} from "./libs/LibDiamond.sol";
+import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
+import {IRegistry} from "./interfaces/IRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
+import {LibDiamond} from "./libs/LibDiamond.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
-/// @notice Contract to initialize state variables, similar to OZ's initilize()
+/// @notice Contract to initialize state variables, similar to OZ's initialize()
 contract DiamondInit {
     struct Args {
         uint256 mintFee;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {Modifiers} from "../libs/LibAppStorage.sol";
 import {IFeesFacet} from "../interfaces/IFeesFacet.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
 
-contract FeesFacet is Modifiers, IFeesFacet {
+contract FeesFacet is IFeesFacet, Modifiers {
     /// @inheritdoc IFeesFacet
     function setMintFee(uint256 rate) external override onlyFeesController {
         require(rate != s.mintFee && rate < s.PRECISION, "out of range");
