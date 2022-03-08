@@ -7,7 +7,7 @@ import {Modifiers} from "../libs/LibAppStorage.sol";
 contract FeesFacet is IFeesFacet, Modifiers {
     /// @inheritdoc IFeesFacet
     function setMintFee(uint256 rate) external override onlyFeesController {
-        require(rate != s.mintFee && rate < s.PRECISION, "out of range");
+        require(rate != s.mintFee && rate < s.MAX_FEE, "out of range");
         s.mintFee = rate;
         emit SetMintFee(rate);
     }
@@ -18,7 +18,7 @@ contract FeesFacet is IFeesFacet, Modifiers {
         override
         onlyFeesController
     {
-        require(rate != s.burnBuyerFee && rate < s.PRECISION, "out of range");
+        require(rate != s.burnBuyerFee && rate < s.MAX_FEE, "out of range");
         s.burnBuyerFee = rate;
         emit SetBurnBuyerFee(rate);
     }
@@ -29,28 +29,28 @@ contract FeesFacet is IFeesFacet, Modifiers {
         override
         onlyFeesController
     {
-        require(rate != s.burnOwnerFee && rate < s.PRECISION, "out of range");
+        require(rate != s.burnOwnerFee && rate < s.MAX_FEE, "out of range");
         s.burnOwnerFee = rate;
         emit SetBurnOwnerFee(rate);
     }
 
     /// @inheritdoc IFeesFacet
     function setTransferFee(uint256 rate) external override onlyFeesController {
-        require(rate != s.transferFee && rate < s.PRECISION, "out of range");
+        require(rate != s.transferFee && rate < s.MAX_FEE, "out of range");
         s.transferFee = rate;
         emit SetTransferFee(rate);
     }
 
     /// @inheritdoc IFeesFacet
     function setInterestFee(uint256 rate) external override onlyFeesController {
-        require(rate != s.interestFee && rate < s.PRECISION, "out of range");
+        require(rate != s.interestFee && rate < s.MAX_FEE, "out of range");
         s.interestFee = rate;
         emit SetInterestFee(rate);
     }
 
     /// @inheritdoc IFeesFacet
     function setYieldFee(uint256 rate) external override onlyFeesController {
-        require(rate != s.yieldFee && rate < s.PRECISION, "out of range");
+        require(rate != s.yieldFee && rate < s.MAX_FEE, "out of range");
         s.yieldFee = rate;
         emit SetYieldFee(rate);
     }
