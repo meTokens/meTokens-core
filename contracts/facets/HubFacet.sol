@@ -183,6 +183,12 @@ contract HubFacet is IHubFacet, Modifiers {
         onlyDurationsController
     {
         require(warmup != s.hubWarmup, "same warmup");
+        // NOTE: this check is done to ensure a meToken is not still resubscribing
+        //  when the hub it points to has its' update live
+        require(
+            warmup >= s.meTokenWarmup + s.meTokenDuration,
+            "warmup < meTokenWarmup + meTokenDuration"
+        );
         s.hubWarmup = warmup;
     }
 
