@@ -32,7 +32,7 @@
     ]
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.4.2",
+    "@openzeppelin/contracts": "^4.5.0",
     "@uniswap/sdk-core": "^3.0.1",
     "@uniswap/v3-core": "^1.0.0",
     "@uniswap/v3-periphery": "^1.4.0",
@@ -54,6 +54,7 @@
     "chai": "^4.3.4",
     "decimal.js": "^10.3.1",
     "dotenv": "^14.2.0",
+    "eth-sig-util": "^3.0.1",
     "ethereum-waffle": "^3.2.2",
     "ethers": "^5.5.3",
     "fs": "^0.0.1-security",
