@@ -51,6 +51,7 @@ contract DiamondInit {
 
         s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 1e18;
+        s.MAX_FEE = 5e16; // 5%
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
