@@ -273,7 +273,7 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       });
-      it("should revert if not owner", async () => {
+      it("should revert if not durationsController", async () => {
         const tx = hub.connect(account1).setHubWarmup(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
@@ -297,7 +297,7 @@ const setup = async () => {
     });
 
     describe("setHubDuration()", () => {
-      it("should revert if not owner", async () => {
+      it("should revert if not durationsController", async () => {
         const tx = hub.connect(account1).setHubDuration(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
@@ -314,7 +314,7 @@ const setup = async () => {
     });
 
     describe("setHubCooldown()", () => {
-      it("should revert if not owner", async () => {
+      it("should revert if not durationsController", async () => {
         const tx = hub.connect(account1).setHubCooldown(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
