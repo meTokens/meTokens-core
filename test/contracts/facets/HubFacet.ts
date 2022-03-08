@@ -273,33 +273,40 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       });
-      it("should revert to setHubWarmup if not owner", async () => {
+      it("should revert if not owner", async () => {
         const tx = hub.connect(account1).setHubWarmup(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setHubWarmup if same as before", async () => {
+      it("should revert if same as before", async () => {
         const oldWarmup = await hub.hubWarmup();
         const tx = hub.setHubWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("same warmup");
       });
-      it("should be able to setHubWarmup", async () => {
+      it("should be able to call setHubWarmup", async () => {
         const tx = await hub.setHubWarmup(duration);
         await tx.wait();
         expect(await hub.hubWarmup()).to.be.equal(duration);
       });
+      it("should revert if period < meTokenWarmup + meTokenDuration", async () => {
+        await meTokenRegistry.setMeTokenWarmup(duration - 1);
+        const tx = hub.setHubWarmup(duration - 2);
+        await expect(tx).to.be.revertedWith(
+          "warmup < meTokenWarmup + meTokenDuration"
+        );
+      });
     });
 
     describe("setHubDuration()", () => {
-      it("should revert to setHubDuration if not owner", async () => {
+      it("should revert if not owner", async () => {
         const tx = hub.connect(account1).setHubDuration(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setHubDuration if same as before", async () => {
+      it("should revert if same as before", async () => {
         const oldDuration = await hub.hubDuration();
         const tx = hub.setHubDuration(oldDuration);
         await expect(tx).to.be.revertedWith("same duration");
       });
-      it("should be able to setHubDuration", async () => {
+      it("should be able to call setHubDuration", async () => {
         const tx = await hub.setHubDuration(duration);
         await tx.wait();
         expect(await hub.hubDuration()).to.be.equal(duration);
@@ -307,16 +314,16 @@ const setup = async () => {
     });
 
     describe("setHubCooldown()", () => {
-      it("should revert to setHubCooldown if not owner", async () => {
+      it("should revert if not owner", async () => {
         const tx = hub.connect(account1).setHubCooldown(duration);
         await expect(tx).to.be.revertedWith("!durationsController");
       });
-      it("should revert to setHubCooldown if same as before", async () => {
+      it("should revert if same as before", async () => {
         const oldCooldown = await hub.hubCooldown();
         const tx = hub.setHubCooldown(oldCooldown);
         await expect(tx).to.be.revertedWith("same cooldown");
       });
-      it("should be able to setHubCooldown", async () => {
+      it("should be able to call setHubCooldown", async () => {
         const tx = await hub.setHubCooldown(duration);
         await tx.wait();
         expect(await hub.hubCooldown()).to.be.equal(duration);
