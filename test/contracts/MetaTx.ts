@@ -222,7 +222,7 @@ const setup = async () => {
         from: account1.address,
         to: hub.address,
         value: 0,
-        gas: gasLimit.toNumber() * 2,
+        gas: gasLimit.toNumber() * 10,
         nonce: 0,
         data,
       };
@@ -251,7 +251,6 @@ const setup = async () => {
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account1.address
       );
-
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       expect(await meToken.totalSupply()).to.equal(0);
       await expect(tx)
@@ -291,7 +290,7 @@ const setup = async () => {
         from: account1.address,
         to: foundry.address,
         value: 0,
-        gas: gasLimit.toNumber() * 2,
+        gas: gasLimit.toNumber() * 10,
         nonce: 1,
         data,
       };
@@ -343,7 +342,7 @@ const setup = async () => {
         from: account0.address,
         to: foundry.address,
         value: 0,
-        gas: gasLimit.toNumber() * 2,
+        gas: gasLimit.toNumber() * 10,
         nonce: 1,
         data,
       };

@@ -162,6 +162,13 @@ export async function transferFromWhale(
   }
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
+  const bal = await token.balanceOf(tokenWhale);
+  const balethg = await tokenHolder.getBalance();
+  console.log(`
+  bal:${bal}
+  balethg:${balethg}
+  `);
+
   await token
     .connect(tokenHolder)
     .transfer(recipientAddr, ethers.utils.parseEther("1000"));

@@ -41,6 +41,37 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint256 assetsDeposited,
         address recipient
     ) external override {
+        (
+            IVault vault,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = handleMint(meToken, assetsDeposited);
+        vault.handleDeposit(sender, asset, assetsDeposited, amounts[1]);
+
+        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
+        // Mint meToken to user
+        IMeToken(meToken).mint(recipient, amounts[0]);
+        emit Mint(
+            meToken,
+            asset,
+            sender,
+            recipient,
+            assetsDeposited,
+            amounts[0]
+        );
+    }
+
+    function handleMint(address meToken, uint256 assetsDeposited)
+        internal
+        returns (
+            IVault,
+            address,
+            address,
+            uint256[3] memory
+        )
+    {
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
@@ -59,14 +90,11 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
                 meTokenInfo = s.meTokens[meToken];
             }
         }
+        uint256[3] memory amounts;
+        amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
+        amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
 
-        uint256 fee = (assetsDeposited * s.mintFee) / s.PRECISION;
-        uint256 assetsDepositedAfterFees = assetsDeposited - fee;
-
-        uint256 meTokensMinted = _calculateMeTokensMinted(
-            meToken,
-            assetsDepositedAfterFees
-        );
+        amounts[0] = _calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
         IVault vault = IVault(hubInfo.vault);
         address asset = hubInfo.asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
@@ -80,18 +108,46 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             vault = IVault(meTokenInfo.migration);
             asset = s.hubs[meTokenInfo.targetHubId].asset;
         }
-        vault.handleDeposit(sender, asset, assetsDeposited, fee);
+        return (vault, asset, sender, amounts);
+    }
 
-        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
+    /// @inheritdoc IFoundryFacet
+    function mintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        address recipient,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
+        (
+            IVault vault,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = handleMint(meToken, assetsDeposited);
+        vault.handleDepositWithPermit(
+            sender,
+            asset,
+            assetsDeposited,
+            amounts[1],
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
         // Mint meToken to user
-        IMeToken(meToken).mint(recipient, meTokensMinted);
+        IMeToken(meToken).mint(recipient, amounts[0]);
         emit Mint(
             meToken,
             asset,
             sender,
             recipient,
             assetsDeposited,
-            meTokensMinted
+            amounts[0]
         );
     }
 
@@ -126,7 +182,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     //                                               .sub(fees)                //
     //                                                                         //
     ****************************************************************************/
-
     /// @inheritdoc IFoundryFacet
     function burn(
         address meToken,
