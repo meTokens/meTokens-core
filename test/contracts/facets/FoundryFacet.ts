@@ -27,8 +27,10 @@ import {
   BancorCurve,
   UniswapSingleTransferMigration,
   SameAssetTransferMigration,
+  IERC20Permit,
 } from "../../../artifacts/types";
 import { TypedDataDomain } from "@ethersproject/abstract-signer";
+import { domainSeparator } from "../../utils/eip712";
 
 const setup = async () => {
   describe("FoundryFacet.sol", () => {
@@ -37,6 +39,7 @@ const setup = async () => {
     let WETH: string;
     let weth: ERC20;
     let usdc: ERC20;
+    let usdcPermit: IERC20Permit;
     let USDC: string;
     let USDCWhale: string;
     let account0: SignerWithAddress;
@@ -56,9 +59,12 @@ const setup = async () => {
     let encodedVaultArgs: string;
 
     const hubId = 1;
+    const usdcDoaminSeparator =
+      "0x19d64970ae67135faab873f0abe76a5ee18734cb628c32659f75b220300d19a5";
     const name = "Carl meToken";
     const symbol = "CARL";
     const refundRatio = 240000;
+    const value = ethers.utils.parseUnits("100", 6);
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount = ethers.utils.parseEther("10");
@@ -138,7 +144,7 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
     });
 
-    /*  it("mint() from buyer should work", async () => {
+    it("mint() from buyer should work", async () => {
       // metoken should be registered
       expect(await meToken.name()).to.equal(name);
       expect(await meToken.symbol()).to.equal(symbol);
@@ -1292,7 +1298,7 @@ const setup = async () => {
         );
         expect(oldAccruedFee).to.equal(newAccruedFee);
       });
-    }); */
+    });
 
     describe("mint with permit", function () {
       const nonce = 0;
@@ -1334,26 +1340,26 @@ const setup = async () => {
           "BancorCurve",
           [0, 0, 0, 0, 0, 0],
           USDC,
-          USDCWhale
+          USDCWhale,
+          6
         ));
         // Prefund owner/buyer w/ DAI
         usdc = token;
-        const bal = await usdc.balanceOf(USDCWhale);
-        const balethg = await tokenHolder.getBalance();
-        console.log(`
-        bal:${bal}
-        balethg:${balethg}
-        `);
+        usdcPermit = await getContractAt<IERC20Permit>(
+          "IERC20Permit",
+          usdc.address
+        );
+        chainId = await (await meToken.getChainId()).toNumber();
         await usdc
           .connect(tokenHolder)
-          .transfer(account0.address, amount1.mul(10));
-        await usdc
-          .connect(tokenHolder)
-          .transfer(account1.address, amount1.mul(10));
-        await usdc
-          .connect(tokenHolder)
-          .transfer(account2.address, amount1.mul(10));
+          .transfer(account0.address, value.mul(10));
 
+        await usdc
+          .connect(tokenHolder)
+          .transfer(account1.address, value.mul(10));
+        await usdc
+          .connect(tokenHolder)
+          .transfer(account2.address, value.mul(10));
         // account0 is registering a metoken
         await meTokenRegistry
           .connect(account0)
@@ -1364,56 +1370,32 @@ const setup = async () => {
 
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
         owner = account0.address;
-        spender = account1.address;
+        spender = singleAssetVault.address;
 
         domain = {
-          name,
-          version,
-          chainId,
-          verifyingContract: meToken.address,
+          name: "USD Coin",
+          version: "2",
+          chainId: "1",
+          verifyingContract: usdc.address,
         };
-        message = { owner, spender, amount1, nonce, deadline };
+        message = {
+          owner,
+          spender,
+          value,
+          nonce,
+          deadline,
+        };
       });
-      it("accepts owner signature", async function () {
-        const signature = await account0._signTypedData(
-          domain,
-          { Permit },
-          message
+      it("domain separator", async function () {
+        expect(await usdcPermit.DOMAIN_SEPARATOR()).to.equal(
+          await domainSeparator(
+            domain.name ?? "",
+            domain.version ?? "1",
+            domain.chainId?.toString() ?? "1",
+            usdc.address
+          )
         );
-        const { v, r, s } = ethers.utils.splitSignature(signature);
-
-        // const receipt = await meToken.permit(owner, spender, value);
-
-        // Mint meToken
-        await foundry
-          .connect(account2)
-          .mintWithPermit(
-            meToken.address,
-            amount1,
-            account2.address,
-            deadline,
-            v,
-            r,
-            s
-          );
-
-        expect(await meToken.nonces(owner)).to.equal(1);
-        expect(await meToken.allowance(owner, spender)).to.equal(amount1);
       });
-
-      /* it("rejects reused signature", async function () {
-        const signature = await account0._signTypedData(
-          domain,
-          { Permit },
-          message
-        );
-        const { v, r, s } = ethers.utils.splitSignature(signature);
-
-        await expect(
-          meToken.permit(owner, spender, value, deadline, v, r, s)
-        ).to.be.revertedWith("ERC20Permit: invalid signature");
-      });
-
       it("rejects other signature", async function () {
         const signature = await account1._signTypedData(
           domain,
@@ -1423,15 +1405,51 @@ const setup = async () => {
         const { v, r, s } = ethers.utils.splitSignature(signature);
 
         await expect(
-          meToken.permit(owner, spender, value, deadline, v, r, s)
-        ).to.be.revertedWith("ERC20Permit: invalid signature");
+          foundry
+            .connect(account1)
+            .mintWithPermit(
+              meToken.address,
+              value,
+              account1.address,
+              deadline,
+              v,
+              r,
+              s
+            )
+        ).to.be.revertedWith("EIP2612: invalid signature");
       });
 
+      it("accepts owner signature", async function () {
+        const signature = await account0._signTypedData(
+          domain,
+          { Permit },
+          message
+        );
+        const { v, r, s } = ethers.utils.splitSignature(signature);
+
+        // const receipt = await meToken.permit(owner, spender, value);
+        expect(await usdcPermit.nonces(owner)).to.equal(0);
+        // Mint meToken
+        await foundry
+          .connect(account0)
+          .mintWithPermit(
+            meToken.address,
+            value,
+            account1.address,
+            deadline,
+            v,
+            r,
+            s
+          );
+
+        expect(await usdcPermit.nonces(owner)).to.equal(1);
+        expect(await usdc.allowance(owner, spender)).to.equal(0);
+      });
       it("rejects expired permit", async function () {
-        deadline = BigNumber.from(
+        const deadlineExpired = BigNumber.from(
           (await ethers.provider.getBlock("latest")).timestamp
         );
-        message = { owner, spender, value, nonce, deadline };
+        message = { owner, spender, value, nonce, deadline: deadlineExpired };
         const signature = await account0._signTypedData(
           domain,
           { Permit },
@@ -1440,9 +1458,41 @@ const setup = async () => {
         const { v, r, s } = ethers.utils.splitSignature(signature);
 
         await expect(
-          meToken.permit(owner, spender, value, deadline, v, r, s)
-        ).to.be.revertedWith("ERC20Permit: expired deadline");
-      }); */
+          foundry
+            .connect(account0)
+            .mintWithPermit(
+              meToken.address,
+              value,
+              account1.address,
+              deadlineExpired,
+              v,
+              r,
+              s
+            )
+        ).to.be.revertedWith("FiatTokenV2: permit is expired");
+      });
+      it("rejects reused signature", async function () {
+        message.nonce = 1;
+        const signature = await account0._signTypedData(
+          domain,
+          { Permit },
+          message
+        );
+        const { v, r, s } = ethers.utils.splitSignature(signature);
+        await expect(
+          foundry
+            .connect(account0)
+            .mintWithPermit(
+              meToken.address,
+              value,
+              account1.address,
+              deadline,
+              v,
+              r,
+              s
+            )
+        ).to.be.revertedWith("EIP2612: invalid signature");
+      });
     });
   });
 };
