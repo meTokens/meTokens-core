@@ -41,57 +41,64 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint256 assetsDeposited,
         address recipient
     ) external override {
-        address sender = LibMeta.msgSender();
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        (
+            IVault vault,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = _handleMint(meToken, assetsDeposited);
+        vault.handleDeposit(sender, asset, assetsDeposited, amounts[1]);
 
-        // Handling changes
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
-            if (block.timestamp > meTokenInfo.endTime) {
-                hubInfo = s.hubs[meTokenInfo.targetHubId];
-                // meToken = s.meTokenRegistry.finishResubscribe(meToken);
-                meTokenInfo = LibMeToken.finishResubscribe(meToken);
-            } else if (block.timestamp > meTokenInfo.startTime) {
-                // Handle migration actions if needed
-                IMigration(meTokenInfo.migration).poke(meToken);
-                meTokenInfo = s.meTokens[meToken];
-            }
-        }
-
-        uint256 fee = (assetsDeposited * s.mintFee) / s.PRECISION;
-        uint256 assetsDepositedAfterFees = assetsDeposited - fee;
-
-        uint256 meTokensMinted = _calculateMeTokensMinted(
-            meToken,
-            assetsDepositedAfterFees
-        );
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
-        // Check if meToken is using a migration vault and in the active stage of resubscribing.
-        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
-        // in which case a migration vault isn't needed
-        if (
-            meTokenInfo.migration != address(0) &&
-            block.timestamp > meTokenInfo.startTime
-        ) {
-            // Use meToken address to get the asset address from the migration vault
-            vault = IVault(meTokenInfo.migration);
-            asset = s.hubs[meTokenInfo.targetHubId].asset;
-        }
-        vault.handleDeposit(sender, asset, assetsDeposited, fee);
-
-        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
+        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
         // Mint meToken to user
-        IMeToken(meToken).mint(recipient, meTokensMinted);
+        IMeToken(meToken).mint(recipient, amounts[0]);
         emit Mint(
             meToken,
             asset,
             sender,
             recipient,
             assetsDeposited,
-            meTokensMinted
+            amounts[0]
+        );
+    }
+
+    /// @inheritdoc IFoundryFacet
+    function mintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        address recipient,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
+        (
+            IVault vault,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = _handleMint(meToken, assetsDeposited);
+        vault.handleDepositWithPermit(
+            sender,
+            asset,
+            assetsDeposited,
+            amounts[1],
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
+        // Mint meToken to user
+        IMeToken(meToken).mint(recipient, amounts[0]);
+        emit Mint(
+            meToken,
+            asset,
+            sender,
+            recipient,
+            assetsDeposited,
+            amounts[0]
         );
     }
 
@@ -126,7 +133,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     //                                               .sub(fees)                //
     //                                                                         //
     ****************************************************************************/
-
     /// @inheritdoc IFoundryFacet
     function burn(
         address meToken,
@@ -232,6 +238,55 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         LibMeToken.updateBalanceLocked(true, meToken, assetsDeposited);
 
         emit Donate(meToken, asset, sender, assetsDeposited);
+    }
+
+    function _handleMint(address meToken, uint256 assetsDeposited)
+        internal
+        returns (
+            IVault,
+            address,
+            address,
+            uint256[3] memory
+        )
+    {
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        address sender = LibMeta.msgSender();
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        // Handling changes
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+        } else if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                // meToken = s.meTokenRegistry.finishResubscribe(meToken);
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+                meTokenInfo = s.meTokens[meToken];
+            }
+        }
+        uint256[3] memory amounts;
+        amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
+        amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
+
+        amounts[0] = _calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
+        IVault vault = IVault(hubInfo.vault);
+        address asset = hubInfo.asset;
+        // Check if meToken is using a migration vault and in the active stage of resubscribing.
+        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
+        // in which case a migration vault isn't needed
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime
+        ) {
+            // Use meToken address to get the asset address from the migration vault
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
+        }
+        return (vault, asset, sender, amounts);
     }
 
     function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)

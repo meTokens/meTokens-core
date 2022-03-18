@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
-
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -33,6 +33,34 @@ contract Vault is IVault, ReentrancyGuard {
         uint256 feeAmount
     ) external virtual override nonReentrant {
         require(msg.sender == diamond, "!diamond");
+        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
+        if (feeAmount > 0) {
+            accruedFees[asset] += feeAmount;
+        }
+        emit HandleDeposit(from, asset, depositAmount, feeAmount);
+    }
+
+    /// @inheritdoc IVault
+    function handleDepositWithPermit(
+        address from,
+        address asset,
+        uint256 depositAmount,
+        uint256 feeAmount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external virtual override nonReentrant {
+        require(msg.sender == diamond, "!diamond");
+        IERC20Permit(asset).permit(
+            from,
+            address(this),
+            depositAmount,
+            deadline,
+            v,
+            r,
+            s
+        );
         IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
         if (feeAmount > 0) {
             accruedFees[asset] += feeAmount;

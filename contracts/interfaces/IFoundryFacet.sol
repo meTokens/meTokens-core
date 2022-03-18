@@ -58,6 +58,24 @@ interface IFoundryFacet {
         address recipient
     ) external;
 
+    /// @notice Mint a meToken by depositing a EIP compliant asset
+    /// @param meToken          Address of meToken to mint
+    /// @param assetsDeposited  Amount of assets to deposit
+    /// @param recipient        Address to receive minted meTokens
+    /// @param deadline         The time at which this expires (unix time)
+    /// @param v                v of the signature
+    /// @param r                r of the signature
+    /// @param s                s of the signature
+    function mintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        address recipient,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
     /// @notice Burn a meToken to receive the underlying asset
     /// @param meToken          Address of meToken to burn
     /// @param meTokensBurned   Amount of meTokens to burn

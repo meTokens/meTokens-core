@@ -34,7 +34,8 @@ export async function hubSetup(
   curveStr: string,
   fees?: number[],
   erc20Address?: string,
-  erc20Whale?: string
+  erc20Whale?: string,
+  erc20Decimals?: number
 ): Promise<{
   foundry: FoundryFacet;
   hub: HubFacet;
@@ -76,7 +77,8 @@ export async function hubSetup(
   const { token, tokenAddr, tokenHolder, tokenWhale } = await transferFromWhale(
     account1.address,
     erc20Address,
-    erc20Whale
+    erc20Whale,
+    erc20Decimals
   );
   await hub.register(
     account0.address,
@@ -137,7 +139,8 @@ export async function getCurve(
 export async function transferFromWhale(
   recipientAddr: string,
   erc20Address?: string,
-  erc20Whale?: string
+  erc20Whale?: string,
+  erc20Decimals?: number
 ): Promise<{
   tokenAddr: string;
   token: ERC20;
@@ -145,11 +148,10 @@ export async function transferFromWhale(
   tokenWhale: string;
 }> {
   let tokenAddr: string;
-
   let token: ERC20;
   let tokenHolder: Signer;
   let tokenWhale: string;
-
+  let decimals: number;
   if (!erc20Address || !erc20Whale) {
     let DAI;
     let DAIWhale;
@@ -160,11 +162,14 @@ export async function transferFromWhale(
     tokenAddr = erc20Address;
     tokenWhale = erc20Whale;
   }
+  if (!erc20Decimals) {
+    decimals = 18;
+  }
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
   tokenHolder = await impersonate(tokenWhale);
   await token
     .connect(tokenHolder)
-    .transfer(recipientAddr, ethers.utils.parseEther("1000"));
+    .transfer(recipientAddr, ethers.utils.parseUnits("1000", erc20Decimals));
   return { token, tokenHolder, tokenWhale, tokenAddr };
 }
 

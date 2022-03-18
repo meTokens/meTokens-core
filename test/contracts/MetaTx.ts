@@ -251,7 +251,6 @@ const setup = async () => {
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account1.address
       );
-
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       expect(await meToken.totalSupply()).to.equal(0);
       await expect(tx)
