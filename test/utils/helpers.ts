@@ -326,7 +326,17 @@ export const toETHNumber = (num: BigNumber | string): number => {
 };
 
 export const fromETHNumber = (num: number): BigNumber => {
-  return ethers.utils.parseEther(num.toString());
+  let res: BigNumber = BigNumber.from(0);
+  let curNum = num.toString();
+  while (curNum.length > 1) {
+    try {
+      res = ethers.utils.parseEther(curNum);
+      break;
+    } catch (e) {
+      curNum = curNum.slice(0, curNum.length - 1);
+    }
+  }
+  return res;
 };
 
 /** Bancor curve calculation */

@@ -630,7 +630,6 @@ const setup = async () => {
         expect(await token.balanceOf(singleAssetVault.address)).to.equal(0);
       });
     });
-
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
         let expectedMeTokensMinted = await curve.viewMeTokensMinted(
@@ -1403,7 +1402,11 @@ const setup = async () => {
           message
         );
         const { v, r, s } = ethers.utils.splitSignature(signature);
+        console.log(`
 
+dai:${dai.address}
+weth:${weth.address}
+`);
         await expect(
           foundry
             .connect(account1)
