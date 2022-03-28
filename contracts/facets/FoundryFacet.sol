@@ -75,7 +75,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         bytes32 sSig
     ) external override {
         (
-            IVault vault,
             address asset,
             address sender,
             uint256[2] memory amounts // 0-meTokensMinted 1-assetsDepositedAfterFees
@@ -306,7 +305,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     )
         internal
         returns (
-            IVault vault,
             address asset,
             address sender,
             uint256[2] memory amounts
@@ -325,7 +323,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
 
-        (vault, asset) = _handlingChangesWithPermit(
+        asset = _handlingChangesWithPermit(
             amounts[1],
             meToken,
             meTokenInfo,
@@ -378,7 +376,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             }
         }
  */
-        return (vault, asset, sender, amounts);
+        return (asset, sender, amounts);
     }
 
     function _handlingChangesWithPermit(
@@ -391,9 +389,9 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint8 vSig,
         bytes32 rSig,
         bytes32 sSig
-    ) private returns (IVault vault, address asset) {
+    ) private returns (address asset) {
         address sender = LibMeta.msgSender();
-        vault = IVault(hubInfo.vault);
+        IVault vault = IVault(hubInfo.vault);
         asset = hubInfo.asset;
 
         if (
