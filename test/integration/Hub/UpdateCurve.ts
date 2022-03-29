@@ -785,7 +785,7 @@ const setup = async () => {
 
           expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
             calculatedReturn,
-            0.000000000000001
+            0.00000000000001
           );
           expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
           const balDaiAcc1Before = await token.balanceOf(account1.address);

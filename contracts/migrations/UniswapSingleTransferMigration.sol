@@ -12,6 +12,7 @@ import {IV3SwapRouter} from "@uniswap/swap-router-contracts/contracts/interfaces
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
+import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -214,6 +215,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
+        console.log("## SWAP amountIn:%s amountOut:%s", amountIn, amountOut);
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }

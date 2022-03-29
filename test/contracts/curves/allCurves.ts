@@ -417,6 +417,15 @@ const setup = async () => {
     ),
   });
 
+  /*  return [
+    curves[0],
+    curves[1],
+    curves[2],
+    curves[3],
+    curves[4],
+    curves[5],
+    curves[6],
+  ]; */
   return curves;
 };
 

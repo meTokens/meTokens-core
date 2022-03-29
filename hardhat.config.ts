@@ -82,7 +82,7 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     delay: true,
-    timeout: 60000, // Here is 2min but can be whatever timeout is suitable for you.
+    timeout: 120000, // Here is 2min but can be whatever timeout is suitable for you.
   },
   namedAccounts: {
     SwapRouter: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",

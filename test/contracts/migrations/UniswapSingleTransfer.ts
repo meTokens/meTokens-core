@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
-import { deploy, getContractAt } from "../../utils/helpers";
+import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
 import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
@@ -17,12 +17,14 @@ import {
   UniswapSingleTransferMigration,
   ICurve,
 } from "../../../artifacts/types";
+import { getQuote } from "../../utils/uniswap";
 
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
     let earliestSwapTime: number;
     let DAI: string;
     let WETH: string;
+    let UNIV3Factory: string;
     let DAIWhale: string;
     let WETHWhale: string;
     let daiHolder: Signer;
@@ -73,7 +75,8 @@ const setup = async () => {
     };
 
     before(async () => {
-      ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
+      ({ DAI, DAIWhale, WETH, WETHWhale, UNIV3Factory } =
+        await getNamedAccounts());
       encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "uint32"],
         [baseY, reserveWeight]
@@ -523,14 +526,23 @@ const setup = async () => {
           );
           const migrationDAIBefore = await dai.balanceOf(migration.address);
           const migrationWETHBefore = await weth.balanceOf(migration.address);
-
+          expect(migrationWETHBefore).to.be.equal(0);
+          const DAIBalanceBefore = await dai.balanceOf(account2.address);
+          const price = await getQuote(
+            UNIV3Factory,
+            dai,
+            weth,
+            migrationDetails.fee,
+            amount.add(meTokenInfo.balanceLocked).add(meTokenInfo.balancePooled)
+          );
           const tx = await foundry
             .connect(account2)
             .mint(meToken.address, amount, account2.address);
           await tx.wait();
 
           await expect(tx).to.be.emit(dai, "Transfer");
-
+          const DAIBalanceAfter = await dai.balanceOf(account2.address);
+          expect(DAIBalanceBefore.sub(DAIBalanceAfter)).to.equal(amount);
           const initialVaultDAIAfter = await dai.balanceOf(
             initialVault.address
           );
@@ -539,16 +551,20 @@ const setup = async () => {
           );
           const migrationDAIAfter = await dai.balanceOf(migration.address);
           const migrationWETHAfter = await weth.balanceOf(migration.address);
-
+          // initial vault weth balance has no change
           expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
             0
-          ); // initial vault weth balance has no change
+          );
+          // amount deposited before start time
           expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
             amount
-          ); // amount deposited before start time
+          );
           expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
-          // TODO fix with swap balance
-          expect(migrationWETHAfter.sub(migrationWETHBefore)).to.be.gt(amount); // gt due to swap amount
+          // dai to eth swap amount
+          expect(toETHNumber(migrationWETHAfter)).to.be.approximately(
+            Number(price.token0Price),
+            0.01
+          );
         });
         it("After endTime: assets transferred to/from target vault", async () => {
           const meTokenInfo = await meTokenRegistry.getMeTokenInfo(

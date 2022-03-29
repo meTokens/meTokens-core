@@ -70,7 +70,6 @@ export const getQuote = async (
   UNIV3Factory: string,
   token0: ERC20,
   token1: ERC20,
-
   fee: number,
   amount: BigNumber
 ) => {
@@ -119,6 +118,7 @@ export const getQuote = async (
   );
   const token0Amount = CurrencyAmount.fromRawAmount(input, amount.toString());
   const token1Amount = CurrencyAmount.fromRawAmount(output, amount.toString());
+
   return {
     oneToken0InToken1: poolExample.token0Price
       .quote(
