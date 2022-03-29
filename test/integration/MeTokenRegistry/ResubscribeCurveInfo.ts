@@ -26,6 +26,7 @@ import {
   UniswapSingleTransferMigration,
   ICurve,
 } from "../../../artifacts/types";
+import { getQuote } from "../../utils/uniswap";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
@@ -39,6 +40,7 @@ const setup = async () => {
     let tokenHolder: Signer;
     let dai: ERC20;
     let weth: ERC20;
+    let UNIV3Factory: string;
     let daiWhale: Signer;
     let meToken: MeToken;
     let account0: SignerWithAddress;
@@ -71,7 +73,7 @@ const setup = async () => {
     before(async () => {
       let token: ERC20;
       let DAI, WETH;
-      ({ DAI, WETH } = await getNamedAccounts());
+      ({ DAI, WETH, UNIV3Factory } = await getNamedAccounts());
 
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -384,9 +386,22 @@ const setup = async () => {
         );
         expect(meTokenTotalSupplyAfter).to.be.equal(ownerMeTokenAfter);
         expect(vaultDAIAfter.sub(vaultDAIBefore)).to.equal(0); // new asset goes to migration
-        expect(migrationWETHAfter.sub(migrationWETHBefore)).to.equal(
+        // new asset is WETH
+        const migrationDetails = await migration.getDetails(meToken.address);
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
           tokenDeposited
-        ); // new asset is WETH
+            .add(meTokenInfo.balanceLocked)
+            .add(meTokenInfo.balancePooled)
+        );
+        // dai to eth swap amount
+        expect(toETHNumber(migrationWETHAfter)).to.be.approximately(
+          Number(price.token0Price),
+          0.01
+        );
       });
       it("burn() [buyer]: assets received based on weighted average Curve info", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
