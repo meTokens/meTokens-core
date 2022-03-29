@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
@@ -25,6 +26,8 @@ contract MeTokenRegistryFacet is
     Modifiers,
     ReentrancyGuard
 {
+    using SafeERC20 for IERC20;
+
     constructor() {}
 
     /// @inheritdoc IMeTokenRegistryFacet
@@ -39,15 +42,11 @@ contract MeTokenRegistryFacet is
         HubInfo memory hubInfo = s.hubs[hubId];
         require(hubInfo.active, "Hub inactive");
         require(!hubInfo.updating, "Hub updating");
-
         if (assetsDeposited > 0) {
-            require(
-                IERC20(hubInfo.asset).transferFrom(
-                    sender,
-                    hubInfo.vault,
-                    assetsDeposited
-                ),
-                "transfer failed"
+            IERC20(hubInfo.asset).safeTransferFrom(
+                sender,
+                hubInfo.vault,
+                assetsDeposited
             );
         }
         // Create meToken erc20 contract

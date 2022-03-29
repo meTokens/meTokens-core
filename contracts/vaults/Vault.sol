@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
+
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -97,7 +98,7 @@ contract Vault is IVault, ReentrancyGuard {
             require(amount <= accruedFees[asset], "amount > accrued fees");
         }
         accruedFees[asset] -= amount;
-        IERC20(asset).transfer(dao, amount);
+        IERC20(asset).safeTransfer(dao, amount);
         emit Claim(dao, asset, amount);
     }
 
