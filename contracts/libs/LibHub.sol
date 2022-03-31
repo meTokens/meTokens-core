@@ -45,7 +45,6 @@ library LibHub {
             s.hubs[id].targetCurve = address(0);
         }
 
-        // TODO: prevent these from happening if a hub is already not updating
         s.hubs[id].updating = false;
         s.hubs[id].startTime = 0;
         s.hubs[id].endTime = 0;

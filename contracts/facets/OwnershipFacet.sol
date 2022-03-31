@@ -4,6 +4,9 @@ pragma solidity 0.8.9;
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
+/// @title meTokens Ownership Facet
+/// @author @cartercarlson, @zgorizzo69, @parv3213
+/// @notice This contract provides access control for meTokens protocol
 contract OwnershipFacet is Modifiers {
     function setDiamondController(address newController)
         external

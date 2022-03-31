@@ -18,9 +18,9 @@ import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
-/// @title meToken registry
-/// @author Carter Carlson (@cartercarlson)
-/// @notice This contract tracks basic meTokenInformation about all meTokens
+/// @title meTokens Registry Facet
+/// @author @cbobrobison, @cartercarlson, @zgorizzo69, @parv3213
+/// @notice This contract tracks info about a meToken within meTokens protocol
 contract MeTokenRegistryFacet is
     IMeTokenRegistryFacet,
     Modifiers,

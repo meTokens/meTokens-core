@@ -4,6 +4,9 @@ pragma solidity 0.8.9;
 import {IFeesFacet} from "../interfaces/IFeesFacet.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
+/// @title meTokens Fees Facet
+/// @author @cartercarlson, @parv3213
+/// @notice This contract defines the fee structure for meTokens protocol
 contract FeesFacet is IFeesFacet, Modifiers {
     /// @inheritdoc IFeesFacet
     function setMintFee(uint256 rate) external override onlyFeesController {
