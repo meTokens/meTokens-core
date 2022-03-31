@@ -59,9 +59,6 @@ contract StepwiseCurve is ICurve {
     {
         require(msg.sender == hub, "!hub");
 
-        // TODO: does this require statement need to be added to BancorZeroFormula.sol initReconfigure() as well?
-        // require(encodedCurveInfo.length > 0, "encodedCurveInfo empty");
-
         (uint256 targetStepX, uint256 targetStepY) = abi.decode(
             encodedCurveInfo,
             (uint256, uint256)
@@ -85,14 +82,6 @@ contract StepwiseCurve is ICurve {
         curveInfo.stepY = curveInfo.targetStepY;
         curveInfo.targetStepX = 0;
         curveInfo.targetStepY = 0;
-    }
-
-    function getCurveInfoStepwise(uint256 curveInfo)
-        external
-        view
-        returns (CurveInfo memory)
-    {
-        return _curves[curveInfo];
     }
 
     /// @inheritdoc ICurve

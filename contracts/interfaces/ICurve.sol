@@ -27,7 +27,6 @@ interface ICurve {
     function finishReconfigure(uint256 hubId) external;
 
     /// @notice Get curveInfo for a hub
-    /// @return curveInfo (TODO: curve w/ more than 4 curveInfo)
     function getCurveInfo(uint256 hubId)
         external
         view

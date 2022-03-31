@@ -38,7 +38,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     // args for uniswap router
-    // TODO: configurable fee
     uint24 public constant MINFEE = 500; // 0.05%
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
@@ -110,7 +109,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             meTokenInfo.targetHubId
         );
 
-        // TODO: require migration hasn't finished, block.timestamp > meToken_.startTime
         if (!usts.started) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
