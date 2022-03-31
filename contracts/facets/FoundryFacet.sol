@@ -14,6 +14,9 @@ import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
+/// @title meTokens Foundry Facet
+/// @author @cartercarlson, @parv3213
+/// @notice This contract manages all minting / burning for meTokens protocol
 contract FoundryFacet is IFoundryFacet, Modifiers {
     // MINT FLOW CHART
     /****************************************************************************

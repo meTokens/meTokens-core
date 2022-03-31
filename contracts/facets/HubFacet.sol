@@ -11,6 +11,9 @@ import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
+/// @title meTokens Hub Facet
+/// @author @cartercarlson, @zgorizzo69, @parv3213
+/// @notice This contract manages all hub configurations for meTokens protocol
 contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function register(
