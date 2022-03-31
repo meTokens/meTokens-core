@@ -337,6 +337,7 @@ contract BancorCurve is ICurve {
         }
         // MAX_WEIGHT / reserveWeight
         bytes16 exponent = _maxWeight.div(uint256(reserveWeight).fromUInt());
+
         // 1 - (meTokensBurned / supply)
         bytes16 s = _one.sub(meTokensBurned.fromUInt().div(supply.fromUInt()));
         // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".

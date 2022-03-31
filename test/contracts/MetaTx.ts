@@ -114,7 +114,7 @@ const setup = async () => {
         from: account0.address,
         to: hub.address,
         value: 0,
-        gas: gasLimit.toNumber() * 2,
+        gas: gasLimit.toNumber() * 10,
         nonce: 0,
         data,
       };
@@ -179,7 +179,7 @@ const setup = async () => {
         from: account0.address,
         to: hub.address,
         value: 0,
-        gas: gasLimit.toNumber() * 2,
+        gas: gasLimit.toNumber() * 10,
         nonce: 1,
         data,
       };
