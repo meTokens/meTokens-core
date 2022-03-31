@@ -337,9 +337,8 @@ contract BancorCurve is ICurve {
             return (balancePooled * meTokensBurned) / supply;
         }
         // 1 / (reserveWeight/MAX_WEIGHT)
-        bytes16 exponent = _one.div(
-            uint256(reserveWeight).fromUInt().div(_maxWeight)
-        );
+        bytes16 exponent = _maxWeight.div(uint256(reserveWeight).fromUInt());
+
         // 1 - (meTokensBurned / supply)
         bytes16 s = _one.sub(meTokensBurned.fromUInt().div(supply.fromUInt()));
         // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".

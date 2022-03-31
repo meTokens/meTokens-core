@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
@@ -19,6 +20,8 @@ import {Vault} from "../vaults/Vault.sol";
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
 contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
+    using SafeERC20 for IERC20;
+
     struct UniswapSingleTransfer {
         // The earliest time that the swap can occur
         uint256 soonest;
@@ -121,7 +124,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
 
         // Send asset to new vault only if there's a migration vault
-        IERC20(targetHubInfo.asset).transfer(targetHubInfo.vault, amountOut);
+        IERC20(targetHubInfo.asset).safeTransfer(
+            targetHubInfo.vault,
+            amountOut
+        );
 
         // reset mappings
         delete _uniswapSingleTransfers[meToken];
@@ -189,7 +195,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         }
 
         // Approve router to spend
-        IERC20(hubInfo.asset).approve(address(_router), amountIn);
+        IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
