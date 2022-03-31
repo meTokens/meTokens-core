@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
@@ -17,6 +18,8 @@ import {Vault} from "../vaults/Vault.sol";
 /// @notice create a vault to hold an asset if a meToken is resubscribing
 ///         to a different hub with the same asset
 contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
+    using SafeERC20 for IERC20;
+
     struct SameAssetMigration {
         // if migration is active
         bool isMigrating;
@@ -90,7 +93,10 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
-        IERC20(targetHubInfo.asset).transfer(targetHubInfo.vault, amountOut);
+        IERC20(targetHubInfo.asset).safeTransfer(
+            targetHubInfo.vault,
+            amountOut
+        );
 
         // reset mappings
         delete _sameAssetMigration[meToken];
