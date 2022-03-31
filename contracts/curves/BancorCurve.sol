@@ -195,15 +195,15 @@ contract BancorCurve is ICurve {
     ///**************** - USED BY MINT & BURN IN FOUNDRY.SOL - ****************/
 
     // CALCULATE MINT
-    /********************************************************************************
-    //                                                                             //
-    // T = meTokensReturned             / /             \      rW            \     //
-    // D = assetsDeposited              | |        D    |  ^ ------          |     //
-    // rW = reserveWeight        T = S *| |  1 + -----  |    100000     - 1  |     //
-    // bP = balancePooled               | |       bP    |                    |     //
-    // S = supply                       \ \             /                    /     //
-    //                                                                             //
-    ********************************************************************************/
+    /*******************************************************************************
+    //                                                                            //
+    // T = meTokensReturned             / /             \      rW           \     //
+    // D = assetsDeposited              | |        D    |  ^ ------         |     //
+    // rW = reserveWeight        T = S *| |  1 + -----  |    100000    - 1  |     //
+    // bP = balancePooled               | |       bP    |                   |     //
+    // S = supply                       \ \             /                   /     //
+    //                                                                            //
+    *******************************************************************************/
 
     /// @dev Given a deposit (in the connector token), reserve weight, meToken supply and
     ///     balance pooled, calculate the return for a given conversion (in the meToken)
@@ -236,7 +236,6 @@ contract BancorCurve is ICurve {
 
         bytes16 exponent = uint256(reserveWeight).fromUInt().div(_maxWeight);
         // 1 + balanceDeposited/connectorBalance
-        // TODO: name for `part1`?
         bytes16 part1 = _one.add(
             assetsDeposited.fromUInt().div(balancePooled.fromUInt())
         );
@@ -291,19 +290,19 @@ contract BancorCurve is ICurve {
     }
 
     // CALCULATE BURN
-    /************************************************************************************
-    //                                                                                  //
-    // T = tokensReturned                 /     /                \  ^        1        \ //
-    // B = meTokensBurned                 |     |          B     |      ------------  | //
-    // rW = reserveWeight        T = bP * | 1 - |  1  -  ------  |      (rW / 100000) | //
-    // bP = balancePooled                 |     |          s     |                    | //
-    // S = supply                         \     \                /                    / //
-    //                                                                                  //
-    ************************************************************************************/
+    /**************************************************************************************
+    //                                                                                   //
+    // T = tokensReturned                 /     /                \  ^    1,000,000   \   //
+    // B = meTokensBurned                 |     |          B     |      -----------  |   //
+    // rW = reserveWeight        T = bP * | 1 - |  1  -  ------  |          r        |   //
+    // bP = balancePooled                 |     |          s     |                   |   //
+    // S = supply                         \     \                /                   /   //
+    //                                                                                   //
+    **************************************************************************************/
 
     /// @dev Given an amount of meTokens to burn, connector weight, supply and collateral pooled,
     ///     calculates the return for a given conversion (in the collateral token)
-    /// @dev balancePooled * (1 - (1 - meTokensBurned/supply) ^ (1 / (reserveWeight / 1000000)))
+    /// @dev balancePooled * (1 - (1 - meTokensBurned/supply) ^ (1,000,000 / reserveWeight))
     /// @param meTokensBurned   amount of meTokens to burn
     /// @param reserveWeight    connector weight, represented in ppm, 1 - 1,000,000
     /// @param supply           current meToken supply
@@ -336,10 +335,8 @@ contract BancorCurve is ICurve {
         if (reserveWeight == MAX_WEIGHT) {
             return (balancePooled * meTokensBurned) / supply;
         }
-        // 1 / (reserveWeight/MAX_WEIGHT) or MAX_WEIGHT / reserveWeight
-        bytes16 exponent = _one.div(
-            uint256(reserveWeight).fromUInt().div(_maxWeight)
-        );
+        // MAX_WEIGHT / reserveWeight
+        bytes16 exponent = _maxWeight.div(uint256(reserveWeight).fromUInt());
         // 1 - (meTokensBurned / supply)
         bytes16 s = _one.sub(meTokensBurned.fromUInt().div(supply.fromUInt()));
         // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".
