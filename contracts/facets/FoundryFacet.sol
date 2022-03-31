@@ -143,14 +143,18 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
+        // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (
-            meTokenInfo.targetHubId != 0 &&
-            block.timestamp > meTokenInfo.endTime
-        ) {
-            hubInfo = s.hubs[meTokenInfo.targetHubId];
-            meTokenInfo = LibMeToken.finishResubscribe(meToken);
+        } else if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+                meTokenInfo = s.meTokens[meToken];
+            }
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
@@ -260,7 +264,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
-                // meToken = s.meTokenRegistry.finishResubscribe(meToken);
                 meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
@@ -405,7 +408,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
                 hubInfo.endTime
             );
         } else if (meTokenInfo.targetHubId != 0) {
-            // Calculate return assuming update is not happening
+            // Calculate return assuming meToken is resubscribing
             targetAssetsReturned = ICurve(s.hubs[meTokenInfo.targetHubId].curve)
                 .viewAssetsReturned(
                     meTokensBurned,
