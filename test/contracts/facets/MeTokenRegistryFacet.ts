@@ -773,21 +773,17 @@ const setup = async () => {
           .to.emit(singleAssetVault, "StartMigration")
           .withArgs(meTokenAddr1)
           .to.emit(meTokenRegistry, "UpdateBalances")
-          // TODO check args
-          // .withArgs()
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .withArgs(meTokenAddr1);
 
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meTokenAddr1);
         expect(meTokenInfo.owner).to.equal(account1.address);
         expect(meTokenInfo.hubId).to.equal(targetHubId);
-        // TODO check args
-        // expect(meTokenInfo.balancePooled).to.equal();
-        // expect(meTokenInfo.balanceLocked).to.equal();
         expect(meTokenInfo.startTime).to.equal(0);
         expect(meTokenInfo.endTime).to.equal(0);
-        // TODO check next line
-        // expect(meTokenInfo.endCooldown).to.equal(0);
+        expect(meTokenInfo.endCooldown).to.equal(
+          meTokenRegistryDetails.endCooldown
+        );
         expect(meTokenInfo.targetHubId).to.equal(0);
         expect(meTokenInfo.migration).to.equal(ethers.constants.AddressZero);
       });
@@ -926,8 +922,8 @@ const setup = async () => {
         expect(await meTokenRegistry.isOwner(account1.address)).to.be.true;
       });
     });
-    describe("updateBalance", () => {
-      it("updateBalancePooled()", async () => {
+    describe("updateBalance()", () => {
+      it("After mint", async () => {
         await weth
           .connect(tokenHolder)
           .transfer(account0.address, tokenDeposited);
@@ -961,20 +957,18 @@ const setup = async () => {
         ).to.be.equal(amountDepositedAfterFee);
       });
 
-      it("updateBalanceLocked() [TODO]", async () => {
+      it("After buyer burns", async () => {
         const meToken = await getContractAt<MeToken>("MeToken", meTokenAddr1);
         const meTokenTotalSupply = await meToken.totalSupply();
         const buyerMeToken = await meToken.balanceOf(account0.address);
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        const rawAssetsReturned = Number(
-          calculateCollateralReturned(
-            toETHNumber(buyerMeToken),
-            toETHNumber(meTokenTotalSupply),
-            toETHNumber(meTokenInfo.balancePooled),
-            reserveWeight / MAX_WEIGHT
-          ).toFixed(12)
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(buyerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenInfo.balancePooled),
+          reserveWeight / MAX_WEIGHT
         );
         const assetsReturned = (rawAssetsReturned * refundRatio) / MAX_WEIGHT;
         const lockedAmount = fromETHNumber(rawAssetsReturned - assetsReturned);
@@ -988,8 +982,7 @@ const setup = async () => {
 
         await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalancePooled")
-          // TODO fails in next line, loosing precision by 1 wei.
-          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
+          // not checking args here due to precision, checking balancePooled later down
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meTokenAddr1, lockedAmount);
         const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
@@ -1004,7 +997,7 @@ const setup = async () => {
           newMeTokenInfo.balanceLocked.sub(meTokenInfo.balanceLocked)
         ).to.be.equal(lockedAmount);
       });
-      it("updateBalanceLocked() when owner burns [TODO]", async () => {
+      it("updateBalanceLocked() when owner burns", async () => {
         await weth
           .connect(tokenHolder)
           .transfer(account1.address, tokenDeposited);
@@ -1040,11 +1033,9 @@ const setup = async () => {
 
         await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalancePooled")
-          // TODO fails in next line, loosing precision
-          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
+          // not checking args here due to precision, checking balancePooled later down
           .to.emit(meTokenRegistry, "UpdateBalanceLocked");
-        // TODO fails in next line, loosing precision
-        // .withArgs(false, meTokenAddr1, fromETHNumber(lockedAmount));
+        // not checking args here due to precision, checking balancePooled later down
         const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
@@ -1057,7 +1048,7 @@ const setup = async () => {
           toETHNumber(
             meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
           )
-        ).to.be.approximately(lockedAmount, 1e-13);
+        ).to.be.approximately(lockedAmount, 1e-15);
       });
     });
   });
