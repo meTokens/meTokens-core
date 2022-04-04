@@ -42,6 +42,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     mapping(address => mapping(address => uint256)) public balances;
 
     struct Season {
+        bool active;
         uint256 initTime;
         uint256 startTime;
         uint256 endTime;
@@ -60,9 +61,17 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     event RewardAdded(uint256 seasonNum, uint256 amount);
     event Recovered(IERC20 token, uint256 amount);
 
+    modifier isTransactable(uint256 num) {
+        require(
+            timeRemainingInSeason(num) > 0 || isSeasonActive(num),
+            "rewards are not withdrawable"
+        );
+        _;
+    }
+
     constructor() {}
 
-    function canTokenBeFeaturedInSeason(address token)
+    function canTokenBeFeaturedInNewSeason(address token)
         external
         view
         returns (bool)
@@ -72,10 +81,8 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
 
         if (meTokenInfo.hubId == 0) return false;
         return
-            meTokenPool.seasonNum == 0 ||
-                meTokenPool.seasonNum + issuerCooldown <= seasonNum
-                ? true
-                : false;
+            (meTokenPool.seasonNum == 0) ||
+            (meTokenPool.seasonNum + issuerCooldown <= seasonNum);
     }
 
     function isMeTokenInSeason(
@@ -84,9 +91,25 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
         uint256 index,
         bytes32[] calldata merkleProof
     ) external view returns (bool) {
-        Season storage season = seasons[num];
+        Season memory season = seasons[num];
         bytes32 node = keccak256(abi.encodePacked(index, meToken, uint256(1)));
         return MerkleProof.verify(merkleProof, season.merkleRoot, node);
+    }
+
+    function isSeasonLive(uint256 num) public view returns (bool) {
+        Season memory season = seasons[num];
+        return
+            (block.timestamp >= season.startTime) &&
+            (block.timestamp <= season.endTime);
+    }
+
+    function isSeasonActive(uint256 num) public view returns (bool) {
+        Season memory season = seasons[num];
+        return season.active;
+    }
+
+    function hasSeasonEnded(uint256 num) public view returns (bool) {
+        return block.timestamp >= seasons[num].endTime;
     }
 
     function rewardPerToken(address meToken) public view returns (uint256) {
@@ -142,17 +165,6 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
             (meTokenPool.rewards[account]);
     }
 
-    function seasonIsActive(uint256 num) public view returns (bool) {
-        Season storage season = seasons[num];
-        return
-            (block.timestamp >= season.startTime) &&
-            (block.timestamp <= season.endTime);
-    }
-
-    function seasonHasEnded(uint256 num) public view returns (bool) {
-        return block.timestamp >= seasons[num].endTime;
-    }
-
     function lastTimeRewardApplicable(address meToken)
         public
         view
@@ -161,7 +173,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
         Season storage season = seasons[meTokenPool.seasonNum];
 
-        if (!seasonIsActive(meTokenPool.seasonNum)) return 0;
+        if (!isSeasonActive(meTokenPool.seasonNum)) return 0;
 
         return
             block.timestamp < season.endTime ? block.timestamp : season.endTime;
@@ -169,22 +181,13 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
 
     // TODO: validate
     function timeRemainingInSeason(uint256 num) public view returns (uint256) {
-        // require(seasonIsActive(num), "!active");
-        if (seasonIsActive(num)) {
+        // require(isSeasonActive(num), "!active");
+        if (isSeasonActive(num)) {
             return seasons[num].endTime - block.timestamp;
         }
-        if (seasonHasEnded(num)) {
+        if (hasSeasonEnded(num)) {
             return 0;
         }
-    }
-
-    // TODO: when should / shouldn't rewards from a season be claimable?
-    modifier isTransactable(uint256 num) {
-        require(
-            timeRemainingInSeason(num) > 0 || seasonIsActive(num),
-            "rewards are not withdrawable"
-        );
-        _;
     }
 
     // TODO: access control
@@ -302,7 +305,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
         // Update reward rate based on remaining time
         Season storage season = seasons[seasonNum];
         uint256 remainingTime;
-        if (!seasonIsActive(seasonNum) || seasonHasEnded(seasonNum)) {
+        if (!isSeasonActive(seasonNum) || hasSeasonEnded(seasonNum)) {
             remainingTime = season.endTime - season.startTime;
         } else {
             remainingTime = timeRemainingInSeason(seasonNum);
@@ -418,9 +421,8 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     function recoverERC20(
         IERC20 token,
         address recipient,
-        uint256 amount
-    ) external // onlyOwner
-    {
+        uint256 amount // onlyOwner
+    ) external {
         require(token != me, "Cannot withdraw the staking token");
         MeTokenInfo memory meTokenInfo = s.meTokens[address(token)];
         require(meTokenInfo.hubId == 0, "Cannot withdraw a meToken");
