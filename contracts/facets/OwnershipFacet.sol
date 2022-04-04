@@ -32,6 +32,14 @@ contract OwnershipFacet is Modifiers {
         s.feesController = newController;
     }
 
+    function setLiquidityMiningController(address newController)
+        external
+        onlyLiquidityMiningController
+    {
+        _sameAsPreviousError(s.liquidityMiningController, newController);
+        s.liquidityMiningController = newController;
+    }
+
     function setDurationsController(address newController)
         external
         onlyDurationsController
@@ -74,6 +82,10 @@ contract OwnershipFacet is Modifiers {
 
     function feesController() external view returns (address) {
         return s.feesController;
+    }
+
+    function liquidityMiningController() external view returns (address) {
+        return s.liquidityMiningController;
     }
 
     function durationsController() external view returns (address) {
