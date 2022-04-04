@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 // Modified version of https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol
 
@@ -7,32 +7,33 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {MeTokenInfo, LibMeToken} from "../libs/LibMeToken.sol";
+import {Modifiers} from "../libs/LibAppStorage.sol";
+import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
-contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
+contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     using SafeERC20 for IERC20;
 
+    // TODO: move these to AppStorage
     uint256 constant PRECISION = 1e18;
     uint256 constant BASE = PRECISION * PRECISION * PRECISION;
     IERC20 public immutable me =
         IERC20(0x8375289350D4143559BF4d035178e35F2a15fc14);
     uint256 public seasonNum; // # of seasons
-    uint256 public duration = 1000000; // timeframe from a season starting to ending - about 11.5 days
     uint256 public warmup = 3 days; // timeframe between initTime and startTime
+    uint256 public duration = 1000000; // timeframe from a season starting to ending - about 11.5 days
     uint256 public issuerCooldown = 5; // # of seasons a meToken issuer has to wait before participating again
-    // IMeTokenRegistryFacet public override meTokenRegistry;
 
     struct MeTokenPool {
-        uint256 lastSeasonFeatured;
-        uint256[] seasonsFeatured; // TODO: is this needed
+        uint256 seasonNum;
         uint256 pendingIssuerRewards;
         uint256 lastUpdateTime;
         uint256 totalSupply; // supply staked
         uint256 lastCirculatingSupply;
         uint256 rewardPerTokenStored; // TODO: could this val be exploited when a new season starts?
         mapping(address => uint256) userRewardPerTokenPaid;
-        // mapping (address => uint256) balances; // key: staker addr
         mapping(address => uint256) rewards; // key: staker addr
     }
 
@@ -50,7 +51,6 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         uint256 rewardRate;
         uint256 numPools;
         bytes32 merkleRoot;
-        mapping(address => MeTokenPool) meTokenPools;
     }
     mapping(uint256 => Season) private seasons;
 
@@ -58,15 +58,24 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
     event Staked(address meToken, address sender, uint256 amount);
     event Withdrawn(address meToken, address sender, uint256 amount);
     event RewardAdded(uint256 seasonNum, uint256 amount);
-    event Recovered(address tokenAddress, uint256 tokenAmount);
+    event Recovered(IERC20 token, uint256 amount);
 
     constructor() {}
 
-    /* PUBLIC VIEWS */
-    function canTokenBeFeaturedInSeason(address token) external returns (bool) {
-        // if(!meTokenRegistry.isMeToken(meToken)) return false; TODO
+    function canTokenBeFeaturedInSeason(address token)
+        external
+        view
+        returns (bool)
+    {
+        MeTokenInfo memory meTokenInfo = s.meTokens[token];
         MeTokenPool storage meTokenPool = meTokenPools[token];
-        // meTokenPool.lastSeasonFeatured == 0 || meTokenPool.lastSeasonFeatured + issuerCoolDown <= seasonNum ?
+
+        if (meTokenInfo.hubId == 0) return false;
+        return
+            meTokenPool.seasonNum == 0 ||
+                meTokenPool.seasonNum + issuerCooldown <= seasonNum
+                ? true
+                : false;
     }
 
     function isMeTokenInSeason(
@@ -74,15 +83,15 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         address meToken,
         uint256 index,
         bytes32[] calldata merkleProof
-    ) public view returns (bool) {
+    ) external view returns (bool) {
         Season storage season = seasons[num];
-        bytes32 node = keccak256(abi.encodePacked(index, meToken, 1));
+        bytes32 node = keccak256(abi.encodePacked(index, meToken, uint256(1)));
         return MerkleProof.verify(merkleProof, season.merkleRoot, node);
     }
 
     function rewardPerToken(address meToken) public view returns (uint256) {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
-        Season storage season = seasons[meTokenPool.lastSeasonFeatured];
+        Season storage season = seasons[meTokenPool.seasonNum];
         if (meTokenPool.totalSupply == 0) {
             return meTokenPool.rewardPerTokenStored;
         }
@@ -124,7 +133,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
     {
         // Divide by projectTokenBase in accordance with rewardPerToken()
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
-        if (meTokenPool.lastSeasonFeatured == 0) return 0;
+        if (meTokenPool.seasonNum == 0) return 0;
         return
             (balanceOf(meToken, account) *
                 (rewardPerToken(meToken) -
@@ -150,9 +159,9 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         returns (uint256)
     {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
-        Season storage season = seasons[meTokenPool.lastSeasonFeatured];
+        Season storage season = seasons[meTokenPool.seasonNum];
 
-        if (!seasonIsActive(meTokenPool.lastSeasonFeatured)) return 0;
+        if (!seasonIsActive(meTokenPool.seasonNum)) return 0;
 
         return
             block.timestamp < season.endTime ? block.timestamp : season.endTime;
@@ -178,8 +187,6 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         _;
     }
 
-    /* PUBLIC MUTATORS */
-
     // TODO: access control
     function initSeason(
         uint256 initTime,
@@ -193,7 +200,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         require(block.timestamp > season.endTime, "still active");
 
         me.safeTransferFrom(
-            _msgSender(),
+            LibMeta.msgSender(),
             address(this),
             allocationBuyer + allocationIssuer
         );
@@ -217,16 +224,17 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         newSeason.rewardRate = rewardRate;
     }
 
-    function exit(uint256 num, address meToken)
-        external
-        isTransactable(seasonNum)
-        nonReentrant
-    {
-        address sender = _msgSender();
+    function exit(
+        uint256 num,
+        address meToken,
+        uint256 index,
+        bytes32[] calldata merkleProof
+    ) external isTransactable(num) nonReentrant {
+        address sender = LibMeta.msgSender();
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
-        withdraw(meToken, balances[meToken][sender]);
-        claimReward(num, meToken);
+        withdraw(meToken, balances[meToken][sender], index, merkleProof);
+        claimReward(num, meToken, index, merkleProof);
     }
 
     // TODO: how to claim if reward is from multiple seasons?
@@ -236,17 +244,12 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         address meToken,
         uint256 index,
         bytes32[] calldata merkleProof
-    ) public isTransactable(seasonNum) nonReentrant {
-        address sender = _msgSender();
+    ) public isTransactable(num) nonReentrant {
+        address sender = LibMeta.msgSender();
         updateReward(meToken, sender);
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
-        if (meTokenPool.lastSeasonFeatured != seasonNum) {
-            require(
-                isMeTokenInSeason(seasonNum, meToken, index, merkleProof),
-                "meToken not in season"
-            );
-        }
+        // TODO: do we need to check if meToken in season num?
 
         uint256 reward = meTokenPool.rewards[sender];
         if (reward == 0) return;
@@ -257,12 +260,13 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         emit RewardPaid(meToken, sender, reward);
     }
 
-    function claimRewardExact(address meToken, uint256 amount)
-        public
-        isTransactable(seasonNum)
-        nonReentrant
-    {
-        address sender = _msgSender();
+    function claimRewardExact(
+        address meToken,
+        uint256 amount,
+        uint256 index,
+        bytes32[] calldata merkleProof
+    ) public isTransactable(seasonNum) nonReentrant {
+        address sender = LibMeta.msgSender();
         updateReward(meToken, sender);
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
@@ -274,7 +278,8 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         emit RewardPaid(meToken, sender, amount);
     }
 
-    function deactivateSeason(uint256 num) public onlyOwner {
+    // TODO: access control, is this needed anyway
+    function deactivateSeason(uint256 num) public {
         Season storage season = seasons[num];
         // require(season.active, "!active");
         // season.active = false;
@@ -286,7 +291,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
     function addToRewardsAllocation(address meToken, uint256 amount)
         public
         nonReentrant
-        onlyOwner
+    // onlyOwner
     {
         require(
             amount <= balanceOf(meToken, address(this)),
@@ -316,7 +321,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
     {
         require(amount > 0, "RewardsPool: cannot stake zero");
 
-        address sender = _msgSender();
+        address sender = LibMeta.msgSender();
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
         updateReward(meToken, sender);
@@ -328,12 +333,12 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         emit Staked(meToken, sender, amount);
     }
 
-    function updateReward(
-        uint256 num,
-        address meToken,
-        address account
-    ) public isTransactable(num) nonReentrant {
-        _updateAccrual(num, meToken);
+    function updateReward(address meToken, address account)
+        public
+        /* isTransactable(num) */
+        nonReentrant
+    {
+        _updateAccrual(meToken);
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
         if (account != address(0)) {
             meTokenPool.rewards[account] = earned(meToken, account);
@@ -343,23 +348,21 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
     }
 
     function withdraw(
-        uint256 num,
         address meToken,
         uint256 amount,
         uint256 index,
         bytes32[] calldata merkleProof
-    ) public isTransactable(num) nonReentrant {
+    )
+        public
+        /* isTransactable(num) */
+        nonReentrant
+    {
         require(amount > 0, "RewardsPool: cannot withdraw zero");
 
-        address sender = _msgSender();
+        address sender = LibMeta.msgSender();
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
-        if (meTokenPool.lastSeasonFeatured != num) {
-            require(
-                isMeTokenInSeason(num, meToken, index, merkleProof),
-                "meToken not in season"
-            );
-        }
+        // TODO: do we need to check if meToken in season num?
 
         updateReward(meToken, sender);
 
@@ -371,7 +374,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         emit Withdrawn(meToken, sender, amount);
     }
 
-    function _updateAccrual(uint256 num, address meToken) private {
+    function _updateAccrual(address meToken) private {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
         meTokenPool.rewardPerTokenStored = rewardPerToken(meToken);
         meTokenPool.lastUpdateTime = lastTimeRewardApplicable(meToken);
@@ -384,7 +387,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         bool add
     ) private {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
-        Season storage season = seasons[meTokenPool.lastSeasonFeatured];
+        Season storage season = seasons[meTokenPool.seasonNum];
 
         uint256 circulatingSupply = IERC20(meToken).totalSupply();
         uint256 oldPctStaked = (BASE * meTokenPool.totalSupply) /
@@ -412,18 +415,16 @@ contract LiquidityMiningFacet is ReentrancyGuard, Ownable {
         }
     }
 
-    /* MISCELLANEOUS */
-
-    // Added to support recovering LP Rewards from other systems such as BAL to be distributed to holders
-    function recoverERC20(address tokenAddress, uint256 tokenAmount)
-        external
-        onlyOwner
+    function recoverERC20(
+        IERC20 token,
+        address recipient,
+        uint256 amount
+    ) external // onlyOwner
     {
-        require(
-            tokenAddress != address(me),
-            "Cannot withdraw the staking token"
-        );
-        IERC20(tokenAddress).safeTransfer(owner(), tokenAmount);
-        emit Recovered(tokenAddress, tokenAmount);
+        require(token != me, "Cannot withdraw the staking token");
+        MeTokenInfo memory meTokenInfo = s.meTokens[address(token)];
+        require(meTokenInfo.hubId == 0, "Cannot withdraw a meToken");
+        token.safeTransfer(recipient, amount);
+        emit Recovered(token, amount);
     }
 }
