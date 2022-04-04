@@ -4,10 +4,9 @@ pragma solidity 0.8.9;
 // Modified version of https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {MeTokenInfo, LibMeToken} from "../libs/LibMeToken.sol";
+import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 
@@ -114,6 +113,10 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
 
     function rewardPerToken(address meToken) public view returns (uint256) {
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
+
+        // If meToken was featured more than issuerCooldown seasons ago, validate
+        // that meToken has not been re-listed since
+
         Season storage season = seasons[meTokenPool.seasonNum];
         if (meTokenPool.totalSupply == 0) {
             return meTokenPool.rewardPerTokenStored;
@@ -197,7 +200,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
         uint256 allocationIssuer,
         uint256 numPools,
         bytes32 merkleRoot
-    ) external {
+    ) external onlyLiquidityMiningController {
         Season storage season = seasons[seasonNum];
         require(initTime > season.endTime, "too soon");
         require(block.timestamp > season.endTime, "still active");
@@ -252,7 +255,8 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
         updateReward(meToken, sender);
         MeTokenPool storage meTokenPool = meTokenPools[meToken];
 
-        // TODO: do we need to check if meToken in season num?
+        // TODO: check that meToken hasnt been more-recently featured than meToken.numSeason
+        // using
 
         uint256 reward = meTokenPool.rewards[sender];
         if (reward == 0) return;
@@ -294,7 +298,7 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     function addToRewardsAllocation(address meToken, uint256 amount)
         public
         nonReentrant
-    // onlyOwner
+        onlyLiquidityMiningController
     {
         require(
             amount <= balanceOf(meToken, address(this)),
@@ -421,8 +425,12 @@ contract LiquidityMiningFacet is ReentrancyGuard, Modifiers {
     function recoverERC20(
         IERC20 token,
         address recipient,
-        uint256 amount // onlyOwner
-    ) external {
+        uint256 amount
+    )
+        external
+        // TODO: should this access control be different
+        onlyLiquidityMiningController
+    {
         require(token != me, "Cannot withdraw the staking token");
         MeTokenInfo memory meTokenInfo = s.meTokens[address(token)];
         require(meTokenInfo.hubId == 0, "Cannot withdraw a meToken");
