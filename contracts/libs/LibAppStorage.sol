@@ -42,12 +42,13 @@ struct AppStorage {
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
+    address trustedForwarder;
     address feesController;
+    address liquidityMiningController;
     address durationsController;
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
-    address trustedForwarder;
 }
 
 library LibAppStorage {
@@ -61,6 +62,7 @@ library LibAppStorage {
         AppStorage storage s = diamondStorage();
         s.diamondController = _firstController;
         s.feesController = _firstController;
+        s.liquidityMiningController = _firstController;
         s.durationsController = _firstController;
         s.meTokenRegistryController = _firstController;
         s.registerController = _firstController;
@@ -81,6 +83,14 @@ contract Modifiers {
 
     modifier onlyFeesController() {
         require(LibMeta.msgSender() == s.feesController, "!feesController");
+        _;
+    }
+
+    modifier onlyLiquidityMiningController() {
+        require(
+            LibMeta.msgSender() == s.liquidityMiningController,
+            "!liquidityMiningController"
+        );
         _;
     }
 
