@@ -21,4 +21,12 @@ interface IMigration {
     function finishMigration(address meToken)
         external
         returns (uint256 amountOut);
+
+    /// @notice Method returns bool if migration started
+    /// @param meToken  Address of meToken
+    /// @return started True if migration started else false
+    function migrationStarted(address meToken)
+        external
+        view
+        returns (bool started);
 }

@@ -122,4 +122,14 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         if (meTokenInfo.hubId == 0) return false;
         return true;
     }
+
+    /// @inheritdoc IMigration
+    function migrationStarted(address meToken)
+        external
+        view
+        override
+        returns (bool started)
+    {
+        return _sameAssetMigration[meToken].started;
+    }
 }
