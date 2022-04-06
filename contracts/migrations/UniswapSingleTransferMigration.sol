@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import "hardhat/console.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -9,6 +10,7 @@ import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
 import {IV3SwapRouter} from "@uniswap/swap-router-contracts/contracts/interfaces/IV3SwapRouter.sol";
+import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
@@ -189,6 +191,18 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         if (amountIn == 0) {
             return 0;
         }
+
+        console.log(
+            "Quoter: ",
+            IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6)
+                .quoteExactInputSingle(
+                    hubInfo.asset,
+                    targetHubInfo.asset,
+                    usts.fee,
+                    1,
+                    0
+                )
+        );
 
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
