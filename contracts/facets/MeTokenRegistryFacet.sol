@@ -195,11 +195,6 @@ contract MeTokenRegistryFacet is
         meTokenInfo.balanceLocked =
             (balanceLocked * p * newBalance) /
             (oldBalance * p);
-        console.log(
-            "## SWAP meTokenInfo.balanceLocked:%s  meTokenInfo.balancePooled:%s",
-            meTokenInfo.balanceLocked,
-            meTokenInfo.balancePooled
-        );
         emit UpdateBalances(meToken, newBalance);
     }
 

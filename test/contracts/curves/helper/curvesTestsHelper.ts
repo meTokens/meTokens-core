@@ -156,6 +156,21 @@ export const curvesTestsHelper = async ({
       precision // *4
     );
   });
+  it("viewMeTokensMinted should be linked to balance pooled", async () => {
+    const amountNum = 2;
+    let amount = one.mul(amountNum);
+
+    // we need to have the right balancedPooled for supply
+    let balancedPooledNum = 1000;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supplyOne = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+
+    // we need to have the right balancedPooled for supply
+    balancedPooledNum = 10000000;
+    balancedPooled = one.mul(balancedPooledNum);
+    let supplyTwo = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+    expect(supplyOne).to.not.equal(supplyTwo);
+  });
   it("viewMeTokensMinted() from 999999999999999 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
@@ -233,6 +248,32 @@ export const curvesTestsHelper = async ({
       calculatedRes,
       precision * 100000
     );
+  });
+  it("viewAssetsReturned() should be linked to balance pooled", async () => {
+    // we need to have the right balancedPooled for supply
+    let amount = 2;
+    let balancedPooledNum = 600000;
+    let balancedPooled = one.mul(balancedPooledNum);
+    let supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+
+    let estimateOne = await curve.viewAssetsReturned(
+      amount,
+      hubId,
+      supply,
+      balancedPooled
+    );
+    // amount = 9999999999;
+    balancedPooledNum = 6;
+    balancedPooled = one.mul(balancedPooledNum);
+    //  supply = await curve.viewMeTokensMinted(balancedPooled, hubId, 0, 0);
+
+    let estimateTwo = await curve.viewAssetsReturned(
+      amount,
+      hubId,
+      supply,
+      balancedPooled
+    );
+    expect(estimateOne).to.not.equal(estimateTwo);
   });
   it("viewAssetsReturned() from 999999999999999000000000000000000 supply should work", async () => {
     let amount = one;
