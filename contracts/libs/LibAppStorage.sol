@@ -6,6 +6,7 @@ import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 import {HubInfo} from "./LibHub.sol";
 import {MeTokenInfo} from "./LibMeToken.sol";
+import {PoolInfo, SeasonInfo} from "./LibLiquidityMining.sol";
 import {LibDiamond} from "./LibDiamond.sol";
 import {LibMeta} from "./LibMeta.sol";
 
@@ -34,6 +35,15 @@ struct AppStorage {
     uint256 hubCooldown;
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
+    // LiquidityMining-specific
+    // TODO: setter for this
+    uint256 issuerCooldown; // # of seasons a meToken issuer has to wait before participating again
+    uint256 lmWarmup; // = 3 days; timeframe between initTime and startTime
+    uint256 lmDuration; // = 1000000; // timeframe from a season starting to ending - about 11.5 days
+    uint256 seasonCount; // # of seasons// key 1: meToken addr- key2: staker addr- value: amount staked
+    mapping(address => mapping(address => uint256)) stakedBalances; // key 1: meToken addr- key2: staker addr- value: amount staked
+    mapping(address => PoolInfo) pools;
+    mapping(uint256 => SeasonInfo) seasons;
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
