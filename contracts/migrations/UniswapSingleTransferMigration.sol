@@ -84,7 +84,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             meTokenInfo.hubId
         );
         if (
-            usts.soonest != 0 && block.timestamp > usts.soonest && !usts.started
+            usts.soonest != 0 && // this is to ensure the meToken is resubscribing
+            block.timestamp > usts.soonest &&
+            !usts.started
         ) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
@@ -161,6 +163,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         } else {
             return false;
         }
+    }
+
+    /// @inheritdoc IMigration
+    function migrationStarted(address meToken)
+        external
+        view
+        override
+        returns (bool started)
+    {
+        return _uniswapSingleTransfers[meToken].started;
     }
 
     /// @dev parent call must have reentrancy check
