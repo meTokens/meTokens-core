@@ -13,7 +13,6 @@ interface IHubFacet {
     /// @param owner            Address to own hub
     /// @param asset            Address of underlying asset
     /// @param vault            Address of vault
-    /// @param curve            Address of curve
     /// @param refundRatio      Rate to refund burners
     /// @param encodedCurveInfo Additional encoded curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
@@ -22,7 +21,6 @@ interface IHubFacet {
         address owner,
         address asset,
         address vault,
-        address curve,
         uint256 refundRatio,
         bytes encodedCurveInfo,
         bytes encodedVaultArgs
@@ -34,7 +32,6 @@ interface IHubFacet {
 
     /// @notice Event of initializing a hub update
     /// @param id                   Unique hub identifier
-    /// @param targetCurve          Address of target curve
     /// @param targetRefundRatio    Target rate to refund burners
     /// @param encodedCurveInfo     Additional encoded curve details
     /// @param reconfigure          Boolean to show if we're changing the
@@ -44,7 +41,6 @@ interface IHubFacet {
     /// @param endCooldown          Timestamp to allow another update
     event InitUpdate(
         uint256 id,
-        address targetCurve,
         uint256 targetRefundRatio,
         bytes encodedCurveInfo,
         bool reconfigure,
@@ -70,7 +66,6 @@ interface IHubFacet {
     /// @param owner            Address to own hub
     /// @param asset            Address of vault asset
     /// @param vault            Address of vault
-    /// @param curve            Address of curve
     /// @param refundRatio      Rate to refund burners
     /// @param encodedCurveInfo Additional encoded curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
@@ -78,7 +73,6 @@ interface IHubFacet {
         address owner,
         address asset,
         IVault vault,
-        ICurve curve,
         uint256 refundRatio,
         bytes memory encodedCurveInfo,
         bytes memory encodedVaultArgs
@@ -91,12 +85,10 @@ interface IHubFacet {
 
     /// @notice Intialize a hub update
     /// @param id                   Unique hub identifier
-    /// @param targetCurve          Address of target curve
     /// @param targetRefundRatio    Target rate to refund burners
     /// @param encodedCurveInfo     Additional encoded curve details
     function initUpdate(
         uint256 id,
-        address targetCurve,
         uint256 targetRefundRatio,
         bytes memory encodedCurveInfo
     ) external;

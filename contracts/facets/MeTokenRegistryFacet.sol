@@ -4,7 +4,6 @@ pragma solidity 0.8.9;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ICurve} from "../interfaces/ICurve.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
@@ -12,6 +11,7 @@ import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {LibCurve} from "../libs/LibCurve.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -59,7 +59,7 @@ contract MeTokenRegistryFacet is
         // Mint meToken to user
         uint256 meTokensMinted;
         if (assetsDeposited > 0) {
-            meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
+            meTokensMinted = LibCurve.viewMeTokensMinted(
                 assetsDeposited, // deposit_amount
                 hubId, // hubId
                 0, // supply
