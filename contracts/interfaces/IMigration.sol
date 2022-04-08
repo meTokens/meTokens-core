@@ -17,10 +17,7 @@ interface IMigration {
     /// @notice Method to send assets from migration vault to the vault of the
     ///         target hub
     /// @param meToken      Address of meToken
-    /// @return amountOut   Amount of token returned
-    function finishMigration(address meToken)
-        external
-        returns (uint256 amountOut);
+    function finishMigration(address meToken) external;
 
     /// @notice Method returns bool if migration started
     /// @param meToken  Address of meToken

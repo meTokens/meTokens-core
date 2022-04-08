@@ -77,7 +77,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         override
         nonReentrant
         onlyDiamond
-        returns (uint256 amountOut)
     {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
@@ -90,7 +89,8 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
                 IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
             ).startMigration(meToken);
         }
-        amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
+        uint256 amountOut = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
         IERC20(targetHubInfo.asset).safeTransfer(

@@ -94,7 +94,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         override
         nonReentrant
         onlyDiamond
-        returns (uint256 amountOut)
     {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
@@ -102,6 +101,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             meTokenInfo.targetHubId
         );
 
+        uint256 amountOut;
         if (!_uniswapSingleTransfers[meToken].started) {
             ISingleAssetVault(
                 IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
