@@ -19,7 +19,6 @@ import {
 
 const setup = async () => {
   describe("SameAssetTransferMigration.sol", () => {
-    let earliestSwapTime: number;
     let DAI: string;
     let DAIWhale: string;
     let daiHolder: Signer;
@@ -71,9 +70,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-
-      const block = await ethers.provider.getBlock("latest");
-      earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
       encodedMigrationArgs = "0x";
 
@@ -294,13 +290,7 @@ const setup = async () => {
         expect(migrationDetails.started).to.equal(false);
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
-        block = await ethers.provider.getBlock("latest");
-        earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-
-        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
-        );
+        encodedMigrationArgs = "0x";
 
         await meTokenRegistry
           .connect(account1)
@@ -351,13 +341,7 @@ const setup = async () => {
           );
           meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-          block = await ethers.provider.getBlock("latest");
-          earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-
-          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-            ["uint256", "uint24"],
-            [earliestSwapTime, fees]
-          );
+          encodedMigrationArgs = "0x";
 
           await meTokenRegistry
             .connect(account2)

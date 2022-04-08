@@ -95,11 +95,9 @@ const setup = async () => {
         ["uint256", "uint256"],
         [stepX, stepY]
       );
-      const block = await ethers.provider.getBlock("latest");
-      const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint24"],
-        [earliestSwapTime, fee]
+        ["uint24"],
+        [fee]
       );
 
       ({
