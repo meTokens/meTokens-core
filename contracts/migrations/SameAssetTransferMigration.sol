@@ -60,7 +60,11 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.hubId
         );
-        if (usts.isMigrating && !usts.started) {
+        if (
+            usts.isMigrating && // this is to ensure the meToken is resubscribing
+            block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
+            !usts.started // should skip if already started
+        ) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
         }

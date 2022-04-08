@@ -19,7 +19,6 @@ import {
 
 const setup = async () => {
   describe("SameAssetTransferMigration.sol", () => {
-    let earliestSwapTime: number;
     let DAI: string;
     let DAIWhale: string;
     let daiHolder: Signer;
@@ -71,9 +70,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-
-      const block = await ethers.provider.getBlock("latest");
-      earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
 
       encodedMigrationArgs = "0x";
 
@@ -139,7 +135,11 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
       await hub.setHubWarmup(hubWarmup);
+      await meTokenRegistry.setMeTokenWarmup(warmup);
+      await meTokenRegistry.setMeTokenDuration(duration);
+      await meTokenRegistry.setMeTokenCooldown(coolDown);
     });
 
     describe("isValid()", () => {
@@ -236,6 +236,16 @@ const setup = async () => {
 
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
+      it("should be able to call when migration before startTime(), but wont run startMigration()", async () => {
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenInfo.startTime).to.be.gt(block.timestamp);
+
+        const tx = await migration.poke(meToken.address);
+        await expect(tx).to.not.emit(initialVault, "StartMigration");
+      });
       it("Triggers startMigration()", async () => {
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -271,6 +281,7 @@ const setup = async () => {
           meToken.address
         );
 
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
         expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
 
@@ -294,13 +305,15 @@ const setup = async () => {
         expect(migrationDetails.started).to.equal(false);
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
-        block = await ethers.provider.getBlock("latest");
-        earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-
-        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
         );
+
+        await mineBlock(meTokenRegistryDetails.endCooldown.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
+
+        encodedMigrationArgs = "0x";
 
         await meTokenRegistry
           .connect(account1)
@@ -310,9 +323,13 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
+
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
@@ -339,10 +356,6 @@ const setup = async () => {
 
       describe("During resubscribe", () => {
         before(async () => {
-          await meTokenRegistry.setMeTokenWarmup(warmup);
-          await meTokenRegistry.setMeTokenDuration(duration);
-          await meTokenRegistry.setMeTokenCooldown(coolDown);
-
           await meTokenRegistry
             .connect(account2)
             .subscribe(name, symbol, hubId1, 0);
@@ -351,13 +364,7 @@ const setup = async () => {
           );
           meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-          block = await ethers.provider.getBlock("latest");
-          earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
-
-          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-            ["uint256", "uint24"],
-            [earliestSwapTime, fees]
-          );
+          encodedMigrationArgs = "0x";
 
           await meTokenRegistry
             .connect(account2)

@@ -974,10 +974,7 @@ const setup = async () => {
           account1.address, // DAO
           foundry.address // diamond
         );
-        const block = await ethers.provider.getBlock("latest");
-        // earliestSwapTime 10 hour
-        const earliestSwapTime = block.timestamp + 600 * 60;
-        ethers.utils.defaultAbiCoder.encode(["uint256"], [earliestSwapTime]);
+
         // 10 hour
         await hub.setHubDuration(600 * 60);
         await hub.setHubWarmup(60 * 60);
@@ -1212,10 +1209,9 @@ const setup = async () => {
         );
 
         let block = await ethers.provider.getBlock("latest");
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fee]
+          ["uint24"],
+          [fee]
         );
 
         await meTokenRegistry
@@ -1226,14 +1222,15 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        expect(
-          (await meTokenRegistry.getMeTokenInfo(meToken.address)).migration
-        ).to.equal(migration.address);
-        const migrationDetails = await migration.getDetails(meToken.address);
-        await mineBlock(migrationDetails.soonest.toNumber() + 2);
+
+        const meTokenDetails = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        expect(meTokenDetails.migration).to.equal(migration.address);
+        await mineBlock(meTokenDetails.startTime.toNumber() + 2);
 
         block = await ethers.provider.getBlock("latest");
-        expect(migrationDetails.soonest).to.be.lt(block.timestamp);
+        expect(meTokenDetails.startTime).to.be.lt(block.timestamp);
       });
       it("should revert when meToken is resubscribing", async () => {
         await expect(foundry.donate(meToken.address, 10)).to.be.revertedWith(

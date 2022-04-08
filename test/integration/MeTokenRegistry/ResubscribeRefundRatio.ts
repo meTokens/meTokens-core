@@ -131,11 +131,9 @@ const setup = async () => {
       await meTokenRegistry.setMeTokenDuration(4 * 60 * 24 * 24); // 4 days
       await meTokenRegistry.setMeTokenCooldown(5 * 60 * 24 * 24); // 5 days
 
-      const block = await ethers.provider.getBlock("latest");
-      const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint24"],
-        [earliestSwapTime, fees]
+        ["uint24"],
+        [fees]
       );
       await meTokenRegistry.initResubscribe(
         meToken.address,

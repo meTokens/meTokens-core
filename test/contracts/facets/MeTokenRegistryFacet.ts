@@ -435,10 +435,10 @@ const setup = async () => {
         meToken = meTokenAddr0;
         targetHubId = hubId2;
         block = await ethers.provider.getBlock("latest");
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         const tx = meTokenRegistry
@@ -654,10 +654,9 @@ const setup = async () => {
         block = await ethers.provider.getBlock("latest");
         expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         tx = await meTokenRegistry.initResubscribe(
@@ -677,10 +676,9 @@ const setup = async () => {
         );
         block = await ethers.provider.getBlock("latest");
 
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         await meTokenRegistry.initResubscribe(
@@ -700,8 +698,10 @@ const setup = async () => {
         await foundry.mint(meTokenAddr0, tokenDeposited, account0.address);
 
         await mineBlock(
-          (await migration.getDetails(meTokenAddr0)).soonest.toNumber() + 2
-        ); // starTime > soonest
+          (
+            await meTokenRegistry.getMeTokenInfo(meTokenAddr0)
+          ).startTime.toNumber() + 2
+        );
 
         tx = await migration.poke(meTokenAddr0); // would call startMigration and swap
 
@@ -779,10 +779,9 @@ const setup = async () => {
 
     describe("updateBalances()", () => {
       before(async () => {
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         tx = await meTokenRegistry

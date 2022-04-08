@@ -23,8 +23,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     using SafeERC20 for IERC20;
 
     struct UniswapSingleTransfer {
-        // The earliest time that the swap can occur
-        uint256 soonest;
         // Fee configured to pay on swap
         uint24 fee;
         // if migration is active and startMigration() has not been triggered
@@ -65,13 +63,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         require(hubInfo.asset != targetHubInfo.asset, "same asset");
 
-        (uint256 soonest, uint24 fee) = abi.decode(
-            encodedArgs,
-            (uint256, uint24)
-        );
+        uint24 fee = abi.decode(encodedArgs, (uint24));
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         usts.fee = fee;
-        usts.soonest = soonest;
     }
 
     /// @inheritdoc IMigration
@@ -84,9 +78,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             meTokenInfo.hubId
         );
         if (
-            usts.soonest != 0 && // this is to ensure the meToken is resubscribing
-            block.timestamp > usts.soonest &&
-            !usts.started
+            usts.fee != 0 && // this is to ensure the meToken is resubscribing
+            block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
+            !usts.started // should skip if already started
         ) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
             usts.started = true;
@@ -103,7 +97,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         require(msg.sender == diamond, "!diamond");
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        require(usts.soonest < block.timestamp, "timestamp < soonest");
 
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
@@ -116,7 +109,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         if (!usts.started) {
             ISingleAssetVault(hubInfo.vault).startMigration(meToken);
-            usts.started = true;
             amountOut = _swap(meToken);
         } else {
             // No swap, amountOut = amountIn
@@ -150,11 +142,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         // encodedArgs empty
         if (encodedArgs.length == 0) return false;
-        (uint256 soon, uint24 fee) = abi.decode(encodedArgs, (uint256, uint24));
-        // Too soon
-        if (soon < block.timestamp) return false;
+
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
+        uint24 fee = abi.decode(encodedArgs, (uint24));
+
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
@@ -193,14 +185,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         // - There are tokens to swap
         // - The resubscription has started
         // - The asset hasn't been swapped
-        // - Current time is past the soonest it can swap, and time to swap has been set
-        if (
-            amountIn == 0 ||
-            !usts.started ||
-            usts.swapped ||
-            usts.soonest == 0 ||
-            usts.soonest > block.timestamp
-        ) {
+        // - Current time is past the startTime it can swap, and time to swap has been set
+        if (amountIn == 0) {
             return 0;
         }
 
