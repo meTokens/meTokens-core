@@ -135,7 +135,11 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
       await hub.setHubWarmup(hubWarmup);
+      await meTokenRegistry.setMeTokenWarmup(warmup);
+      await meTokenRegistry.setMeTokenDuration(duration);
+      await meTokenRegistry.setMeTokenCooldown(coolDown);
     });
 
     describe("isValid()", () => {
@@ -232,6 +236,16 @@ const setup = async () => {
 
         await expect(tx).to.not.emit(initialVault, "StartMigration");
       });
+      it("should be able to call when migration before startTime(), but wont run startMigration()", async () => {
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenInfo.startTime).to.be.gt(block.timestamp);
+
+        const tx = await migration.poke(meToken.address);
+        await expect(tx).to.not.emit(initialVault, "StartMigration");
+      });
       it("Triggers startMigration()", async () => {
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -267,6 +281,7 @@ const setup = async () => {
           meToken.address
         );
 
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
         expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
 
@@ -290,6 +305,14 @@ const setup = async () => {
         expect(migrationDetails.started).to.equal(false);
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
+        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+
+        await mineBlock(meTokenRegistryDetails.endCooldown.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
+
         encodedMigrationArgs = "0x";
 
         await meTokenRegistry
@@ -300,9 +323,13 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+        meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
+
+        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
 
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
@@ -329,10 +356,6 @@ const setup = async () => {
 
       describe("During resubscribe", () => {
         before(async () => {
-          await meTokenRegistry.setMeTokenWarmup(warmup);
-          await meTokenRegistry.setMeTokenDuration(duration);
-          await meTokenRegistry.setMeTokenCooldown(coolDown);
-
           await meTokenRegistry
             .connect(account2)
             .subscribe(name, symbol, hubId1, 0);
