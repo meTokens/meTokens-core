@@ -64,10 +64,9 @@ const setup = async () => {
     let encodedVaultDAIArgs: string;
     let encodedVaultWETHArgs: string;
     let block;
-    let migrationDetails: [number, boolean, boolean] & {
+    let migrationDetails: [number, boolean] & {
       fee: number;
       started: boolean;
-      swapped: boolean;
     };
 
     before(async () => {
@@ -337,7 +336,6 @@ const setup = async () => {
           .to.emit(meTokenRegistry, "UpdateBalances");
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
-        expect(migrationDetails.swapped).to.be.equal(true);
       });
       it("should be able to call when migration already started, but wont run startMigration()", async () => {
         const tx = await migration.poke(meToken.address);
@@ -380,7 +378,6 @@ const setup = async () => {
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.fee).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
-        expect(migrationDetails.swapped).to.equal(false);
       });
       it("should revert before endTime", async () => {
         let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
@@ -455,7 +452,6 @@ const setup = async () => {
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.fee).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
-        expect(migrationDetails.swapped).to.equal(false);
       });
 
       describe("During resubscribe", () => {
