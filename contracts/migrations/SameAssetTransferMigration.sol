@@ -29,25 +29,26 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     mapping(address => SameAssetMigration) private _sameAssetMigration;
 
+    modifier onlyDiamond() {
+        require(msg.sender == diamond, "!diamond");
+        _;
+    }
+
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     /// @inheritdoc IMigration
     function initMigration(
         address meToken,
         bytes memory /* encodedArgs */
-    ) external override {
-        require(msg.sender == diamond, "!diamond");
-
+    ) external override onlyDiamond {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.hubId
-        );
-        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.targetHubId
-        );
 
-        require(hubInfo.asset == targetHubInfo.asset, "asset different");
+        require(
+            IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).asset ==
+                IHubFacet(diamond).getHubInfo(meTokenInfo.targetHubId).asset,
+            "same asset"
+        );
 
         _sameAssetMigration[meToken].isMigrating = true;
     }
@@ -75,26 +76,21 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         external
         override
         nonReentrant
-        returns (uint256 amountOut)
+        onlyDiamond
     {
-        require(msg.sender == diamond, "!diamond");
-        SameAssetMigration storage usts = _sameAssetMigration[meToken];
-        require(usts.isMigrating, "!migrating");
-
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.hubId
-        );
         HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
-        if (!usts.started) {
-            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
-            usts.started = true;
+        if (!_sameAssetMigration[meToken].started) {
+            ISingleAssetVault(
+                IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
+            ).startMigration(meToken);
         }
-        amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
+        uint256 amountOut = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
         IERC20(targetHubInfo.asset).safeTransfer(
@@ -114,16 +110,14 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _sameAssetMigration[meToken];
     }
 
-    // Kicks off meToken warmup period
     /// @inheritdoc Vault
     function isValid(
         address meToken,
         bytes memory /* encodedArgs */
     ) external view override returns (bool) {
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenInfo(meToken);
         // MeToken not subscribed to a hub
-        if (meTokenInfo.hubId == 0) return false;
+        if (IMeTokenRegistryFacet(diamond).getMeTokenInfo(meToken).hubId == 0)
+            return false;
         return true;
     }
 
