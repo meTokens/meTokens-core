@@ -19,7 +19,7 @@ import {Vault} from "../vaults/Vault.sol";
 ///         when recollateralizing to a vault with a different base token
 /// @dev This contract moves the pooled/locked balances from
 ///      one erc20 to another
-contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
+contract UniswapSingleTransferMigration2 is ReentrancyGuard, Vault, IMigration {
     using SafeERC20 for IERC20;
 
     struct UniswapSingleTransfer {
@@ -84,6 +84,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
             ).startMigration(meToken);
             usts.started = true;
+            // _swap can only be called if sender is meToken issuer.
             _swap(meToken);
         }
     }
@@ -101,16 +102,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             meTokenInfo.targetHubId
         );
 
-        uint256 amountOut;
-        if (!_uniswapSingleTransfers[meToken].started) {
-            ISingleAssetVault(
-                IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
-            ).startMigration(meToken);
-            amountOut = _swap(meToken);
-        } else {
-            // No swap, amountOut = amountIn
-            amountOut = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
-        }
+        // _uniswapSingleTransfers[meToken].started should always be true. As
+        // poke() must be called by meToken issuer before finishResubscribe().
+        require(_uniswapSingleTransfers[meToken].started, "migration !started");
+
+        uint256 amountOut = meTokenInfo.balancePooled +
+            meTokenInfo.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
         IERC20(targetHubInfo.asset).safeTransfer(
@@ -177,6 +174,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
         uint256 amountIn = meTokenInfo.balancePooled +
             meTokenInfo.balanceLocked;
+
+        require(msg.sender == meTokenInfo.owner, "!meToken issuer");
 
         // Only swap if
         // - There are tokens to swap
