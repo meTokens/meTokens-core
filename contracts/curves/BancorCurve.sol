@@ -26,6 +26,11 @@ contract BancorCurve is ICurve {
     // NOTE: keys are their respective hubId
     mapping(uint256 => CurveInfo) private _curves;
 
+    modifier onlyHub() {
+        require(msg.sender == hub, "!hub");
+        _;
+    }
+
     constructor(address _hub) {
         require(_hub != address(0), "!hub");
         hub = _hub;
@@ -35,8 +40,8 @@ contract BancorCurve is ICurve {
     function register(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
+        onlyHub
     {
-        require(msg.sender == hub, "!hub");
         require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
@@ -58,9 +63,8 @@ contract BancorCurve is ICurve {
     function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         external
         override
+        onlyHub
     {
-        require(msg.sender == hub, "!hub");
-
         uint32 targetReserveWeight = abi.decode(encodedCurveInfo, (uint32));
         CurveInfo storage curveInfo = _curves[hubId];
 
@@ -71,15 +75,17 @@ contract BancorCurve is ICurve {
         );
 
         // targetBaseX = (old baseY * oldR) / newR
-        uint256 targetBaseY = (curveInfo.baseY * curveInfo.reserveWeight) /
+        // uint256 targetBaseY = (curveInfo.baseY * curveInfo.reserveWeight) /
+        //     targetReserveWeight;
+
+        curveInfo.targetBaseY =
+            (curveInfo.baseY * curveInfo.reserveWeight) /
             targetReserveWeight;
-        curveInfo.targetBaseY = targetBaseY;
         curveInfo.targetReserveWeight = targetReserveWeight;
     }
 
     /// @inheritdoc ICurve
-    function finishReconfigure(uint256 hubId) external override {
-        require(msg.sender == hub, "!hub");
+    function finishReconfigure(uint256 hubId) external override onlyHub {
         CurveInfo storage curveInfo = _curves[hubId];
         curveInfo.reserveWeight = curveInfo.targetReserveWeight;
         curveInfo.baseY = curveInfo.targetBaseY;
@@ -143,6 +149,7 @@ contract BancorCurve is ICurve {
         uint256 balancePooled
     ) external view override returns (uint256 meTokensMinted) {
         CurveInfo memory curveInfo = _curves[hubId];
+
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
@@ -166,10 +173,9 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            curveInfo.reserveWeight,
+            _curves[hubId].reserveWeight,
             supply,
             balancePooled
         );
@@ -182,10 +188,9 @@ contract BancorCurve is ICurve {
         uint256 supply,
         uint256 balancePooled
     ) external view override returns (uint256 assetsReturned) {
-        CurveInfo memory curveInfo = _curves[hubId];
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            curveInfo.targetReserveWeight,
+            _curves[hubId].targetReserveWeight,
             supply,
             balancePooled
         );
