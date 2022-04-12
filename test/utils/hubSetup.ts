@@ -17,6 +17,7 @@ import {
   HubFacet,
   MeTokenRegistryFacet,
   FeesFacet,
+  LiquidityMiningFacet,
   ERC20,
   MeTokenFactory,
   StepwiseCurve,
@@ -251,6 +252,9 @@ export async function hubSetupWithoutRegister(
     "DiamondLoupeFacet"
   );
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
+  const liquidityMiningFacet = await deploy<LiquidityMiningFacet>(
+    "LiquidityMiningFacet"
+  );
   const facets = [
     hubFacet,
     foundryFacet,
@@ -258,6 +262,7 @@ export async function hubSetupWithoutRegister(
     meTokenRegistryFacet,
     diamondLoupeFacet,
     ownershipFacet,
+    liquidityMiningFacet,
   ];
   const cut = [];
   const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
