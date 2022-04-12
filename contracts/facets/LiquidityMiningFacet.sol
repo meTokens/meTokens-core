@@ -21,12 +21,6 @@ contract LiquidityMiningFacet is
 {
     using SafeERC20 for IERC20;
 
-    // TODO: move these to AppStorage
-    uint256 public constant PRECISION = 1e18;
-    uint256 public constant BASE = PRECISION * PRECISION * PRECISION;
-    IERC20 public immutable me =
-        IERC20(0x8375289350D4143559BF4d035178e35F2a15fc14);
-
     constructor() {}
 
     function recoverERC20(
@@ -53,7 +47,7 @@ contract LiquidityMiningFacet is
     ) external onlyLiquidityMiningController {
         require(!isSeasonLive(s.seasonCount), "SeasonInfo still liveInfo");
 
-        me.safeTransferFrom(
+        s.me.safeTransferFrom(
             LibMeta.msgSender(),
             address(this),
             allocationPool + allocationIssuers
@@ -104,7 +98,7 @@ contract LiquidityMiningFacet is
         if (reward == 0) return;
 
         poolInfo.rewards[sender] = 0;
-        me.safeTransfer(sender, reward);
+        s.me.safeTransfer(sender, reward);
 
         emit RewardPaid(meToken, sender, reward);
     }
@@ -120,7 +114,7 @@ contract LiquidityMiningFacet is
         if (amount == 0) return;
 
         poolInfo.rewards[sender] -= amount;
-        me.safeTransfer(sender, amount);
+        s.me.safeTransfer(sender, amount);
 
         emit RewardPaid(meToken, sender, amount);
     }
@@ -242,12 +236,12 @@ contract LiquidityMiningFacet is
                         poolInfo.seasonId
                     ];
 
-                    uint256 pctStaked = (BASE * poolInfo.totalSupply) /
+                    uint256 pctStaked = (s.BASE * poolInfo.totalSupply) /
                         poolInfo.lastCirculatingSupply;
-                    uint256 pctOfTotalStaked = (PRECISION * pctStaked) /
+                    uint256 pctOfTotalStaked = (s.PRECISION * pctStaked) /
                         seasonInfo.totalPctStaked;
                     uint256 newIssuerRewards = (pctOfTotalStaked *
-                        oldSeasonInfo.allocationIssuers) / PRECISION;
+                        oldSeasonInfo.allocationIssuers) / s.PRECISION;
 
                     pendingIssuerRewards += newIssuerRewards;
                     seasonInfo.totalPctStaked += pctStaked;
@@ -329,7 +323,7 @@ contract LiquidityMiningFacet is
             poolInfo.rewardPerTokenStored +
             (((lastTimeRewardApplicable_ - lastUpdateTime) *
                 seasonInfo.rewardRate *
-                PRECISION) / poolInfo.totalSupply);
+                s.PRECISION) / poolInfo.totalSupply);
     }
 
     function balanceOf(address meToken, address account)
@@ -353,7 +347,7 @@ contract LiquidityMiningFacet is
             (balanceOf(meToken, account) *
                 (rewardPerToken(meToken) -
                     poolInfo.userRewardPerTokenPaid[account])) /
-            PRECISION +
+            s.PRECISION +
             (poolInfo.rewards[account]);
     }
 
@@ -401,20 +395,21 @@ contract LiquidityMiningFacet is
     ) private {
         PoolInfo storage poolInfo = s.pools[meToken];
         SeasonInfo storage seasonInfo = s.seasons[poolInfo.seasonId];
+        uint256 b = s.BASE;
 
         uint256 circulatingSupply = IERC20(meToken).totalSupply();
-        uint256 oldPctStaked = (BASE * poolInfo.totalSupply) /
+        uint256 oldPctStaked = (b * poolInfo.totalSupply) /
             poolInfo.lastCirculatingSupply;
         uint256 newPctStaked;
 
         if (add) {
             newPctStaked =
-                (BASE * (poolInfo.totalSupply + amount)) /
+                (b * (poolInfo.totalSupply + amount)) /
                 circulatingSupply;
             poolInfo.totalSupply += amount;
         } else {
             newPctStaked =
-                (BASE * (poolInfo.totalSupply - amount)) /
+                (b * (poolInfo.totalSupply - amount)) /
                 circulatingSupply;
             poolInfo.totalSupply -= amount;
         }
