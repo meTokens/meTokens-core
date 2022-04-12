@@ -2,6 +2,7 @@
 pragma solidity 0.8.9;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
@@ -24,6 +25,7 @@ contract DiamondInit {
         uint256 interestFee;
         uint256 yieldFee;
         address diamond;
+        IERC20Permit me;
         IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
         address meTokenFactory;
@@ -39,6 +41,8 @@ contract DiamondInit {
 
     function init(Args memory _args) external {
         require(msg.sender == _owner, "!owner");
+        require(s.diamond == address(0), "Already initialized");
+        s.me = _args.me;
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.migrationRegistry = _args.migrationRegistry;
@@ -52,6 +56,7 @@ contract DiamondInit {
 
         s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 1e18;
+        s.BASE = 1e54;
         s.MAX_FEE = 5e16; // 5%
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
