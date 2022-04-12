@@ -77,8 +77,8 @@ contract HubFacet is IHubFacet, Modifiers {
         bytes memory encodedCurveInfo
     ) external override {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(id);
         }
@@ -149,8 +149,8 @@ contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function cancelUpdate(uint256 id) external override {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         require(hubInfo.updating, "!updating");
         require(block.timestamp < hubInfo.startTime, "Update has started");
 
@@ -171,8 +171,8 @@ contract HubFacet is IHubFacet, Modifiers {
         override
     {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         require(newOwner != hubInfo.owner, "Same owner");
         hubInfo.owner = newOwner;
 
