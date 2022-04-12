@@ -148,7 +148,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
@@ -263,7 +263,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];

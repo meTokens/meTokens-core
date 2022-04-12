@@ -26,7 +26,7 @@ struct HubInfo {
 library LibHub {
     event FinishUpdate(uint256 id);
 
-    function finishUpdate(uint256 id) internal returns (HubInfo memory) {
+    function finishUpdate(uint256 id) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
         HubInfo storage hubInfo = s.hubs[id];
         require(block.timestamp > hubInfo.endTime, "Still updating");
@@ -50,7 +50,6 @@ library LibHub {
         s.hubs[id].endTime = 0;
 
         emit FinishUpdate(id);
-        return hubInfo;
     }
 
     function getHubInfo(uint256 id)
