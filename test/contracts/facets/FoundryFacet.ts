@@ -951,10 +951,6 @@ const setup = async () => {
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
 
-        const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [reserveWeight]
-        );
         await deploy<UniswapSingleTransferMigration>(
           "UniswapSingleTransferMigration",
           undefined, //no libs
@@ -967,7 +963,7 @@ const setup = async () => {
         await hub.setHubWarmup(60 * 60);
         await hub.setHubCooldown(60 * 60);
         // vault stays the same
-        await hub.initUpdate(hubId, targetRefundRatio, encodedCurveInfo);
+        await hub.initUpdate(hubId, targetRefundRatio, reserveWeight);
       });
       it("mint() Should work the same right after the migration ", async () => {
         // metoken should be registered

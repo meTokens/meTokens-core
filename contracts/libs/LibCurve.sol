@@ -45,12 +45,11 @@ library LibCurve {
         curveInfo.reserveWeight = reserveWeight;
     }
 
-    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
+    function initReconfigure(uint256 hubId, uint32 targetReserveWeight)
         internal
     {
         CurveStorage storage cs = curveStorage();
         CurveInfo storage curveInfo = cs.curves[hubId];
-        uint32 targetReserveWeight = abi.decode(encodedCurveInfo, (uint32));
 
         require(targetReserveWeight > 0, "!reserveWeight");
         require(

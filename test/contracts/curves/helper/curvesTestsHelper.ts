@@ -19,7 +19,7 @@ export const curvesTestsHelper = async ({
   verifyCurveInfo,
 }: {
   curve: ICurveFacet;
-  encodedReconfigureValueSet: string;
+  encodedReconfigureValueSet: number;
   hubId: number;
   hub: HubFacet;
   precision: number;
@@ -58,25 +58,24 @@ export const curvesTestsHelper = async ({
   const one = ethers.utils.parseEther("1");
 
   it("Reverts w/ invalid parameters", async () => {
-    await expect(
-      hub.initUpdate(hubId, 0, ethers.constants.HashZero)
-    ).to.be.revertedWith("!reserveWeight");
+    await expect(hub.initUpdate(hubId, 0, 0)).to.be.revertedWith(
+      "Nothing to update"
+    );
+  });
+
+  it("Reverts when same reserveWeight", async () => {
+    const curveInfo = await curve.getCurveInfo(hubId);
+    const tx = hub.initUpdate(hubId, 0, curveInfo.reserveWeight);
+    await expect(tx).to.be.revertedWith("targetWeight!=Weight");
   });
 
   it("Reverts w/ incorrect encodedCurveInfo", async () => {
-    await expect(hub.initUpdate(hubId, 0, ethers.utils.toUtf8Bytes("a"))).to.be
-      .reverted;
+    await expect(hub.initUpdate(hubId, 0, hub.address)).to.be.reverted;
   });
   it("Reverts w/ invalid encodedCurveInfo", async () => {
-    let encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(["uint32"], [0]);
     // param must be > 0
-    await expect(hub.initUpdate(hubId, 0, encodedCurveInfo)).to.be.reverted;
-    encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-      ["address"],
-      [hub.address]
-    );
-    // param must be uint32
-    await expect(hub.initUpdate(hubId, 0, encodedCurveInfo)).to.be.reverted;
+    await expect(hub.initUpdate(hubId, 0, ethers.constants.MaxUint256)).to.be
+      .reverted;
   });
 
   it("viewMeTokensMinted() from 0 supply should work", async () => {

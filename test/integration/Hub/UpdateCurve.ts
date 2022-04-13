@@ -489,9 +489,9 @@ const setup = async () => {
         //Block.timestamp should be between endTime and endCooldown
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
-        await expect(
-          hub.initUpdate(1, 1000, ethers.utils.toUtf8Bytes(""))
-        ).to.be.revertedWith("Still cooling down");
+        await expect(hub.initUpdate(1, 1000, 0)).to.be.revertedWith(
+          "Still cooling down"
+        );
       });
       it("burn() and mint() by owner should use the targetCurveInfo", async () => {
         const tokenDepositedInETH = 100;
@@ -648,12 +648,7 @@ const setup = async () => {
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
         updatedTargetReserveWeight = targetReserveWeight / 2;
 
-        encodedNewCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [updatedTargetReserveWeight]
-        );
-
-        await hub.initUpdate(1, 0, encodedNewCurveInfo);
+        await hub.initUpdate(1, 0, updatedTargetReserveWeight);
         const block2 = await ethers.provider.getBlock("latest");
         const details = await hub.getHubInfo(1);
 
@@ -1065,9 +1060,9 @@ const setup = async () => {
           //Block.timestamp should be between endTime and endCooldown
           // move forward to cooldown
           await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
-          await expect(
-            hub.initUpdate(1, 1000, ethers.utils.toUtf8Bytes(""))
-          ).to.be.revertedWith("Still cooling down");
+          await expect(hub.initUpdate(1, 1000, 0)).to.be.revertedWith(
+            "Still cooling down"
+          );
         });
         it("burn() and mint() by owner should use the targetCurve", async () => {
           const tokenDepositedInETH = 100;

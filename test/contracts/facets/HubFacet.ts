@@ -14,10 +14,8 @@ import {
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  CurveRegistry,
   BancorCurve,
   SingleAssetVault,
-  ICurveFacet,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -28,7 +26,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let foundry: FoundryFacet;
     let hub: HubFacet;
-    let curve: ICurveFacet;
+
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
     let encodedCurveInfo: string;
@@ -46,6 +44,7 @@ const setup = async () => {
 
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
+
     const baseY = PRECISION.div(1000);
     const amount = ethers.utils.parseEther("100");
     const name = "Carl meToken";
@@ -65,7 +64,6 @@ const setup = async () => {
       ({
         hub,
         foundry,
-        curve,
         singleAssetVault,
         meTokenRegistry,
         account0,
@@ -306,53 +304,34 @@ const setup = async () => {
       it("should revert when sender is not owner", async () => {
         const tx = hub
           .connect(account1)
-          .initUpdate(hubId, refundRatio2, encodedCurveInfo);
+          .initUpdate(hubId, refundRatio2, reserveWeight);
         await expect(tx).to.be.revertedWith("!owner");
       });
 
+      it("should revert when same reserveWeight", async () => {
+        const tx = hub.connect(account0).initUpdate(hubId, 0, reserveWeight);
+        await expect(tx).to.be.revertedWith("targetWeight!=Weight");
+      });
       it("should revert when nothing to update", async () => {
-        const tx = hub.connect(account0).initUpdate(hubId, 0, "0x");
+        const tx = hub.connect(account0).initUpdate(hubId, 0, 0);
         await expect(tx).to.be.revertedWith("Nothing to update");
       });
-
       it("should revert from invalid _refundRatio", async () => {
-        const tx1 = hub.initUpdate(hubId, 10 ** 7, encodedCurveInfo);
-        const tx2 = hub.initUpdate(hubId, refundRatio1, encodedCurveInfo);
+        const tx1 = hub.initUpdate(hubId, 10 ** 7, reserveWeight);
+        const tx2 = hub.initUpdate(hubId, refundRatio1, reserveWeight);
         await expect(tx1).to.be.revertedWith("targetRefundRatio >= MAX");
         await expect(tx2).to.be.revertedWith(
           "targetRefundRatio == refundRatio"
         );
       });
 
-      it("should revert on ICurve.initReconfigure() from invalid encodedCurveInfo", async () => {
-        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [0]
-        );
-        const tx = hub.initUpdate(hubId, 0, badEncodedCurveInfo);
-        await expect(tx).to.be.revertedWith("!reserveWeight");
-      });
-
       it("should revert on ICurve.register() from invalid encodedCurveInfo", async () => {
-        const badEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [0, 0]
-        );
-        const newCurve = await deploy<BancorCurve>(
-          "BancorCurve",
-          undefined,
-          hub.address
-        );
-        const tx = hub.initUpdate(hubId, refundRatio2, badEncodedCurveInfo);
-        await expect(tx).to.be.revertedWith("!reserveWeight");
+        const tx = hub.initUpdate(hubId, refundRatio2, 10000000000000000000000);
+        await expect(tx).to.be.reverted;
       });
 
       it("should be able to initUpdate with new refundRatio", async () => {
-        const tx = await hub.initUpdate(
-          hubId,
-          refundRatio2,
-          ethers.utils.toUtf8Bytes("")
-        );
+        const tx = await hub.initUpdate(hubId, refundRatio2, 0);
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
         const expectedStartTime = block.timestamp + duration;
@@ -365,7 +344,7 @@ const setup = async () => {
           .withArgs(
             hubId,
             refundRatio2,
-            ethers.utils.toUtf8Bytes(""),
+            0,
             false,
             expectedStartTime,
             expectedEndTime,
@@ -390,7 +369,7 @@ const setup = async () => {
         const txBeforeStartTime = hub.initUpdate(
           hubId,
           refundRatio2,
-          encodedCurveInfo
+          reserveWeight
         );
         const info = await hub.getHubInfo(hubId);
 
@@ -402,7 +381,7 @@ const setup = async () => {
         const txAfterStartTime = hub.initUpdate(
           hubId,
           refundRatio2,
-          encodedCurveInfo
+          reserveWeight
         );
         await expect(txAfterStartTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
@@ -413,7 +392,7 @@ const setup = async () => {
         const txBeforeEndTime = hub.initUpdate(
           hubId,
           refundRatio2,
-          encodedCurveInfo
+          reserveWeight
         );
         await expect(txBeforeEndTime).to.be.revertedWith("already updating");
         block = await ethers.provider.getBlock("latest");
@@ -424,7 +403,7 @@ const setup = async () => {
         const txAfterEndTime = hub.initUpdate(
           hubId,
           refundRatio2,
-          encodedCurveInfo
+          reserveWeight
         );
         await expect(txAfterEndTime).to.be.revertedWith("Still cooling down");
         block = await ethers.provider.getBlock("latest");
@@ -435,7 +414,7 @@ const setup = async () => {
         const txBeforeEndCooldown = hub.initUpdate(
           hubId,
           refundRatio2,
-          encodedCurveInfo
+          reserveWeight
         );
         await expect(txBeforeEndCooldown).to.be.revertedWith(
           "Still cooling down"
@@ -449,11 +428,7 @@ const setup = async () => {
 
         // fast fwd to endCooldown - 2
         await mineBlock(info.endCooldown.toNumber());
-        const txAfterEndCooldown = await hub.initUpdate(
-          hubId,
-          refundRatio1,
-          "0x"
-        );
+        const txAfterEndCooldown = await hub.initUpdate(hubId, refundRatio1, 0);
 
         const receipt = await txAfterEndCooldown.wait();
         let block = await ethers.provider.getBlock("latest");
@@ -472,7 +447,7 @@ const setup = async () => {
           .withArgs(
             hubId,
             refundRatio1,
-            "0x",
+            0,
             false,
             expectedStartTime,
             expectedEndTime,
@@ -523,11 +498,8 @@ const setup = async () => {
       });
       it("should revert after warmup period", async () => {
         // create a update
-        const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [reserveWeight / 2]
-        );
-        const tx = await hub.initUpdate(hubId, 0, newEncodedCurveInfo);
+        const newReserveWeight = reserveWeight / 2;
+        const tx = await hub.initUpdate(hubId, 0, newReserveWeight);
         const receipt = await tx.wait();
 
         let block = await ethers.provider.getBlock(receipt.blockNumber);
@@ -541,7 +513,7 @@ const setup = async () => {
           .withArgs(
             hubId,
             0,
-            newEncodedCurveInfo,
+            newReserveWeight,
             true,
             expectedStartTime,
             expectedEndTime,
@@ -621,12 +593,9 @@ const setup = async () => {
           const oldDetails = await hub.getHubInfo(hubId);
           await mineBlock(oldDetails.endCooldown.toNumber() + 10);
 
-          const newEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-            ["uint32"],
-            [reserveWeight / (toggle ? 2 : 1)]
-          );
+          const newReserveWeight = reserveWeight / (toggle ? 2 : 1);
           toggle = !toggle;
-          const tx = await hub.initUpdate(hubId, 0, newEncodedCurveInfo);
+          const tx = await hub.initUpdate(hubId, 0, newReserveWeight);
           await tx.wait();
 
           // increase time after endTime

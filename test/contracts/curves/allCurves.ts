@@ -126,10 +126,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight1.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight1,
     ...getCalculationFuncsForBancorCurves(
       baseY1,
       reserveWeight1,
@@ -145,10 +142,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight2.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight2,
     ...getCalculationFuncsForBancorCurves(
       baseY2,
       reserveWeight2,
@@ -164,10 +158,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight3.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight3,
     ...getCalculationFuncsForBancorCurves(
       baseY3,
       reserveWeight3,
@@ -182,10 +173,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight4.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight4,
     ...getCalculationFuncsForBancorCurves(
       baseY4,
       reserveWeight4,
@@ -200,10 +188,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight5.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight5,
     ...getCalculationFuncsForBancorCurves(
       baseY5,
       reserveWeight5,
@@ -218,10 +203,7 @@ const setup = async () => {
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
-    encodedReconfigureValueSet: ethers.utils.defaultAbiCoder.encode(
-      ["uint32"],
-      [targetReserveWeight6.toString()]
-    ),
+    encodedReconfigureValueSet: targetReserveWeight6,
     ...getCalculationFuncsForBancorCurves(
       baseY6,
       reserveWeight6,

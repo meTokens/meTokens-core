@@ -175,7 +175,7 @@ const setup = async () => {
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -471,7 +471,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
       it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -483,7 +483,7 @@ const setup = async () => {
         await hub.cancelUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
-        await hub.initUpdate(hubId2, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId2, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,

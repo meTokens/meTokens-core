@@ -69,7 +69,7 @@ contract HubFacet is IHubFacet, Modifiers {
     function initUpdate(
         uint256 id,
         uint256 targetRefundRatio,
-        bytes calldata encodedCurveInfo
+        uint32 targetReserveWeight
     ) external override {
         HubInfo storage hubInfo = s.hubs[id];
 
@@ -82,7 +82,7 @@ contract HubFacet is IHubFacet, Modifiers {
         require(block.timestamp >= hubInfo.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (targetRefundRatio != 0) || (encodedCurveInfo.length > 0),
+            (targetRefundRatio != 0) || (targetReserveWeight > 0),
             "Nothing to update"
         );
 
@@ -98,8 +98,8 @@ contract HubFacet is IHubFacet, Modifiers {
             hubInfo.targetRefundRatio = targetRefundRatio;
         }
 
-        if (encodedCurveInfo.length > 0) {
-            LibCurve.initReconfigure(id, encodedCurveInfo);
+        if (targetReserveWeight > 0) {
+            LibCurve.initReconfigure(id, targetReserveWeight);
             hubInfo.reconfigure = true;
         }
 
@@ -115,7 +115,7 @@ contract HubFacet is IHubFacet, Modifiers {
         emit InitUpdate(
             id,
             targetRefundRatio,
-            encodedCurveInfo,
+            targetReserveWeight,
             hubInfo.reconfigure,
             hubInfo.startTime,
             hubInfo.endTime,

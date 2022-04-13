@@ -33,7 +33,7 @@ interface IHubFacet {
     /// @notice Event of initializing a hub update
     /// @param id                   Unique hub identifier
     /// @param targetRefundRatio    Target rate to refund burners
-    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param targetRefundRatio     curve target RefundRatio
     /// @param reconfigure          Boolean to show if we're changing the
     ///                               curveInfo but not the curve address
     /// @param startTime            Timestamp to start updating
@@ -42,7 +42,7 @@ interface IHubFacet {
     event InitUpdate(
         uint256 id,
         uint256 targetRefundRatio,
-        bytes encodedCurveInfo,
+        uint32 targetReserveWeight,
         bool reconfigure,
         uint256 startTime,
         uint256 endTime,
@@ -86,11 +86,11 @@ interface IHubFacet {
     /// @notice Intialize a hub update
     /// @param id                   Unique hub identifier
     /// @param targetRefundRatio    Target rate to refund burners
-    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param targetReserveWeight  Target curve reserveWeight
     function initUpdate(
         uint256 id,
         uint256 targetRefundRatio,
-        bytes memory encodedCurveInfo
+        uint32 targetReserveWeight
     ) external;
 
     /// @notice Cancel a hub update
