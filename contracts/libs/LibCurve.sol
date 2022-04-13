@@ -37,7 +37,7 @@ library LibCurve {
         );
         require(baseY > 0, "!baseY");
         require(
-            reserveWeight > 0 && reserveWeight <= _MAX_WEIGHT,
+            reserveWeight > 0 && reserveWeight <= MAX_WEIGHT,
             "!reserveWeight"
         );
 
@@ -204,14 +204,14 @@ library LibCurve {
         require(
             balancePooled > 0 &&
                 reserveWeight > 0 &&
-                reserveWeight <= _MAX_WEIGHT
+                reserveWeight <= MAX_WEIGHT
         );
         // special case for 0 deposit amount
         if (assetsDeposited == 0) {
             return 0;
         }
         // special case if the weight = 100%
-        if (reserveWeight == _MAX_WEIGHT) {
+        if (reserveWeight == MAX_WEIGHT) {
             return (supply * assetsDeposited) / balancePooled;
         }
         CurveStorage storage cs = curveStorage();
@@ -304,7 +304,7 @@ library LibCurve {
             supply > 0 &&
                 balancePooled > 0 &&
                 reserveWeight > 0 &&
-                reserveWeight <= _MAX_WEIGHT &&
+                reserveWeight <= MAX_WEIGHT &&
                 meTokensBurned <= supply,
             "!valid"
         );
@@ -317,10 +317,10 @@ library LibCurve {
             return balancePooled;
         }
         // special case if the weight = 100%
-        if (reserveWeight == _MAX_WEIGHT) {
+        if (reserveWeight == MAX_WEIGHT) {
             return (balancePooled * meTokensBurned) / supply;
         }
-        // _MAX_WEIGHT / reserveWeight
+        // MAX_WEIGHT / reserveWeight
         CurveStorage storage cs = curveStorage();
 
         bytes16 exponent = cs.maxWeight.div(uint256(reserveWeight).fromUInt());

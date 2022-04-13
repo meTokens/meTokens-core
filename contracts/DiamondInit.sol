@@ -63,7 +63,7 @@ contract DiamondInit {
 
         LibCurve.CurveStorage storage cs = LibCurve.curveStorage();
         cs.one = (uint256(1)).fromUInt();
-        cs.maxWeight = uint256(LibCurve._MAX_WEIGHT).fromUInt();
+        cs.maxWeight = uint256(LibCurve.MAX_WEIGHT).fromUInt();
         cs.baseX = uint256(1 ether).fromUInt();
     }
 }
