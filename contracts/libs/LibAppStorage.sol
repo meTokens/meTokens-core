@@ -3,8 +3,6 @@ pragma solidity 0.8.9;
 
 import {IRegistry} from "../interfaces/IRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
-
-import {CurveInfo} from "./LibCurve.sol";
 import {HubInfo} from "./LibHub.sol";
 import {MeTokenInfo} from "./LibMeToken.sol";
 import {LibDiamond} from "./LibDiamond.sol";
@@ -22,8 +20,6 @@ struct AppStorage {
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
     uint256 MAX_FEE;
-    // Curve specific
-    mapping(uint256 => CurveInfo) curves;
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
     uint256 meTokenDuration;
@@ -41,7 +37,6 @@ struct AppStorage {
     address diamond;
     address meTokenFactory;
     IRegistry vaultRegistry;
-    IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
@@ -123,14 +118,6 @@ contract Modifiers {
         require(
             LibMeta.msgSender() == address(s.vaultRegistry),
             "!vaultRegistry"
-        );
-        _;
-    }
-
-    modifier onlyCurveRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.curveRegistry),
-            "!curveRegistry"
         );
         _;
     }

@@ -91,7 +91,6 @@ const setup = async () => {
 
       ({
         hub,
-        curve,
         foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
@@ -100,12 +99,7 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultDAIArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultDAIArgs, refundRatio));
 
       targetVault = await deploy<SingleAssetVault>(
         "SingleAssetVault",
@@ -120,7 +114,6 @@ const setup = async () => {
         account0.address,
         WETH,
         targetVault.address,
-        curve.address,
         refundRatio,
         encodedCurveInfo,
         encodedVaultWETHArgs

@@ -4,20 +4,18 @@ import {
   getCalculationFuncsForBancorCurves,
   getCalculationFuncsForStepwiseCurves,
 } from "../../utils/helpers";
-import { addHubSetup, getCurve, hubSetup } from "../../utils/hubSetup";
+import { addHubSetup, hubSetup } from "../../utils/hubSetup";
 import { curvesTestsHelper } from "./helper/curvesTestsHelper";
 import {
-  ICurve,
   Diamond,
   HubFacet,
   VaultRegistry,
-  CurveRegistry,
+  ICurveFacet,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   let curves = new Array();
   let DAI: string;
-  let curveRegistry: CurveRegistry;
   let vaultRegistry: VaultRegistry;
   let hub: HubFacet;
   let diamond: Diamond;
@@ -85,10 +83,9 @@ const setup = async () => {
     [baseY6, reserveWeight6]
   );
   // Create and register first hub we also link the curve of type "bancorCurve" to this hub (hubID = 1)
-  let curve: ICurve;
+  let curve: ICurveFacet;
   ({
     curve,
-    curveRegistry,
     tokenAddr,
     hub,
     diamond,
@@ -96,31 +93,25 @@ const setup = async () => {
     account0,
     account1,
     account2,
-  } = await hubSetup(encodedCurveInfo1, encodedVaultArgs, 5000, "BancorCurve"));
+  } = await hubSetup(encodedCurveInfo1, encodedVaultArgs, 5000));
   let addArgs: [
     string,
     HubFacet,
     Diamond,
-    string,
-    CurveRegistry,
     VaultRegistry,
     string,
     string,
     number,
-    string,
-    ICurve | undefined
+    string
   ] = [
     tokenAddr,
     hub,
     diamond,
-    "BancorCurve",
-    curveRegistry,
     vaultRegistry,
     encodedCurveInfo1,
     encodedVaultArgs,
     5000,
     account0.address,
-    undefined,
   ];
 
   // we create a new curve of type "BancorCurve" and register it to a new hub (hubID = 2)
@@ -128,8 +119,7 @@ const setup = async () => {
   let hubInfo = await addHubSetup(...addArgs);
   let testCurve = {
     signers: [account0, account1, account2],
-    curve: hubInfo.curve,
-    newCurve: curve,
+    curve,
     hub,
     precision: 0.000000000001,
   };
@@ -149,8 +139,7 @@ const setup = async () => {
   });
 
   // Second Bancor curve
-  addArgs[10] = hubInfo.curve;
-  addArgs[6] = encodedCurveInfo2;
+  addArgs[4] = encodedCurveInfo2;
   // we register a new hub with the same curve deployed before but with new encoded curve info
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -169,7 +158,7 @@ const setup = async () => {
   });
 
   // Third Bancor curve
-  addArgs[6] = encodedCurveInfo3;
+  addArgs[4] = encodedCurveInfo3;
   // we register a new hub with the same curve deployed before but with new encoded curve info
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -187,7 +176,7 @@ const setup = async () => {
     ),
   });
   // Fourth ABDK curve
-  addArgs[6] = encodedCurveInfo4;
+  addArgs[4] = encodedCurveInfo4;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -205,7 +194,7 @@ const setup = async () => {
     ),
   });
   // fifth ABDK curve
-  addArgs[6] = encodedCurveInfo5;
+  addArgs[4] = encodedCurveInfo5;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -223,7 +212,7 @@ const setup = async () => {
     ),
   });
   // sixth ABDK curve
-  addArgs[6] = encodedCurveInfo6;
+  addArgs[4] = encodedCurveInfo6;
   // we register a new hub with the same curve deployed before but with new encoded curve details
   hubInfo = await addHubSetup(...addArgs);
   curves.push({
@@ -242,7 +231,7 @@ const setup = async () => {
   });
 
   // stepwise ABDK curves
-
+  /*
   // First stepwise curve
   let stepX = 4;
   let stepY = 2;
@@ -258,8 +247,8 @@ const setup = async () => {
   hubInfo = await addHubSetup(...addArgs);
   const stepwiseCurve = await getCurve("StepwiseCurve", diamond.address);
   await curveRegistry.approve(stepwiseCurve.address);
-  testCurve.newCurve = stepwiseCurve as unknown as ICurve;
-  testCurve.curve = hubInfo.curve;
+  //testCurve.newCurve = stepwiseCurve as unknown as ICurve;
+  //testCurve.curve = hubInfo.curve;
 
   curves.push({
     ...testCurve,
@@ -317,7 +306,7 @@ const setup = async () => {
   targetStepY = 2;
 
   hubInfo = await addHubSetup(...addArgs);
-  testCurve.curve = hubInfo.curve;
+  //testCurve.curve = hubInfo.curve;
   curves.push({
     ...testCurve,
     hubId: hubInfo.hubId,
@@ -416,7 +405,7 @@ const setup = async () => {
       [one.mul(targetStepX).toString(), one.mul(targetStepY).toString()]
     ),
   });
-
+ */
   return curves;
 };
 

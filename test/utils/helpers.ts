@@ -398,6 +398,8 @@ export const getCalculationFuncsForBancorCurves = (
       );
     },
     verifyCurveInfo: (info: [BigNumber, BigNumber, BigNumber, BigNumber]) => {
+      expect(info[0]).to.equal(baseY);
+      expect(info[1]).to.equal(reserveWeight);
       const targetBaseY = baseY.mul(reserveWeight).div(targetReserveWeight);
 
       expect(info[2]).to.equal(targetBaseY);

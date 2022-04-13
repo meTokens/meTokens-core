@@ -68,12 +68,7 @@ const setup = async () => {
         meTokenRegistry,
         singleAssetVault: vault,
         fee: fees,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        initRefundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, initRefundRatio));
 
       await fees.setMintFee(1e8);
       await fees.setBurnOwnerFee(1e8);

@@ -42,8 +42,7 @@ const setup = async () => {
       ({ account0, account1, meTokenRegistry } = await hubSetup(
         encodedCurveDetails,
         encodedVaultArgs,
-        initRefundRatio,
-        "bancorABDK"
+        initRefundRatio
       ));
 
       await meTokenRegistry.connect(account0).subscribe(name, symbol, 1, 0);

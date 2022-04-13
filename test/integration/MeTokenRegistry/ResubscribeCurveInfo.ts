@@ -24,13 +24,11 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -97,19 +95,13 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
         account1,
         meTokenRegistry,
         fee: fees,
-      } = await hubSetup(
-        encodedCurveInfo1,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo1, encodedVaultArgs, refundRatio));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
@@ -118,7 +110,6 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
         encodedCurveInfo2,
         encodedVaultArgs

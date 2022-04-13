@@ -6,10 +6,12 @@ import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 
-import {LibCurve, CurveInfo} from "../libs/LibCurve.sol";
+import {LibCurve} from "../libs/LibCurve.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
-contract CurveFacet is Modifiers {
+import {ICurveFacet} from "../interfaces/ICurveFacet.sol";
+
+contract CurveFacet is Modifiers, ICurveFacet {
     function viewMeTokensMinted(
         uint256 assetsDeposited,
         uint256 hubId,
@@ -49,7 +51,7 @@ contract CurveFacet is Modifiers {
         return
             LibCurve.viewAssetsReturned(
                 meTokensBurned,
-                s.curves[hubId].reserveWeight,
+                hubId,
                 supply,
                 balancePooled
             );
@@ -62,11 +64,19 @@ contract CurveFacet is Modifiers {
         uint256 balancePooled
     ) external view returns (uint256) {
         return
-            LibCurve.viewAssetsReturned(
+            LibCurve.viewTargetAssetsReturned(
                 meTokensBurned,
-                s.curves[hubId].targetReserveWeight,
+                hubId,
                 supply,
                 balancePooled
             );
+    }
+
+    function getCurveInfo(uint256 hubId)
+        external
+        view
+        returns (LibCurve.CurveInfo memory)
+    {
+        return LibCurve.getCurveInfo(hubId);
     }
 }

@@ -75,7 +75,6 @@ const setup = async () => {
 
       ({
         hub,
-        curve,
         foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
@@ -83,19 +82,13 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultDAIArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultDAIArgs, refundRatio));
 
       // Register 2nd hub to which we'll migrate to
       await hub.register(
         account0.address,
         DAI,
         initialVault.address,
-        curve.address,
         refundRatio,
         encodedCurveInfo,
         encodedVaultDAIArgs

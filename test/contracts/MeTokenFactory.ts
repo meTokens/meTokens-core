@@ -39,12 +39,7 @@ const setup = async () => {
       );
 
       ({ foundry, meTokenFactory, meTokenRegistry, account0, account1 } =
-        await hubSetup(
-          encodedCurveInfo,
-          encodedVaultArgs,
-          refundRatio,
-          "BancorCurve"
-        ));
+        await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
     });
     it("create() with same params always produce different MeTokens", async () => {
       const name = "ABCD";

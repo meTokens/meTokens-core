@@ -98,13 +98,11 @@ contract HubFacet is IHubFacet, Modifiers {
             hubInfo.targetRefundRatio = targetRefundRatio;
         }
 
-        bool reconfigure;
         if (encodedCurveInfo.length > 0) {
             LibCurve.initReconfigure(id, encodedCurveInfo);
-            reconfigure = true;
+            hubInfo.reconfigure = true;
         }
 
-        hubInfo.reconfigure = reconfigure;
         hubInfo.updating = true;
         hubInfo.startTime = block.timestamp + s.hubWarmup;
         hubInfo.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
@@ -118,7 +116,7 @@ contract HubFacet is IHubFacet, Modifiers {
             id,
             targetRefundRatio,
             encodedCurveInfo,
-            reconfigure,
+            hubInfo.reconfigure,
             hubInfo.startTime,
             hubInfo.endTime,
             hubInfo.endCooldown
@@ -140,7 +138,6 @@ contract HubFacet is IHubFacet, Modifiers {
 
         hubInfo.targetRefundRatio = 0;
         hubInfo.reconfigure = false;
-        hubInfo.targetCurve = address(0);
         hubInfo.updating = false;
         hubInfo.startTime = 0;
         hubInfo.endTime = 0;

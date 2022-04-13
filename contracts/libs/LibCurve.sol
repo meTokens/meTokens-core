@@ -2,24 +2,35 @@
 pragma solidity 0.8.9;
 
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
-import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 
-struct CurveInfo {
-    uint256 baseY;
-    uint256 targetBaseY;
-    uint32 reserveWeight;
-    uint32 targetReserveWeight;
-}
+//import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 
 library LibCurve {
+    struct CurveInfo {
+        uint256 baseY;
+        uint256 targetBaseY;
+        uint32 reserveWeight;
+        uint32 targetReserveWeight;
+    }
+
+    struct CurveStorage {
+        // HubId to curve details
+        mapping(uint256 => CurveInfo) curves;
+        bytes16 one;
+        bytes16 maxWeight;
+        bytes16 baseX;
+    }
+
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
 
-    uint32 private constant _MAX_WEIGHT = 1e6;
+    uint32 public constant _MAX_WEIGHT = 1e6;
+    bytes32 public constant CURVE_STORAGE_POSITION =
+        keccak256("diamond.standard.bancor.curves.storage");
 
     function register(uint256 hubId, bytes calldata encodedCurveInfo) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        CurveInfo storage curveInfo = s.curves[hubId];
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
         require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
         (uint256 baseY, uint32 reserveWeight) = abi.decode(
@@ -39,8 +50,8 @@ library LibCurve {
     function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
         internal
     {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        CurveInfo storage curveInfo = s.curves[hubId];
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
         uint32 targetReserveWeight = abi.decode(encodedCurveInfo, (uint32));
 
         require(targetReserveWeight > 0, "!reserveWeight");
@@ -50,15 +61,15 @@ library LibCurve {
         );
 
         // targetBaseX = (old baseY * oldR) / newR
-        uint256 targetBaseY = (curveInfo.baseY * curveInfo.reserveWeight) /
+        curveInfo.targetBaseY =
+            (curveInfo.baseY * curveInfo.reserveWeight) /
             targetReserveWeight;
-        curveInfo.targetBaseY = targetBaseY;
         curveInfo.targetReserveWeight = targetReserveWeight;
     }
 
     function finishReconfigure(uint256 hubId) internal {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        CurveInfo storage curveInfo = s.curves[hubId];
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
 
         curveInfo.reserveWeight = curveInfo.targetReserveWeight;
         curveInfo.baseY = curveInfo.targetBaseY;
@@ -71,11 +82,11 @@ library LibCurve {
         view
         returns (CurveInfo memory curveInfo)
     {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        curveInfo.baseY = s.curves[hubId].baseY;
-        curveInfo.reserveWeight = s.curves[hubId].reserveWeight;
-        curveInfo.targetBaseY = s.curves[hubId].targetBaseY;
-        curveInfo.targetReserveWeight = s.curves[hubId].targetReserveWeight;
+        CurveStorage storage cs = curveStorage();
+        curveInfo.baseY = cs.curves[hubId].baseY;
+        curveInfo.reserveWeight = cs.curves[hubId].reserveWeight;
+        curveInfo.targetBaseY = cs.curves[hubId].targetBaseY;
+        curveInfo.targetReserveWeight = cs.curves[hubId].targetReserveWeight;
     }
 
     function viewMeTokensMinted(
@@ -84,20 +95,20 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 meTokensMinted) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
+        CurveStorage storage cs = curveStorage();
 
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                s.curves[hubId].reserveWeight,
+                cs.curves[hubId].reserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                s.curves[hubId].reserveWeight,
-                s.curves[hubId].baseY
+                cs.curves[hubId].reserveWeight,
+                cs.curves[hubId].baseY
             );
         }
     }
@@ -108,19 +119,19 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 meTokensMinted) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
+        CurveStorage storage cs = curveStorage();
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                s.curves[hubId].targetReserveWeight,
+                cs.curves[hubId].targetReserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                s.curves[hubId].targetReserveWeight,
-                s.curves[hubId].targetBaseY
+                cs.curves[hubId].targetReserveWeight,
+                cs.curves[hubId].targetBaseY
             );
         }
     }
@@ -131,10 +142,10 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 assetsReturned) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
+        CurveStorage storage cs = curveStorage();
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            s.curves[hubId].reserveWeight,
+            cs.curves[hubId].reserveWeight,
             supply,
             balancePooled
         );
@@ -146,11 +157,11 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 assetsReturned) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
+        CurveStorage storage cs = curveStorage();
 
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            s.curves[hubId].targetReserveWeight,
+            cs.curves[hubId].targetReserveWeight,
             supply,
             balancePooled
         );
@@ -183,7 +194,7 @@ library LibCurve {
         uint32 reserveWeight,
         uint256 supply,
         uint256 balancePooled
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         // validate input
         require(
             balancePooled > 0 &&
@@ -198,16 +209,16 @@ library LibCurve {
         if (reserveWeight == _MAX_WEIGHT) {
             return (supply * assetsDeposited) / balancePooled;
         }
-        bytes16 _one = (uint256(1)).fromUInt();
-        bytes16 _maxWeight = uint256(_MAX_WEIGHT).fromUInt();
-        bytes16 exponent = uint256(reserveWeight).fromUInt().div(_maxWeight);
+        CurveStorage storage cs = curveStorage();
+
+        bytes16 exponent = uint256(reserveWeight).fromUInt().div(cs.maxWeight);
         // 1 + balanceDeposited/connectorBalance
-        bytes16 part1 = _one.add(
+        bytes16 part1 = cs.one.add(
             assetsDeposited.fromUInt().div(balancePooled.fromUInt())
         );
         //Instead of calculating "base ^ exp", we calculate "e ^ (log(base) * exp)".
         bytes16 res = supply.fromUInt().mul(
-            (part1.ln().mul(exponent)).exp().sub(_one)
+            (part1.ln().mul(exponent)).exp().sub(cs.one)
         );
         return res.toUInt();
     }
@@ -234,16 +245,14 @@ library LibCurve {
         uint256 assetsDeposited,
         uint256 reserveWeight,
         uint256 baseY
-    ) private pure returns (uint256) {
-        bytes16 _baseX = uint256(1 ether).fromUInt();
-        bytes16 _one = (uint256(1)).fromUInt();
-        bytes16 _maxWeight = uint256(_MAX_WEIGHT).fromUInt();
+    ) private view returns (uint256) {
+        CurveStorage storage cs = curveStorage();
 
-        bytes16 reserveWeight_ = reserveWeight.fromUInt().div(_maxWeight);
+        bytes16 reserveWeight_ = reserveWeight.fromUInt().div(cs.maxWeight);
 
         // assetsDeposited * baseX ^ (1/connectorWeight)
         bytes16 numerator = assetsDeposited.fromUInt().mul(
-            _baseX.ln().mul(_one.div(reserveWeight_)).exp()
+            cs.baseX.ln().mul(cs.one.div(reserveWeight_)).exp()
         );
         // as baseX == 1 ether and we want to result to be in ether too we simply remove
         // the multiplication by baseY
@@ -284,7 +293,7 @@ library LibCurve {
         uint32 reserveWeight,
         uint256 supply,
         uint256 balancePooled
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         // validate input
         require(
             supply > 0 &&
@@ -307,17 +316,26 @@ library LibCurve {
             return (balancePooled * meTokensBurned) / supply;
         }
         // _MAX_WEIGHT / reserveWeight
-        bytes16 _maxWeight = uint256(_MAX_WEIGHT).fromUInt();
-        bytes16 _one = (uint256(1)).fromUInt();
-        bytes16 exponent = _maxWeight.div(uint256(reserveWeight).fromUInt());
+        CurveStorage storage cs = curveStorage();
+
+        bytes16 exponent = cs.maxWeight.div(uint256(reserveWeight).fromUInt());
 
         // 1 - (meTokensBurned / supply)
-        bytes16 s = _one.sub(meTokensBurned.fromUInt().div(supply.fromUInt()));
+        bytes16 s = cs.one.sub(
+            meTokensBurned.fromUInt().div(supply.fromUInt())
+        );
         // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".
         // balancePooled - ( balancePooled * s ^ exp))
         bytes16 res = balancePooled.fromUInt().sub(
             balancePooled.fromUInt().mul(s.ln().mul(exponent).exp())
         );
         return res.toUInt();
+    }
+
+    function curveStorage() internal pure returns (CurveStorage storage ds) {
+        bytes32 position = CURVE_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
     }
 }

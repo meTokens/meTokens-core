@@ -65,7 +65,6 @@ const setup = async () => {
 
       ({
         hub,
-        curve,
         singleAssetVault,
         account0,
         account1,
@@ -73,7 +72,7 @@ const setup = async () => {
         diamond,
         meTokenRegistry,
         foundry,
-      } = await hubSetupWithoutRegister("BancorCurve"));
+      } = await hubSetupWithoutRegister());
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",
@@ -96,7 +95,6 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
         encodedCurveInfo,
         encodedVaultDAIArgs
@@ -161,7 +159,6 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
         encodedCurveInfo,
         encodedVaultDAIArgs

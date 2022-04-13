@@ -24,13 +24,11 @@ import {
   MeToken,
   ERC20,
   SingleAssetVault,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
@@ -67,18 +65,12 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         singleAssetVault,
         meTokenRegistry,
         account0,
         account1,
         account2,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        firstRefundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, firstRefundRatio));
 
       // Pre-load owner and buyer w/ DAI
       await token
@@ -131,7 +123,6 @@ const setup = async () => {
       before(async () => {
         await hub.initUpdate(
           firstHubId,
-          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -140,7 +131,7 @@ const setup = async () => {
         // fast fwd a little bit
         await passDays(1);
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
+          hub.initUpdate(1, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -224,7 +215,7 @@ const setup = async () => {
       });
       it("should revert initUpdate() if already updating", async () => {
         await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
+          hub.initUpdate(1, 1000, encodedCurveInfo)
         ).to.be.revertedWith("already updating");
       });
 
@@ -366,7 +357,7 @@ const setup = async () => {
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
         await expect(
-          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
+          hub.initUpdate(1, 1000, ethers.utils.toUtf8Bytes(""))
         ).to.be.revertedWith("Still cooling down");
       });
 
@@ -508,7 +499,6 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          curve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveInfo,
           encodedVaultArgs
@@ -534,7 +524,6 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -576,12 +565,7 @@ const setup = async () => {
         expect(block.timestamp).to.be.lt(endCooldown);
 
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
-        await hub.initUpdate(
-          1,
-          curve.address,
-          1000,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(1, 1000, ethers.utils.toUtf8Bytes(""));
 
         const detAfterInit = await hub.getHubInfo(1);
         expect(detAfterInit.active).to.be.true;
@@ -595,7 +579,6 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          curve.address,
           targetedRefundRatio / 2, //refund ratio
           encodedCurveInfo,
           encodedVaultArgs
@@ -617,7 +600,6 @@ const setup = async () => {
         expect(detBefore.targetRefundRatio).to.equal(0);
         await hub.initUpdate(
           hubId,
-          curve.address,
           targetedRefundRatio,
           ethers.utils.toUtf8Bytes("")
         );
@@ -630,12 +612,7 @@ const setup = async () => {
 
         const block = await ethers.provider.getBlock("latest");
         expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
-        await hub.initUpdate(
-          hubId,
-          curve.address,
-          1000,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(hubId, 1000, ethers.utils.toUtf8Bytes(""));
 
         const detAfterUpdate = await hub.getHubInfo(hubId);
         expect(detAfterUpdate.active).to.be.true;

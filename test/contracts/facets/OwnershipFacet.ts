@@ -22,9 +22,7 @@ const setup = async () => {
     let ownershipFacet: OwnershipFacet;
 
     before("setup", async () => {
-      ({ hub, account0, account1, diamond } = await hubSetupWithoutRegister(
-        "BancorCurve"
-      ));
+      ({ hub, account0, account1, diamond } = await hubSetupWithoutRegister());
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",

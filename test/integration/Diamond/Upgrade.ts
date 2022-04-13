@@ -64,12 +64,7 @@ const setup = async () => {
         account2,
         account3,
         meTokenRegistry,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
       diamondCut = await getContractAt<IDiamondCut>(
         "IDiamondCut",
         diamond.address

@@ -127,7 +127,6 @@ const setup = async () => {
       ({
         tokenAddr: DAI,
         hub,
-        curve,
         foundry,
         meTokenRegistry,
         migrationRegistry,
@@ -139,17 +138,11 @@ const setup = async () => {
         account2,
         account3,
         tokenHolder,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
         encodedCurveInfo,
         encodedVaultArgs
@@ -158,7 +151,6 @@ const setup = async () => {
         account0.address,
         USDT,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
         encodedCurveInfo,
         encodedVaultArgs
@@ -182,7 +174,7 @@ const setup = async () => {
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, "0x");
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -478,7 +470,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
       it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, "0x");
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -490,7 +482,7 @@ const setup = async () => {
         await hub.cancelUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
-        await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId2, refundRatio / 2, "0x");
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,

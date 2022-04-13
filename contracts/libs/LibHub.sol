@@ -2,6 +2,7 @@
 pragma solidity 0.8.9;
 
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
+import {LibCurve} from "./LibCurve.sol";
 import {ICurve} from "../interfaces/ICurve.sol";
 
 struct HubInfo {
@@ -13,11 +14,9 @@ struct HubInfo {
     uint256 warmup;
     uint256 duration;
     uint256 cooldown;
-    address targetCurve;
     address owner;
     address vault;
     address asset;
-    address curve;
     bool updating;
     bool reconfigure;
     bool active;
@@ -37,12 +36,8 @@ library LibHub {
         }
 
         if (hubInfo.reconfigure) {
-            ICurve(hubInfo.curve).finishReconfigure(id);
-            hubInfo.reconfigure = false;
-        }
-        if (hubInfo.targetCurve != address(0)) {
-            hubInfo.curve = hubInfo.targetCurve;
-            hubInfo.targetCurve = address(0);
+            LibCurve.finishReconfigure(id);
+            s.hubs[id].reconfigure = false;
         }
 
         hubInfo.updating = false;
@@ -58,7 +53,6 @@ library LibHub {
         returns (HubInfo memory hubInfo)
     {
         HubInfo storage sHubInfo = LibAppStorage.diamondStorage().hubs[id];
-
         hubInfo.active = sHubInfo.active;
         hubInfo.owner = sHubInfo.owner;
         hubInfo.vault = sHubInfo.vault;

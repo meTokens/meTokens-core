@@ -23,9 +23,7 @@ import {
   FeesFacet,
   MeToken,
   ERC20,
-  StepwiseCurve,
   MigrationRegistry,
-  CurveRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
 } from "../../../artifacts/types";
@@ -38,7 +36,6 @@ import {
 const setup = async () => {
   describe("MeToken Resubscribe - multiple differences", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let stepwiseCurve: StepwiseCurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -54,7 +51,6 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let encodedBancorDetails: string;
     let encodedStepwiseDetails: string;
-    let curveRegistry: CurveRegistry;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -112,21 +108,12 @@ const setup = async () => {
         account1,
         meTokenRegistry,
         fee: fees,
-        curveRegistry,
       } = await hubSetup(
         encodedBancorDetails,
         encodedVaultArgs,
-        initialRefundRatio.toNumber(),
-        "BancorCurve"
+        initialRefundRatio.toNumber()
       ));
 
-      stepwiseCurve = await deploy<StepwiseCurve>(
-        "StepwiseCurve",
-        undefined,
-        hub.address
-      );
-
-      await curveRegistry.approve(stepwiseCurve.address);
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
@@ -135,7 +122,6 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        stepwiseCurve.address,
         targetRefundRatio,
         encodedStepwiseDetails,
         encodedVaultArgs

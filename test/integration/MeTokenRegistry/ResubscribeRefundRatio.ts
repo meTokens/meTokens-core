@@ -18,13 +18,11 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -71,7 +69,6 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -81,8 +78,7 @@ const setup = async () => {
       } = await hubSetup(
         encodedCurveInfo,
         encodedVaultArgs,
-        initialRefundRatio.toNumber(),
-        "BancorCurve"
+        initialRefundRatio.toNumber()
       ));
 
       // Deploy uniswap migration and approve it to the registry
@@ -121,7 +117,6 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         targetRefundRatio,
         encodedCurveInfo,
         encodedVaultArgs
