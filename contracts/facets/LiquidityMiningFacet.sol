@@ -32,9 +32,14 @@ contract LiquidityMiningFacet is
         // TODO: should this access control be different
         onlyLiquidityMiningController
     {
-        require(token != me, "Cannot withdraw the staking token");
-        MeTokenInfo memory meTokenInfo = s.meTokens[address(token)];
-        require(meTokenInfo.hubId == 0, "Cannot withdraw a meToken");
+        require(
+            address(token) != address(s.me),
+            "Cannot withdraw the staking token"
+        );
+        require(
+            s.meTokens[address(token)].hubId == 0,
+            "Cannot withdraw a meToken"
+        );
         token.safeTransfer(recipient, amount);
         emit Recovered(token, amount);
     }
@@ -47,7 +52,7 @@ contract LiquidityMiningFacet is
     ) external onlyLiquidityMiningController {
         require(!isSeasonLive(s.seasonCount), "SeasonInfo still liveInfo");
 
-        s.me.safeTransferFrom(
+        IERC20(address(s.me)).safeTransferFrom(
             LibMeta.msgSender(),
             address(this),
             allocationPool + allocationIssuers
@@ -91,14 +96,14 @@ contract LiquidityMiningFacet is
         updateReward(meToken, sender);
         PoolInfo storage poolInfo = s.pools[meToken];
 
-        // TODO: check that meToken hasnt been more-recently featured than meToken.numSeason
+        // TODO: check that meToken hasn't been more-recently featured than meToken.numSeason
         // using
 
         uint256 reward = poolInfo.rewards[sender];
         if (reward == 0) return;
 
         poolInfo.rewards[sender] = 0;
-        s.me.safeTransfer(sender, reward);
+        IERC20(address(s.me)).safeTransfer(sender, reward);
 
         emit RewardPaid(meToken, sender, reward);
     }
@@ -114,7 +119,7 @@ contract LiquidityMiningFacet is
         if (amount == 0) return;
 
         poolInfo.rewards[sender] -= amount;
-        s.me.safeTransfer(sender, amount);
+        IERC20(address(s.me)).safeTransfer(sender, amount);
 
         emit RewardPaid(meToken, sender, amount);
     }
