@@ -6,13 +6,14 @@ import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 //import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 
 library LibCurve {
+    using ABDKMathQuad for uint256;
+    using ABDKMathQuad for bytes16;
     struct CurveInfo {
         uint256 baseY;
         uint256 targetBaseY;
         uint32 reserveWeight;
         uint32 targetReserveWeight;
     }
-
     struct CurveStorage {
         // HubId to curve details
         mapping(uint256 => CurveInfo) curves;
@@ -21,10 +22,7 @@ library LibCurve {
         bytes16 baseX;
     }
 
-    using ABDKMathQuad for uint256;
-    using ABDKMathQuad for bytes16;
-
-    uint32 public constant _MAX_WEIGHT = 1e6;
+    uint32 public constant MAX_WEIGHT = 1e6;
     bytes32 public constant CURVE_STORAGE_POSITION =
         keccak256("diamond.standard.bancor.curves.storage");
 
@@ -165,6 +163,13 @@ library LibCurve {
             supply,
             balancePooled
         );
+    }
+
+    function curveStorage() internal pure returns (CurveStorage storage ds) {
+        bytes32 position = CURVE_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
     }
 
     ///************************* CALCULATE FUNCTIONS **************************/
@@ -330,12 +335,5 @@ library LibCurve {
             balancePooled.fromUInt().mul(s.ln().mul(exponent).exp())
         );
         return res.toUInt();
-    }
-
-    function curveStorage() internal pure returns (CurveStorage storage ds) {
-        bytes32 position = CURVE_STORAGE_POSITION;
-        assembly {
-            ds.slot := position
-        }
     }
 }

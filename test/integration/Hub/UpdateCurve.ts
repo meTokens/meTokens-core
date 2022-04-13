@@ -30,7 +30,7 @@ import {
 } from "../../../artifacts/types";
 
 const setup = async () => {
-  describe("HubFacet - update CurveInfo", () => {
+  describe("HubFacet - update Curve", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -473,15 +473,6 @@ const setup = async () => {
           calcWAvgRes,
           0.00000000000001
         );
-        const ctest = await curve.getCurveInfo(1);
-
-        console.log(`
-            AVANT COOLDONW
-            curve baseY:${ctest.baseY}
-            curve reserveweigth:${ctest.reserveWeight}
-            curve targetBaseY:${ctest.targetBaseY}
-            curve targetReserveWeight:${ctest.targetReserveWeight}
-            `);
       });
     });
 
@@ -571,17 +562,6 @@ const setup = async () => {
           targetAssetsReturned +
           (toETHNumber(metokenToBurn) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenInfoBeforeBurn.balanceLocked);
-        const ctest = await curve.getCurveInfo(1);
-
-        console.log(`
-            FIRST
-            meTokenTotalSupply:${toETHNumber(meTokenTotalSupply)}
-            metokenToBurn:${toETHNumber(metokenToBurn)}
-            curve baseY:${ctest.baseY}
-            curve reserveweigth:${ctest.reserveWeight}
-            curve targetBaseY:${ctest.targetBaseY}
-            curve targetReserveWeight:${ctest.targetReserveWeight}
-            `);
         // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
         // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
         expect(
@@ -612,25 +592,6 @@ const setup = async () => {
           .mint(meToken.address, tokenDeposited, account2.address);
         const balDaiAfterMint = await token.balanceOf(account2.address);
         const balAfter = await meToken.balanceOf(account2.address);
-        const test = await hub.getHubInfo(1);
-        const ctest = await curve.getCurveInfo(1);
-
-        console.log(`
-        meTokenTotalSupply:${toETHNumber(meTokenTotalSupply)}
-        await hub.getHubInfo(1):${JSON.stringify(await hub.getHubInfo(1))}
-        refundRatio:${test.refundRatio}
-        targetRefundRatio:${test.targetRefundRatio}
-        endCooldown:${test.endCooldown}
-        curve baseY:${ctest.baseY}
-        targetReserveWeight:${targetReserveWeight}
-        curve reserveweigth:${ctest.reserveWeight}
-        curve targetBaseY:${ctest.targetBaseY}
-        curve targetReserveWeight:${ctest.targetReserveWeight}
-        calcTargetTokenReturn:${calcTargetTokenReturn}
-        toETHNumber(balAfter.sub(balBefore):${toETHNumber(
-          balAfter.sub(balBefore)
-        )}
-        `);
         expect(toETHNumber(balAfter.sub(balBefore))).to.be.approximately(
           calcTargetTokenReturn,
           0.0000000000001

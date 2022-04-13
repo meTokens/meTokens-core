@@ -28,7 +28,7 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
+  ICurveFacet,
 } from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
@@ -87,7 +87,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
     let meToken: Address;
@@ -134,6 +134,7 @@ const setup = async () => {
         token,
         fee,
         account0,
+        curve,
         account1,
         account2,
         account3,

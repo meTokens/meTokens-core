@@ -10,7 +10,7 @@ import {
   MinimalForwarder,
   ERC20,
   FoundryFacet,
-  ICurve,
+  ICurveFacet,
   MeToken,
   MeTokenRegistryFacet,
   SingleAssetVault,
@@ -23,7 +23,7 @@ const setup = async () => {
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let hub: HubFacet;
     let hubId: BigNumber;
     let singleAssetVault: SingleAssetVault;
@@ -71,6 +71,7 @@ const setup = async () => {
         account2,
         diamond,
         meTokenRegistry,
+        curve,
         foundry,
       } = await hubSetupWithoutRegister());
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
@@ -147,7 +148,6 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          curve.address,
           refundRatio,
           encodedCurveInfo,
           encodedVaultDAIArgs

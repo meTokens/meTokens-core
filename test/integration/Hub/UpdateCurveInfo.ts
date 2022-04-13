@@ -24,14 +24,14 @@ import {
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  BancorCurve,
   SingleAssetVault,
+  ICurveFacet,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update CurveInfo", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let updatedBancorCurve: BancorCurve;
+
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
@@ -44,6 +44,7 @@ const setup = async () => {
     let account3: SignerWithAddress;
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
+    let curve: ICurveFacet;
     let baseYNum: number;
     let updatedBaseYNum: number;
     let updatedBaseY: BigNumber;
@@ -75,6 +76,7 @@ const setup = async () => {
       ({
         token,
         hub,
+        curve,
         foundry,
         singleAssetVault,
         tokenHolder,
@@ -136,25 +138,10 @@ const setup = async () => {
     });
 
     describe("Warmup", () => {
-      it("should revert initUpdate() if targetCurve is the current curve", async () => {
-        const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
-        );
-        await expect(
-          hub.initUpdate(firstHubId, 0, updatedEncodedCurveInfo)
-        ).to.be.revertedWith("targetCurve==curve");
-      });
       it("Assets received based on initial initialCurveInfo", async () => {
         const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
-        );
-
-        updatedBancorCurve = await deploy<BancorCurve>(
-          "BancorCurve",
-          undefined,
-          hub.address
+          ["uint32"],
+          [updatedReserveWeight]
         );
 
         await hub.initUpdate(firstHubId, 0, updatedEncodedCurveInfo);
@@ -496,7 +483,7 @@ const setup = async () => {
         );
         expect(active).to.be.true;
         expect(updating).to.be.true;
-        expect(reconfigure).to.be.false;
+        expect(reconfigure).to.be.true;
         const block = await ethers.provider.getBlock("latest");
 
         //Block.timestamp should be between endTime and endCooldown
