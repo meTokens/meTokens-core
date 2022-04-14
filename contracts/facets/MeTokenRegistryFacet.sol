@@ -95,12 +95,11 @@ contract MeTokenRegistryFacet is
         address migration,
         bytes memory encodedMigrationArgs
     ) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
         HubInfo memory targetHubInfo = s.hubs[targetHubId];
 
-        require(sender == meTokenInfo.owner, "!owner");
+        require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(
             block.timestamp >= meTokenInfo.endCooldown,
             "Cooldown not complete"
@@ -150,9 +149,8 @@ contract MeTokenRegistryFacet is
 
     /// @inheritdoc IMeTokenRegistryFacet
     function cancelResubscribe(address meToken) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
-        require(sender == meTokenInfo.owner, "!owner");
+        require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
             !IMigration(meTokenInfo.migration).migrationStarted(meToken),
@@ -182,8 +180,8 @@ contract MeTokenRegistryFacet is
         override
     {
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
-        address sender = LibMeta.msgSender();
-        require(sender == meTokenInfo.migration, "!migration");
+
+        require(LibMeta.msgSender() == meTokenInfo.migration, "!migration");
         uint256 balancePooled = meTokenInfo.balancePooled;
         uint256 balanceLocked = meTokenInfo.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;
