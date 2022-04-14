@@ -15,16 +15,13 @@ import {
 import { mineBlock } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  ICurve,
   HubFacet,
   FoundryFacet,
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
   MigrationRegistry,
-  CurveRegistry,
   SingleAssetVault,
-  BancorCurve,
   UniswapSingleTransferMigration,
   SameAssetTransferMigration,
   IERC20Permit,

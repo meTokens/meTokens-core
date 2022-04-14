@@ -387,7 +387,6 @@ const setup = async () => {
             yieldFee: 89746654654,
             diamond: diamond.address,
             vaultRegistry: diamond.address,
-            curveRegistry: diamond.address,
             migrationRegistry: diamond.address,
             meTokenFactory: diamond.address,
           },

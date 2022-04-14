@@ -38,7 +38,6 @@ struct AppStorageMock {
     address diamond;
     address meTokenFactory;
     IRegistry vaultRegistry;
-    IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
@@ -126,14 +125,6 @@ contract ModifiersMock {
         require(
             LibMeta.msgSender() == address(s.vaultRegistry),
             "!vaultRegistry"
-        );
-        _;
-    }
-
-    modifier onlyCurveRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.curveRegistry),
-            "!curveRegistry"
         );
         _;
     }

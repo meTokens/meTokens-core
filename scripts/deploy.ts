@@ -48,13 +48,6 @@ async function main() {
   console.log("Deploying on network", network.name);
   console.log("Deployer address:", deployerAddr);
 
-  /*   const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-  console.log("curveRegistry deployed at:", curveRegistry.address);
-  contracts.push({
-    name: "contracts/registries/CurveRegistry.sol:CurveRegistry",
-    address: curveRegistry.address,
-  }); */
-
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"
   );
@@ -189,7 +182,6 @@ async function main() {
       yieldFee: feeInitialization[5],
       diamond: diamond.address,
       vaultRegistry: vaultRegistry.address,
-      // curveRegistry: curveRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
     },
@@ -210,7 +202,6 @@ async function main() {
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
-  // await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   console.log("curve and singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
@@ -255,8 +246,6 @@ async function main() {
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
-    //  "Curve Registry Contract Address": curveRegistry.address,
-    // "Bancor Curve Contract Address": curve.address,
     "MeToken Factory Contract Address": meTokenFactory.address,
     "Block Number": receipt.blockNumber.toString(),
   };

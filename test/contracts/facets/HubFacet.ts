@@ -14,7 +14,6 @@ import {
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  BancorCurve,
   SingleAssetVault,
 } from "../../../artifacts/types";
 
