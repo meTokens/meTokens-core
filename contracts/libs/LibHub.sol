@@ -36,7 +36,7 @@ library LibHub {
 
         if (hubInfo.reconfigure) {
             LibCurve.finishReconfigure(id);
-            s.hubs[id].reconfigure = false;
+            hubInfo.reconfigure = false;
         }
 
         hubInfo.updating = false;
@@ -56,14 +56,12 @@ library LibHub {
         hubInfo.owner = sHubInfo.owner;
         hubInfo.vault = sHubInfo.vault;
         hubInfo.asset = sHubInfo.asset;
-        hubInfo.curve = sHubInfo.curve;
         hubInfo.refundRatio = sHubInfo.refundRatio;
         hubInfo.updating = sHubInfo.updating;
         hubInfo.startTime = sHubInfo.startTime;
         hubInfo.endTime = sHubInfo.endTime;
         hubInfo.endCooldown = sHubInfo.endCooldown;
         hubInfo.reconfigure = sHubInfo.reconfigure;
-        hubInfo.targetCurve = sHubInfo.targetCurve;
         hubInfo.targetRefundRatio = sHubInfo.targetRefundRatio;
     }
 

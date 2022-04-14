@@ -15,7 +15,6 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -33,7 +32,6 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
-    let curve: ICurve;
     let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     let targetVault: SingleAssetVault;
