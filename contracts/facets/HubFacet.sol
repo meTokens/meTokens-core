@@ -3,7 +3,6 @@ pragma solidity 0.8.9;
 
 import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
-import {IRegistry} from "../interfaces/IRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {LibCurve} from "../libs/LibCurve.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";

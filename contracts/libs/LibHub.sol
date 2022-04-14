@@ -3,7 +3,6 @@ pragma solidity 0.8.9;
 
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {LibCurve} from "./LibCurve.sol";
-import {ICurve} from "../interfaces/ICurve.sol";
 
 struct HubInfo {
     uint256 startTime;

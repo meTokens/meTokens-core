@@ -14,7 +14,6 @@ import {
   ERC20,
   SingleAssetVault,
   SameAssetTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -28,7 +27,6 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: SameAssetTransferMigration;
-    let curve: ICurve;
     let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     let foundry: FoundryFacet;

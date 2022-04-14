@@ -5,7 +5,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
-import {IRegistry} from "./interfaces/IRegistry.sol";
+import {IVaultRegistry} from "./interfaces/IVaultRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
@@ -24,7 +24,7 @@ contract DiamondInit {
         uint256 interestFee;
         uint256 yieldFee;
         address diamond;
-        IRegistry vaultRegistry;
+        IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
         address meTokenFactory;
     }

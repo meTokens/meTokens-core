@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-/// @title Generic registry interface
+/// @title Vault registry interface for meTokens protocol.
 /// @author Carter Carlson (@cartercarlson)
-interface IRegistry {
+interface IVaultRegistry {
     /// @notice Event of approving an address
     /// @param addr Address to approve
     event Approve(address addr);
