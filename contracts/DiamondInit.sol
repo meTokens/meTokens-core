@@ -2,7 +2,7 @@
 pragma solidity 0.8.9;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
@@ -25,7 +25,7 @@ contract DiamondInit {
         uint256 interestFee;
         uint256 yieldFee;
         address diamond;
-        IERC20Permit me;
+        IERC20 me;
         IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
         address meTokenFactory;
