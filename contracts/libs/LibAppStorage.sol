@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IRegistry} from "../interfaces/IRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
@@ -49,7 +49,7 @@ struct AppStorage {
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
-    IERC20Permit me;
+    IERC20 me;
     IRegistry vaultRegistry;
     IRegistry curveRegistry;
     IMigrationRegistry migrationRegistry;
