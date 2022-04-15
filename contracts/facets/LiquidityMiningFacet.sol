@@ -32,9 +32,14 @@ contract LiquidityMiningFacet is
         // TODO: should this access control be different
         onlyLiquidityMiningController
     {
-        require(token != me, "Cannot withdraw the staking token");
-        MeTokenInfo memory meTokenInfo = s.meTokens[address(token)];
-        require(meTokenInfo.hubId == 0, "Cannot withdraw a meToken");
+        require(
+            address(token) != address(s.me),
+            "Cannot withdraw the staking token"
+        );
+        require(
+            s.meTokens[address(token)].hubId == 0,
+            "Cannot withdraw a meToken"
+        );
         token.safeTransfer(recipient, amount);
         emit Recovered(token, amount);
     }
@@ -45,13 +50,14 @@ contract LiquidityMiningFacet is
         uint256 allocationIssuers,
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
-        require(!isSeasonLive(s.seasonCount), "SeasonInfo still liveInfo");
+        require(!isSeasonLive(s.seasonCount), "season still live");
 
         s.me.safeTransferFrom(
             LibMeta.msgSender(),
             address(this),
             allocationPool + allocationIssuers
         );
+        // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
         uint256 rewardRate = allocationPool / s.lmDuration;
 
         // can only schedule once last season has ended? No
@@ -62,7 +68,7 @@ contract LiquidityMiningFacet is
         SeasonInfo storage newSeasonInfo = s.seasons[++s.seasonCount];
         newSeasonInfo.initTime = initTime;
         newSeasonInfo.startTime = initTime + s.lmWarmup;
-        newSeasonInfo.endTime = initTime + s.lmWarmup + s.lmDuration;
+        newSeasonInfo.endTime = newSeasonInfo.startTime + s.lmDuration;
         newSeasonInfo.allocationPool = allocationPool;
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
@@ -91,7 +97,7 @@ contract LiquidityMiningFacet is
         updateReward(meToken, sender);
         PoolInfo storage poolInfo = s.pools[meToken];
 
-        // TODO: check that meToken hasnt been more-recently featured than meToken.numSeason
+        // TODO: check that meToken hasn't been more-recently featured than meToken.numSeason
         // using
 
         uint256 reward = poolInfo.rewards[sender];
