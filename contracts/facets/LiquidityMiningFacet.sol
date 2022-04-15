@@ -52,7 +52,7 @@ contract LiquidityMiningFacet is
     ) external onlyLiquidityMiningController {
         require(!isSeasonLive(s.seasonCount), "SeasonInfo still liveInfo");
 
-        IERC20(address(s.me)).safeTransferFrom(
+        s.me.safeTransferFrom(
             LibMeta.msgSender(),
             address(this),
             allocationPool + allocationIssuers
@@ -103,7 +103,7 @@ contract LiquidityMiningFacet is
         if (reward == 0) return;
 
         poolInfo.rewards[sender] = 0;
-        IERC20(address(s.me)).safeTransfer(sender, reward);
+        s.me.safeTransfer(sender, reward);
 
         emit RewardPaid(meToken, sender, reward);
     }
@@ -119,7 +119,7 @@ contract LiquidityMiningFacet is
         if (amount == 0) return;
 
         poolInfo.rewards[sender] -= amount;
-        IERC20(address(s.me)).safeTransfer(sender, amount);
+        s.me.safeTransfer(sender, amount);
 
         emit RewardPaid(meToken, sender, amount);
     }
