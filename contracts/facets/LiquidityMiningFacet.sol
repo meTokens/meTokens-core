@@ -50,7 +50,7 @@ contract LiquidityMiningFacet is
         uint256 allocationIssuers,
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
-        require(!isSeasonLive(s.seasonCount), "SeasonInfo still liveInfo");
+        require(!isSeasonLive(s.seasonCount), "season still live");
 
         s.me.safeTransferFrom(
             LibMeta.msgSender(),
