@@ -68,7 +68,7 @@ contract LiquidityMiningFacet is
         SeasonInfo storage newSeasonInfo = s.seasons[++s.seasonCount];
         newSeasonInfo.initTime = initTime;
         newSeasonInfo.startTime = initTime + s.lmWarmup;
-        newSeasonInfo.endTime = initTime + s.lmWarmup + s.lmDuration;
+        newSeasonInfo.endTime = newSeasonInfo.startTime + s.lmDuration;
         newSeasonInfo.allocationPool = allocationPool;
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
