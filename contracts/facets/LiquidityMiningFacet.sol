@@ -57,6 +57,7 @@ contract LiquidityMiningFacet is
             address(this),
             allocationPool + allocationIssuers
         );
+        // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
         uint256 rewardRate = allocationPool / s.lmDuration;
 
         // can only schedule once last season has ended? No
