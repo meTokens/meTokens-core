@@ -89,41 +89,7 @@ contract LiquidityMiningFacet is
             index,
             merkleProof
         );
-        claimReward(meToken);
-    }
-
-    // TODO: could claim on behalf of someone else?
-    function claimReward(address meToken) public nonReentrant {
-        address sender = LibMeta.msgSender();
-        updateReward(meToken, sender);
-        PoolInfo storage poolInfo = s.pools[meToken];
-
-        // TODO: check that meToken hasn't been more-recently featured than meToken.numSeason
-        // using
-
-        uint256 reward = poolInfo.rewards[sender];
-        if (reward == 0) return;
-
-        poolInfo.rewards[sender] = 0;
-        s.me.safeTransfer(sender, reward);
-
-        emit RewardPaid(meToken, sender, reward);
-    }
-
-    function claimRewardExact(address meToken, uint256 amount)
-        external
-        nonReentrant
-    {
-        address sender = LibMeta.msgSender();
-        updateReward(meToken, sender);
-        PoolInfo storage poolInfo = s.pools[meToken];
-
-        if (amount == 0) return;
-
-        poolInfo.rewards[sender] -= amount;
-        s.me.safeTransfer(sender, amount);
-
-        emit RewardPaid(meToken, sender, amount);
+        claimReward(meToken, 0);
     }
 
     // TODO - should this update every meToken in a season?
@@ -173,6 +139,31 @@ contract LiquidityMiningFacet is
         _refreshSupplyStats(meToken, amount, true);
 
         emit Staked(meToken, sender, amount);
+    }
+
+    // TODO: could claim on behalf of someone else?
+    /// @param amount pass 0 to claim max else exact amount
+    function claimReward(address meToken, uint256 amount) public nonReentrant {
+        address sender = LibMeta.msgSender();
+        updateReward(meToken, sender);
+        PoolInfo storage poolInfo = s.pools[meToken];
+
+        // TODO: check that meToken hasn't been more-recently featured than meToken.numSeason
+        // using
+
+        uint256 reward = poolInfo.rewards[sender];
+        if (reward == 0) return;
+
+        if (amount > 0) {
+            poolInfo.rewards[sender] -= amount;
+            s.me.safeTransfer(sender, amount);
+        } else {
+            amount = reward;
+            poolInfo.rewards[sender] = 0;
+            s.me.safeTransfer(sender, reward);
+        }
+
+        emit RewardPaid(meToken, sender, reward);
     }
 
     // TODO: have this refreshPools
