@@ -206,10 +206,6 @@ async function main() {
   console.log("curve and singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
   let reserveWeight = 250000;
-  let encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
@@ -227,7 +223,8 @@ async function main() {
     tokenAddr,
     singleAssetVault.address,
     REFUND_RATIO, //refund ratio
-    encodedCurveInfo,
+    baseY,
+    reserveWeight,
     encodedVaultArgs
   );
   await tx.wait();
