@@ -13,7 +13,8 @@ interface IHubFacet {
     /// @param asset            Address of underlying asset
     /// @param vault            Address of vault
     /// @param refundRatio      Rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param baseY            baseY curve details
+    /// @param reserveWeight    reserveWeight curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
     event Register(
         uint256 id,
@@ -21,7 +22,8 @@ interface IHubFacet {
         address asset,
         address vault,
         uint256 refundRatio,
-        bytes encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes encodedVaultArgs
     );
 
@@ -66,14 +68,16 @@ interface IHubFacet {
     /// @param asset            Address of vault asset
     /// @param vault            Address of vault
     /// @param refundRatio      Rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param baseY            baseY curve details
+    /// @param reserveWeight    reserveWeight curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
     function register(
         address owner,
         address asset,
         IVault vault,
         uint256 refundRatio,
-        bytes memory encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes memory encodedVaultArgs
     ) external;
 

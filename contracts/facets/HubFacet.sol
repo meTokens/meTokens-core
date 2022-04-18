@@ -20,7 +20,8 @@ contract HubFacet is IHubFacet, Modifiers {
         address asset,
         IVault vault,
         uint256 refundRatio,
-        bytes calldata encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes memory encodedVaultArgs
     ) external override onlyRegisterController {
         require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
@@ -32,7 +33,7 @@ contract HubFacet is IHubFacet, Modifiers {
 
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;
-        LibCurve.register(id, encodedCurveInfo);
+        LibCurve.register(id, baseY, reserveWeight);
         // Save the hub to the registry
         HubInfo storage hubInfo = s.hubs[s.hubCount];
         hubInfo.active = true;
@@ -46,7 +47,8 @@ contract HubFacet is IHubFacet, Modifiers {
             asset,
             address(vault),
             refundRatio,
-            encodedCurveInfo,
+            baseY,
+            reserveWeight,
             encodedVaultArgs
         );
     }

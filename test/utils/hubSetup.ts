@@ -1,4 +1,4 @@
-import { Signer } from "ethers";
+import { BigNumber, Signer } from "ethers";
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract } from "@ethersproject/contracts";
@@ -25,7 +25,8 @@ import {
 } from "../../artifacts/types";
 
 export async function hubSetup(
-  encodedCurveInfo: string,
+  baseY: BigNumber,
+  reserveWeight: number,
   encodedVaultArgs: string,
   refundRatio: number,
   fees?: number[],
@@ -79,7 +80,8 @@ export async function hubSetup(
     tokenAddr,
     singleAssetVault.address,
     refundRatio, //refund ratio
-    encodedCurveInfo,
+    baseY,
+    reserveWeight,
     encodedVaultArgs
   );
   return {
@@ -180,7 +182,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   if (!feeInitialization) {
     feeInitialization = [0, 0, 0, 0, 0, 0];
   }
-
   //
   // NOTE: start diamond deploy
   //
@@ -231,7 +232,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       functionSelectors: getSelectors(facet as unknown as Contract),
     });
   }
-
   // upgrade diamond w/ facets
   const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
   let args: any = [
@@ -250,9 +250,9 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   ];
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier
   const diamondInit = await deploy<DiamondInit>("DiamondInit");
+
   let functionCall = diamondInit.interface.encodeFunctionData("init", args);
   await diamondCut.diamondCut(cut, diamondInit.address, functionCall);
-
   hub = (await ethers.getContractAt("HubFacet", diamond.address)) as HubFacet;
   curve = (await ethers.getContractAt(
     "ICurveFacet",
@@ -294,7 +294,8 @@ export async function addHubSetup(
   hub: HubFacet,
   diamond: Diamond,
   vaultRegistry: VaultRegistry,
-  encodedCurveInfo: string,
+  baseY: BigNumber,
+  reserveWeight: number,
   encodedVaultArgs: string,
   refundRatio: number,
   daoAddress?: string
@@ -311,7 +312,6 @@ export async function addHubSetup(
   if (!dao) {
     dao = account0.address;
   }
-
   singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
@@ -326,7 +326,8 @@ export async function addHubSetup(
     tokenAddr,
     singleAssetVault.address,
     refundRatio, //refund ratio
-    encodedCurveInfo,
+    baseY,
+    reserveWeight,
     encodedVaultArgs
   );
   const hubId = (await hub.count()).toNumber();

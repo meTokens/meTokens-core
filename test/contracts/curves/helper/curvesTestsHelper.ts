@@ -6,7 +6,7 @@ import { HubFacet, ICurveFacet } from "../../../../artifacts/types";
 
 export const curvesTestsHelper = async ({
   curve,
-  encodedReconfigureValueSet,
+  targetReserveWeight,
   hubId,
   hub,
   precision,
@@ -19,7 +19,7 @@ export const curvesTestsHelper = async ({
   verifyCurveInfo,
 }: {
   curve: ICurveFacet;
-  encodedReconfigureValueSet: number;
+  targetReserveWeight: number;
   hubId: number;
   hub: HubFacet;
   precision: number;
@@ -56,7 +56,6 @@ export const curvesTestsHelper = async ({
   verifyCurveInfo: (info: [BigNumber, BigNumber, BigNumber, BigNumber]) => void;
 }) => {
   const one = ethers.utils.parseEther("1");
-
   it("Reverts w/ invalid parameters", async () => {
     await expect(hub.initUpdate(hubId, 0, 0)).to.be.revertedWith(
       "Nothing to update"
@@ -237,7 +236,7 @@ export const curvesTestsHelper = async ({
   });
 
   it("initReconfigure() should work", async () => {
-    await hub.initUpdate(hubId, 0, encodedReconfigureValueSet);
+    await hub.initUpdate(hubId, 0, targetReserveWeight);
 
     const info = await curve.getCurveInfo(hubId);
     verifyCurveInfo([

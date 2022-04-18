@@ -26,15 +26,14 @@ library LibCurve {
     bytes32 public constant CURVE_STORAGE_POSITION =
         keccak256("diamond.standard.bancor.curves.storage");
 
-    function register(uint256 hubId, bytes calldata encodedCurveInfo) internal {
+    function register(
+        uint256 hubId,
+        uint256 baseY,
+        uint32 reserveWeight
+    ) internal {
         CurveStorage storage cs = curveStorage();
         CurveInfo storage curveInfo = cs.curves[hubId];
-        require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
 
-        (uint256 baseY, uint32 reserveWeight) = abi.decode(
-            encodedCurveInfo,
-            (uint256, uint32)
-        );
         require(baseY > 0, "!baseY");
         require(
             reserveWeight > 0 && reserveWeight <= MAX_WEIGHT,
