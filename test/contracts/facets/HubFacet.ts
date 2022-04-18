@@ -106,7 +106,8 @@ const setup = async () => {
               DAI,
               singleAssetVault.address,
               refundRatio1,
-              encodedCurveInfo,
+              baseY,
+              reserveWeight,
               encodedVaultDAIArgs
             )
         ).to.be.revertedWith("!registerController");
@@ -118,7 +119,8 @@ const setup = async () => {
           DAI,
           account0.address, // random unapproved address
           refundRatio1,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("vault !approved");
@@ -131,20 +133,22 @@ const setup = async () => {
             DAI,
             singleAssetVault.address,
             refundRatio1,
-            "0x", // invalid _encodedCurveInfo
+            0,
+            0,
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedCurveInfo");
+        ).to.be.revertedWith("!baseY");
         await expect(
           hub.register(
             account0.address,
             DAI,
             singleAssetVault.address,
             refundRatio1,
-            ethers.utils.toUtf8Bytes(""), // invalid _encodedCurveInfo
+            1,
+            0,
             encodedVaultDAIArgs
           )
-        ).to.be.revertedWith("!encodedCurveInfo");
+        ).to.be.revertedWith("!reserveWeight");
       });
       it("should revert from invalid encodedVaultArgs", async () => {
         // Invalid _encodedVaultArgs
@@ -153,7 +157,8 @@ const setup = async () => {
           ethers.constants.AddressZero,
           singleAssetVault.address,
           refundRatio1,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs // invalid _encodedVaultArgs
         );
         await expect(tx).to.be.revertedWith("asset !valid");
@@ -165,7 +170,8 @@ const setup = async () => {
           DAI,
           singleAssetVault.address,
           10 ** 7,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio > MAX");
@@ -176,7 +182,8 @@ const setup = async () => {
           DAI,
           singleAssetVault.address,
           0,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs
         );
         await expect(tx).to.be.revertedWith("refundRatio == 0");
@@ -187,7 +194,8 @@ const setup = async () => {
           DAI,
           singleAssetVault.address,
           refundRatio1,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs
         );
         await tx.wait();
@@ -200,7 +208,8 @@ const setup = async () => {
             DAI,
             singleAssetVault.address,
             refundRatio1,
-            encodedCurveInfo,
+            baseY,
+            reserveWeight,
             encodedVaultDAIArgs
           );
         expect(await hub.count()).to.be.equal(hubId);

@@ -62,10 +62,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -83,7 +79,7 @@ const setup = async () => {
         account3,
         meTokenRegistry,
         curve,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
 
       // Pre-load owner and buyer w/ DAI
       await token

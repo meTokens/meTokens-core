@@ -52,11 +52,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-
       ({
         token,
         diamond,
@@ -68,7 +63,12 @@ const setup = async () => {
         meTokenRegistry,
         singleAssetVault: vault,
         fee: fees,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, initRefundRatio));
+      } = await hubSetup(
+        baseY,
+        reserveWeight,
+        encodedVaultArgs,
+        initRefundRatio
+      ));
 
       await fees.setMintFee(1e8);
       await fees.setBurnOwnerFee(1e8);

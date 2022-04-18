@@ -56,10 +56,6 @@ const setup = async () => {
       let WETH;
       ({ DAI, WETH } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -76,7 +72,8 @@ const setup = async () => {
         account2,
         meTokenRegistry,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
         initialRefundRatio.toNumber()
       ));
@@ -118,7 +115,8 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         targetRefundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week

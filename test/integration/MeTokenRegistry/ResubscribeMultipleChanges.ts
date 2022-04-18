@@ -10,7 +10,6 @@ import {
   toETHNumber,
   weightedAverageSimulation,
   calculateTokenReturnedFromZero,
-  calculateTokenReturned,
   fromETHNumber,
 } from "../../utils/helpers";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
@@ -28,7 +27,7 @@ import {
 } from "../../../artifacts/types";
 
 // Differences:
-// 1. Curve details: encodedBancorDetails - encodedStepwiseDetails
+// 1. Curve details: baseY, reserveWeight - encodedStepwiseDetails
 // 2. Curves: bancorCurve - stepwiseCurve
 // 3. Refund ratio: initialRefundRatio - targetRefundRatio
 
@@ -48,9 +47,6 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedBancorDetails: string;
-    let encodedNewBancorDetails: string;
-
     const hubId1 = 1;
     const hubId2 = 2;
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
@@ -82,14 +78,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedBancorDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-      encodedNewBancorDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [newBaseY, newReserveWeight]
-      );
+
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
         [fee]
@@ -108,7 +97,8 @@ const setup = async () => {
         meTokenRegistry,
         fee: fees,
       } = await hubSetup(
-        encodedBancorDetails,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
         initialRefundRatio.toNumber()
       ));
@@ -122,7 +112,8 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         targetRefundRatio,
-        encodedNewBancorDetails,
+        newBaseY,
+        newReserveWeight,
         encodedVaultArgs
       );
 

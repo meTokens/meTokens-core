@@ -115,10 +115,6 @@ const setup = async () => {
       ({ DAI, WETH, USDT } = await getNamedAccounts());
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -139,13 +135,14 @@ const setup = async () => {
         account2,
         account3,
         tokenHolder,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
         WETH,
         singleAssetVault.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.register(
@@ -153,7 +150,8 @@ const setup = async () => {
         USDT,
         singleAssetVault.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.setHubWarmup(hubWarmup);

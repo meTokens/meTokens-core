@@ -86,10 +86,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       ({
         token,
         tokenHolder,
@@ -102,7 +99,12 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, initRefundRatio));
+      } = await hubSetup(
+        baseY,
+        reserveWeight,
+        encodedVaultArgs,
+        initRefundRatio
+      ));
 
       // Prefund owner/buyer w/ DAI
       dai = token;
@@ -1069,7 +1071,8 @@ const setup = async () => {
           DAI,
           singleAssetVault.address,
           refundRatio,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         migration = await deploy<SameAssetTransferMigration>(
@@ -1165,7 +1168,8 @@ const setup = async () => {
           WETH,
           singleAssetVault.address,
           refundRatio,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         migration = await deploy<UniswapSingleTransferMigration>(
@@ -1302,7 +1306,8 @@ const setup = async () => {
           account1,
           account2,
         } = await hubSetup(
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs,
           initRefundRatio,
           [0, 0, 0, 0, 0, 0],

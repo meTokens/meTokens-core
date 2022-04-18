@@ -42,7 +42,6 @@ const setup = async () => {
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
-    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const firstRefundRatio = 5000;
@@ -52,10 +51,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -70,7 +65,12 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, firstRefundRatio));
+      } = await hubSetup(
+        baseY,
+        reserveWeight,
+        encodedVaultArgs,
+        firstRefundRatio
+      ));
 
       // Pre-load owner and buyer w/ DAI
       await token
@@ -496,7 +496,8 @@ const setup = async () => {
           token.address,
           singleAssetVault.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -572,7 +573,8 @@ const setup = async () => {
           token.address,
           singleAssetVault.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();

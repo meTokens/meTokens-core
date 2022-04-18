@@ -41,8 +41,6 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedCurveInfo1: string;
-    let encodedCurveInfo2: string;
     let fees: FeesFacet;
 
     const hubId1 = 1;
@@ -75,14 +73,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveInfo1 = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY1, reserveWeight1]
-      );
-      encodedCurveInfo2 = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY2, reserveWeight2]
-      );
+
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
         [fee]
@@ -101,7 +92,12 @@ const setup = async () => {
         account1,
         meTokenRegistry,
         fee: fees,
-      } = await hubSetup(encodedCurveInfo1, encodedVaultArgs, refundRatio));
+      } = await hubSetup(
+        baseY1,
+        reserveWeight1,
+        encodedVaultArgs,
+        refundRatio
+      ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
@@ -111,7 +107,8 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         refundRatio,
-        encodedCurveInfo2,
+        baseY2,
+        reserveWeight2,
         encodedVaultArgs
       );
 

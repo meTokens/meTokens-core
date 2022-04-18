@@ -50,13 +50,12 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
-    const baseY = PRECISION.div(1000).toString();
+    const baseY = PRECISION.div(1000);
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
     const coolDown = 5 * 60 * 24 * 24; // 5 days
 
-    let encodedCurveInfo: string;
     let encodedMigrationArgs: string;
     let badEncodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
@@ -69,10 +68,7 @@ const setup = async () => {
 
     before(async () => {
       ({ DAI, DAIWhale, WETH, WETHWhale } = await getNamedAccounts());
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -97,7 +93,12 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(encodedCurveInfo, encodedVaultDAIArgs, refundRatio));
+      } = await hubSetup(
+        baseY,
+        reserveWeight,
+        encodedVaultDAIArgs,
+        refundRatio
+      ));
 
       targetVault = await deploy<SingleAssetVault>(
         "SingleAssetVault",
@@ -113,7 +114,8 @@ const setup = async () => {
         WETH,
         targetVault.address,
         refundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultWETHArgs
       );
       // Deploy uniswap migration and approve it to the registry

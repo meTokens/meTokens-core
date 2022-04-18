@@ -41,8 +41,6 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedBancorDetails: string;
-    let encodedNewBancorDetails: string;
     let fees: FeesFacet;
 
     const hubId1 = 1;
@@ -75,14 +73,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedBancorDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-      encodedNewBancorDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [newBaseY, newReserveWeight]
-      );
+
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
         [fee]
@@ -100,7 +91,7 @@ const setup = async () => {
         fee: fees,
         foundry,
         hub,
-      } = await hubSetup(encodedBancorDetails, encodedVaultArgs, refundRatio));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
 
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -111,7 +102,8 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         refundRatio,
-        encodedNewBancorDetails,
+        newBaseY,
+        newReserveWeight,
         encodedVaultArgs
       );
 

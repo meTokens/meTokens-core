@@ -6,7 +6,6 @@ import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateTokenReturned,
   calculateCollateralReturned,
-  deploy,
   getContractAt,
   toETHNumber,
   weightedAverageSimulation,
@@ -25,7 +24,6 @@ import {
   MeToken,
   ERC20,
   SingleAssetVault,
-  ICurveFacet,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -44,14 +42,12 @@ const setup = async () => {
     let account3: SignerWithAddress;
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
-    let curve: ICurveFacet;
     let baseYNum: number;
     let updatedBaseYNum: number;
     let updatedBaseY: BigNumber;
     let reserveWeight: number;
     let updatedReserveWeight: number;
     const MAX_WEIGHT = 1000000;
-    let encodedCurveInfo: string;
     const firstHubId = 1;
     const refundRatio = 5000;
     before(async () => {
@@ -64,10 +60,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -76,7 +68,6 @@ const setup = async () => {
       ({
         token,
         hub,
-        curve,
         foundry,
         singleAssetVault,
         tokenHolder,
@@ -85,7 +76,7 @@ const setup = async () => {
         account2,
         account3,
         meTokenRegistry,
-      } = await hubSetup(encodedCurveInfo, encodedVaultArgs, refundRatio));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
 
       // Pre-load owner and buyer w/ DAI
       await token

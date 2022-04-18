@@ -43,7 +43,7 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
-    const baseY = PRECISION.div(1000).toString();
+    const baseY = PRECISION.div(1000);
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
@@ -60,10 +60,7 @@ const setup = async () => {
 
     before(async () => {
       ({ DAI, DAIWhale } = await getNamedAccounts());
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -80,7 +77,12 @@ const setup = async () => {
         account0,
         account1,
         account2,
-      } = await hubSetup(encodedCurveInfo, encodedVaultDAIArgs, refundRatio));
+      } = await hubSetup(
+        baseY,
+        reserveWeight,
+        encodedVaultDAIArgs,
+        refundRatio
+      ));
 
       // Register 2nd hub to which we'll migrate to
       await hub.register(
@@ -88,7 +90,8 @@ const setup = async () => {
         DAI,
         initialVault.address,
         refundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultDAIArgs
       );
       // Deploy uniswap migration and approve it to the registry
