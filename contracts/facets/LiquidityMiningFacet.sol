@@ -73,6 +73,7 @@ contract LiquidityMiningFacet is
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
         newSeasonInfo.rewardRate = rewardRate;
+        // TODO emit an event?
     }
 
     function exit(
@@ -110,7 +111,7 @@ contract LiquidityMiningFacet is
     }
 
     function claimRewardExact(address meToken, uint256 amount)
-        public
+        external
         nonReentrant
     {
         address sender = LibMeta.msgSender();
@@ -127,7 +128,7 @@ contract LiquidityMiningFacet is
 
     // TODO - should this update every meToken in a season?
     function addToRewardsAllocation(address meToken, uint256 amount)
-        public
+        external
         nonReentrant
         onlyLiquidityMiningController
     {
@@ -158,7 +159,7 @@ contract LiquidityMiningFacet is
         uint256 amount,
         uint256 index,
         bytes32[] calldata merkleProof
-    ) public nonReentrant {
+    ) external nonReentrant {
         require(amount > 0, "RewardsPool: cannot stake zero");
 
         address sender = LibMeta.msgSender();
@@ -253,6 +254,7 @@ contract LiquidityMiningFacet is
                     seasonInfo.totalPctStaked += pctStaked;
 
                     // Refund sender since pool has already built up mapped data
+                    // TODO why not just update?
                     delete s.pools[meToken];
                 }
 
@@ -269,13 +271,11 @@ contract LiquidityMiningFacet is
         view
         returns (bool)
     {
-        MeTokenInfo memory meTokenInfo = s.meTokens[token];
-        PoolInfo storage poolInfo = s.pools[token];
+        uint256 seasonId = s.pools[token].seasonId;
 
-        if (meTokenInfo.hubId == 0) return false;
+        if (s.meTokens[token].hubId == 0) return false;
         return
-            (poolInfo.seasonId == 0) ||
-            (poolInfo.seasonId + s.issuerCooldown <= s.seasonCount);
+            (seasonId == 0) || (seasonId + s.issuerCooldown <= s.seasonCount);
     }
 
     function isMeTokenInSeason(
@@ -284,9 +284,8 @@ contract LiquidityMiningFacet is
         uint256 index,
         bytes32[] calldata merkleProof
     ) public view returns (bool) {
-        SeasonInfo memory seasonInfo = s.seasons[num];
         bytes32 node = keccak256(abi.encodePacked(index, meToken, uint256(1)));
-        return MerkleProof.verify(merkleProof, seasonInfo.merkleRoot, node);
+        return MerkleProof.verify(merkleProof, s.seasons[num].merkleRoot, node);
     }
 
     function isSeasonLive(uint256 num) public view returns (bool) {
@@ -306,7 +305,7 @@ contract LiquidityMiningFacet is
         // If meToken was featured more than issuerCooldown seasons ago, validate
         // that meToken has not been re-listed since
 
-        SeasonInfo storage seasonInfo = s.seasons[poolInfo.seasonId];
+        SeasonInfo memory seasonInfo = s.seasons[poolInfo.seasonId];
         if (poolInfo.totalSupply == 0) {
             return poolInfo.rewardPerTokenStored;
         }
@@ -362,10 +361,10 @@ contract LiquidityMiningFacet is
         view
         returns (uint256)
     {
-        PoolInfo storage poolInfo = s.pools[meToken];
-        SeasonInfo storage seasonInfo = s.seasons[poolInfo.seasonId];
+        uint256 seasonId = s.pools[meToken].seasonId;
+        SeasonInfo memory seasonInfo = s.seasons[seasonId];
 
-        if (!isSeasonLive(poolInfo.seasonId)) return 0;
+        if (!isSeasonLive(seasonId)) return 0;
 
         return
             block.timestamp < seasonInfo.endTime
