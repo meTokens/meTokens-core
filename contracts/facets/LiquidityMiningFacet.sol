@@ -23,27 +23,6 @@ contract LiquidityMiningFacet is
 
     constructor() {}
 
-    function recoverERC20(
-        IERC20 token,
-        address recipient,
-        uint256 amount
-    )
-        external
-        // TODO: should this access control be different
-        onlyLiquidityMiningController
-    {
-        require(
-            address(token) != address(s.me),
-            "Cannot withdraw the staking token"
-        );
-        require(
-            s.meTokens[address(token)].hubId == 0,
-            "Cannot withdraw a meToken"
-        );
-        token.safeTransfer(recipient, amount);
-        emit Recovered(token, amount);
-    }
-
     function initSeason(
         uint256 initTime,
         uint256 allocationPool,
@@ -74,22 +53,6 @@ contract LiquidityMiningFacet is
         newSeasonInfo.merkleRoot = merkleRoot;
         newSeasonInfo.rewardRate = rewardRate;
         // TODO emit an event?
-    }
-
-    function exit(
-        address meToken,
-        uint256 index,
-        bytes32[] calldata merkleProof
-    ) external nonReentrant {
-        address sender = LibMeta.msgSender();
-
-        withdraw(
-            meToken,
-            s.stakedBalances[meToken][sender],
-            index,
-            merkleProof
-        );
-        claimReward(meToken, 0);
     }
 
     // TODO - should this update every meToken in a season?
@@ -141,6 +104,43 @@ contract LiquidityMiningFacet is
         emit Staked(meToken, sender, amount);
     }
 
+    function exit(
+        address meToken,
+        uint256 index,
+        bytes32[] calldata merkleProof
+    ) external nonReentrant {
+        address sender = LibMeta.msgSender();
+
+        withdraw(
+            meToken,
+            s.stakedBalances[meToken][sender],
+            index,
+            merkleProof
+        );
+        claimReward(meToken, 0);
+    }
+
+    function recoverERC20(
+        IERC20 token,
+        address recipient,
+        uint256 amount
+    )
+        external
+        // TODO: should this access control be different
+        onlyLiquidityMiningController
+    {
+        require(
+            address(token) != address(s.me),
+            "Cannot withdraw the staking token"
+        );
+        require(
+            s.meTokens[address(token)].hubId == 0,
+            "Cannot withdraw a meToken"
+        );
+        token.safeTransfer(recipient, amount);
+        emit Recovered(token, amount);
+    }
+
     // TODO: could claim on behalf of someone else?
     /// @param amount pass 0 to claim max else exact amount
     function claimReward(address meToken, uint256 amount) public nonReentrant {
@@ -164,20 +164,6 @@ contract LiquidityMiningFacet is
         }
 
         emit RewardPaid(meToken, sender, reward);
-    }
-
-    // TODO: have this refreshPools
-    function updateReward(address meToken, address account)
-        public
-        nonReentrant
-    {
-        _updateAccrual(meToken);
-        PoolInfo storage poolInfo = s.pools[meToken];
-        if (account != address(0)) {
-            poolInfo.rewards[account] = earned(meToken, account);
-            poolInfo.userRewardPerTokenPaid[account] = poolInfo
-                .rewardPerTokenStored;
-        }
     }
 
     function withdraw(
@@ -257,6 +243,20 @@ contract LiquidityMiningFacet is
         }
     }
 
+    // TODO: have this refreshPools
+    function updateReward(address meToken, address account)
+        public
+        nonReentrant
+    {
+        _updateAccrual(meToken);
+        PoolInfo storage poolInfo = s.pools[meToken];
+        if (account != address(0)) {
+            poolInfo.rewards[account] = earned(meToken, account);
+            poolInfo.userRewardPerTokenPaid[account] = poolInfo
+                .rewardPerTokenStored;
+        }
+    }
+
     function canTokenBeFeaturedInNewSeason(address token)
         public
         view
@@ -270,24 +270,76 @@ contract LiquidityMiningFacet is
     }
 
     function isMeTokenInSeason(
-        uint256 num,
+        uint256 _seasonId,
         address meToken,
         uint256 index,
         bytes32[] calldata merkleProof
     ) public view returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(index, meToken, uint256(1)));
-        return MerkleProof.verify(merkleProof, s.seasons[num].merkleRoot, node);
+        return
+            MerkleProof.verify(
+                merkleProof,
+                s.seasons[_seasonId].merkleRoot,
+                node
+            );
     }
 
-    function isSeasonLive(uint256 num) public view returns (bool) {
-        SeasonInfo memory seasonInfo = s.seasons[num];
+    function lastTimeRewardApplicable(address meToken)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 seasonId = s.pools[meToken].seasonId;
+        SeasonInfo memory seasonInfo = s.seasons[seasonId];
+
+        if (!isSeasonLive(seasonId)) return 0;
+
+        return
+            block.timestamp < seasonInfo.endTime
+                ? block.timestamp
+                : seasonInfo.endTime;
+    }
+
+    // TODO: validate
+    function timeRemainingInSeason(uint256 num)
+        public
+        view
+        returns (uint256 amount)
+    {
+        if (isSeasonLive(num)) {
+            amount = s.seasons[num].endTime - block.timestamp;
+        }
+        if (hasSeasonEnded(num)) {
+            amount = 0;
+        }
+    }
+
+    function isSeasonLive(uint256 _seasonId) public view returns (bool) {
+        SeasonInfo memory seasonInfo = s.seasons[_seasonId];
         return
             (block.timestamp >= seasonInfo.startTime) &&
             (block.timestamp <= seasonInfo.endTime);
     }
 
-    function hasSeasonEnded(uint256 num) public view returns (bool) {
-        return block.timestamp >= s.seasons[num].endTime;
+    function hasSeasonEnded(uint256 _seasonId) public view returns (bool) {
+        return block.timestamp >= s.seasons[_seasonId].endTime;
+    }
+
+    // TODO: will this ever return an outdated earned balance for a metoken previously featured?
+    function earned(address meToken, address account)
+        public
+        view
+        returns (uint256)
+    {
+        // Divide by projectTokenBase in accordance with rewardPerToken()
+        PoolInfo storage poolInfo = s.pools[meToken];
+        if (poolInfo.seasonId == 0) return 0;
+        return
+            (balanceOf(meToken, account) *
+                (rewardPerToken(meToken) -
+                    poolInfo.userRewardPerTokenPaid[account])) /
+            s.PRECISION +
+            (poolInfo.rewards[account]);
     }
 
     function rewardPerToken(address meToken) public view returns (uint256) {
@@ -328,53 +380,6 @@ contract LiquidityMiningFacet is
         returns (uint256)
     {
         return s.stakedBalances[meToken][account];
-    }
-
-    // TODO: will this ever return an outdated earned balance for a metoken previously featured?
-    function earned(address meToken, address account)
-        public
-        view
-        returns (uint256)
-    {
-        // Divide by projectTokenBase in accordance with rewardPerToken()
-        PoolInfo storage poolInfo = s.pools[meToken];
-        if (poolInfo.seasonId == 0) return 0;
-        return
-            (balanceOf(meToken, account) *
-                (rewardPerToken(meToken) -
-                    poolInfo.userRewardPerTokenPaid[account])) /
-            s.PRECISION +
-            (poolInfo.rewards[account]);
-    }
-
-    function lastTimeRewardApplicable(address meToken)
-        public
-        view
-        returns (uint256)
-    {
-        uint256 seasonId = s.pools[meToken].seasonId;
-        SeasonInfo memory seasonInfo = s.seasons[seasonId];
-
-        if (!isSeasonLive(seasonId)) return 0;
-
-        return
-            block.timestamp < seasonInfo.endTime
-                ? block.timestamp
-                : seasonInfo.endTime;
-    }
-
-    // TODO: validate
-    function timeRemainingInSeason(uint256 num)
-        public
-        view
-        returns (uint256 amount)
-    {
-        if (isSeasonLive(num)) {
-            amount = s.seasons[num].endTime - block.timestamp;
-        }
-        if (hasSeasonEnded(num)) {
-            amount = 0;
-        }
     }
 
     function _updateAccrual(address meToken) private {
