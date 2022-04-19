@@ -22,8 +22,6 @@ contract LiquidityMiningFacet is
 {
     using SafeERC20 for IERC20;
 
-    constructor() {}
-
     function initSeason(
         uint256 initTime,
         uint256 allocationPool,
