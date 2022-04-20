@@ -160,6 +160,16 @@ contract LiquidityMiningFacet is
         s.lmDuration = lmDuration;
     }
 
+    function setIssuerCooldown(uint256 issuerCooldown)
+        external
+        override
+        onlyDurationsController
+    {
+        require(issuerCooldown != s.issuerCooldown, "same issuerCooldown");
+        // TODO: do we need to add any condition on lmDuration?
+        s.issuerCooldown = issuerCooldown;
+    }
+
     // TODO: could claim on behalf of someone else?
     /// @param amount pass 0 to claim max else exact amount
     function claimReward(address meToken, uint256 amount) public nonReentrant {
@@ -396,9 +406,41 @@ contract LiquidityMiningFacet is
     function balanceOf(address meToken, address account)
         public
         view
-        returns (uint256)
+        override
+        returns (uint256 stakedBalance)
     {
-        return s.stakedBalances[meToken][account];
+        stakedBalance = s.stakedBalances[meToken][account];
+    }
+
+    function getIssuerCooldown()
+        external
+        view
+        override
+        returns (uint256 issuerCooldown)
+    {
+        issuerCooldown = s.issuerCooldown;
+    }
+
+    function getLMWarmup() external view override returns (uint256 lmWarmup) {
+        lmWarmup = s.lmWarmup;
+    }
+
+    function getLMDuration()
+        external
+        view
+        override
+        returns (uint256 lmDuration)
+    {
+        lmDuration = s.lmDuration;
+    }
+
+    function getSeasonCount()
+        external
+        view
+        override
+        returns (uint256 seasonCount)
+    {
+        seasonCount = s.seasonCount;
     }
 
     function getPoolInfo(address meToken)
@@ -422,10 +464,10 @@ contract LiquidityMiningFacet is
         external
         view
         override
-        returns (SeasonInfo memory)
+        returns (SeasonInfo memory season)
     {
         // TODO maybe move this to lib
-        return s.seasons[seasonId];
+        season = s.seasons[seasonId];
     }
 
     function _updateAccrual(address meToken) private {
