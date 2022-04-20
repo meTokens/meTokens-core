@@ -8,7 +8,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ILiquidityMiningFacet} from "../interfaces/ILiquidityMiningFacet.sol";
-import {PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
+import {LibLiquidityMining, PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -138,6 +138,26 @@ contract LiquidityMiningFacet is
         );
         token.safeTransfer(recipient, amount);
         emit Recovered(token, amount);
+    }
+
+    function setLMWarmup(uint256 lmWarmup)
+        external
+        override
+        onlyDurationsController
+    {
+        require(lmWarmup != s.meTokenWarmup, "same lmWarmup");
+        // TODO: do we need to add any condition on lmWarmup?
+        s.lmWarmup = lmWarmup;
+    }
+
+    function setLMDuration(uint256 lmDuration)
+        external
+        override
+        onlyDurationsController
+    {
+        require(lmDuration != s.meTokenDuration, "same lmDuration");
+        // TODO: do we need to add any condition on lmDuration?
+        s.lmDuration = lmDuration;
     }
 
     // TODO: could claim on behalf of someone else?
@@ -379,6 +399,33 @@ contract LiquidityMiningFacet is
         returns (uint256)
     {
         return s.stakedBalances[meToken][account];
+    }
+
+    function getPoolInfo(address meToken)
+        external
+        view
+        override
+        returns (
+            uint256 seasonId,
+            uint256 pendingIssuerRewards,
+            bool pendingIssuerRewardsAdded,
+            uint256 lastUpdateTime,
+            uint256 totalSupply,
+            uint256 lastCirculatingSupply,
+            uint256 rewardPerTokenStored
+        )
+    {
+        return LibLiquidityMining.getPoolInfo(meToken);
+    }
+
+    function getSeasonInfo(uint256 seasonId)
+        external
+        view
+        override
+        returns (SeasonInfo memory)
+    {
+        // TODO maybe move this to lib
+        return s.seasons[seasonId];
     }
 
     function _updateAccrual(address meToken) private {
