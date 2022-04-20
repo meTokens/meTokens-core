@@ -17,6 +17,21 @@ interface ILiquidityMiningFacet {
 
     function setLMDuration(uint256 lmDuration) external;
 
+    function setIssuerCooldown(uint256 issuerCooldown) external;
+
+    function balanceOf(address meToken, address account)
+        external
+        view
+        returns (uint256 stakedBalance);
+
+    function getIssuerCooldown() external view returns (uint256 issuerCooldown);
+
+    function getLMWarmup() external view returns (uint256 lmWarmup);
+
+    function getLMDuration() external view returns (uint256 lmDuration);
+
+    function getSeasonCount() external view returns (uint256 seasonCount);
+
     function getPoolInfo(address meToken)
         external
         view
