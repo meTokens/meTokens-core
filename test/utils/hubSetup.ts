@@ -26,6 +26,7 @@ import {
   MigrationRegistry,
   CurveRegistry,
   SingleAssetVault,
+  MockERC20,
 } from "../../artifacts/types";
 
 export async function hubSetup(
@@ -40,6 +41,7 @@ export async function hubSetup(
 ): Promise<{
   foundry: FoundryFacet;
   hub: HubFacet;
+  liquidityMining: LiquidityMiningFacet;
   fee: FeesFacet;
   meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
@@ -57,10 +59,12 @@ export async function hubSetup(
   tokenAddr: string;
   tokenHolder: Signer;
   tokenWhale: string;
+  mockToken: MockERC20;
 }> {
   const {
     foundry,
     hub,
+    liquidityMining,
     fee,
     meTokenRegistry,
     diamond,
@@ -74,6 +78,7 @@ export async function hubSetup(
     account1,
     account2,
     account3,
+    mockToken,
   } = await hubSetupWithoutRegister(curveStr, fees);
   const { token, tokenAddr, tokenHolder, tokenWhale } = await transferFromWhale(
     account1.address,
@@ -93,6 +98,7 @@ export async function hubSetup(
   return {
     foundry,
     hub,
+    liquidityMining,
     fee,
     meTokenRegistry,
     diamond,
@@ -110,6 +116,7 @@ export async function hubSetup(
     tokenAddr,
     tokenHolder,
     tokenWhale,
+    mockToken,
   };
 }
 export async function getCurve(
@@ -180,6 +187,7 @@ export async function hubSetupWithoutRegister(
 ): Promise<{
   foundry: FoundryFacet;
   hub: HubFacet;
+  liquidityMining: LiquidityMiningFacet;
   meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
@@ -193,9 +201,11 @@ export async function hubSetupWithoutRegister(
   account1: SignerWithAddress;
   account2: SignerWithAddress;
   account3: SignerWithAddress;
+  mockToken: MockERC20;
 }> {
   let foundry: FoundryFacet;
   let hub: HubFacet;
+  let liquidityMining: LiquidityMiningFacet;
   let meTokenFactory: MeTokenFactory;
   let singleAssetVault: SingleAssetVault;
   let curve: ICurve;
@@ -255,6 +265,8 @@ export async function hubSetupWithoutRegister(
   const liquidityMiningFacet = await deploy<LiquidityMiningFacet>(
     "LiquidityMiningFacet"
   );
+  const mockToken = await deploy<MockERC20>("MockERC20");
+
   const facets = [
     hubFacet,
     foundryFacet,
@@ -285,6 +297,7 @@ export async function hubSetupWithoutRegister(
       interestFee: feeInitialization[4],
       yieldFee: feeInitialization[5],
       diamond: diamond.address,
+      me: mockToken.address,
       vaultRegistry: vaultRegistry.address,
       curveRegistry: curveRegistry.address,
       migrationRegistry: migrationRegistry.address,
@@ -306,6 +319,10 @@ export async function hubSetupWithoutRegister(
     "MeTokenRegistryFacet",
     diamond.address
   )) as MeTokenRegistryFacet;
+  liquidityMining = (await ethers.getContractAt(
+    "LiquidityMiningFacet",
+    diamond.address
+  )) as LiquidityMiningFacet;
 
   //
   // NOTE: end diamond deploy
@@ -315,6 +332,7 @@ export async function hubSetupWithoutRegister(
   return {
     foundry,
     hub,
+    liquidityMining,
     diamond,
     meTokenFactory,
     singleAssetVault,
@@ -328,6 +346,7 @@ export async function hubSetupWithoutRegister(
     account1,
     account2,
     account3,
+    mockToken,
   };
 }
 export async function addHubSetup(
