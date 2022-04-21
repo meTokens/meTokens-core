@@ -11,7 +11,6 @@ import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
-import "hardhat/console.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
@@ -50,7 +49,6 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
         require(!isSeasonLive(s.seasonCount), "season still live");
-        console.log("Bad address:", address(s.me));
 
         s.me.safeTransferFrom(
             LibMeta.msgSender(),

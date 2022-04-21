@@ -9,9 +9,7 @@ import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
-
 import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
-import "hardhat/console.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
@@ -44,8 +42,6 @@ contract DiamondInit {
         require(msg.sender == _owner, "!owner");
         require(s.diamond == address(0), "Already initialized");
         s.me = _args.me;
-        console.log("Good address:", address(s.me));
-
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
