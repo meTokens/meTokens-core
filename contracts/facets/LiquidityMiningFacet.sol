@@ -146,7 +146,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(lmWarmup != s.meTokenWarmup, "same lmWarmup");
-        // TODO: do we need to add any condition on lmWarmup?
         s.lmWarmup = lmWarmup;
     }
 
@@ -156,7 +155,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(lmDuration != s.meTokenDuration, "same lmDuration");
-        // TODO: do we need to add any condition on lmDuration?
         s.lmDuration = lmDuration;
     }
 
@@ -166,7 +164,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(issuerCooldown != s.issuerCooldown, "same issuerCooldown");
-        // TODO: do we need to add any condition on lmDuration?
         s.issuerCooldown = issuerCooldown;
     }
 
