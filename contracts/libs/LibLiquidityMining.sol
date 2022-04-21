@@ -27,6 +27,25 @@ struct SeasonInfo {
 }
 
 library LibLiquidityMining {
+    struct LiquidityMiningStorage {
+        uint256 status;
+    }
+    uint256 constant _NOT_ENTERED = 1;
+    uint256 constant _ENTERED = 2;
+    bytes32 public constant LIQUIDITY_MINING_STORAGE_POSITION =
+        keccak256("diamond.standard.liquidity.mining.storage");
+
+    function liquidityMiningStorage()
+        internal
+        pure
+        returns (LiquidityMiningStorage storage ds)
+    {
+        bytes32 position = LIQUIDITY_MINING_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
+    }
+
     function getPoolInfo(address meToken)
         internal
         view
