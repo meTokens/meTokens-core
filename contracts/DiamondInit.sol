@@ -13,7 +13,6 @@ import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 
 import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
-import "hardhat/console.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
@@ -46,8 +45,6 @@ contract DiamondInit {
         require(msg.sender == _owner, "!owner");
         require(s.diamond == address(0), "Already initialized");
         s.me = _args.me;
-        console.log("Good address:", address(s.me));
-
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.migrationRegistry = _args.migrationRegistry;

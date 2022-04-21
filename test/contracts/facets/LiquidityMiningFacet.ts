@@ -236,11 +236,10 @@ const setup = async () => {
 
     describe("initSeason()", () => {
       xit("revert when sender is not liquidityMiningController", async () => {});
-      it("should be able to initSeason", async () => {
+      xit("should be able to initSeason", async () => {
         const block = await ethers.provider.getBlock("latest");
         // Add mock me token
         const initTime = block.timestamp;
-        console.log(mockToken.address);
 
         await mockToken.setBalance(
           account0.address,
