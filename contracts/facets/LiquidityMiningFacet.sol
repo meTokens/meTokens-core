@@ -3,24 +3,45 @@ pragma solidity 0.8.9;
 
 // Modified version of https://github.com/Synthetixio/synthetix/blob/develop/contracts/StakingRewards.sol
 
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ILiquidityMiningFacet} from "../interfaces/ILiquidityMiningFacet.sol";
-import {LibLiquidityMining, PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
+import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
+import "hardhat/console.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
-contract LiquidityMiningFacet is
-    ILiquidityMiningFacet,
-    ReentrancyGuard,
-    Modifiers
-{
+contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     using SafeERC20 for IERC20;
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+     */
+    modifier nonReentrant() {
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        // On the first call to nonReentrant, _notEntered will be true
+        require(
+            ls.status != LibLiquidityMining._ENTERED,
+            "ReentrancyGuard: reentrant call"
+        );
+
+        // Any calls to nonReentrant after this point will fail
+        ls.status = LibLiquidityMining._ENTERED;
+
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        ls.status = LibLiquidityMining._NOT_ENTERED;
+    }
 
     function initSeason(
         uint256 initTime,
@@ -29,6 +50,7 @@ contract LiquidityMiningFacet is
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
         require(!isSeasonLive(s.seasonCount), "season still live");
+        console.log("Bad address:", address(s.me));
 
         s.me.safeTransferFrom(
             LibMeta.msgSender(),
@@ -146,7 +168,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(lmWarmup != s.meTokenWarmup, "same lmWarmup");
-        // TODO: do we need to add any condition on lmWarmup?
         s.lmWarmup = lmWarmup;
     }
 
@@ -156,7 +177,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(lmDuration != s.meTokenDuration, "same lmDuration");
-        // TODO: do we need to add any condition on lmDuration?
         s.lmDuration = lmDuration;
     }
 
@@ -166,7 +186,6 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(issuerCooldown != s.issuerCooldown, "same issuerCooldown");
-        // TODO: do we need to add any condition on lmDuration?
         s.issuerCooldown = issuerCooldown;
     }
 

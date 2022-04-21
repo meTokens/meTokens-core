@@ -10,6 +10,9 @@ import {IRegistry} from "./interfaces/IRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 
+import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
+import "hardhat/console.sol";
+
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
@@ -41,6 +44,8 @@ contract DiamondInit {
         require(msg.sender == _owner, "!owner");
         require(s.diamond == address(0), "Already initialized");
         s.me = _args.me;
+        console.log("Good address:", address(s.me));
+
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.curveRegistry = _args.curveRegistry;
@@ -64,5 +69,10 @@ contract DiamondInit {
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+
+        //adding reentrancy initial state
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.status = LibLiquidityMining._NOT_ENTERED;
     }
 }
