@@ -30,7 +30,7 @@ const setup = async () => {
     let dai: ERC20;
     let weth: ERC20;
     let meToken: MeToken;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -62,7 +62,7 @@ const setup = async () => {
       );
       ({
         token: dai,
-        tokenHolder,
+        whale,
         hub,
         foundry,
         migrationRegistry,
@@ -94,11 +94,11 @@ const setup = async () => {
       weth = await getContractAt<ERC20>("ERC20", WETH);
       // Pre-load owner and buyer w/ DAI
       await dai
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account2.address, ethers.utils.parseEther("50"));
 
       await weth
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account2.address, ethers.utils.parseEther("50"));
 
       // Create meToken and subscribe to Hub1

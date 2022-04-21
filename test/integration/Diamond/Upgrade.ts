@@ -25,7 +25,7 @@ const setup = async () => {
     let diamond: Diamond;
     let token: ERC20;
     let account0: SignerWithAddress;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let diamondCut: IDiamondCut;
@@ -55,7 +55,7 @@ const setup = async () => {
         foundry,
         diamond,
         singleAssetVault,
-        tokenHolder,
+        whale,
         account0,
         account2,
         account3,
@@ -68,7 +68,7 @@ const setup = async () => {
 
       // Pre-load owner and buyer w/ DAI
       await token
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
       // Create meToken and subscribe to Hub1
       const tokenDeposited = ethers.utils.parseEther("100");

@@ -31,7 +31,7 @@ const setup = async () => {
     let encodedCurveInfo: string;
     let token: ERC20;
     let dai: ERC20;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let meTokenRegistry: MeTokenRegistryFacet;
     let meToken: MeToken;
 
@@ -69,7 +69,7 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetupWithoutRegister());
-      ({ token, tokenHolder } = await transferFromWhale(account1.address));
+      ({ token, whale } = await transferFromWhale(account1.address));
     });
 
     describe("Initial state", () => {
@@ -234,9 +234,9 @@ const setup = async () => {
 
         dai = token;
         let enough = amount.mul(10);
-        await dai.connect(tokenHolder).transfer(account0.address, enough);
-        await dai.connect(tokenHolder).transfer(account1.address, enough);
-        await dai.connect(tokenHolder).transfer(account2.address, enough);
+        await dai.connect(whale).transfer(account0.address, enough);
+        await dai.connect(whale).transfer(account1.address, enough);
+        await dai.connect(whale).transfer(account2.address, enough);
         let max = ethers.constants.MaxUint256;
         await dai.connect(account1).approve(singleAssetVault.address, max);
         await dai.connect(account2).approve(singleAssetVault.address, max);

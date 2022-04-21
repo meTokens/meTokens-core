@@ -34,7 +34,7 @@ const setup = async () => {
     let hub: HubFacet;
     let token: ERC20;
     let meToken: MeToken;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -57,7 +57,7 @@ const setup = async () => {
       );
       ({
         token,
-        tokenHolder,
+        whale,
         hub,
         foundry,
         singleAssetVault,
@@ -74,7 +74,7 @@ const setup = async () => {
 
       // Pre-load owner and buyer w/ DAI
       await token
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
       let max = ethers.constants.MaxUint256;
       await token.connect(account1).approve(singleAssetVault.address, max);

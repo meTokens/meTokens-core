@@ -40,7 +40,7 @@ const setup = async () => {
     let foundry: FoundryFacet;
     let hub: HubFacet;
     let fees: FeesFacet;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let dai: ERC20;
     let weth: ERC20;
     let daiWhale: Signer;
@@ -89,7 +89,7 @@ const setup = async () => {
         foundry,
         meTokenRegistry,
         token,
-        tokenHolder,
+        whale,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -105,7 +105,7 @@ const setup = async () => {
 
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
-      daiWhale = tokenHolder;
+      daiWhale = whale;
 
       await hub.register(
         account0.address,
@@ -144,7 +144,7 @@ const setup = async () => {
         .transfer(account1.address, ethers.utils.parseEther("10"));
 
       await weth
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account1.address, ethers.utils.parseEther("10"));
 
       // Create meToken and subscribe to Hub1
