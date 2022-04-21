@@ -14,7 +14,6 @@ import {
   ERC20,
   SingleAssetVault,
   SameAssetTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -28,7 +27,6 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: SameAssetTransferMigration;
-    let curve: ICurve;
     let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -45,7 +43,7 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
-    const baseY = PRECISION.div(1000).toString();
+    const baseY = PRECISION.div(1000);
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
@@ -62,10 +60,7 @@ const setup = async () => {
 
     before(async () => {
       ({ DAI, DAIWhale } = await getNamedAccounts());
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -75,7 +70,6 @@ const setup = async () => {
 
       ({
         hub,
-        curve,
         foundry,
         migrationRegistry,
         singleAssetVault: initialVault,
@@ -84,10 +78,10 @@ const setup = async () => {
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultDAIArgs,
-        refundRatio,
-        "BancorCurve"
+        refundRatio
       ));
 
       // Register 2nd hub to which we'll migrate to
@@ -95,9 +89,9 @@ const setup = async () => {
         account0.address,
         DAI,
         initialVault.address,
-        curve.address,
         refundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultDAIArgs
       );
       // Deploy uniswap migration and approve it to the registry

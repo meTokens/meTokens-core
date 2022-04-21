@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {ICurve} from "./ICurve.sol";
 import {IVault} from "./IVault.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 
@@ -13,18 +12,18 @@ interface IHubFacet {
     /// @param owner            Address to own hub
     /// @param asset            Address of underlying asset
     /// @param vault            Address of vault
-    /// @param curve            Address of curve
     /// @param refundRatio      Rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param baseY            baseY curve details
+    /// @param reserveWeight    reserveWeight curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
     event Register(
         uint256 id,
         address owner,
         address asset,
         address vault,
-        address curve,
         uint256 refundRatio,
-        bytes encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes encodedVaultArgs
     );
 
@@ -34,9 +33,8 @@ interface IHubFacet {
 
     /// @notice Event of initializing a hub update
     /// @param id                   Unique hub identifier
-    /// @param targetCurve          Address of target curve
     /// @param targetRefundRatio    Target rate to refund burners
-    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param targetRefundRatio     curve target RefundRatio
     /// @param reconfigure          Boolean to show if we're changing the
     ///                               curveInfo but not the curve address
     /// @param startTime            Timestamp to start updating
@@ -44,9 +42,8 @@ interface IHubFacet {
     /// @param endCooldown          Timestamp to allow another update
     event InitUpdate(
         uint256 id,
-        address targetCurve,
         uint256 targetRefundRatio,
-        bytes encodedCurveInfo,
+        uint32 targetReserveWeight,
         bool reconfigure,
         uint256 startTime,
         uint256 endTime,
@@ -70,17 +67,17 @@ interface IHubFacet {
     /// @param owner            Address to own hub
     /// @param asset            Address of vault asset
     /// @param vault            Address of vault
-    /// @param curve            Address of curve
     /// @param refundRatio      Rate to refund burners
-    /// @param encodedCurveInfo Additional encoded curve details
+    /// @param baseY            baseY curve details
+    /// @param reserveWeight    reserveWeight curve details
     /// @param encodedVaultArgs Additional encoded vault arguments
     function register(
         address owner,
         address asset,
         IVault vault,
-        ICurve curve,
         uint256 refundRatio,
-        bytes memory encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes memory encodedVaultArgs
     ) external;
 
@@ -91,14 +88,12 @@ interface IHubFacet {
 
     /// @notice Intialize a hub update
     /// @param id                   Unique hub identifier
-    /// @param targetCurve          Address of target curve
     /// @param targetRefundRatio    Target rate to refund burners
-    /// @param encodedCurveInfo     Additional encoded curve details
+    /// @param targetReserveWeight  Target curve reserveWeight
     function initUpdate(
         uint256 id,
-        address targetCurve,
         uint256 targetRefundRatio,
-        bytes memory encodedCurveInfo
+        uint32 targetReserveWeight
     ) external;
 
     /// @notice Cancel a hub update

@@ -11,8 +11,6 @@ import {
   toETHNumber,
   weightedAverageSimulation,
   calculateTokenReturnedFromZero,
-  calculateStepwiseTokenReturned,
-  calculateStepwiseCollateralReturned,
   fromETHNumber,
 } from "../../utils/helpers";
 import { mineBlock, setAutomine } from "../../utils/hardhatNode";
@@ -24,17 +22,13 @@ import {
   MeToken,
   ERC20,
   MigrationRegistry,
-  CurveRegistry,
   SingleAssetVault,
-  StepwiseCurve,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new curve", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let stepwiseCurve: StepwiseCurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -47,10 +41,7 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedBancorDetails: string;
-    let encodedStepwiseDetails: string;
     let fees: FeesFacet;
-    let curveRegistry: CurveRegistry;
 
     const hubId1 = 1;
     const hubId2 = 2;
@@ -62,6 +53,8 @@ const setup = async () => {
     const PRECISION = BigNumber.from(10).pow(18);
     const baseY = PRECISION.div(1000);
     const reserveWeight = MAX_WEIGHT / 10;
+    const newBaseY = PRECISION.div(500);
+    const newReserveWeight = MAX_WEIGHT / 4;
     const refundRatio = 5000;
     const fee = 3000;
     const tokenDepositedInETH = 5;
@@ -70,8 +63,6 @@ const setup = async () => {
     );
     const burnOwnerFee = 1e8;
     const burnBuyerFee = 1e9;
-    const stepX = ethers.utils.parseEther("2");
-    const stepY = ethers.utils.parseEther("1.5");
 
     before(async () => {
       let token: ERC20;
@@ -82,14 +73,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedBancorDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-      encodedStepwiseDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint256"],
-        [stepX, stepY]
-      );
+
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
         [fee]
@@ -105,23 +89,10 @@ const setup = async () => {
         account1,
         meTokenRegistry,
         fee: fees,
-        curveRegistry,
         foundry,
         hub,
-      } = await hubSetup(
-        encodedBancorDetails,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
 
-      stepwiseCurve = await deploy<StepwiseCurve>(
-        "StepwiseCurve",
-        undefined,
-        hub.address
-      );
-
-      await curveRegistry.approve(stepwiseCurve.address);
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = tokenHolder;
@@ -130,9 +101,9 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        stepwiseCurve.address,
         refundRatio,
-        encodedStepwiseDetails,
+        newBaseY,
+        newReserveWeight,
         encodedVaultArgs
       );
 
@@ -362,12 +333,10 @@ const setup = async () => {
           toETHNumber(baseY),
           reserveWeight / MAX_WEIGHT
         );
-        const calculatedTargetReturn = calculateStepwiseTokenReturned(
+        const calculatedTargetReturn = calculateTokenReturnedFromZero(
           tokenDepositedInETH,
-          toETHNumber(meTokenInfo.balancePooled),
-          0,
-          toETHNumber(stepX),
-          toETHNumber(stepY)
+          toETHNumber(newBaseY),
+          newReserveWeight / MAX_WEIGHT
         );
 
         const calcWAvgRe = weightedAverageSimulation(
@@ -421,12 +390,11 @@ const setup = async () => {
           toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetAssetsReturned = calculateStepwiseCollateralReturned(
-          toETHNumber(stepX),
-          toETHNumber(stepY),
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenInfo.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled),
+          newReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -493,12 +461,11 @@ const setup = async () => {
           toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
-        const targetAssetsReturned = calculateStepwiseCollateralReturned(
-          toETHNumber(stepX),
-          toETHNumber(stepY),
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenInfo.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled),
+          newReserveWeight / MAX_WEIGHT
         );
 
         const calcWAvgRes = weightedAverageSimulation(
@@ -563,12 +530,11 @@ const setup = async () => {
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        const calculatedTargetReturn = calculateStepwiseTokenReturned(
+        const calculatedTargetReturn = calculateTokenReturnedFromZero(
           tokenDepositedInETH,
-          toETHNumber(meTokenInfo.balancePooled),
-          toETHNumber(meTokenTotalSupplyBefore),
-          toETHNumber(stepX),
-          toETHNumber(stepY)
+          toETHNumber(newBaseY),
+
+          newReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -601,12 +567,11 @@ const setup = async () => {
           meToken.address
         );
 
-        const targetAssetsReturned = calculateStepwiseCollateralReturned(
-          toETHNumber(stepX),
-          toETHNumber(stepY),
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenInfo.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled),
+          newReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -654,12 +619,11 @@ const setup = async () => {
         );
         const ownerWETHBefore = await weth.balanceOf(account0.address);
 
-        const targetAssetsReturned = calculateStepwiseCollateralReturned(
-          toETHNumber(stepX),
-          toETHNumber(stepY),
+        const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
-          toETHNumber(meTokenInfo.balancePooled)
+          toETHNumber(meTokenInfo.balancePooled),
+          newReserveWeight / MAX_WEIGHT
         );
 
         await foundry

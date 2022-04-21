@@ -28,7 +28,7 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
+  ICurveFacet,
 } from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
@@ -87,7 +87,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
     let meToken: Address;
@@ -115,10 +115,6 @@ const setup = async () => {
       ({ DAI, WETH, USDT } = await getNamedAccounts());
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -127,7 +123,6 @@ const setup = async () => {
       ({
         tokenAddr: DAI,
         hub,
-        curve,
         foundry,
         meTokenRegistry,
         migrationRegistry,
@@ -135,32 +130,28 @@ const setup = async () => {
         token,
         fee,
         account0,
+        curve,
         account1,
         account2,
         account3,
         tokenHolder,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.register(
         account0.address,
         USDT,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.setHubWarmup(hubWarmup);
@@ -182,7 +173,7 @@ const setup = async () => {
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -478,7 +469,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
       it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -490,7 +481,7 @@ const setup = async () => {
         await hub.cancelUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
-        await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId2, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,

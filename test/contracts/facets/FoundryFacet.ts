@@ -15,19 +15,17 @@ import {
 import { mineBlock } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  ICurve,
   HubFacet,
   FoundryFacet,
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
   MigrationRegistry,
-  CurveRegistry,
   SingleAssetVault,
-  BancorCurve,
   UniswapSingleTransferMigration,
   SameAssetTransferMigration,
   IERC20Permit,
+  ICurveFacet,
 } from "../../../artifacts/types";
 import { TypedDataDomain } from "@ethersproject/abstract-signer";
 import { domainSeparator } from "../../utils/eip712";
@@ -45,7 +43,7 @@ const setup = async () => {
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let meTokenRegistry: MeTokenRegistryFacet;
     let foundry: FoundryFacet;
     let token: ERC20;
@@ -54,7 +52,6 @@ const setup = async () => {
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let migrationRegistry: MigrationRegistry;
-    let curveRegistry: CurveRegistry;
     let encodedCurveInfo: string;
     let encodedVaultArgs: string;
 
@@ -89,28 +86,24 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       ({
         token,
         tokenHolder,
         hub,
-        curve,
         foundry,
+        curve,
         singleAssetVault,
-        curveRegistry,
         migrationRegistry,
         meTokenRegistry,
         account0,
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        initRefundRatio,
-        "BancorCurve"
+        initRefundRatio
       ));
 
       // Prefund owner/buyer w/ DAI
@@ -952,22 +945,11 @@ const setup = async () => {
         // refund ratio stays the same
         const targetRefundRatio = 200000;
 
-        const newCurve = await deploy<BancorCurve>(
-          "BancorCurve",
-          undefined,
-          hub.address
-        );
-
-        await curveRegistry.approve(newCurve.address);
         // for 1 DAI we get 1 metokens
-        const baseY = PRECISION.toString();
+        //  const baseY = PRECISION.toString();
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
 
-        const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [baseY, reserveWeight]
-        );
         await deploy<UniswapSingleTransferMigration>(
           "UniswapSingleTransferMigration",
           undefined, //no libs
@@ -980,17 +962,12 @@ const setup = async () => {
         await hub.setHubWarmup(60 * 60);
         await hub.setHubCooldown(60 * 60);
         // vault stays the same
-        await hub.initUpdate(
-          hubId,
-          newCurve.address,
-          targetRefundRatio,
-          encodedCurveInfo
-        );
+        await hub.initUpdate(hubId, targetRefundRatio, reserveWeight);
       });
       it("mint() Should work the same right after the migration ", async () => {
         // metoken should be registered
         let hubDetail = await hub.getHubInfo(hubId);
-        expect(hubDetail.reconfigure).to.be.false;
+        expect(hubDetail.reconfigure).to.be.true;
         expect(hubDetail.updating).to.be.true;
 
         const amount = ethers.utils.parseEther("100");
@@ -1093,9 +1070,9 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          curve.address,
           refundRatio,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         migration = await deploy<SameAssetTransferMigration>(
@@ -1190,9 +1167,9 @@ const setup = async () => {
           account0.address,
           WETH,
           singleAssetVault.address,
-          curve.address,
           refundRatio,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         migration = await deploy<UniswapSingleTransferMigration>(
@@ -1321,20 +1298,18 @@ const setup = async () => {
           token,
           tokenHolder,
           hub,
-          curve,
           foundry,
           singleAssetVault,
-          curveRegistry,
           migrationRegistry,
           meTokenRegistry,
           account0,
           account1,
           account2,
         } = await hubSetup(
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs,
           initRefundRatio,
-          "BancorCurve",
           [0, 0, 0, 0, 0, 0],
           USDC,
           USDCWhale,

@@ -1,72 +1,54 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {ICurve} from "../interfaces/ICurve.sol";
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
-/// @title Bancor curve registry and calculator
-/// @author Carter Carlson (@cartercarlson), Chris Robison (@CBobRobison), @zgorizzo69
-contract BancorCurve is ICurve {
+//import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
+
+library LibCurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;
-
     struct CurveInfo {
         uint256 baseY;
         uint256 targetBaseY;
         uint32 reserveWeight;
         uint32 targetReserveWeight;
     }
+    struct CurveStorage {
+        // HubId to curve details
+        mapping(uint256 => CurveInfo) curves;
+        bytes16 one;
+        bytes16 maxWeight;
+        bytes16 baseX;
+    }
 
     uint32 public constant MAX_WEIGHT = 1e6;
-    bytes16 private immutable _baseX = uint256(1 ether).fromUInt();
-    bytes16 private immutable _maxWeight = uint256(MAX_WEIGHT).fromUInt(); // gas savings
-    bytes16 private immutable _one = (uint256(1)).fromUInt();
-    address public hub;
+    bytes32 public constant CURVE_STORAGE_POSITION =
+        keccak256("diamond.standard.bancor.curves.storage");
 
-    // NOTE: keys are their respective hubId
-    mapping(uint256 => CurveInfo) private _curves;
+    function register(
+        uint256 hubId,
+        uint256 baseY,
+        uint32 reserveWeight
+    ) internal {
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
 
-    modifier onlyHub() {
-        require(msg.sender == hub, "!hub");
-        _;
-    }
-
-    constructor(address _hub) {
-        require(_hub != address(0), "!hub");
-        hub = _hub;
-    }
-
-    /// @inheritdoc ICurve
-    function register(uint256 hubId, bytes calldata encodedCurveInfo)
-        external
-        override
-        onlyHub
-    {
-        require(encodedCurveInfo.length > 0, "!encodedCurveInfo");
-
-        (uint256 baseY, uint32 reserveWeight) = abi.decode(
-            encodedCurveInfo,
-            (uint256, uint32)
-        );
         require(baseY > 0, "!baseY");
         require(
             reserveWeight > 0 && reserveWeight <= MAX_WEIGHT,
             "!reserveWeight"
         );
 
-        CurveInfo storage curveInfo = _curves[hubId];
         curveInfo.baseY = baseY;
         curveInfo.reserveWeight = reserveWeight;
     }
 
-    /// @inheritdoc ICurve
-    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
-        external
-        override
-        onlyHub
+    function initReconfigure(uint256 hubId, uint32 targetReserveWeight)
+        internal
     {
-        uint32 targetReserveWeight = abi.decode(encodedCurveInfo, (uint32));
-        CurveInfo storage curveInfo = _curves[hubId];
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
 
         require(targetReserveWeight > 0, "!reserveWeight");
         require(
@@ -75,125 +57,117 @@ contract BancorCurve is ICurve {
         );
 
         // targetBaseX = (old baseY * oldR) / newR
-        // uint256 targetBaseY = (curveInfo.baseY * curveInfo.reserveWeight) /
-        //     targetReserveWeight;
-
         curveInfo.targetBaseY =
             (curveInfo.baseY * curveInfo.reserveWeight) /
             targetReserveWeight;
         curveInfo.targetReserveWeight = targetReserveWeight;
     }
 
-    /// @inheritdoc ICurve
-    function finishReconfigure(uint256 hubId) external override onlyHub {
-        CurveInfo storage curveInfo = _curves[hubId];
+    function finishReconfigure(uint256 hubId) internal {
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
+
         curveInfo.reserveWeight = curveInfo.targetReserveWeight;
         curveInfo.baseY = curveInfo.targetBaseY;
         curveInfo.targetReserveWeight = 0;
         curveInfo.targetBaseY = 0;
     }
 
-    function getCurveInfoBancor(uint256 hubId)
-        external
-        view
-        returns (CurveInfo memory)
-    {
-        return _curves[hubId];
-    }
-
-    /// @inheritdoc ICurve
     function getCurveInfo(uint256 hubId)
-        external
+        internal
         view
-        override
-        returns (uint256[4] memory)
+        returns (CurveInfo memory curveInfo)
     {
-        return [
-            _curves[hubId].baseY,
-            uint256(_curves[hubId].reserveWeight),
-            _curves[hubId].targetBaseY,
-            uint256(_curves[hubId].targetReserveWeight)
-        ];
+        CurveStorage storage cs = curveStorage();
+        curveInfo.baseY = cs.curves[hubId].baseY;
+        curveInfo.reserveWeight = cs.curves[hubId].reserveWeight;
+        curveInfo.targetBaseY = cs.curves[hubId].targetBaseY;
+        curveInfo.targetReserveWeight = cs.curves[hubId].targetReserveWeight;
     }
 
-    /// @inheritdoc ICurve
     function viewMeTokensMinted(
         uint256 assetsDeposited,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
-    ) external view override returns (uint256 meTokensMinted) {
-        CurveInfo memory curveInfo = _curves[hubId];
+    ) internal view returns (uint256 meTokensMinted) {
+        CurveStorage storage cs = curveStorage();
 
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                curveInfo.reserveWeight,
+                cs.curves[hubId].reserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                curveInfo.reserveWeight,
-                curveInfo.baseY
+                cs.curves[hubId].reserveWeight,
+                cs.curves[hubId].baseY
             );
         }
     }
 
-    /// @inheritdoc ICurve
     function viewTargetMeTokensMinted(
         uint256 assetsDeposited,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
-    ) external view override returns (uint256 meTokensMinted) {
-        CurveInfo memory curveInfo = _curves[hubId];
-
+    ) internal view returns (uint256 meTokensMinted) {
+        CurveStorage storage cs = curveStorage();
         if (supply > 0) {
             meTokensMinted = _viewMeTokensMinted(
                 assetsDeposited,
-                curveInfo.targetReserveWeight,
+                cs.curves[hubId].targetReserveWeight,
                 supply,
                 balancePooled
             );
         } else {
             meTokensMinted = _viewMeTokensMintedFromZero(
                 assetsDeposited,
-                curveInfo.targetReserveWeight,
-                curveInfo.targetBaseY
+                cs.curves[hubId].targetReserveWeight,
+                cs.curves[hubId].targetBaseY
             );
         }
     }
 
-    /// @inheritdoc ICurve
     function viewAssetsReturned(
         uint256 meTokensBurned,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
-    ) external view override returns (uint256 assetsReturned) {
+    ) internal view returns (uint256 assetsReturned) {
+        CurveStorage storage cs = curveStorage();
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            _curves[hubId].reserveWeight,
+            cs.curves[hubId].reserveWeight,
             supply,
             balancePooled
         );
     }
 
-    /// @inheritdoc ICurve
     function viewTargetAssetsReturned(
         uint256 meTokensBurned,
         uint256 hubId,
         uint256 supply,
         uint256 balancePooled
-    ) external view override returns (uint256 assetsReturned) {
+    ) internal view returns (uint256 assetsReturned) {
+        CurveStorage storage cs = curveStorage();
+
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            _curves[hubId].targetReserveWeight,
+            cs.curves[hubId].targetReserveWeight,
             supply,
             balancePooled
         );
+    }
+
+    function curveStorage() internal pure returns (CurveStorage storage ds) {
+        bytes32 position = CURVE_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
     }
 
     ///************************* CALCULATE FUNCTIONS **************************/
@@ -238,15 +212,16 @@ contract BancorCurve is ICurve {
         if (reserveWeight == MAX_WEIGHT) {
             return (supply * assetsDeposited) / balancePooled;
         }
+        CurveStorage storage cs = curveStorage();
 
-        bytes16 exponent = uint256(reserveWeight).fromUInt().div(_maxWeight);
+        bytes16 exponent = uint256(reserveWeight).fromUInt().div(cs.maxWeight);
         // 1 + balanceDeposited/connectorBalance
-        bytes16 part1 = _one.add(
+        bytes16 part1 = cs.one.add(
             assetsDeposited.fromUInt().div(balancePooled.fromUInt())
         );
         //Instead of calculating "base ^ exp", we calculate "e ^ (log(base) * exp)".
         bytes16 res = supply.fromUInt().mul(
-            (part1.ln().mul(exponent)).exp().sub(_one)
+            (part1.ln().mul(exponent)).exp().sub(cs.one)
         );
         return res.toUInt();
     }
@@ -274,10 +249,13 @@ contract BancorCurve is ICurve {
         uint256 reserveWeight,
         uint256 baseY
     ) private view returns (uint256) {
-        bytes16 reserveWeight_ = reserveWeight.fromUInt().div(_maxWeight);
+        CurveStorage storage cs = curveStorage();
+
+        bytes16 reserveWeight_ = reserveWeight.fromUInt().div(cs.maxWeight);
+
         // assetsDeposited * baseX ^ (1/connectorWeight)
         bytes16 numerator = assetsDeposited.fromUInt().mul(
-            _baseX.ln().mul(_one.div(reserveWeight_)).exp()
+            cs.baseX.ln().mul(cs.one.div(reserveWeight_)).exp()
         );
         // as baseX == 1 ether and we want to result to be in ether too we simply remove
         // the multiplication by baseY
@@ -341,10 +319,14 @@ contract BancorCurve is ICurve {
             return (balancePooled * meTokensBurned) / supply;
         }
         // MAX_WEIGHT / reserveWeight
-        bytes16 exponent = _maxWeight.div(uint256(reserveWeight).fromUInt());
+        CurveStorage storage cs = curveStorage();
+
+        bytes16 exponent = cs.maxWeight.div(uint256(reserveWeight).fromUInt());
 
         // 1 - (meTokensBurned / supply)
-        bytes16 s = _one.sub(meTokensBurned.fromUInt().div(supply.fromUInt()));
+        bytes16 s = cs.one.sub(
+            meTokensBurned.fromUInt().div(supply.fromUInt())
+        );
         // Instead of calculating "s ^ exp", we calculate "e ^ (log(s) * exp)".
         // balancePooled - ( balancePooled * s ^ exp))
         bytes16 res = balancePooled.fromUInt().sub(

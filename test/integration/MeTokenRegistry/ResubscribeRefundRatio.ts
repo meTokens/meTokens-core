@@ -18,13 +18,11 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
@@ -58,10 +56,6 @@ const setup = async () => {
       let WETH;
       ({ DAI, WETH } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -71,7 +65,6 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -79,10 +72,10 @@ const setup = async () => {
         account2,
         meTokenRegistry,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        initialRefundRatio.toNumber(),
-        "BancorCurve"
+        initialRefundRatio.toNumber()
       ));
 
       // Deploy uniswap migration and approve it to the registry
@@ -121,9 +114,9 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         targetRefundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week

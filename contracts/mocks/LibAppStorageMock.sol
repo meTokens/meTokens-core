@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {IRegistry} from "../interfaces/IRegistry.sol";
+import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
 import {HubInfo} from "../libs/LibHub.sol";
@@ -37,8 +37,7 @@ struct AppStorageMock {
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
-    IRegistry vaultRegistry;
-    IRegistry curveRegistry;
+    IVaultRegistry vaultRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
@@ -126,14 +125,6 @@ contract ModifiersMock {
         require(
             LibMeta.msgSender() == address(s.vaultRegistry),
             "!vaultRegistry"
-        );
-        _;
-    }
-
-    modifier onlyCurveRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.curveRegistry),
-            "!curveRegistry"
         );
         _;
     }

@@ -52,11 +52,6 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
-
       ({
         token,
         diamond,
@@ -69,10 +64,10 @@ const setup = async () => {
         singleAssetVault: vault,
         fee: fees,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        initRefundRatio,
-        "BancorCurve"
+        initRefundRatio
       ));
 
       await fees.setMintFee(1e8);

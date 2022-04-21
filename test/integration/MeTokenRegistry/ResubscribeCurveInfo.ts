@@ -24,13 +24,11 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("MeToken Resubscribe - Same curve, new Curve Details", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let singleAssetVault: SingleAssetVault;
@@ -43,8 +41,6 @@ const setup = async () => {
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
-    let encodedCurveInfo1: string;
-    let encodedCurveInfo2: string;
     let fees: FeesFacet;
 
     const hubId1 = 1;
@@ -77,14 +73,7 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveInfo1 = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY1, reserveWeight1]
-      );
-      encodedCurveInfo2 = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY2, reserveWeight2]
-      );
+
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
         [fee]
@@ -97,7 +86,6 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -105,10 +93,10 @@ const setup = async () => {
         meTokenRegistry,
         fee: fees,
       } = await hubSetup(
-        encodedCurveInfo1,
+        baseY1,
+        reserveWeight1,
         encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
+        refundRatio
       ));
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
@@ -118,9 +106,9 @@ const setup = async () => {
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
-        encodedCurveInfo2,
+        baseY2,
+        reserveWeight2,
         encodedVaultArgs
       );
 
