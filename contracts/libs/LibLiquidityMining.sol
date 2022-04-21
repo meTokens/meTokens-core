@@ -25,11 +25,11 @@ struct SeasonInfo {
     uint256 rewardRate;
     bytes32 merkleRoot;
 }
+struct LiquidityMiningStorage {
+    uint256 status;
+}
 
 library LibLiquidityMining {
-    struct LiquidityMiningStorage {
-        uint256 status;
-    }
     uint256 constant _NOT_ENTERED = 1;
     uint256 constant _ENTERED = 2;
     bytes32 public constant LIQUIDITY_MINING_STORAGE_POSITION =
