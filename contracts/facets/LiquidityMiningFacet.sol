@@ -7,7 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ILiquidityMiningFacet} from "../interfaces/ILiquidityMiningFacet.sol";
-import {LibLiquidityMining, PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
+import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -25,8 +25,8 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
      * `private` function that does the actual work.
      */
     modifier nonReentrant() {
-        LibLiquidityMining.LiquidityMiningStorage
-            storage ls = LibLiquidityMining.liquidityMiningStorage();
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
         // On the first call to nonReentrant, _notEntered will be true
         require(
             ls.status != LibLiquidityMining._ENTERED,

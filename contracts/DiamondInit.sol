@@ -9,6 +9,8 @@ import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IRegistry} from "./interfaces/IRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
+
+import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
 import "hardhat/console.sol";
 
 /// @title Diamond Init
@@ -67,5 +69,10 @@ contract DiamondInit {
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+
+        //adding reentrancy initial state
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.status = LibLiquidityMining._NOT_ENTERED;
     }
 }
