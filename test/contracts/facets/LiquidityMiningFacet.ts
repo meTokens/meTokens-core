@@ -12,7 +12,7 @@ import {
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
-import { mineBlock } from "../../utils/hardhatNode";
+import { mineBlock, setNextBlockTimestamp } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   ICurve,
@@ -83,6 +83,9 @@ const setup = async () => {
     const duration = 4 * 60 * 24 * 24; // 4 days
     const issuerCooldown = 4 * 60 * 24 * 24; // 4 days
 
+    const allocationPool = ethers.utils.parseEther("20");
+    const allocationIssuers = ethers.utils.parseEther("10");
+
     before(async () => {
       const MAX_WEIGHT = 1000000;
       const reserveWeight = MAX_WEIGHT / 2;
@@ -147,6 +150,15 @@ const setup = async () => {
       );
 
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      await mockToken.setBalance(
+        account0.address,
+        ethers.utils.parseEther("1000")
+      );
+      await mockToken.approve(
+        liquidityMining.address,
+        ethers.constants.MaxUint256
+      );
     });
 
     // TODO check initialised variables
@@ -235,27 +247,53 @@ const setup = async () => {
     });
 
     describe("initSeason()", () => {
-      xit("revert when sender is not liquidityMiningController", async () => {});
-      xit("should be able to initSeason", async () => {
-        const block = await ethers.provider.getBlock("latest");
-        // Add mock me token
-        const initTime = block.timestamp;
-
-        await mockToken.setBalance(
-          account0.address,
-          ethers.utils.parseEther("100")
-        );
-        await mockToken.approve(
-          liquidityMining.address,
-          ethers.constants.MaxUint256
-        );
+      it("revert when sender is not liquidityMiningController", async () => {
+        await expect(
+          liquidityMining
+            .connect(account1)
+            .initSeason(0, 0, 0, ethers.constants.HashZero)
+        ).to.be.revertedWith("!liquidityMiningController");
+      });
+      it("should be able to initSeason", async () => {
+        const initTime = (await ethers.provider.getBlock("latest")).timestamp;
+        const bSenderBalance = await mockToken.balanceOf(account0.address);
+        const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
 
         await liquidityMining.initSeason(
           initTime,
-          ethers.utils.parseEther("1"),
-          ethers.utils.parseEther("1"),
+          allocationPool,
+          allocationIssuers,
           ethers.constants.HashZero
         );
+
+        const aSenderBalance = await mockToken.balanceOf(account0.address);
+        const aLMBalance = await mockToken.balanceOf(liquidityMining.address);
+        const seasonInfo = await liquidityMining.getSeasonInfo(1);
+
+        expect(bSenderBalance.sub(aSenderBalance))
+          .to.equal(allocationPool.add(allocationIssuers))
+          .to.equal(aLMBalance.sub(bLMBalance));
+        expect((await liquidityMining.getSeasonCount()).toNumber()).to.equal(1);
+        expect(seasonInfo.initTime.toNumber()).to.equal(initTime);
+        expect(seasonInfo.startTime.toNumber()).to.equal(initTime + warmup);
+        expect(seasonInfo.endTime.toNumber()).to.equal(
+          initTime + warmup + duration
+        );
+        expect(seasonInfo.allocationPool).to.equal(allocationPool);
+        expect(seasonInfo.allocationIssuers).to.equal(allocationIssuers);
+        expect(seasonInfo.totalPctStaked).to.equal(0);
+        expect(seasonInfo.rewardRate).to.equal(
+          BigNumber.from(allocationPool).div(duration)
+        );
+        expect(seasonInfo.merkleRoot).to.equal(ethers.constants.HashZero);
+      });
+      it("revert when current season is live", async () => {
+        await setNextBlockTimestamp(
+          (await liquidityMining.getSeasonInfo(1)).startTime.toNumber()
+        );
+        await expect(
+          liquidityMining.initSeason(0, 0, 0, ethers.constants.HashZero)
+        ).to.be.revertedWith("season still live");
       });
     });
   });
