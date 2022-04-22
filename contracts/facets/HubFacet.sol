@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import {ICurve} from "../interfaces/ICurve.sol";
 import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
-import {IRegistry} from "../interfaces/IRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {LibCurve} from "../libs/LibCurve.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -20,12 +19,11 @@ contract HubFacet is IHubFacet, Modifiers {
         address owner,
         address asset,
         IVault vault,
-        ICurve curve,
         uint256 refundRatio,
-        bytes memory encodedCurveInfo,
+        uint256 baseY,
+        uint32 reserveWeight,
         bytes memory encodedVaultArgs
     ) external override onlyRegisterController {
-        require(s.curveRegistry.isApproved(address(curve)), "curve !approved");
         require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
         require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio > MAX");
         require(refundRatio > 0, "refundRatio == 0");
@@ -35,23 +33,22 @@ contract HubFacet is IHubFacet, Modifiers {
 
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;
-        curve.register(id, encodedCurveInfo);
+        LibCurve.register(id, baseY, reserveWeight);
         // Save the hub to the registry
         HubInfo storage hubInfo = s.hubs[s.hubCount];
         hubInfo.active = true;
         hubInfo.owner = owner;
         hubInfo.asset = asset;
         hubInfo.vault = address(vault);
-        hubInfo.curve = address(curve);
         hubInfo.refundRatio = refundRatio;
         emit Register(
             id,
             owner,
             asset,
             address(vault),
-            address(curve),
             refundRatio,
-            encodedCurveInfo,
+            baseY,
+            reserveWeight,
             encodedVaultArgs
         );
     }
@@ -72,13 +69,12 @@ contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function initUpdate(
         uint256 id,
-        address targetCurve,
         uint256 targetRefundRatio,
-        bytes memory encodedCurveInfo
+        uint32 targetReserveWeight
     ) external override {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(id);
         }
@@ -87,7 +83,7 @@ contract HubFacet is IHubFacet, Modifiers {
         require(block.timestamp >= hubInfo.endCooldown, "Still cooling down");
         // Make sure at least one of the values is different
         require(
-            (targetRefundRatio != 0) || (encodedCurveInfo.length > 0),
+            (targetRefundRatio != 0) || (targetReserveWeight > 0),
             "Nothing to update"
         );
 
@@ -103,23 +99,11 @@ contract HubFacet is IHubFacet, Modifiers {
             hubInfo.targetRefundRatio = targetRefundRatio;
         }
 
-        bool reconfigure;
-        if (encodedCurveInfo.length > 0) {
-            if (targetCurve == address(0)) {
-                ICurve(hubInfo.curve).initReconfigure(id, encodedCurveInfo);
-                reconfigure = true;
-            } else {
-                require(
-                    s.curveRegistry.isApproved(targetCurve),
-                    "targetCurve !approved"
-                );
-                require(targetCurve != hubInfo.curve, "targetCurve==curve");
-                ICurve(targetCurve).register(id, encodedCurveInfo);
-                hubInfo.targetCurve = targetCurve;
-            }
+        if (targetReserveWeight > 0) {
+            LibCurve.initReconfigure(id, targetReserveWeight);
+            hubInfo.reconfigure = true;
         }
 
-        hubInfo.reconfigure = reconfigure;
         hubInfo.updating = true;
         hubInfo.startTime = block.timestamp + s.hubWarmup;
         hubInfo.endTime = block.timestamp + s.hubWarmup + s.hubDuration;
@@ -131,10 +115,9 @@ contract HubFacet is IHubFacet, Modifiers {
 
         emit InitUpdate(
             id,
-            targetCurve,
             targetRefundRatio,
-            encodedCurveInfo,
-            reconfigure,
+            targetReserveWeight,
+            hubInfo.reconfigure,
             hubInfo.startTime,
             hubInfo.endTime,
             hubInfo.endCooldown
@@ -149,14 +132,13 @@ contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function cancelUpdate(uint256 id) external override {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         require(hubInfo.updating, "!updating");
         require(block.timestamp < hubInfo.startTime, "Update has started");
 
         hubInfo.targetRefundRatio = 0;
         hubInfo.reconfigure = false;
-        hubInfo.targetCurve = address(0);
         hubInfo.updating = false;
         hubInfo.startTime = 0;
         hubInfo.endTime = 0;
@@ -171,8 +153,8 @@ contract HubFacet is IHubFacet, Modifiers {
         override
     {
         HubInfo storage hubInfo = s.hubs[id];
-        address sender = LibMeta.msgSender();
-        require(sender == hubInfo.owner, "!owner");
+
+        require(LibMeta.msgSender() == hubInfo.owner, "!owner");
         require(newOwner != hubInfo.owner, "Same owner");
         hubInfo.owner = newOwner;
 

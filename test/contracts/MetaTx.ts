@@ -10,7 +10,7 @@ import {
   MinimalForwarder,
   ERC20,
   FoundryFacet,
-  ICurve,
+  ICurveFacet,
   MeToken,
   MeTokenRegistryFacet,
   SingleAssetVault,
@@ -23,12 +23,13 @@ const setup = async () => {
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let hub: HubFacet;
     let hubId: BigNumber;
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
-    let encodedCurveInfo: string;
+    let baseY: BigNumber;
+    let reserveWeight: number;
     let token: ERC20;
     let diamond: Diamond;
     let forwarder: MinimalForwarder;
@@ -56,24 +57,20 @@ const setup = async () => {
       );
       const PRECISION = ethers.utils.parseEther("1");
       const MAX_WEIGHT = 1000000;
-      const reserveWeight = MAX_WEIGHT / 2;
-      const baseY = PRECISION.div(1000);
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+      reserveWeight = MAX_WEIGHT / 2;
+      baseY = PRECISION.div(1000);
 
       ({
         hub,
-        curve,
         singleAssetVault,
         account0,
         account1,
         account2,
         diamond,
         meTokenRegistry,
+        curve,
         foundry,
-      } = await hubSetupWithoutRegister("BancorCurve"));
+      } = await hubSetupWithoutRegister());
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",
@@ -96,9 +93,9 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultDAIArgs
       );
 
@@ -149,9 +146,9 @@ const setup = async () => {
           account0.address,
           DAI,
           singleAssetVault.address,
-          curve.address,
           refundRatio,
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultDAIArgs
         );
       expect(await forwarder.getNonce(message.from)).to.equal(1);
@@ -161,9 +158,9 @@ const setup = async () => {
         account0.address,
         DAI,
         singleAssetVault.address,
-        curve.address,
         refundRatio,
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultDAIArgs
       );
       if (!data) {

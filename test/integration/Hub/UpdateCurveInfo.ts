@@ -6,7 +6,6 @@ import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateTokenReturned,
   calculateCollateralReturned,
-  deploy,
   getContractAt,
   toETHNumber,
   weightedAverageSimulation,
@@ -24,18 +23,13 @@ import {
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  CurveRegistry,
-  BancorCurve,
   SingleAssetVault,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update CurveInfo", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
-    let updatedBancorCurve: BancorCurve;
-    let curveRegistry: CurveRegistry;
+
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
@@ -54,7 +48,6 @@ const setup = async () => {
     let reserveWeight: number;
     let updatedReserveWeight: number;
     const MAX_WEIGHT = 1000000;
-    let encodedCurveInfo: string;
     const firstHubId = 1;
     const refundRatio = 5000;
     before(async () => {
@@ -67,10 +60,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -79,9 +68,7 @@ const setup = async () => {
       ({
         token,
         hub,
-        curve,
         foundry,
-        curveRegistry,
         singleAssetVault,
         tokenHolder,
         account0,
@@ -89,12 +76,7 @@ const setup = async () => {
         account2,
         account3,
         meTokenRegistry,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
 
       // Pre-load owner and buyer w/ DAI
       await token
@@ -147,34 +129,8 @@ const setup = async () => {
     });
 
     describe("Warmup", () => {
-      it("should revert initUpdate() if targetCurve is the current curve", async () => {
-        const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
-        );
-        await expect(
-          hub.initUpdate(firstHubId, curve.address, 0, updatedEncodedCurveInfo)
-        ).to.be.revertedWith("targetCurve==curve");
-      });
       it("Assets received based on initial initialCurveInfo", async () => {
-        const updatedEncodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint32"],
-          [updatedBaseY, updatedReserveWeight]
-        );
-
-        updatedBancorCurve = await deploy<BancorCurve>(
-          "BancorCurve",
-          undefined,
-          hub.address
-        );
-
-        await curveRegistry.approve(updatedBancorCurve.address);
-        await hub.initUpdate(
-          firstHubId,
-          updatedBancorCurve.address,
-          0,
-          updatedEncodedCurveInfo
-        );
+        await hub.initUpdate(firstHubId, 0, updatedReserveWeight);
 
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
@@ -513,15 +469,15 @@ const setup = async () => {
         );
         expect(active).to.be.true;
         expect(updating).to.be.true;
-        expect(reconfigure).to.be.false;
+        expect(reconfigure).to.be.true;
         const block = await ethers.provider.getBlock("latest");
 
         //Block.timestamp should be between endTime and endCooldown
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
-        await expect(
-          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
-        ).to.be.revertedWith("Still cooling down");
+        await expect(hub.initUpdate(1, 1000, 0)).to.be.revertedWith(
+          "Still cooling down"
+        );
       });
 
       it("burn() and mint() by owner should use the targetCurveInfo", async () => {
@@ -561,14 +517,8 @@ const setup = async () => {
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenInfo = await meTokenRegistry.getMeTokenInfo(meToken.address);
         const metokenToBurn = balAfter.div(2);
-        const {
-          active,
-          updating,
-          endCooldown,
-          reconfigure,
-          curve,
-          targetCurve,
-        } = await hub.getHubInfo(1);
+        const { active, updating, endCooldown, reconfigure } =
+          await hub.getHubInfo(1);
         const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
@@ -585,17 +535,8 @@ const setup = async () => {
           .burn(meToken.address, metokenToBurn, account0.address);
 
         const balDaiAfterBurn = await token.balanceOf(account0.address);
-        const currentCurve = await getContractAt<BancorCurve>(
-          "BancorCurve",
-          curve
-        );
-        const hubTargetCurve = await getContractAt<BancorCurve>(
-          "BancorCurve",
-          targetCurve
-        );
+
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorCurve.address).to.equal(currentCurve.address);
-        expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -652,15 +593,8 @@ const setup = async () => {
         meTokenTotalSupply = await meToken.totalSupply();
         meTokenInfo = await meTokenRegistry.getMeTokenInfo(meToken.address);
         const metokenToBurn = balAfter.div(2);
-        const {
-          active,
-          refundRatio,
-          updating,
-          endCooldown,
-          reconfigure,
-          curve,
-          targetCurve,
-        } = await hub.getHubInfo(1);
+        const { active, refundRatio, updating, endCooldown, reconfigure } =
+          await hub.getHubInfo(1);
         const targetAssetsReturned = calculateCollateralReturned(
           toETHNumber(metokenToBurn),
           toETHNumber(meTokenTotalSupply),
@@ -673,17 +607,8 @@ const setup = async () => {
           .burn(meToken.address, metokenToBurn, account2.address);
 
         const balDaiAfterBurn = await token.balanceOf(account2.address);
-        const currentCurve = await getContractAt<BancorCurve>(
-          "BancorCurve",
-          curve
-        );
-        const hubTargetCurve = await getContractAt<BancorCurve>(
-          "BancorCurve",
-          targetCurve
-        );
+
         const block = await ethers.provider.getBlock("latest");
-        expect(updatedBancorCurve.address).to.equal(currentCurve.address);
-        expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
         expect(endCooldown).to.be.gt(block.timestamp);
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -712,21 +637,9 @@ const setup = async () => {
         reserveWeight = updatedReserveWeight;
         updatedReserveWeight = 750000;
 
-        encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-          ["uint32"],
-          [updatedReserveWeight]
-        );
-
-        await hub.initUpdate(
-          1,
-          ethers.constants.AddressZero,
-          0,
-          encodedCurveInfo
-        );
+        await hub.initUpdate(1, 0, updatedReserveWeight);
         const block2 = await ethers.provider.getBlock("latest");
         const info = await hub.getHubInfo(1);
-        expect(info.curve).to.equal(updatedBancorCurve.address);
-        expect(info.targetCurve).to.equal(ethers.constants.AddressZero);
         expect(info.endTime).to.be.gt(0);
         expect(info.endTime).to.be.gt(block.timestamp);
         expect(info.refundRatio).to.to.equal(refundRatio);
@@ -739,14 +652,6 @@ const setup = async () => {
       });
       describe("Warmup", () => {
         it("Assets received based on initial curveInfo", async () => {
-          const info = await hub.getHubInfo(1);
-
-          const currentCurve = await getContractAt<BancorCurve>(
-            "BancorCurve",
-            info.curve
-          );
-          expect(currentCurve.address).to.equal(updatedBancorCurve.address);
-
           const tokenDepositedInETH = 100;
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
@@ -1125,9 +1030,9 @@ const setup = async () => {
           //Block.timestamp should be between endTime and endCooldown
           // move forward to cooldown
           await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
-          await expect(
-            hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
-          ).to.be.revertedWith("Still cooling down");
+          await expect(hub.initUpdate(1, 1000, 0)).to.be.revertedWith(
+            "Still cooling down"
+          );
         });
         it("burn() and mint() by owner should use the targetCurve", async () => {
           const tokenDepositedInETH = 100;
@@ -1171,14 +1076,8 @@ const setup = async () => {
           meTokenTotalSupply = await meToken.totalSupply();
           meTokenInfo = await meTokenRegistry.getMeTokenInfo(meToken.address);
           const metokenToBurn = balAfter.div(2);
-          const {
-            active,
-            updating,
-            endCooldown,
-            reconfigure,
-            curve,
-            targetCurve,
-          } = await hub.getHubInfo(1);
+          const { active, updating, endCooldown, reconfigure } =
+            await hub.getHubInfo(1);
           const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
@@ -1195,17 +1094,8 @@ const setup = async () => {
             .burn(meToken.address, metokenToBurn, account0.address);
 
           const balDaiAfterBurn = await token.balanceOf(account0.address);
-          const currentCurve = await getContractAt<BancorCurve>(
-            "BancorCurve",
-            curve
-          );
-          const hubTargetCurve = await getContractAt<BancorCurve>(
-            "BancorCurve",
-            targetCurve
-          );
+
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorCurve.address).to.equal(currentCurve.address);
-          expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;
           expect(updating).to.be.false;
@@ -1271,15 +1161,8 @@ const setup = async () => {
           meTokenTotalSupply = await meToken.totalSupply();
           meTokenInfo = await meTokenRegistry.getMeTokenInfo(meToken.address);
           const metokenToBurn = balAfter.div(2);
-          const {
-            active,
-            refundRatio,
-            updating,
-            endCooldown,
-            reconfigure,
-            curve,
-            targetCurve,
-          } = await hub.getHubInfo(1);
+          const { active, refundRatio, updating, endCooldown, reconfigure } =
+            await hub.getHubInfo(1);
           const targetAssetsReturned = calculateCollateralReturned(
             toETHNumber(metokenToBurn),
             toETHNumber(meTokenTotalSupply),
@@ -1291,17 +1174,8 @@ const setup = async () => {
             .burn(meToken.address, metokenToBurn, account2.address);
 
           const balDaiAfterBurn = await token.balanceOf(account2.address);
-          const currentCurve = await getContractAt<BancorCurve>(
-            "BancorCurve",
-            curve
-          );
-          const hubTargetCurve = await getContractAt<BancorCurve>(
-            "BancorCurve",
-            targetCurve
-          );
+
           const block = await ethers.provider.getBlock("latest");
-          expect(updatedBancorCurve.address).to.equal(currentCurve.address);
-          expect(hubTargetCurve.address).to.equal(ethers.constants.AddressZero);
           expect(endCooldown).to.be.gt(block.timestamp);
           expect(active).to.be.true;
           expect(updating).to.be.false;

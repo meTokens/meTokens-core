@@ -28,7 +28,7 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   UniswapSingleTransferMigration,
-  ICurve,
+  ICurveFacet,
 } from "../../../artifacts/types";
 
 export const checkUniswapPoolLiquidity = async (
@@ -80,13 +80,14 @@ const setup = async () => {
     let hub: HubFacet;
     let token: ERC20;
     let fee: FeesFacet;
+    let dai: ERC20;
     let weth: ERC20;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
     let tokenHolder: Signer;
-    let curve: ICurve;
+    let curve: ICurveFacet;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
     let meToken: Address;
@@ -114,10 +115,6 @@ const setup = async () => {
       ({ DAI, WETH, USDT } = await getNamedAccounts());
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -126,7 +123,6 @@ const setup = async () => {
       ({
         tokenAddr: DAI,
         hub,
-        curve,
         foundry,
         meTokenRegistry,
         migrationRegistry,
@@ -134,32 +130,28 @@ const setup = async () => {
         token,
         fee,
         account0,
+        curve,
         account1,
         account2,
         account3,
         tokenHolder,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
         WETH,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.register(
         account0.address,
         USDT,
         singleAssetVault.address,
-        curve.address,
         refundRatio, //refund ratio
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs
       );
       await hub.setHubWarmup(hubWarmup);
@@ -175,12 +167,13 @@ const setup = async () => {
         foundry.address // diamond
       );
       await migration.deployed();
+      dai = await getContractAt<ERC20>("ERC20", DAI);
       weth = await getContractAt<ERC20>("ERC20", WETH);
     });
 
     describe("subscribe()", () => {
       it("should revert when hub is updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = 0;
@@ -433,10 +426,10 @@ const setup = async () => {
         meToken = meTokenAddr0;
         targetHubId = hubId2;
         block = await ethers.provider.getBlock("latest");
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
+
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         const tx = meTokenRegistry
@@ -476,7 +469,7 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
       it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -488,7 +481,7 @@ const setup = async () => {
         await hub.cancelUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
-        await hub.initUpdate(hubId2, curve.address, refundRatio / 2, "0x");
+        await hub.initUpdate(hubId2, refundRatio / 2, 0);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -612,7 +605,7 @@ const setup = async () => {
           meTokenRegistry.connect(account1).cancelResubscribe(meTokenAddr1)
         ).to.be.revertedWith("!resubscribing");
       });
-      it("Successfully resets meToken info", async () => {
+      it("Successfully cancels resubscribe", async () => {
         block = await ethers.provider.getBlock("latest");
         expect(
           (await meTokenRegistry.getMeTokenInfo(meTokenAddr0)).startTime
@@ -652,10 +645,9 @@ const setup = async () => {
         block = await ethers.provider.getBlock("latest");
         expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         tx = await meTokenRegistry.initResubscribe(
@@ -666,15 +658,61 @@ const setup = async () => {
         );
         await tx.wait();
       });
-      it("Fails if resubscription already started", async () => {
-        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
-          meTokenAddr0
+      it("should revert if migration started (usts.started = true)", async () => {
+        // forward time to endCoolDown
+        await mineBlock(
+          (
+            await meTokenRegistry.getMeTokenInfo(meTokenAddr0)
+          ).endCooldown.toNumber() + 2
         );
-        // forward time after start time
-        await mineBlock(meTokenRegistryDetails.startTime.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
-        expect(meTokenRegistryDetails.startTime).to.be.lt(block.timestamp);
 
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fees]
+        );
+
+        await meTokenRegistry.initResubscribe(
+          meToken,
+          targetHubId,
+          migration.address,
+          encodedMigrationArgs
+        );
+
+        await dai
+          .connect(tokenHolder)
+          .transfer(account0.address, tokenDeposited);
+        await dai.approve(
+          singleAssetVault.address,
+          ethers.constants.MaxUint256
+        );
+        await foundry.mint(meTokenAddr0, tokenDeposited, account0.address);
+
+        await mineBlock(
+          (
+            await meTokenRegistry.getMeTokenInfo(meTokenAddr0)
+          ).startTime.toNumber() + 2
+        );
+
+        tx = await migration.poke(meTokenAddr0); // would call startMigration and swap
+
+        // called from startMigration
+        await expect(tx)
+          .to.emit(dai, "Transfer")
+          .withArgs(
+            singleAssetVault.address,
+            migration.address,
+            tokenDeposited
+          );
+        await expect(tx)
+          .to.emit(singleAssetVault, "StartMigration")
+          .withArgs(meTokenAddr0);
+        // migration -> uniswap
+        await expect(tx).to.emit(dai, "Transfer");
+        // uniswap -> migration
+        await expect(tx).to.emit(weth, "Transfer");
+
+        // should revert to cancelResubscribe now
         await expect(
           meTokenRegistry.cancelResubscribe(meTokenAddr0)
         ).to.be.revertedWith("Resubscription has started");
@@ -687,7 +725,7 @@ const setup = async () => {
           meTokenRegistry.connect(account1).finishResubscribe(meTokenAddr1)
         ).to.be.revertedWith("No targetHubId");
       });
-      it("Fails if updating but cooldown not reached", async () => {
+      it("Fails if updating but endTime not reached", async () => {
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
         );
@@ -732,10 +770,9 @@ const setup = async () => {
 
     describe("updateBalances()", () => {
       before(async () => {
-        const earliestSwapTime = block.timestamp + 600 * 60; // 10h in future
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint256", "uint24"],
-          [earliestSwapTime, fees]
+          ["uint24"],
+          [fees]
         );
 
         tx = await meTokenRegistry

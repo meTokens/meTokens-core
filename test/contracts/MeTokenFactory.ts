@@ -29,22 +29,14 @@ const setup = async () => {
   describe("MeTokenFactory", async () => {
     before(async () => {
       const { DAI } = await getNamedAccounts();
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
       );
 
       ({ foundry, meTokenFactory, meTokenRegistry, account0, account1 } =
-        await hubSetup(
-          encodedCurveInfo,
-          encodedVaultArgs,
-          refundRatio,
-          "BancorCurve"
-        ));
+        await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
     });
     it("create() with same params always produce different MeTokens", async () => {
       const name = "ABCD";

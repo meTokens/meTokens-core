@@ -45,10 +45,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      const encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -64,12 +60,7 @@ const setup = async () => {
         account2,
         account3,
         meTokenRegistry,
-      } = await hubSetup(
-        encodedCurveInfo,
-        encodedVaultArgs,
-        refundRatio,
-        "BancorCurve"
-      ));
+      } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       diamondCut = await getContractAt<IDiamondCut>(
         "IDiamondCut",
         diamond.address
@@ -392,7 +383,6 @@ const setup = async () => {
             yieldFee: 89746654654,
             diamond: diamond.address,
             vaultRegistry: diamond.address,
-            curveRegistry: diamond.address,
             migrationRegistry: diamond.address,
             meTokenFactory: diamond.address,
           },

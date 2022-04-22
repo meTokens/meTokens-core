@@ -4,7 +4,6 @@ pragma solidity 0.8.9;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import {ICurve} from "../interfaces/ICurve.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
@@ -12,6 +11,7 @@ import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {LibCurve} from "../libs/LibCurve.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -59,7 +59,7 @@ contract MeTokenRegistryFacet is
         // Mint meToken to user
         uint256 meTokensMinted;
         if (assetsDeposited > 0) {
-            meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
+            meTokensMinted = LibCurve.viewMeTokensMinted(
                 assetsDeposited, // deposit_amount
                 hubId, // hubId
                 0, // supply
@@ -95,12 +95,11 @@ contract MeTokenRegistryFacet is
         address migration,
         bytes memory encodedMigrationArgs
     ) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
         HubInfo memory targetHubInfo = s.hubs[targetHubId];
 
-        require(sender == meTokenInfo.owner, "!owner");
+        require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(
             block.timestamp >= meTokenInfo.endCooldown,
             "Cooldown not complete"
@@ -150,12 +149,11 @@ contract MeTokenRegistryFacet is
 
     /// @inheritdoc IMeTokenRegistryFacet
     function cancelResubscribe(address meToken) external override {
-        address sender = LibMeta.msgSender();
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
-        require(sender == meTokenInfo.owner, "!owner");
+        require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
-            block.timestamp < meTokenInfo.startTime,
+            !IMigration(meTokenInfo.migration).migrationStarted(meToken),
             "Resubscription has started"
         );
 
@@ -182,8 +180,8 @@ contract MeTokenRegistryFacet is
         override
     {
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
-        address sender = LibMeta.msgSender();
-        require(sender == meTokenInfo.migration, "!migration");
+
+        require(LibMeta.msgSender() == meTokenInfo.migration, "!migration");
         uint256 balancePooled = meTokenInfo.balancePooled;
         uint256 balanceLocked = meTokenInfo.balanceLocked;
         uint256 oldBalance = balancePooled + balanceLocked;

@@ -2,12 +2,11 @@
 pragma solidity 0.8.9;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICurve} from "../interfaces/ICurve.sol";
 import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IVault} from "../interfaces/IVault.sol";
-
+import {LibCurve} from "../libs/LibCurve.sol";
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
@@ -148,7 +147,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
@@ -263,7 +262,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            hubInfo = LibHub.finishUpdate(meTokenInfo.hubId);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
@@ -305,7 +304,7 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         // gas savings
         uint256 totalSupply = IERC20(meToken).totalSupply();
         // Calculate return assuming update/resubscribe is not happening
-        meTokensMinted = ICurve(hubInfo.curve).viewMeTokensMinted(
+        meTokensMinted = LibCurve.viewMeTokensMinted(
             assetsDeposited,
             meTokenInfo.hubId,
             totalSupply,
@@ -313,30 +312,13 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         );
 
         // Logic for if we're switching to a new curve type // reconfiguring
-        if (
-            (hubInfo.updating && (hubInfo.targetCurve != address(0))) ||
-            (hubInfo.reconfigure)
-        ) {
-            uint256 targetMeTokensMinted;
-            if (hubInfo.targetCurve != address(0)) {
-                // Means we are updating to a new curve type
-                targetMeTokensMinted = ICurve(hubInfo.targetCurve)
-                    .viewMeTokensMinted(
-                        assetsDeposited,
-                        meTokenInfo.hubId,
-                        totalSupply,
-                        meTokenInfo.balancePooled
-                    );
-            } else {
-                // Must mean we're reconfiguring
-                targetMeTokensMinted = ICurve(hubInfo.curve)
-                    .viewTargetMeTokensMinted(
-                        assetsDeposited,
-                        meTokenInfo.hubId,
-                        totalSupply,
-                        meTokenInfo.balancePooled
-                    );
-            }
+        if (hubInfo.reconfigure) {
+            uint256 targetMeTokensMinted = LibCurve.viewTargetMeTokensMinted(
+                assetsDeposited,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
             meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
@@ -344,14 +326,12 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
                 hubInfo.endTime
             );
         } else if (meTokenInfo.targetHubId != 0) {
-            uint256 targetMeTokensMinted = ICurve(
-                s.hubs[meTokenInfo.targetHubId].curve
-            ).viewMeTokensMinted(
-                    assetsDeposited,
-                    meTokenInfo.targetHubId,
-                    totalSupply,
-                    meTokenInfo.balancePooled
-                );
+            uint256 targetMeTokensMinted = LibCurve.viewMeTokensMinted(
+                assetsDeposited,
+                meTokenInfo.targetHubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
             meTokensMinted = LibWeightedAverage.calculate(
                 meTokensMinted,
                 targetMeTokensMinted,
@@ -371,39 +351,22 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint256 totalSupply = IERC20(meToken).totalSupply(); // gas savings
 
         // Calculate return assuming update is not happening
-        rawAssetsReturned = ICurve(hubInfo.curve).viewAssetsReturned(
+        rawAssetsReturned = LibCurve.viewAssetsReturned(
             meTokensBurned,
             meTokenInfo.hubId,
             totalSupply,
             meTokenInfo.balancePooled
         );
 
-        uint256 targetAssetsReturned;
-        // Logic for if we're switching to a new curve type // updating curveInfo
-        if (
-            (hubInfo.updating && (hubInfo.targetCurve != address(0))) ||
-            (hubInfo.reconfigure)
-        ) {
-            if (hubInfo.targetCurve != address(0)) {
-                // Means we are updating to a new curve type
-
-                targetAssetsReturned = ICurve(hubInfo.targetCurve)
-                    .viewAssetsReturned(
-                        meTokensBurned,
-                        meTokenInfo.hubId,
-                        totalSupply,
-                        meTokenInfo.balancePooled
-                    );
-            } else {
-                // Must mean we're updating curveInfo
-                targetAssetsReturned = ICurve(hubInfo.curve)
-                    .viewTargetAssetsReturned(
-                        meTokensBurned,
-                        meTokenInfo.hubId,
-                        totalSupply,
-                        meTokenInfo.balancePooled
-                    );
-            }
+        // Logic for if we're updating curveInfo
+        if (hubInfo.reconfigure) {
+            // Must mean we're updating curveInfo
+            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
             rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,
@@ -412,13 +375,12 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             );
         } else if (meTokenInfo.targetHubId != 0) {
             // Calculate return assuming meToken is resubscribing
-            targetAssetsReturned = ICurve(s.hubs[meTokenInfo.targetHubId].curve)
-                .viewAssetsReturned(
-                    meTokensBurned,
-                    meTokenInfo.targetHubId,
-                    totalSupply,
-                    meTokenInfo.balancePooled
-                );
+            uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.targetHubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
             rawAssetsReturned = LibWeightedAverage.calculate(
                 rawAssetsReturned,
                 targetAssetsReturned,

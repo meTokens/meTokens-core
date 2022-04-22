@@ -6,14 +6,17 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
-import {IRegistry} from "./interfaces/IRegistry.sol";
+import {IVaultRegistry} from "./interfaces/IVaultRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
+import {LibCurve} from "./libs/LibCurve.sol";
+import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
 contract DiamondInit {
+    using ABDKMathQuad for uint256;
     struct Args {
         uint256 mintFee;
         uint256 burnBuyerFee;
@@ -23,8 +26,7 @@ contract DiamondInit {
         uint256 yieldFee;
         address diamond;
         IERC20 me;
-        IRegistry vaultRegistry;
-        IRegistry curveRegistry;
+        IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
         address meTokenFactory;
     }
@@ -43,7 +45,6 @@ contract DiamondInit {
         s.me = _args.me;
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
-        s.curveRegistry = _args.curveRegistry;
         s.migrationRegistry = _args.migrationRegistry;
         s.meTokenFactory = _args.meTokenFactory;
         s.mintFee = _args.mintFee;
@@ -64,5 +65,10 @@ contract DiamondInit {
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+
+        LibCurve.CurveStorage storage cs = LibCurve.curveStorage();
+        cs.one = (uint256(1)).fromUInt();
+        cs.maxWeight = uint256(LibCurve.MAX_WEIGHT).fromUInt();
+        cs.baseX = uint256(1 ether).fromUInt();
     }
 }

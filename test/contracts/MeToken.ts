@@ -16,7 +16,6 @@ const setup = async () => {
   let account1: SignerWithAddress;
   let meTokenRegistry: MeTokenRegistryFacet;
   let meToken: MeToken;
-  let encodedCurveDetails: string;
   let encodedVaultArgs: string;
   let chainId: number;
   const initRefundRatio = 50000;
@@ -35,15 +34,12 @@ const setup = async () => {
         ["address"],
         [DAI]
       );
-      encodedCurveDetails = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
+
       ({ account0, account1, meTokenRegistry } = await hubSetup(
-        encodedCurveDetails,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        initRefundRatio,
-        "bancorABDK"
+        initRefundRatio
       ));
 
       await meTokenRegistry.connect(account0).subscribe(name, symbol, 1, 0);

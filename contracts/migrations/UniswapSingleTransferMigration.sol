@@ -23,14 +23,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     using SafeERC20 for IERC20;
 
     struct UniswapSingleTransfer {
-        // The earliest time that the swap can occur
-        uint256 soonest;
         // Fee configured to pay on swap
         uint24 fee;
         // if migration is active and startMigration() has not been triggered
         bool started;
-        // meToken has executed the swap and can finish migrating
-        bool swapped;
     }
 
     mapping(address => UniswapSingleTransfer) private _uniswapSingleTransfers;
@@ -45,48 +41,48 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
 
+    modifier onlyDiamond() {
+        require(msg.sender == diamond, "!diamond");
+        _;
+    }
+
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     /// @inheritdoc IMigration
     function initMigration(address meToken, bytes memory encodedArgs)
         external
         override
+        onlyDiamond
     {
-        require(msg.sender == diamond, "!diamond");
-
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.hubId
-        );
-        HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.targetHubId
+
+        require(
+            IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).asset !=
+                IHubFacet(diamond).getHubInfo(meTokenInfo.targetHubId).asset,
+            "same asset"
         );
 
-        require(hubInfo.asset != targetHubInfo.asset, "same asset");
-
-        (uint256 soonest, uint24 fee) = abi.decode(
+        _uniswapSingleTransfers[meToken].fee = abi.decode(
             encodedArgs,
-            (uint256, uint24)
+            (uint24)
         );
-        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        usts.fee = fee;
-        usts.soonest = soonest;
     }
 
     /// @inheritdoc IMigration
     function poke(address meToken) external override nonReentrant {
-        // Make sure meToken is in a state of resubscription
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.hubId
-        );
+
         if (
-            usts.soonest != 0 && block.timestamp > usts.soonest && !usts.started
+            usts.fee != 0 && // make sure meToken is in a state of resubscription
+            block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
+            !usts.started // should skip if already started
         ) {
-            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
+            ISingleAssetVault(
+                IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
+            ).startMigration(meToken);
             usts.started = true;
             _swap(meToken);
         }
@@ -97,24 +93,19 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         external
         override
         nonReentrant
-        returns (uint256 amountOut)
+        onlyDiamond
     {
-        require(msg.sender == diamond, "!diamond");
-        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        require(usts.soonest < block.timestamp, "timestamp < soonest");
-
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        HubInfo memory hubInfo = IHubFacet(diamond).getHubInfo(
-            meTokenInfo.hubId
-        );
         HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
 
-        if (!usts.started) {
-            ISingleAssetVault(hubInfo.vault).startMigration(meToken);
-            usts.started = true;
+        uint256 amountOut;
+        if (!_uniswapSingleTransfers[meToken].started) {
+            ISingleAssetVault(
+                IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
+            ).startMigration(meToken);
             amountOut = _swap(meToken);
         } else {
             // No swap, amountOut = amountIn
@@ -148,11 +139,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         // encodedArgs empty
         if (encodedArgs.length == 0) return false;
-        (uint256 soon, uint24 fee) = abi.decode(encodedArgs, (uint256, uint24));
-        // Too soon
-        if (soon < block.timestamp) return false;
+
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
+        uint24 fee = abi.decode(encodedArgs, (uint24));
+
         // MeToken not subscribed to a hub
         if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
@@ -161,6 +152,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         } else {
             return false;
         }
+    }
+
+    /// @inheritdoc IMigration
+    function migrationStarted(address meToken)
+        external
+        view
+        override
+        returns (bool started)
+    {
+        return _uniswapSingleTransfers[meToken].started;
     }
 
     /// @dev parent call must have reentrancy check
@@ -181,14 +182,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         // - There are tokens to swap
         // - The resubscription has started
         // - The asset hasn't been swapped
-        // - Current time is past the soonest it can swap, and time to swap has been set
-        if (
-            amountIn == 0 ||
-            !usts.started ||
-            usts.swapped ||
-            usts.soonest == 0 ||
-            usts.soonest > block.timestamp
-        ) {
+        // - Current time is past the startTime it can swap, and time to swap has been set
+        if (amountIn == 0) {
             return 0;
         }
 
@@ -207,8 +202,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
             });
-
-        usts.swapped = true;
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);

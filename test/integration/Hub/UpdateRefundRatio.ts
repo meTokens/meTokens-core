@@ -24,13 +24,11 @@ import {
   MeToken,
   ERC20,
   SingleAssetVault,
-  ICurve,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("HubFacet - update RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
-    let curve: ICurve;
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
@@ -44,7 +42,6 @@ const setup = async () => {
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
-    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const firstRefundRatio = 5000;
@@ -54,10 +51,6 @@ const setup = async () => {
       let DAI;
       ({ DAI } = await getNamedAccounts());
 
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
-      );
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
@@ -67,17 +60,16 @@ const setup = async () => {
         tokenHolder,
         hub,
         foundry,
-        curve,
         singleAssetVault,
         meTokenRegistry,
         account0,
         account1,
         account2,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        firstRefundRatio,
-        "BancorCurve"
+        firstRefundRatio
       ));
 
       // Pre-load owner and buyer w/ DAI
@@ -129,19 +121,14 @@ const setup = async () => {
 
     describe("Warmup", () => {
       before(async () => {
-        await hub.initUpdate(
-          firstHubId,
-          curve.address,
-          targetedRefundRatio,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(firstHubId, targetedRefundRatio, 0);
       });
       it("should revert initUpdate() if already updating", async () => {
         // fast fwd a little bit
         await passDays(1);
-        await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
-        ).to.be.revertedWith("already updating");
+        await expect(hub.initUpdate(1, 1000, reserveWeight)).to.be.revertedWith(
+          "already updating"
+        );
       });
 
       it("Assets received based on initialRefundRatio", async () => {
@@ -223,9 +210,9 @@ const setup = async () => {
         await passHours(1);
       });
       it("should revert initUpdate() if already updating", async () => {
-        await expect(
-          hub.initUpdate(1, curve.address, 1000, encodedCurveInfo)
-        ).to.be.revertedWith("already updating");
+        await expect(hub.initUpdate(1, 1000, reserveWeight)).to.be.revertedWith(
+          "already updating"
+        );
       });
 
       it("Assets received for owner should not apply refund ratio", async () => {
@@ -365,9 +352,9 @@ const setup = async () => {
         //Block.timestamp should be between endtime and endCooldown
         // move forward to cooldown
         await passSeconds(endTime.sub(block.timestamp).toNumber() + 1);
-        await expect(
-          hub.initUpdate(1, curve.address, 1000, ethers.utils.toUtf8Bytes(""))
-        ).to.be.revertedWith("Still cooling down");
+        await expect(hub.initUpdate(1, 1000, 0)).to.be.revertedWith(
+          "Still cooling down"
+        );
       });
 
       it("Before refundRatio set, burn() for owner should not apply refund ratio", async () => {
@@ -508,9 +495,9 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -532,12 +519,7 @@ const setup = async () => {
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
         expect(detBefore.targetRefundRatio).to.equal(0);
-        await hub.initUpdate(
-          hubId,
-          curve.address,
-          targetedRefundRatio,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(hubId, targetedRefundRatio, 0);
         const detAfterInit = await hub.getHubInfo(hubId);
 
         expect(detAfterInit.active).to.be.true;
@@ -576,12 +558,7 @@ const setup = async () => {
         expect(block.timestamp).to.be.lt(endCooldown);
 
         await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
-        await hub.initUpdate(
-          1,
-          curve.address,
-          1000,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(1, 1000, 0);
 
         const detAfterInit = await hub.getHubInfo(1);
         expect(detAfterInit.active).to.be.true;
@@ -595,9 +572,9 @@ const setup = async () => {
           account0.address,
           token.address,
           singleAssetVault.address,
-          curve.address,
           targetedRefundRatio / 2, //refund ratio
-          encodedCurveInfo,
+          baseY,
+          reserveWeight,
           encodedVaultArgs
         );
         const hubId = (await hub.count()).toNumber();
@@ -615,12 +592,7 @@ const setup = async () => {
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
         expect(detBefore.targetRefundRatio).to.equal(0);
-        await hub.initUpdate(
-          hubId,
-          curve.address,
-          targetedRefundRatio,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(hubId, targetedRefundRatio, 0);
         const detAfterInit = await hub.getHubInfo(hubId);
 
         expect(detAfterInit.active).to.be.true;
@@ -630,12 +602,7 @@ const setup = async () => {
 
         const block = await ethers.provider.getBlock("latest");
         expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
-        await hub.initUpdate(
-          hubId,
-          curve.address,
-          1000,
-          ethers.utils.toUtf8Bytes("")
-        );
+        await hub.initUpdate(hubId, 1000, 0);
 
         const detAfterUpdate = await hub.getHubInfo(hubId);
         expect(detAfterUpdate.active).to.be.true;

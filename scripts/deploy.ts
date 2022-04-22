@@ -14,8 +14,7 @@ import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
 import { LiquidityMiningFacet } from "../artifacts/types/LiquidityMiningFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
-  BancorCurve,
-  CurveRegistry,
+  CurveFacet,
   MeTokenFactory,
   MigrationRegistry,
   SingleAssetVault,
@@ -49,13 +48,6 @@ async function main() {
 
   console.log("Deploying on network", network.name);
   console.log("Deployer address:", deployerAddr);
-
-  const curveRegistry = await deploy<CurveRegistry>("CurveRegistry");
-  console.log("curveRegistry deployed at:", curveRegistry.address);
-  contracts.push({
-    name: "contracts/registries/CurveRegistry.sol:CurveRegistry",
-    address: curveRegistry.address,
-  });
 
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"
@@ -96,13 +88,6 @@ async function main() {
   );
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
 
-  const curve = await deploy<BancorCurve>(
-    "BancorCurve",
-    undefined,
-    diamond.address
-  );
-  console.log("curve deployed at:", curve.address);
-
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   console.log("MeTokenFactory deployed at:", meTokenFactory.address);
   contracts.push({
@@ -126,6 +111,9 @@ async function main() {
     name: "contracts/facets/FoundryFacet.sol:FoundryFacet",
     address: foundryFacet.address,
   });
+
+  const curveFacet = await deploy<CurveFacet>("CurveFacet");
+  console.log("CurveFacet deployed at:", curveFacet.address);
 
   const feesFacet = await deploy<FeesFacet>("FeesFacet");
   console.log("FeesFacet deployed at:", feesFacet.address);
@@ -177,6 +165,7 @@ async function main() {
   const facets = [
     hubFacet,
     foundryFacet,
+    curveFacet,
     feesFacet,
     meTokenRegistryFacet,
     diamondLoupeFacet,
@@ -207,7 +196,6 @@ async function main() {
       yieldFee: feeInitialization[5],
       diamond: diamond.address,
       vaultRegistry: vaultRegistry.address,
-      curveRegistry: curveRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
     },
@@ -228,15 +216,10 @@ async function main() {
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
-  await curveRegistry.approve(curve.address);
   await vaultRegistry.approve(singleAssetVault.address);
   console.log("curve and singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
   let reserveWeight = 250000;
-  let encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-    ["uint256", "uint32"],
-    [baseY, reserveWeight]
-  );
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
@@ -253,9 +236,9 @@ async function main() {
     deployerAddr,
     tokenAddr,
     singleAssetVault.address,
-    curve.address,
     REFUND_RATIO, //refund ratio
-    encodedCurveInfo,
+    baseY,
+    reserveWeight,
     encodedVaultArgs
   );
   await tx.wait();
@@ -275,8 +258,6 @@ async function main() {
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
-    "Curve Registry Contract Address": curveRegistry.address,
-    "Bancor Curve Contract Address": curve.address,
     "MeToken Factory Contract Address": meTokenFactory.address,
     "Block Number": receipt.blockNumber.toString(),
   };
@@ -309,7 +290,7 @@ async function main() {
       deployer.address,
       diamondCutFacet.address,
     ]);
-    await verifyContract("BancorCurve", curve.address, [diamond.address]);
+    //  await verifyContract("BancorCurve", curve.address, [diamond.address]);
 
     for (let i = 0; i < contracts.length; ++i) {
       try {

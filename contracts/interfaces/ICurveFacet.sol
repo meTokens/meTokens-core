@@ -1,36 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {LibCurve} from "../libs/LibCurve.sol";
+
 /// @title Generic Curve interface
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @dev Required for all Curves
-interface ICurve {
+interface ICurveFacet {
     /// @notice Event when curveInfo is updated from target values to actual values
     event Updated(uint256 indexed hubId);
-
-    /// @notice Given a hub, baseX, baseY and connector weight, add the configuration to the
-    /// BancorZero Curve registry
-    /// @dev Curve need to be encoded as the Hub may register Curves for different curves
-    ///      that may contain different Curve arguments
-    /// @param hubId            Unique hub identifier
-    /// @param encodedCurveInfo Encoded curveInfo
-    function register(uint256 hubId, bytes calldata encodedCurveInfo) external;
-
-    /// @notice Initialize reconfiguring curveInfo for a hub
-    /// @param hubId            Unique hub identifier
-    /// @param encodedCurveInfo Encoded target curveInfo
-    function initReconfigure(uint256 hubId, bytes calldata encodedCurveInfo)
-        external;
-
-    /// @notice Finish reconfiguring curveInfo for a hub
-    /// @param hubId Unique hub identifier
-    function finishReconfigure(uint256 hubId) external;
 
     /// @notice Get curveInfo for a hub
     function getCurveInfo(uint256 hubId)
         external
         view
-        returns (uint256[4] memory);
+        returns (LibCurve.CurveInfo memory);
 
     /// @notice Calculate meTokens minted based on a curve's active details
     /// @param assetsDeposited  Amount of assets deposited to the hub
