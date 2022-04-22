@@ -64,6 +64,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         //      pool gets 20 ME (there are 5 meTokens in the season)
         // - issuer - total amount of ME that issuers could win
         SeasonInfo storage newSeasonInfo = s.seasons[++s.seasonCount];
+        // TODO should initTime > blockTimestamp?
         newSeasonInfo.initTime = initTime;
         newSeasonInfo.startTime = initTime + s.lmWarmup;
         newSeasonInfo.endTime = newSeasonInfo.startTime + s.lmDuration;
@@ -105,14 +106,13 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     function stake(
         address meToken,
         uint256 amount,
-        uint256 index,
         bytes32[] calldata merkleProof
     ) external nonReentrant {
         require(amount > 0, "RewardsPool: cannot stake zero");
 
         address sender = LibMeta.msgSender();
 
-        refreshPool(meToken, index, merkleProof);
+        refreshPool(meToken, merkleProof);
         updateReward(meToken, sender);
 
         IERC20(meToken).safeTransferFrom(sender, address(this), amount);
@@ -123,19 +123,13 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         emit Staked(meToken, sender, amount);
     }
 
-    function exit(
-        address meToken,
-        uint256 index,
-        bytes32[] calldata merkleProof
-    ) external nonReentrant {
+    function exit(address meToken, bytes32[] calldata merkleProof)
+        external
+        nonReentrant
+    {
         address sender = LibMeta.msgSender();
 
-        withdraw(
-            meToken,
-            s.stakedBalances[meToken][sender],
-            index,
-            merkleProof
-        );
+        withdraw(meToken, s.stakedBalances[meToken][sender], merkleProof);
         claimReward(meToken, 0);
     }
 
@@ -215,14 +209,13 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     function withdraw(
         address meToken,
         uint256 amount,
-        uint256 index,
         bytes32[] calldata merkleProof
     ) public nonReentrant {
         require(amount > 0, "RewardsPool: cannot withdraw zero");
 
         address sender = LibMeta.msgSender();
 
-        refreshPool(meToken, index, merkleProof);
+        refreshPool(meToken, merkleProof);
         updateReward(meToken, sender);
 
         s.stakedBalances[meToken][sender] -= amount;
@@ -234,11 +227,9 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     }
 
     /// @notice refreshes & resets meToken pool if featured in a new season
-    function refreshPool(
-        address meToken,
-        uint256 index,
-        bytes32[] calldata merkleProof
-    ) public {
+    function refreshPool(address meToken, bytes32[] calldata merkleProof)
+        public
+    {
         PoolInfo storage poolInfo = s.pools[meToken];
 
         if (
@@ -253,9 +244,13 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
             ? 1
             : poolInfo.seasonId + s.issuerCooldown;
 
-        for (uint256 i = soonestSeason; i <= s.seasonCount; i++) {
-            if (isMeTokenInSeason(i, meToken, index, merkleProof)) {
-                SeasonInfo storage seasonInfo = s.seasons[i];
+        for (
+            uint256 seasonId = soonestSeason;
+            seasonId <= s.seasonCount;
+            seasonId++
+        ) {
+            if (isMeTokenInSeason(seasonId, meToken, merkleProof)) {
+                SeasonInfo storage seasonInfo = s.seasons[seasonId];
                 uint256 pendingIssuerRewards = poolInfo.pendingIssuerRewards;
                 uint256 totalSupply = poolInfo.totalSupply;
 
@@ -282,7 +277,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
                 }
 
                 PoolInfo storage newMeTokenPool = s.pools[meToken];
-                newMeTokenPool.seasonId = i;
+                newMeTokenPool.seasonId = seasonId;
                 newMeTokenPool.pendingIssuerRewards = pendingIssuerRewards;
                 newMeTokenPool.totalSupply = totalSupply;
             }
@@ -315,18 +310,22 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
             (seasonId == 0) || (seasonId + s.issuerCooldown <= s.seasonCount);
     }
 
+    /**
+        @notice checks if `meToken` is part of `seasonId`.
+        @param seasonId - uint256 season id.
+        @param meToken - address a metoken address.
+        @param merkleProof - bytes32[] merkle proof that ensures that `meToken` is part of `seasonId`.
+     */
     function isMeTokenInSeason(
-        uint256 _seasonId,
+        uint256 seasonId,
         address meToken,
-        uint256 index,
         bytes32[] calldata merkleProof
     ) public view returns (bool) {
-        bytes32 node = keccak256(abi.encodePacked(index, meToken, uint256(1)));
         return
             MerkleProof.verify(
                 merkleProof,
-                s.seasons[_seasonId].merkleRoot,
-                node
+                s.seasons[seasonId].merkleRoot,
+                keccak256(abi.encodePacked(meToken))
             );
     }
 
