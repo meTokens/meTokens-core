@@ -39,7 +39,6 @@ const setup = async () => {
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
     const MAX_WEIGHT = 1000000;
-    let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     const firstHubId = 1;
     const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
@@ -77,7 +76,6 @@ const setup = async () => {
         encodedVaultArgs,
         initialRefundRatio.toNumber()
       ));
-
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",

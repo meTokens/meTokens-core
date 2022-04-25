@@ -2,15 +2,15 @@ import { Contract } from "@ethersproject/contracts";
 import { deploy } from "../test/utils/helpers";
 import fs from "fs";
 import { network, run, ethers, getNamedAccounts } from "hardhat";
-import { DiamondCutFacet } from "../artifacts/types/DiamondCutFacet";
-import { Diamond } from "../artifacts/types/Diamond";
-import { DiamondInit } from "../artifacts/types/DiamondInit";
-import { HubFacet } from "../artifacts/types/HubFacet";
-import { FoundryFacet } from "../artifacts/types/FoundryFacet";
-import { FeesFacet } from "../artifacts/types/FeesFacet";
-import { MeTokenRegistryFacet } from "../artifacts/types/MeTokenRegistryFacet";
-import { DiamondLoupeFacet } from "../artifacts/types/DiamondLoupeFacet";
-import { OwnershipFacet } from "../artifacts/types/OwnershipFacet";
+import { DiamondCutFacet } from "../artifacts/types/contracts/facets/DiamondCutFacet";
+import { Diamond } from "../artifacts/types/contracts/Diamond";
+import { DiamondInit } from "../artifacts/types/contracts/DiamondInit";
+import { HubFacet } from "../artifacts/types/contracts/facets/HubFacet";
+import { FoundryFacet } from "../artifacts/types/contracts/facets/FoundryFacet";
+import { FeesFacet } from "../artifacts/types/contracts/facets/FeesFacet";
+import { MeTokenRegistryFacet } from "../artifacts/types/contracts/facets/MeTokenRegistryFacet";
+import { DiamondLoupeFacet } from "../artifacts/types/contracts/facets/DiamondLoupeFacet";
+import { OwnershipFacet } from "../artifacts/types/contracts/facets/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
   CurveFacet,

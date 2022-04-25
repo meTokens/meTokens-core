@@ -141,7 +141,7 @@ export async function transferFromWhale(
   whale = await impersonate(whaleAddr);
   await token
     .connect(whale)
-    .transfer(recipient, ethers.utils.parseUnits("1000", erc20Decimals));
+    .transfer(recipient, ethers.utils.parseUnits("500", erc20Decimals));
   return { token, whale, whaleAddr, tokenAddr };
 }
 

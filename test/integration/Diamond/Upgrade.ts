@@ -69,7 +69,7 @@ const setup = async () => {
       // Pre-load owner and buyer w/ DAI
       await token
         .connect(whale)
-        .transfer(account2.address, ethers.utils.parseEther("1000"));
+        .transfer(account2.address, ethers.utils.parseEther("100"));
       // Create meToken and subscribe to Hub1
       const tokenDeposited = ethers.utils.parseEther("100");
       const name = "Carl0 meToken";
