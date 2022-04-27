@@ -54,9 +54,6 @@ describe("Vault with Yearn Token", () => {
   const tokenDeposited = ethers.utils.parseEther(
     tokenDepositedInETH.toString()
   );
-  /*  after(async () => {
-    await resetFork(13310410);
-  }); */
   before(async () => {
     ({ DAI, DAIWhale, YDAI, YDAIWhale } = await getNamedAccounts());
 

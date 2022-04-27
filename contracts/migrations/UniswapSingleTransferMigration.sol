@@ -12,6 +12,7 @@ import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRoute
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
+import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -56,7 +57,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-
+        console.log("## initMigration uni ");
         require(
             IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).asset !=
                 IHubFacet(diamond).getHubInfo(meTokenInfo.targetHubId).asset,
@@ -75,6 +76,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
 
+        console.log("## poke uni ");
         if (
             usts.fee != 0 && // make sure meToken is in a state of resubscription
             block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
@@ -83,6 +85,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             ISingleAssetVault(
                 IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
             ).startMigration(meToken);
+            console.log("## poke WILL START SWAP !!!! uni ");
             usts.started = true;
             _swap(meToken);
         }
@@ -100,7 +103,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         HubInfo memory targetHubInfo = IHubFacet(diamond).getHubInfo(
             meTokenInfo.targetHubId
         );
-
+        console.log("## finishMigration uni ");
         uint256 amountOut;
         if (!_uniswapSingleTransfers[meToken].started) {
             ISingleAssetVault(

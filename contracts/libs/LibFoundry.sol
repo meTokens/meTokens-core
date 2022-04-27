@@ -19,6 +19,7 @@ import {LibCurve} from "../libs/LibCurve.sol";
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 library LibFoundry {
     event Mint(
@@ -53,15 +54,24 @@ library LibFoundry {
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
+        console.log(
+            "## handleMint meTokenInfo.targetHubId:%s hubInfo.updating:%s block.timestamp > hubInfo.endTime:%s",
+            meTokenInfo.targetHubId,
+            hubInfo.updating,
+            block.timestamp > hubInfo.endTime
+        );
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(meTokenInfo.hubId);
         } else if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
+                console.log(
+                    "## LIBFOUNDRY FINISH RESUBSCRIBE > meTokenInfo.endTime   "
+                );
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
                 meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
+                console.log("## LIBFOUNDRY poke   > meTokenInfo.startTime   ");
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
                 meTokenInfo = s.meTokens[meToken];
