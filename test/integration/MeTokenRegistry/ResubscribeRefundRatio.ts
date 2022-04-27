@@ -6,6 +6,7 @@ import {
   deploy,
   getContractAt,
   weightedAverageSimulation,
+  toETHNumber,
 } from "../../utils/helpers";
 import { hubSetup } from "../../utils/hubSetup";
 import { mineBlock } from "../../utils/hardhatNode";
@@ -19,7 +20,7 @@ import {
   SingleAssetVault,
   UniswapSingleTransferMigration,
 } from "../../../artifacts/types";
-
+import { getQuote } from "../../utils/uniswap";
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
@@ -41,11 +42,11 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     let encodedVaultArgs: string;
     const firstHubId = 1;
-    const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
-    const targetRefundRatio = ethers.utils.parseUnits("500000", 0); // 50%
+    const initialRefundRatio = ethers.utils.parseUnits("4000", 0); // 0.004%
+    const targetRefundRatio = ethers.utils.parseUnits("400000", 0); // 40%
     const fees = 3000;
 
-    let tokenDepositedInETH;
+    let UNIV3Factory: string;
     let tokenDeposited: BigNumber;
 
     before(async () => {
@@ -53,7 +54,7 @@ const setup = async () => {
       const reserveWeight = MAX_WEIGHT / 2;
       let DAI;
       let WETH;
-      ({ DAI, WETH } = await getNamedAccounts());
+      ({ DAI, WETH, UNIV3Factory } = await getNamedAccounts());
 
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -93,11 +94,11 @@ const setup = async () => {
       // Pre-load owner and buyer w/ DAI
       await dai
         .connect(whale)
-        .transfer(account2.address, ethers.utils.parseEther("50"));
+        .transfer(account2.address, ethers.utils.parseEther("50000"));
 
       await weth
         .connect(whale)
-        .transfer(account2.address, ethers.utils.parseEther("50"));
+        .transfer(account2.address, ethers.utils.parseEther("500"));
 
       // Create meToken and subscribe to Hub1
       await meTokenRegistry
@@ -132,8 +133,7 @@ const setup = async () => {
         migration.address,
         encodedMigrationArgs
       );
-      tokenDepositedInETH = 5;
-      tokenDeposited = ethers.utils.parseEther(tokenDepositedInETH.toString());
+      tokenDeposited = ethers.utils.parseUnits("30.49711783897089858", "ether");
       await dai
         .connect(account2)
         .approve(singleAssetVault.address, ethers.constants.MaxUint256);
@@ -185,9 +185,10 @@ const setup = async () => {
         expect(meTokenInfo.balanceLocked).to.equal(0);
       });
       it("burn() [buyer]: assets received based on initial refundRatio", async () => {
+        const collateralDeposited = tokenDeposited.mul(3);
         await foundry
           .connect(account2)
-          .mint(meToken.address, tokenDeposited, account1.address);
+          .mint(meToken.address, collateralDeposited, account1.address);
 
         const buyerMeTokenBefore = await meToken.balanceOf(account1.address);
         const buyerDAIBefore = await dai.balanceOf(account1.address);
@@ -205,8 +206,9 @@ const setup = async () => {
           meToken.address
         );
 
-        const refundAmount = tokenDeposited.mul(initialRefundRatio).div(1e6);
-
+        const refundAmount = collateralDeposited
+          .mul(initialRefundRatio)
+          .div(1e6);
         expect(totalSupply).to.equal(0);
         expect(buyerMeTokenAfter).to.equal(0);
         expect(buyerDAIAfter.sub(buyerDAIBefore)).to.equal(refundAmount);
@@ -230,6 +232,9 @@ const setup = async () => {
         const vaultDAIBeforeMint = await dai.balanceOf(
           singleAssetVault.address
         );
+        const meTokenInfoBefore = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
         const tx = await foundry
           .connect(account2)
           .mint(meToken.address, tokenDeposited, account0.address);
@@ -248,9 +253,23 @@ const setup = async () => {
 
         expect(vaultDAIBeforeMint).to.be.gt(0);
         expect(vaultDAIBefore).to.be.equal(0); // as all is swapped for weth and goes to migration
-        // TODO check extra balance due to swap
-        expect(migrationWETHBefore).to.gt(tokenDeposited); // migration vault receives minted funds plus dai swap
-
+        // migration vault receives minted funds plus dai swap
+        const migrationDetails = await migration.getDetails(meToken.address);
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
+          tokenDeposited
+            .add(meTokenInfoBefore.balanceLocked)
+            .add(meTokenInfoBefore.balancePooled)
+        );
+        console.log(JSON.stringify(price));
+        // dai to eth swap amount
+        expect(toETHNumber(migrationWETHBefore)).to.be.approximately(
+          Number(price.token0Price),
+          0.01
+        );
         await foundry
           .connect(account0)
           .burn(meToken.address, ownerMeTokenBefore, account0.address);
@@ -273,10 +292,10 @@ const setup = async () => {
         expect(vaultDAIBefore).to.equal(vaultDAIAfter); // as vault do not receive any funds
         expect(vaultWETHBefore).to.equal(vaultWETHAfter); // as vault do not receive any funds
         expect(migrationDAIBefore).to.equal(migrationDAIAfter); // as migration receives new fund in weth
-        expect(migrationWETHAfter).to.equal(0); // as all funds are transferred to owner
-        expect(ownerWETHAfter.sub(ownerWETHBefore)).to.equal(
-          migrationWETHBefore
-        ); // as all token deposited goes to owner plus swap tokens
+        expect(migrationWETHAfter).to.be.lte(1); // as all funds are transferred to owner
+        expect(
+          ownerWETHAfter.sub(ownerWETHBefore).sub(migrationWETHBefore)
+        ).to.be.lte(1); // as all token deposited goes to owner plus swap tokens
         expect(meTokenInfo.balancePooled).to.equal(0);
         expect(meTokenInfo.balanceLocked).to.equal(0);
       });
@@ -295,7 +314,7 @@ const setup = async () => {
         const migrationDAIBefore = await dai.balanceOf(migration.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
 
-        expect(migrationWETHBefore).to.equal(tokenDeposited);
+        expect(migrationWETHBefore.sub(1)).to.equal(tokenDeposited);
 
         await foundry
           .connect(account1) // non owner
@@ -379,10 +398,10 @@ const setup = async () => {
         const migrationWETHBefore = await weth.balanceOf(migration.address);
 
         expect(migrationWETHBeforeMint).to.be.gt(0); // due to refund ration from last burn
-        expect(vaultWETHBefore).to.equal(
+        expect(vaultWETHBefore.add(1)).to.equal(
           tokenDeposited.add(migrationWETHBeforeMint)
         );
-        expect(migrationWETHBefore).to.equal(0); // as all funds are transferred to vault
+        expect(migrationWETHBefore).to.be.lte(1); // as all funds are transferred to vault
 
         await foundry
           .connect(account0)

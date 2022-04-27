@@ -8,7 +8,7 @@ import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
-import {ISwapRouter} from "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
+import {IV3SwapRouter} from "@uniswap/swap-router-contracts/contracts/interfaces/IV3SwapRouter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
@@ -34,8 +34,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     // NOTE: this can be found at
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
-    ISwapRouter private immutable _router =
-        ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IV3SwapRouter private immutable _router =
+        IV3SwapRouter(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
 
     // args for uniswap router
     uint24 public constant MINFEE = 500; // 0.05%
@@ -125,6 +125,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         delete _uniswapSingleTransfers[meToken];
     }
 
+    /// @inheritdoc IMigration
+    function isStarted(address meToken) external view override returns (bool) {
+        return _uniswapSingleTransfers[meToken].started;
+    }
+
     function getDetails(address meToken)
         external
         view
@@ -194,13 +199,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
+        IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: hubInfo.asset,
                 tokenOut: targetHubInfo.asset,
                 fee: usts.fee,
                 recipient: address(this),
-                deadline: block.timestamp,
                 amountIn: amountIn,
                 amountOutMinimum: 0,
                 sqrtPriceLimitX96: 0
