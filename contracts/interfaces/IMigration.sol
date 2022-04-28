@@ -26,4 +26,6 @@ interface IMigration {
         external
         view
         returns (bool started);
+
+    function canCancelResubscribe(address meToken) external view returns (bool);
 }
