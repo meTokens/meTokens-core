@@ -135,4 +135,13 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         return _sameAssetMigration[meToken].started;
     }
+
+    function canCancelResubscribe(address meToken)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return !_sameAssetMigration[meToken].started;
+    }
 }

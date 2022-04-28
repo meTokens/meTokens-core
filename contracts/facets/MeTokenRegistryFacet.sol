@@ -152,9 +152,11 @@ contract MeTokenRegistryFacet is
         MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
         require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
+        // TODO: validiate !IMigration(meTokenInfo.migration).migrationStarted(meToken)
+        // and do this interface for sameAssetMigration
         require(
-            !IMigration(meTokenInfo.migration).migrationStarted(meToken),
-            "Resubscription has started"
+            IMigration(meTokenInfo.migration).canCancelResubscribe(meToken),
+            "cannot cancel resubscribe"
         );
 
         meTokenInfo.startTime = 0;
