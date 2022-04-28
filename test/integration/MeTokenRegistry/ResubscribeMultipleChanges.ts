@@ -396,7 +396,7 @@ const setup = async () => {
           0.01
         );
       });
-      /*  it("burn() [buyer]: assets received based on weighted average of Curves and and assets received apply weighted average refundRatio", async () => {
+      it("burn() [buyer]: assets received based on weighted average of Curves and and assets received apply weighted average refundRatio", async () => {
         const ownerMeToken = await meToken.balanceOf(account0.address);
         await meToken.transfer(account1.address, ownerMeToken.div(2));
         const buyerMeToken = await meToken.balanceOf(account1.address);
@@ -544,10 +544,10 @@ const setup = async () => {
         );
         expect(ownerMeTokenAfter).to.equal(0);
         expect(meTokenTotalSupplyAfter).to.equal(0);
-      });*/
+      });
     });
 
-    /*  describe("Cooldown", () => {
+    describe("Cooldown", () => {
       before(async () => {
         // IncreaseBlockTime > endTime
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
@@ -694,7 +694,7 @@ const setup = async () => {
         expect(ownerMeTokenAfter).to.equal(0);
         expect(toETHNumber(meTokenTotalSupplyAfter)).to.equal(0);
       });
-    }); */
+    });
   });
 };
 

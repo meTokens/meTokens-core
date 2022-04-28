@@ -9,7 +9,6 @@ import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import "hardhat/console.sol";
 
 /// @title MeTokens Basic Vault
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
@@ -35,12 +34,6 @@ contract Vault is IVault, ReentrancyGuard {
         uint256 feeAmount
     ) external virtual override nonReentrant {
         require(msg.sender == diamond, "!diamond");
-        console.log(
-            "## asset:%s address(this):%s depositAmount:%s",
-            asset,
-            address(this),
-            depositAmount
-        );
         IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
         if (feeAmount > 0) {
             accruedFees[asset] += feeAmount;
