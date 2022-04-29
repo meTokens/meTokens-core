@@ -406,24 +406,6 @@ const setup = async () => {
           tokenDeposited.add(vaultInitDAIBefore)
         );
         const account1DaiBefore = await dai.balanceOf(account1.address);
-        console.log(`
-        migrationDetails:${JSON.stringify(migrationDetails)}
-
-        dai:${dai.address}
-        weth:${weth.address}
-        targetVault:${targetVault.address}
-        initialVault:${initialVault.address}
-        account1DaiBefore:${toETHNumber(account1DaiBefore)}
-        tokenDeposited:${toETHNumber(tokenDeposited)}
-        allowance initialVault:${await dai.allowance(
-          account1.address,
-          initialVault.address
-        )}
-        allowance targetVault:${await dai.allowance(
-          account1.address,
-          targetVault.address
-        )}
-        `);
         await foundry
           .connect(account1)
           .mint(meToken.address, tokenDeposited, account1.address);
@@ -450,13 +432,13 @@ const setup = async () => {
         expect(toETHNumber(balanceLockedAfter)).to.be.approximately(
           toETHNumber(balanceLockedBefore) /
             Number(price.oneToken1inToken0Price),
-          0.002
+          0.001
         );
         // balance pooled increased by the deposited amount in dai
         expect(toETHNumber(balancePooledAfter)).to.be.approximately(
           (toETHNumber(balancePooledBefore) + toETHNumber(tokenDeposited)) /
             Number(price.oneToken1inToken0Price),
-          0.004
+          0.001
         );
         const ownerMeTokenAfter = await meToken.balanceOf(account1.address);
         const meTokenTotalSupplyAfter = await meToken.totalSupply();
@@ -473,7 +455,7 @@ const setup = async () => {
         const vaultDAIAfterClaim = await dai.balanceOf(initialVault.address);
         expect(vaultDAIAfterClaim).to.equal(0); // old asset goes to migration and dao claimed fees
       });
-      /*    it("burn() [buyer]: assets returned is WETH", async () => {
+      it("burn() [buyer]: assets returned is WETH", async () => {
         const ownerMeToken = await meToken.balanceOf(account1.address);
         await meToken
           .connect(account1)
@@ -614,10 +596,10 @@ const setup = async () => {
         const balancePooledAfter = meTokenInfoAfter.balancePooled;
         expect(balanceLockedAfter).to.equal(0);
         expect(balancePooledAfter).to.equal(0);
-      }); */
+      });
     });
 
-    /*  describe("Cooldown", () => {
+    describe("Cooldown", () => {
       before(async () => {
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
@@ -777,7 +759,7 @@ const setup = async () => {
         expect(ownerMeTokenAfter).to.equal(0);
         expect(toETHNumber(meTokenTotalSupplyAfter)).to.equal(0);
       });
-    }); */
+    });
   });
 };
 

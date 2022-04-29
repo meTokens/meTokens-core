@@ -133,7 +133,9 @@ const setup = async () => {
         migration.address,
         encodedMigrationArgs
       );
-      tokenDeposited = ethers.utils.parseUnits("30.49711783897089858", "ether");
+      const tokenDepositedInETH = 5;
+      tokenDeposited = ethers.utils.parseEther(tokenDepositedInETH.toString());
+      //tokenDeposited = ethers.utils.parseUnits("30.49711783897089858", "ether");
       await dai
         .connect(account2)
         .approve(singleAssetVault.address, ethers.constants.MaxUint256);
@@ -264,7 +266,6 @@ const setup = async () => {
             .add(meTokenInfoBefore.balanceLocked)
             .add(meTokenInfoBefore.balancePooled)
         );
-        console.log(JSON.stringify(price));
         // dai to eth swap amount
         expect(toETHNumber(migrationWETHBefore)).to.be.approximately(
           Number(price.token0Price),
