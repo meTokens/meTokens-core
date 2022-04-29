@@ -170,21 +170,10 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             rawAssetsReturned
         );
 
-        uint256 feeRate;
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
-        //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meTokenInfo.owner) {
-            feeRate = s.burnOwnerFee;
-        } else {
-            feeRate = s.burnBuyerFee;
-        }
-
-        // Subtract tokens returned from balance pooled
-        LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
-
         // Burn metoken from user
         IMeToken(meToken).burn(sender, meTokensBurned);
+
+        LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
         if (sender == meTokenInfo.owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
@@ -201,20 +190,40 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             );
         }
 
-        uint256 fee = (assetsReturned * feeRate) / s.PRECISION;
+        uint256 fee;
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        // If msg.sender != owner, give msg.sender the burn rate
+        if (sender == meTokenInfo.owner) {
+            fee = (s.burnOwnerFee * assetsReturned) / s.PRECISION;
+        } else {
+            fee = (s.burnBuyerFee * assetsReturned) / s.PRECISION;
+        }
         assetsReturned = assetsReturned - fee;
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
 
+        address asset;
         if (
             meTokenInfo.migration != address(0) &&
             block.timestamp > meTokenInfo.startTime
         ) {
-            vault = IVault(meTokenInfo.migration);
+            // meToken is in a live state of resubscription
             asset = s.hubs[meTokenInfo.targetHubId].asset;
+            IVault(meTokenInfo.migration).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee
+            );
+        } else {
+            // meToken is *not* resubscribing
+            asset = hubInfo.asset;
+            IVault(hubInfo.vault).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee
+            );
         }
-
-        vault.handleWithdrawal(recipient, asset, assetsReturned, fee);
 
         emit Burn(
             meToken,
@@ -278,8 +287,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
 
         amounts[0] = _calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
         // Check if meToken is using a migration vault and in the active stage of resubscribing.
         // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
         // in which case a migration vault isn't needed
@@ -288,10 +295,15 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
             block.timestamp > meTokenInfo.startTime
         ) {
             // Use meToken address to get the asset address from the migration vault
-            vault = IVault(meTokenInfo.migration);
-            asset = s.hubs[meTokenInfo.targetHubId].asset;
+            return (
+                IVault(meTokenInfo.migration),
+                s.hubs[meTokenInfo.targetHubId].asset,
+                sender,
+                amounts
+            );
+        } else {
+            return (IVault(hubInfo.vault), hubInfo.asset, sender, amounts);
         }
-        return (vault, asset, sender, amounts);
     }
 
     function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
