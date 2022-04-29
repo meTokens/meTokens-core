@@ -112,12 +112,8 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     /// @inheritdoc Vault
     function isValid(
-        address meToken,
         bytes memory /* encodedArgs */
     ) external view override returns (bool) {
-        // MeToken not subscribed to a hub
-        if (IMeTokenRegistryFacet(diamond).getMeTokenInfo(meToken).hubId == 0)
-            return false;
         return true;
     }
 
