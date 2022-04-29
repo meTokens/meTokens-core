@@ -140,7 +140,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     }
 
     /// @inheritdoc Vault
-    function isValid(address meToken, bytes memory encodedArgs)
+    function isValid(bytes memory encodedArgs)
         external
         view
         override
@@ -148,14 +148,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     {
         // encodedArgs empty
         if (encodedArgs.length == 0) return false;
-
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenInfo(meToken);
         uint24 fee = abi.decode(encodedArgs, (uint24));
 
-        // f with valid fees
-        return (meTokenInfo.hubId != 0 &&
-            (fee == MINFEE && fee == MIDFEE && fee == MAXFEE));
+        // Must have valid fees
+        return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
     /// @inheritdoc IMigration
@@ -166,6 +162,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         returns (bool started)
     {
         return _uniswapSingleTransfers[meToken].started;
+    }
+
+    // TODO: inherit
+    function canCancelResubscribe(address meToken)
+        external
+        view
+        returns (bool)
+    {
+        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
+        // Only applies if a metoken is in a state of resubscription and assets haven't moved to migration vault
+        return (usts.fee != 0 && !usts.started);
     }
 
     /// @dev parent call must have reentrancy check
@@ -222,16 +229,5 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
-    }
-
-    // TODO: inherit
-    function canCancelResubscribe(address meToken)
-        external
-        view
-        returns (bool)
-    {
-        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        // Only applies if a metoken is in a state of resubscription and assets haven't moved to migration vault
-        return (usts.fee != 0 && !usts.started);
     }
 }

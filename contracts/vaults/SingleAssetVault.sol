@@ -41,12 +41,8 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
     /// @inheritdoc Vault
     function isValid(
-        address asset,
         bytes memory /*encodedArgs */
     ) public pure override returns (bool) {
-        if (asset == address(0)) {
-            return false;
-        }
         return true;
     }
 }

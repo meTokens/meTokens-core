@@ -27,9 +27,10 @@ contract HubFacet is IHubFacet, Modifiers {
         require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
         require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio > MAX");
         require(refundRatio > 0, "refundRatio == 0");
+        require(asset != address(0), "asset !valid");
 
         // Ensure asset is valid based on encoded args and vault validation logic
-        require(vault.isValid(asset, encodedVaultArgs), "asset !valid");
+        require(vault.isValid(encodedVaultArgs), "!encodedVaultArgs");
 
         // Store value set base parameters to `{CurveName}.sol`
         uint256 id = ++s.hubCount;

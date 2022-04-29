@@ -121,7 +121,7 @@ contract MeTokenRegistryFacet is
             "!approved"
         );
         require(
-            IVault(migration).isValid(meToken, encodedMigrationArgs),
+            IVault(migration).isValid(encodedMigrationArgs),
             "Invalid encodedMigrationArgs"
         );
         meTokenInfo.startTime = block.timestamp + s.meTokenWarmup;

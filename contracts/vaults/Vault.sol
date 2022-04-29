@@ -104,7 +104,6 @@ contract Vault is IVault, ReentrancyGuard {
 
     /// @inheritdoc IVault
     function isValid(
-        address, /* meToken */
         bytes memory /* encodedArgs */
     ) external virtual override returns (bool) {
         return true;

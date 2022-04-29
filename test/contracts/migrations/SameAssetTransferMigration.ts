@@ -138,18 +138,8 @@ const setup = async () => {
 
     describe("isValid()", () => {
       it("Returns true for valid encoding", async () => {
-        const isValid = await migration.isValid(
-          meToken.address,
-          encodedMigrationArgs
-        );
+        const isValid = await migration.isValid(encodedMigrationArgs);
         expect(isValid).to.be.true;
-      });
-      it("Returns false for nonexistent meToken", async () => {
-        const isValid = await migration.isValid(
-          account0.address,
-          encodedMigrationArgs
-        );
-        expect(isValid).to.be.false;
       });
     });
 

@@ -173,14 +173,11 @@ const setup = async () => {
 
     describe("isValid()", () => {
       it("Returns false for invalid encoding", async () => {
-        const isValid = await migration.isValid(meToken.address, "0x");
+        const isValid = await migration.isValid("0x");
         expect(isValid).to.be.false;
       });
       it("Returns true for valid encoding", async () => {
-        const isValid = await migration.isValid(
-          meToken.address,
-          encodedMigrationArgs
-        );
+        const isValid = await migration.isValid(encodedMigrationArgs);
         expect(isValid).to.be.true;
       });
       it("Returns false when pass soonest", async () => {
@@ -188,17 +185,7 @@ const setup = async () => {
           ["uint256", "uint24"],
           [1000, fees] // invalid encoding
         );
-        const isValid = await migration.isValid(
-          meToken.address,
-          badEncodedMigrationArgs
-        );
-        expect(isValid).to.be.false;
-      });
-      it("Returns false for nonexistent meToken", async () => {
-        const isValid = await migration.isValid(
-          account0.address,
-          encodedMigrationArgs
-        );
+        const isValid = await migration.isValid(badEncodedMigrationArgs);
         expect(isValid).to.be.false;
       });
       it("Returns false for invalid fee", async () => {

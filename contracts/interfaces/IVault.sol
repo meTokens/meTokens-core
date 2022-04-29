@@ -89,10 +89,7 @@ interface IVault {
 
     /// @notice View to see if an asset with encoded arguments passed
     ///           when a vault is registered to a new hub
-    /// @param asset        Address of asset
     /// @param encodedArgs  Additional encoded arguments
-    /// @return             True if asset & encoded args are valid, else false
-    function isValid(address asset, bytes memory encodedArgs)
-        external
-        returns (bool);
+    /// @return             True if encoded args are valid, else false
+    function isValid(bytes memory encodedArgs) external returns (bool);
 }
