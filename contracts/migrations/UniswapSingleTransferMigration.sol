@@ -150,14 +150,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             .getMeTokenInfo(meToken);
         uint24 fee = abi.decode(encodedArgs, (uint24));
 
-        // MeToken not subscribed to a hub
-        if (meTokenInfo.hubId == 0) return false;
-        // Invalid fee
-        if (fee != MINFEE && fee != MIDFEE && fee != MAXFEE) return false;
-
-        // See if slippage on trade is valid
-        uint256 roughSlippage = calculateRoughSlippage(meToken);
-        if (roughSlippage > MAXSLIPPAGE) return false;
+        // f with valid fees
+        return (meTokenInfo.hubId != 0 &&
+            (fee == MINFEE && fee == MIDFEE && fee == MAXFEE));
     }
 
     /// @inheritdoc IMigration
@@ -193,12 +188,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             return 0;
         }
 
-        // Calculate rough expected return
-        uint256 expectedAmount = _quoter.quoteExactInputSingle(
+        // Calculate rough expected return based on 5% input
+        uint256 expectedPartialAmount = _quoter.quoteExactInputSingle(
             hubInfo.asset,
             targetHubInfo.asset,
             usts.fee,
-            amountIn,
+            (amountIn * 5) / 100,
             0
         );
 
@@ -206,6 +201,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
+        // Have amountOutMinimum based on the 20 * expectedPartialAmount assuming swapping 5% has 0 slippage
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter
             .ExactInputSingleParams({
                 tokenIn: hubInfo.asset,
@@ -214,7 +210,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: (expectedAmount * MAXSLIPPAGE) / PRECISION,
+                amountOutMinimum: (expectedPartialAmount * 20 * MAXSLIPPAGE) /
+                    PRECISION,
                 sqrtPriceLimitX96: 0
             });
 
@@ -225,56 +222,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }
 
-    function calculateRoughSlippage(address meToken)
-        public
-        view
-        returns (uint256 slippage)
-    {
-        UniswapSingleTransfer memory usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenInfo(meToken);
-
-        slippage = _calculateRoughSlippage(
-            meTokenInfo.balancePooled + meTokenInfo.balanceLocked,
-            IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).asset,
-            IHubFacet(diamond).getHubInfo(meTokenInfo.targetHubId).asset,
-            usts.fee
-        );
-    }
-
-    /// @dev returns slippage based in PRECISION
-    function _calculateRoughSlippage(
-        uint256 amountIn,
-        address tokenIn,
-        address tokenOut,
-        uint24 fee
-    ) private view returns (uint256) {
-        // don't understand what we are trying to check here
-        // do we want to check if swapping the whole amount will not affect the price too much ?
-        // in that case we should 3500 DAI = 1 ETH
-        // 175 DAI (5%) = 0.05 ETH
-        // 1/0.05 = 20
-        // we should then compare 0.05 *20 = 1 ETH +/- 5% aka splippage
-
-        // calculate on 5% amount in
-        uint256 expectedAmount = _quoter.quoteExactInputSingle(
-            tokenIn,
-            tokenOut,
-            fee,
-            (amountIn * 5) / 100,
-            0
-        );
-
-        uint256 actualAmount = _quoter.quoteExactInputSingle(
-            tokenIn,
-            tokenOut,
-            fee,
-            amountIn,
-            0
-        );
-        return (PRECISION * actualAmount) / expectedAmount;
-    }
-
     // TODO: inherit
     function canCancelResubscribe(address meToken)
         external
@@ -282,13 +229,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         returns (bool)
     {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenInfo(meToken);
         // Only applies if a metoken is in a state of resubscription and assets haven't moved to migration vault
-        if (usts.fee == 0 || usts.started) return false;
-        // Can be cancelled if we're still in metoken warmup
-        if (block.timestamp < meTokenInfo.startTime) return true;
-        // Can be cancelled if slippage greater than tolerance
-        if (calculateRoughSlippage(meToken) > MAXSLIPPAGE) return true;
+        return (usts.fee != 0 && !usts.started);
     }
 }
