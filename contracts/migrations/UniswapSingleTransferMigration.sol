@@ -45,7 +45,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
 
-    uint256 public constant MAXSLIPPAGE = 5 * 1e16; // 5%
+    uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
 
     modifier onlyDiamond() {
         require(msg.sender == diamond, "!diamond");
@@ -198,7 +198,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             hubInfo.asset,
             targetHubInfo.asset,
             usts.fee,
-            (amountIn * 5) / 100,
+            amountIn,
             0
         );
 
@@ -214,8 +214,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: (expectedAmount * (PRECISION - MAXSLIPPAGE)) /
-                    PRECISION,
+                amountOutMinimum: (expectedAmount * MAXSLIPPAGE) / PRECISION,
                 sqrtPriceLimitX96: 0
             });
 
@@ -250,6 +249,13 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         address tokenOut,
         uint24 fee
     ) private view returns (uint256) {
+        // don't understand what we are trying to check here
+        // do we want to check if swapping the whole amount will not affect the price too much ?
+        // in that case we should 3500 DAI = 1 ETH
+        // 175 DAI (5%) = 0.05 ETH
+        // 1/0.05 = 20
+        // we should then compare 0.05 *20 = 1 ETH +/- 5% aka splippage
+
         // calculate on 5% amount in
         uint256 expectedAmount = _quoter.quoteExactInputSingle(
             tokenIn,
