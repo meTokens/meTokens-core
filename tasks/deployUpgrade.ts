@@ -147,7 +147,7 @@ task(
         console.log("facet:", facet);
         const factory = (await hre.ethers.getContractFactory(
           facet.facetName
-        )) as ContractFactory;
+        )) as unknown as ContractFactory;
         const deployedFacet: Contract = await factory.deploy();
         await deployedFacet.deployed();
         console.log(

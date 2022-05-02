@@ -4,6 +4,10 @@ pragma solidity 0.8.9;
 /// @title Generic migration vault interface
 /// @author Carter Carlson (@cartercarlson)
 interface IMigration {
+    /// @notice Method returns true is the migration has started
+    /// @param meToken Address of meToken
+    function isStarted(address meToken) external view returns (bool);
+
     /// @notice Method to trigger actions from the migration vault if needed
     /// @param meToken Address of meToken
     function poke(address meToken) external;

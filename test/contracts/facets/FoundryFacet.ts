@@ -48,7 +48,7 @@ const setup = async () => {
     let foundry: FoundryFacet;
     let token: ERC20;
     let meToken: MeToken;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
     let migrationRegistry: MigrationRegistry;
@@ -89,7 +89,7 @@ const setup = async () => {
 
       ({
         token,
-        tokenHolder,
+        whale,
         hub,
         foundry,
         curve,
@@ -110,18 +110,10 @@ const setup = async () => {
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
 
-      await dai
-        .connect(tokenHolder)
-        .transfer(account0.address, amount1.mul(10));
-      await weth
-        .connect(tokenHolder)
-        .transfer(account0.address, amount1.mul(10));
-      await dai
-        .connect(tokenHolder)
-        .transfer(account1.address, amount1.mul(10));
-      await dai
-        .connect(tokenHolder)
-        .transfer(account2.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account0.address, amount1.mul(10));
+      await weth.connect(whale).transfer(account0.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account1.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account2.address, amount1.mul(10));
       const max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(singleAssetVault.address, max);
       await weth.connect(account0).approve(singleAssetVault.address, max);
@@ -972,7 +964,7 @@ const setup = async () => {
 
         const amount = ethers.utils.parseEther("100");
         const balTokenBefore = await meToken.balanceOf(account2.address);
-        await dai.connect(tokenHolder).transfer(account2.address, amount);
+        await dai.connect(whale).transfer(account2.address, amount);
         const balBefore = await dai.balanceOf(account2.address);
         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
         const totSupplyBefore = await meToken.totalSupply();
@@ -1296,7 +1288,7 @@ const setup = async () => {
 
         ({
           token,
-          tokenHolder,
+          whale: whale,
           hub,
           foundry,
           singleAssetVault,
@@ -1322,16 +1314,10 @@ const setup = async () => {
           usdc.address
         );
         chainId = await (await meToken.getChainId()).toNumber();
-        await usdc
-          .connect(tokenHolder)
-          .transfer(account0.address, value.mul(10));
+        await usdc.connect(whale).transfer(account0.address, value.mul(10));
 
-        await usdc
-          .connect(tokenHolder)
-          .transfer(account1.address, value.mul(10));
-        await usdc
-          .connect(tokenHolder)
-          .transfer(account2.address, value.mul(10));
+        await usdc.connect(whale).transfer(account1.address, value.mul(10));
+        await usdc.connect(whale).transfer(account2.address, value.mul(10));
         // account0 is registering a metoken
         await meTokenRegistry
           .connect(account0)

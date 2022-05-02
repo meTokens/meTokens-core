@@ -86,7 +86,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let curve: ICurveFacet;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
@@ -134,7 +134,7 @@ const setup = async () => {
         account1,
         account2,
         account3,
-        tokenHolder,
+        whale,
       } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
@@ -347,9 +347,7 @@ const setup = async () => {
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = ethers.utils.parseEther("20");
-        await token
-          .connect(tokenHolder)
-          .transfer(account2.address, assetsDeposited);
+        await token.connect(whale).transfer(account2.address, assetsDeposited);
 
         const tx = meTokenRegistry
           .connect(account2)
@@ -679,9 +677,7 @@ const setup = async () => {
           encodedMigrationArgs
         );
 
-        await dai
-          .connect(tokenHolder)
-          .transfer(account0.address, tokenDeposited);
+        await dai.connect(whale).transfer(account0.address, tokenDeposited);
         await dai.approve(
           singleAssetVault.address,
           ethers.constants.MaxUint256
@@ -965,9 +961,7 @@ const setup = async () => {
     });
     describe("updateBalance", () => {
       it("updateBalancePooled()", async () => {
-        await weth
-          .connect(tokenHolder)
-          .transfer(account0.address, tokenDeposited);
+        await weth.connect(whale).transfer(account0.address, tokenDeposited);
         await weth.approve(
           singleAssetVault.address,
           ethers.constants.MaxUint256
@@ -1042,9 +1036,7 @@ const setup = async () => {
         ).to.be.equal(lockedAmount);
       });
       it("updateBalanceLocked() when owner burns [TODO]", async () => {
-        await weth
-          .connect(tokenHolder)
-          .transfer(account1.address, tokenDeposited);
+        await weth.connect(whale).transfer(account1.address, tokenDeposited);
         await weth
           .connect(account1)
           .approve(singleAssetVault.address, ethers.constants.MaxUint256);

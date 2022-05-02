@@ -50,8 +50,8 @@ export async function hubSetup(
   account3: SignerWithAddress;
   token: ERC20;
   tokenAddr: string;
-  tokenHolder: Signer;
-  tokenWhale: string;
+  whale: Signer;
+  whaleAddr: string;
 }> {
   const {
     foundry,
@@ -69,7 +69,8 @@ export async function hubSetup(
     account2,
     account3,
   } = await hubSetupWithoutRegister(fees);
-  const { token, tokenAddr, tokenHolder, tokenWhale } = await transferFromWhale(
+
+  const { token, tokenAddr, whale, whaleAddr } = await transferFromWhale(
     account1.address,
     erc20Address,
     erc20Whale,
@@ -101,46 +102,47 @@ export async function hubSetup(
     account3,
     token,
     tokenAddr,
-    tokenHolder,
-    tokenWhale,
+    whale,
+    whaleAddr,
   };
 }
 
 export async function transferFromWhale(
-  recipientAddr: string,
+  recipient: string,
   erc20Address?: string,
   erc20Whale?: string,
   erc20Decimals?: number
 ): Promise<{
   tokenAddr: string;
   token: ERC20;
-  tokenHolder: Signer;
-  tokenWhale: string;
+  whale: Signer;
+  whaleAddr: string;
 }> {
   let tokenAddr: string;
   let token: ERC20;
-  let tokenHolder: Signer;
-  let tokenWhale: string;
+  let whale: Signer;
+  let whaleAddr: string;
   let decimals: number;
+
   if (!erc20Address || !erc20Whale) {
     let DAI;
     let DAIWhale;
     ({ DAI, DAIWhale } = await getNamedAccounts());
-    tokenWhale = DAIWhale;
+    whaleAddr = DAIWhale;
     tokenAddr = DAI;
   } else {
     tokenAddr = erc20Address;
-    tokenWhale = erc20Whale;
+    whaleAddr = erc20Whale;
   }
   if (!erc20Decimals) {
     decimals = 18;
   }
   token = await getContractAt<ERC20>("ERC20", tokenAddr);
-  tokenHolder = await impersonate(tokenWhale);
+  whale = await impersonate(whaleAddr);
   await token
-    .connect(tokenHolder)
-    .transfer(recipientAddr, ethers.utils.parseUnits("1000", erc20Decimals));
-  return { token, tokenHolder, tokenWhale, tokenAddr };
+    .connect(whale)
+    .transfer(recipient, ethers.utils.parseUnits("500", erc20Decimals));
+  return { token, whale, whaleAddr, tokenAddr };
 }
 
 export async function hubSetupWithoutRegister(fees?: number[]): Promise<{

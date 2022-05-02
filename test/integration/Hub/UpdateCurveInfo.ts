@@ -36,7 +36,7 @@ const setup = async () => {
     let token: ERC20;
     let meToken: MeToken;
     let account0: SignerWithAddress;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
@@ -70,7 +70,7 @@ const setup = async () => {
         hub,
         foundry,
         singleAssetVault,
-        tokenHolder,
+        whale,
         account0,
         account1,
         account2,
@@ -80,7 +80,7 @@ const setup = async () => {
 
       // Pre-load owner and buyer w/ DAI
       await token
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
       // Create meToken and subscribe to Hub1
       const tokenDeposited = ethers.utils.parseEther("100");
@@ -956,9 +956,7 @@ const setup = async () => {
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
           );
-          await token
-            .connect(tokenHolder)
-            .transfer(account2.address, tokenDeposited);
+          await token.connect(whale).transfer(account2.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1120,9 +1118,7 @@ const setup = async () => {
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
           );
-          await token
-            .connect(tokenHolder)
-            .transfer(account2.address, tokenDeposited);
+          await token.connect(whale).transfer(account2.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );

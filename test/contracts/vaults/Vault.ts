@@ -26,7 +26,7 @@ const setup = async () => {
     let diamond: Diamond;
     let foundry: FoundryFacet;
     let meTokenRegistry: MeTokenRegistryFacet;
-    let tokenHolder: Signer;
+    let whale: Signer;
     let meToken: MeToken;
     let fees: FeesFacet;
     let accruedFee: BigNumber;
@@ -56,7 +56,7 @@ const setup = async () => {
         token,
         diamond,
         foundry,
-        tokenHolder,
+        whale,
         account0,
         account1,
         account2,
@@ -74,14 +74,10 @@ const setup = async () => {
       await fees.setBurnOwnerFee(1e8);
 
       await token
-        .connect(tokenHolder)
+        .connect(whale)
         .transfer(account0.address, tokenDeposited.mul(3));
-      await token
-        .connect(tokenHolder)
-        .transfer(account1.address, tokenDeposited);
-      await token
-        .connect(tokenHolder)
-        .transfer(account2.address, tokenDeposited);
+      await token.connect(whale).transfer(account1.address, tokenDeposited);
+      await token.connect(whale).transfer(account2.address, tokenDeposited);
 
       await token.approve(meTokenRegistry.address, ethers.constants.MaxUint256);
       await token.approve(vault.address, ethers.constants.MaxUint256);

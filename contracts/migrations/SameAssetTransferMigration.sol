@@ -102,6 +102,11 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         delete _sameAssetMigration[meToken];
     }
 
+    /// @inheritdoc IMigration
+    function isStarted(address meToken) external view override returns (bool) {
+        return _sameAssetMigration[meToken].started;
+    }
+
     function getDetails(address meToken)
         external
         view
