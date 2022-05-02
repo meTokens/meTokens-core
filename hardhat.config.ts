@@ -82,9 +82,12 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     delay: true,
-    timeout: 60000, // Here is 2min but can be whatever timeout is suitable for you.
+    timeout: 120000, // Here is 2min but can be whatever timeout is suitable for you.
   },
   namedAccounts: {
+    SwapRouter: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
+    Quoter: "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6",
+    UNIV3Factory: "0x1F98431c8aD98523631AE4a59f267346ea31F984",
     DAI: {
       default: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // here this will by default take the first account as deployer
       1: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
@@ -108,7 +111,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
         accounts,
-        blockNumber: 13310410,
+        blockNumber: 14448329,
       },
       gas: "auto",
       timeout: 1800000,
