@@ -183,21 +183,12 @@ library LibFoundry {
             rawAssetsReturned
         );
 
-        uint256 feeRate;
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
-        //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meTokenInfo.owner) {
-            feeRate = s.burnOwnerFee;
-        } else {
-            feeRate = s.burnBuyerFee;
-        }
+        // Burn metoken from user
+        IMeToken(meToken).burn(sender, meTokensBurned);
 
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
 
-        // Burn metoken from user
-        IMeToken(meToken).burn(sender, meTokensBurned);
         if (sender == meTokenInfo.owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
@@ -221,8 +212,7 @@ library LibFoundry {
             meTokenInfo,
             hubInfo,
             meTokensBurned,
-            assetsReturned,
-            feeRate
+            assetsReturned
         );
     }
 
@@ -247,8 +237,6 @@ library LibFoundry {
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
-        // uint256[2] memory amounts;
-        // amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
         amounts[1] =
             assetsDeposited -
             ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
@@ -324,24 +312,44 @@ library LibFoundry {
         MeTokenInfo memory meTokenInfo,
         HubInfo memory hubInfo,
         uint256 meTokensBurned,
-        uint256 assetsReturned,
-        uint256 feeRate
+        uint256 assetsReturned
     ) private {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        uint256 fee = (assetsReturned * feeRate) / s.PRECISION;
-        assetsReturned = assetsReturned - fee;
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
 
+        uint256 fee;
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        // If msg.sender != owner, give msg.sender the burn rate
+        if (sender == meTokenInfo.owner) {
+            fee = (s.burnOwnerFee * assetsReturned) / s.PRECISION;
+        } else {
+            fee = (s.burnBuyerFee * assetsReturned) / s.PRECISION;
+        }
+
+        assetsReturned = assetsReturned - fee;
+        address asset;
         if (
             meTokenInfo.migration != address(0) &&
             block.timestamp > meTokenInfo.startTime
         ) {
-            vault = IVault(meTokenInfo.migration);
+            // meToken is in a live state of resubscription
             asset = s.hubs[meTokenInfo.targetHubId].asset;
+            IVault(meTokenInfo.migration).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee
+            );
+        } else {
+            // meToken is *not* resubscribing
+            asset = hubInfo.asset;
+            IVault(hubInfo.vault).handleWithdrawal(
+                recipient,
+                asset,
+                assetsReturned,
+                fee
+            );
         }
-
-        vault.handleWithdrawal(recipient, asset, assetsReturned, fee);
 
         emit Burn(
             meToken,
@@ -476,7 +484,6 @@ library LibFoundry {
                 hubInfo.targetRefundRatio == 0 && meTokenInfo.targetHubId == 0
             ) {
                 // Not updating targetRefundRatio or resubscribing
-
                 actualAssetsReturned =
                     (rawAssetsReturned * hubInfo.refundRatio) /
                     s.MAX_REFUND_RATIO;
