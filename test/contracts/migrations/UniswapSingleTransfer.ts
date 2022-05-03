@@ -193,10 +193,7 @@ const setup = async () => {
           ["uint24"],
           [2999]
         );
-        const isValid = await migration.isValid(
-          meToken.address,
-          badEncodedMigrationArgs
-        );
+        const isValid = await migration.isValid(badEncodedMigrationArgs);
         expect(isValid).to.be.false;
       });
     });

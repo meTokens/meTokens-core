@@ -711,7 +711,7 @@ const setup = async () => {
         // should revert to cancelResubscribe now
         await expect(
           meTokenRegistry.cancelResubscribe(meTokenAddr0)
-        ).to.be.revertedWith("Resubscription has started");
+        ).to.be.revertedWith("cannot cancel resubscribe");
       });
     });
 
