@@ -110,13 +110,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _sameAssetMigration[meToken];
     }
 
-    /// @inheritdoc Vault
-    function isValid(
-        bytes memory /* encodedArgs */
-    ) external view override returns (bool) {
-        return true;
-    }
-
     /// @inheritdoc IMigration
     function migrationStarted(address meToken)
         external
@@ -134,5 +127,12 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         returns (bool)
     {
         return !_sameAssetMigration[meToken].started;
+    }
+
+    /// @inheritdoc Vault
+    function isValid(
+        bytes memory /* encodedArgs */
+    ) external pure override returns (bool) {
+        return true;
     }
 }

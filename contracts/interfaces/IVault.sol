@@ -91,5 +91,5 @@ interface IVault {
     ///           when a vault is registered to a new hub
     /// @param encodedArgs  Additional encoded arguments
     /// @return             True if encoded args are valid, else false
-    function isValid(bytes memory encodedArgs) external returns (bool);
+    function isValid(bytes memory encodedArgs) external pure returns (bool);
 }
