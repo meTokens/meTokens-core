@@ -139,21 +139,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _uniswapSingleTransfers[meToken];
     }
 
-    /// @inheritdoc Vault
-    function isValid(bytes memory encodedArgs)
-        external
-        view
-        override
-        returns (bool)
-    {
-        // encodedArgs empty
-        if (encodedArgs.length == 0) return false;
-        uint24 fee = abi.decode(encodedArgs, (uint24));
-
-        // Must have valid fees
-        return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
-    }
-
     /// @inheritdoc IMigration
     function migrationStarted(address meToken)
         external
@@ -173,6 +158,21 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         // Only applies if a metoken is in a state of resubscription and assets haven't moved to migration vault
         return (usts.fee != 0 && !usts.started);
+    }
+
+    /// @inheritdoc Vault
+    function isValid(bytes memory encodedArgs)
+        external
+        pure
+        override
+        returns (bool)
+    {
+        // encodedArgs empty
+        if (encodedArgs.length == 0) return false;
+        uint24 fee = abi.decode(encodedArgs, (uint24));
+
+        // Must have valid fees
+        return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
     /// @dev parent call must have reentrancy check
