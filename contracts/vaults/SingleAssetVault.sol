@@ -11,6 +11,8 @@ import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "./Vault.sol";
 
+import "hardhat/console.sol";
+
 /// @title Single-Asset Vault
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Vault which manages basic erc20-like collateral assets for MeTokens
@@ -29,7 +31,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
         require(msg.sender == (meTokenInfo.migration), "!migration");
         uint256 balance = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
-
+        console.log("## single Vault  startMigration balance:%s", balance);
         if (
             meTokenInfo.migration != address(0) &&
             meTokenInfo.migration != address(this)
