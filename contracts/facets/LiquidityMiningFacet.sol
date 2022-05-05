@@ -236,6 +236,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
 
         if (
             poolInfo.seasonId == s.seasonCount ||
+            // TODO does addition of this makes any difference?
             !canTokenBeFeaturedInNewSeason(meToken)
         ) {
             // Refresh not needed :)
@@ -287,6 +288,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     }
 
     // TODO: have this refreshPools
+    // TODO does this need to be public? Users can use `earned` to finds their earnings.
     function updateReward(address meToken, address account)
         public
         nonReentrant
@@ -339,6 +341,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         uint256 seasonId = s.pools[meToken].seasonId;
         SeasonInfo memory seasonInfo = s.seasons[seasonId];
 
+        // TODO should this return seasonId endTime instead?
         if (!isSeasonLive(seasonId)) return 0;
 
         return
@@ -348,28 +351,28 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     }
 
     // TODO: validate
-    function timeRemainingInSeason(uint256 num)
+    function timeRemainingInSeason(uint256 seasonId)
         public
         view
         returns (uint256 amount)
     {
-        if (isSeasonLive(num)) {
-            amount = s.seasons[num].endTime - block.timestamp;
+        if (isSeasonLive(seasonId)) {
+            amount = s.seasons[seasonId].endTime - block.timestamp;
         }
-        if (hasSeasonEnded(num)) {
+        if (hasSeasonEnded(seasonId)) {
             amount = 0;
         }
     }
 
-    function isSeasonLive(uint256 _seasonId) public view returns (bool) {
-        SeasonInfo memory seasonInfo = s.seasons[_seasonId];
+    function isSeasonLive(uint256 seasonId) public view returns (bool) {
+        SeasonInfo memory seasonInfo = s.seasons[seasonId];
         return
             (block.timestamp >= seasonInfo.startTime) &&
             (block.timestamp <= seasonInfo.endTime);
     }
 
-    function hasSeasonEnded(uint256 _seasonId) public view returns (bool) {
-        return block.timestamp >= s.seasons[_seasonId].endTime;
+    function hasSeasonEnded(uint256 seasonId) public view returns (bool) {
+        return block.timestamp >= s.seasons[seasonId].endTime;
     }
 
     // TODO: will this ever return an outdated earned balance for a metoken previously featured?
@@ -414,6 +417,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
             lastUpdateTime = seasonInfo.startTime;
         }
 
+        // TODO if lastTimeRewardApplicable_=0 and lastUpdateTime>0, then this reverts.
         return
             poolInfo.rewardPerTokenStored +
             (((lastTimeRewardApplicable_ - lastUpdateTime) *
@@ -505,6 +509,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         uint256 b = s.BASE;
 
         uint256 circulatingSupply = IERC20(meToken).totalSupply();
+        // TODO poolInfo.lastCirculatingSupply may be zero.
         uint256 oldPctStaked = (b * poolInfo.totalSupply) /
             poolInfo.lastCirculatingSupply;
         uint256 newPctStaked;
