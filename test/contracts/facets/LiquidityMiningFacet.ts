@@ -2,82 +2,50 @@ import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { expect } from "chai";
-import {
-  calculateCollateralReturned,
-  calculateCollateralToDepositFromZero,
-  calculateTokenReturned,
-  calculateTokenReturnedFromZero,
-  deploy,
-  fromETHNumber,
-  getContractAt,
-  toETHNumber,
-} from "../../utils/helpers";
-import { mineBlock, setNextBlockTimestamp } from "../../utils/hardhatNode";
+import { deploy, getContractAt } from "../../utils/helpers";
+import { setNextBlockTimestamp } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  ICurve,
-  HubFacet,
   FoundryFacet,
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  MigrationRegistry,
-  CurveRegistry,
   SingleAssetVault,
-  BancorCurve,
-  UniswapSingleTransferMigration,
-  SameAssetTransferMigration,
-  IERC20Permit,
   LiquidityMiningFacet,
   MockERC20,
 } from "../../../artifacts/types";
-import { TypedDataDomain } from "@ethersproject/abstract-signer";
-import { domainSeparator } from "../../utils/eip712";
 
 const setup = async () => {
-  describe("LiquidityMiningFacet.sol", () => {
+  describe.only("LiquidityMiningFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
     let WETH: string;
     let weth: ERC20;
-    let usdc: ERC20;
-    let usdcPermit: IERC20Permit;
-    let USDC: string;
-    let USDCWhale: string;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
-    let curve: ICurve;
     let meTokenRegistry: MeTokenRegistryFacet;
     let foundry: FoundryFacet;
     let token: ERC20;
     let meToken: MeToken;
-    let tokenHolder: Signer;
-    let hub: HubFacet;
+    let whale: Signer;
     let liquidityMining: LiquidityMiningFacet;
     let singleAssetVault: SingleAssetVault;
-    let migrationRegistry: MigrationRegistry;
-    let curveRegistry: CurveRegistry;
     let encodedCurveInfo: string;
     let encodedVaultArgs: string;
     let mockToken: MockERC20;
+    let mockToken2: MockERC20;
 
     const hubId = 1;
-    const usdcDoaminSeparator =
-      "0x19d64970ae67135faab873f0abe76a5ee18734cb628c32659f75b220300d19a5";
     const name = "Carl meToken";
     const symbol = "CARL";
-    const refundRatio = 240000;
-    const value = ethers.utils.parseUnits("100", 6);
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
-    const amount = ethers.utils.parseEther("10");
     const amount1 = ethers.utils.parseEther("100");
     const tokenDepositedInETH = 10;
     const tokenDeposited = ethers.utils.parseEther(
       tokenDepositedInETH.toString()
     );
-    const fee = 3000;
 
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
@@ -101,48 +69,34 @@ const setup = async () => {
       );
       ({
         token,
-        tokenHolder,
-        hub,
+        whale,
         liquidityMining,
-        curve,
         foundry,
         singleAssetVault,
-        curveRegistry,
-        migrationRegistry,
         meTokenRegistry,
         account0,
         account1,
         account2,
         mockToken,
       } = await hubSetup(
-        encodedCurveInfo,
+        baseY,
+        reserveWeight,
         encodedVaultArgs,
-        initRefundRatio,
-        "BancorCurve"
+        initRefundRatio
       ));
 
       // Prefund owner/buyer w/ DAI
       dai = token;
       weth = await getContractAt<ERC20>("ERC20", WETH);
 
-      await dai
-        .connect(tokenHolder)
-        .transfer(account0.address, amount1.mul(10));
-      await weth
-        .connect(tokenHolder)
-        .transfer(account0.address, amount1.mul(10));
-      await dai
-        .connect(tokenHolder)
-        .transfer(account1.address, amount1.mul(10));
-      await dai
-        .connect(tokenHolder)
-        .transfer(account2.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account0.address, amount1.mul(10));
+      await weth.connect(whale).transfer(account0.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account1.address, amount1.mul(10));
+      await dai.connect(whale).transfer(account2.address, amount1.mul(10));
       const max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(singleAssetVault.address, max);
       await weth.connect(account0).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(singleAssetVault.address, max);
-      await dai.connect(account2).approve(singleAssetVault.address, max);
-      await dai.connect(account1).approve(meTokenRegistry.address, max);
       // account0 is registering a metoken
       await meTokenRegistry.connect(account0).subscribe(name, symbol, hubId, 0);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -150,6 +104,8 @@ const setup = async () => {
       );
 
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+      await foundry.mint(meToken.address, tokenDeposited, account0.address);
 
       await mockToken.setBalance(
         account0.address,
@@ -159,6 +115,8 @@ const setup = async () => {
         liquidityMining.address,
         ethers.constants.MaxUint256
       );
+
+      mockToken2 = (await deploy<MockERC20>("MockERC20")) as MockERC20;
     });
 
     // TODO check initialised variables
@@ -248,14 +206,24 @@ const setup = async () => {
 
     describe("initSeason()", () => {
       it("revert when sender is not liquidityMiningController", async () => {
+        const initTime =
+          (await ethers.provider.getBlock("latest")).timestamp + 10;
         await expect(
           liquidityMining
             .connect(account1)
-            .initSeason(0, 0, 0, ethers.constants.HashZero)
+            .initSeason(initTime, 0, 0, ethers.constants.HashZero)
         ).to.be.revertedWith("!liquidityMiningController");
       });
+      it("revert when season initialization time is less than block timestamp", async () => {
+        const initTime =
+          (await ethers.provider.getBlock("latest")).timestamp - 10;
+        await expect(
+          liquidityMining.initSeason(initTime, 0, 0, ethers.constants.HashZero)
+        ).to.be.revertedWith("init time < timestamp");
+      });
       it("should be able to initSeason", async () => {
-        const initTime = (await ethers.provider.getBlock("latest")).timestamp;
+        const initTime =
+          (await ethers.provider.getBlock("latest")).timestamp + 1;
         const bSenderBalance = await mockToken.balanceOf(account0.address);
         const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
 
@@ -287,13 +255,42 @@ const setup = async () => {
         );
         expect(seasonInfo.merkleRoot).to.equal(ethers.constants.HashZero);
       });
-      it("revert when current season is live", async () => {
+      it("revert when last season is live", async () => {
         await setNextBlockTimestamp(
           (await liquidityMining.getSeasonInfo(1)).startTime.toNumber()
         );
         await expect(
           liquidityMining.initSeason(0, 0, 0, ethers.constants.HashZero)
-        ).to.be.revertedWith("season still live");
+        ).to.be.revertedWith("last season live");
+      });
+    });
+    describe("recoverERC20()", () => {
+      before(async () => {
+        // add some me and meTokens to liquidityMining contract
+        await meToken.transfer(liquidityMining.address, 1);
+        await mockToken.transfer(liquidityMining.address, 1);
+        await mockToken2.setBalance(liquidityMining.address, 1);
+      });
+      it("revert to recover me(reward) token", async () => {
+        await expect(
+          liquidityMining.recoverERC20(mockToken.address, account0.address, 1)
+        ).to.be.revertedWith("Cannot withdraw the reward token");
+      });
+      it("revert to recover meToken", async () => {
+        await expect(
+          liquidityMining.recoverERC20(meToken.address, account0.address, 1)
+        ).to.be.revertedWith("Cannot withdraw a meToken");
+      });
+      it("should be able to recover other tokens", async () => {
+        const tx = await liquidityMining.recoverERC20(
+          mockToken2.address,
+          account0.address,
+          1
+        );
+
+        await expect(tx)
+          .to.emit(liquidityMining, "Recovered")
+          .withArgs(mockToken2.address, 1);
       });
     });
   });
