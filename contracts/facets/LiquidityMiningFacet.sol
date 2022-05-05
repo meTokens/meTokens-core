@@ -48,7 +48,8 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         uint256 allocationIssuers,
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
-        require(!isSeasonLive(s.seasonCount), "season still live");
+        require(hasSeasonEnded(s.seasonCount), "last season live");
+        require(initTime >= block.timestamp, "init time < timestamp");
 
         s.me.safeTransferFrom(
             LibMeta.msgSender(),
@@ -56,6 +57,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
             allocationPool + allocationIssuers
         );
         // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
+        // TODO to solve this, should we take `rewardRate` as param and cal `allocationPool`?
         uint256 rewardRate = allocationPool / s.lmDuration;
 
         // can only schedule once last season has ended? No
@@ -64,7 +66,6 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         //      pool gets 20 ME (there are 5 meTokens in the season)
         // - issuer - total amount of ME that issuers could win
         SeasonInfo storage newSeasonInfo = s.seasons[++s.seasonCount];
-        // TODO should initTime > blockTimestamp?
         newSeasonInfo.initTime = initTime;
         newSeasonInfo.startTime = initTime + s.lmWarmup;
         newSeasonInfo.endTime = newSeasonInfo.startTime + s.lmDuration;
@@ -72,7 +73,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
         newSeasonInfo.rewardRate = rewardRate;
-        // TODO emit an event?
+        emit InitSeason(s.seasonCount);
     }
 
     // TODO - should this update every meToken in a season?
