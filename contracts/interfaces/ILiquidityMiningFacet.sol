@@ -7,10 +7,11 @@ import {SeasonInfo} from "../libs/LibLiquidityMining.sol";
 /// @title MeToken liquidity mining interface
 /// @author Carter Carlson (@cartercarlson)
 interface ILiquidityMiningFacet {
+    event InitSeason(uint256 seasonId);
     event RewardPaid(address meToken, address sender, uint256 reward);
     event Staked(address meToken, address sender, uint256 amount);
     event Withdrawn(address meToken, address sender, uint256 amount);
-    event RewardAdded(uint256 seasonNum, uint256 amount);
+    event RewardAdded(uint256 seasonId, uint256 amount);
     event Recovered(IERC20 token, uint256 amount);
 
     function setLMWarmup(uint256 lmWarmup) external;
