@@ -11,7 +11,7 @@ interface ILiquidityMiningFacet {
     event RewardPaid(address meToken, address sender, uint256 reward);
     event Staked(address meToken, address sender, uint256 amount);
     event Withdrawn(address meToken, address sender, uint256 amount);
-    event RewardAdded(uint256 seasonId, uint256 amount);
+    // event RewardAdded(uint256 seasonId, uint256 amount);
     event Recovered(IERC20 token, uint256 amount);
 
     function setLMWarmup(uint256 lmWarmup) external;
