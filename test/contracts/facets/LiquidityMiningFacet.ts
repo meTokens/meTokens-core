@@ -222,11 +222,18 @@ const setup = async () => {
         ).to.be.revertedWith("init time < timestamp");
       });
       it("should be able to initSeason", async () => {
+        expect(
+          await liquidityMining.canTokenBeFeaturedInNewSeason(mockToken.address)
+        ).to.equal(false);
+        expect(
+          await liquidityMining.canTokenBeFeaturedInNewSeason(meToken.address)
+        ).to.equal(true);
         const initTime =
           (await ethers.provider.getBlock("latest")).timestamp + 1;
         const bSenderBalance = await mockToken.balanceOf(account0.address);
         const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
 
+        // TODO add genuine merkle root
         await liquidityMining.initSeason(
           initTime,
           allocationPool,
