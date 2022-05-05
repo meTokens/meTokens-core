@@ -14,6 +14,8 @@ import {LibMeta} from "../libs/LibMeta.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
+// TODO generalize require strings
+// TODO add logic to claim metoken issuer rewards.
 contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     using SafeERC20 for IERC20;
     /**
@@ -144,9 +146,10 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         // TODO: should this access control be different
         onlyLiquidityMiningController
     {
+        // TODO should we allow to withdraw reward tokens?
         require(
             address(token) != address(s.me),
-            "Cannot withdraw the staking token"
+            "Cannot withdraw the reward token"
         );
         require(
             s.meTokens[address(token)].hubId == 0,
