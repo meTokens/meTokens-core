@@ -76,32 +76,33 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         emit InitSeason(s.seasonCount);
     }
 
+    // TODO Not proper implementation. Commenting for now.
     // TODO - should this update every meToken in a season?
-    function addToRewardsAllocation(address meToken, uint256 amount)
-        external
-        nonReentrant
-        onlyLiquidityMiningController
-    {
-        require(
-            amount <= balanceOf(meToken, address(this)),
-            "_addToRewardsAllocation: insufficient rewards balance."
-        );
-        _updateAccrual(meToken);
+    // function addToRewardsAllocation(address meToken, uint256 amount)
+    //     external
+    //     nonReentrant
+    //     onlyLiquidityMiningController
+    // {
+    //     require(
+    //         amount <= balanceOf(meToken, address(this)),
+    //         "_addToRewardsAllocation: insufficient rewards balance."
+    //     );
+    //     _updateAccrual(meToken);
 
-        SeasonInfo storage seasonInfo = s.seasons[s.seasonCount];
-        uint256 remainingTime;
-        if (!isSeasonLive(s.seasonCount) || hasSeasonEnded(s.seasonCount)) {
-            remainingTime = seasonInfo.endTime - seasonInfo.startTime;
-        } else {
-            remainingTime = timeRemainingInSeason(s.seasonCount);
-        }
+    //     SeasonInfo storage seasonInfo = s.seasons[s.seasonCount];
+    //     uint256 remainingTime;
+    //     if (!isSeasonLive(s.seasonCount) || hasSeasonEnded(s.seasonCount)) {
+    //         remainingTime = seasonInfo.endTime - seasonInfo.startTime;
+    //     } else {
+    //         remainingTime = timeRemainingInSeason(s.seasonCount);
+    //     }
 
-        seasonInfo.rewardRate =
-            seasonInfo.rewardRate +
-            (amount / (remainingTime));
+    //     seasonInfo.rewardRate =
+    //         seasonInfo.rewardRate +
+    //         (amount / (remainingTime));
 
-        emit RewardAdded(s.seasonCount, amount);
-    }
+    //     emit RewardAdded(s.seasonCount, amount);
+    // }
 
     // NOTE: only updates pool from stake/withdraw
     function stake(
