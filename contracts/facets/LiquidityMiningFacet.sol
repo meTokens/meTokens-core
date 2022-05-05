@@ -310,9 +310,9 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         view
         returns (bool)
     {
-        uint256 seasonId = s.pools[token].seasonId;
-
         if (s.meTokens[token].hubId == 0) return false;
+
+        uint256 seasonId = s.pools[token].seasonId;
         return
             (seasonId == 0) || (seasonId + s.issuerCooldown <= s.seasonCount);
     }
