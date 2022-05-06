@@ -153,7 +153,7 @@ contract MeTokenRegistryFacet is
         require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
-            IMigration(meTokenInfo.migration).canCancelResubscribe(meToken),
+            !IMigration(meTokenInfo.migration).isStarted(meToken),
             "cannot cancel resubscribe"
         );
 

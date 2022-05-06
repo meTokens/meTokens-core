@@ -115,25 +115,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _sameAssetMigration[meToken];
     }
 
-    /// @inheritdoc IMigration
-    function migrationStarted(address meToken)
-        external
-        view
-        override
-        returns (bool started)
-    {
-        return _sameAssetMigration[meToken].started;
-    }
-
-    function canCancelResubscribe(address meToken)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return !_sameAssetMigration[meToken].started;
-    }
-
     /// @inheritdoc Vault
     function isValid(
         bytes memory /* encodedArgs */

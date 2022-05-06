@@ -139,27 +139,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         usts = _uniswapSingleTransfers[meToken];
     }
 
-    /// @inheritdoc IMigration
-    function migrationStarted(address meToken)
-        external
-        view
-        override
-        returns (bool started)
-    {
-        return _uniswapSingleTransfers[meToken].started;
-    }
-
-    // TODO: inherit
-    function canCancelResubscribe(address meToken)
-        external
-        view
-        returns (bool)
-    {
-        UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
-        // Only applies if a metoken is in a state of resubscription and assets haven't moved to migration vault
-        return (usts.fee != 0 && !usts.started);
-    }
-
     /// @inheritdoc Vault
     function isValid(bytes memory encodedArgs)
         external

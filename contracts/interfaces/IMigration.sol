@@ -22,14 +22,4 @@ interface IMigration {
     ///         target hub
     /// @param meToken      Address of meToken
     function finishMigration(address meToken) external;
-
-    /// @notice Method returns bool if migration started
-    /// @param meToken  Address of meToken
-    /// @return started True if migration started else false
-    function migrationStarted(address meToken)
-        external
-        view
-        returns (bool started);
-
-    function canCancelResubscribe(address meToken) external view returns (bool);
 }
