@@ -107,6 +107,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     // }
 
     // NOTE: only updates pool from stake/withdraw
+    // TODO should revert with `meToken` does not have a hub
     function stake(
         address meToken,
         uint256 amount,
@@ -141,11 +142,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         IERC20 token,
         address recipient,
         uint256 amount
-    )
-        external
-        // TODO: should this access control be different
-        onlyLiquidityMiningController
-    {
+    ) external onlyLiquidityMiningController {
         // TODO should we allow to withdraw reward tokens?
         require(
             address(token) != address(s.me),
@@ -292,10 +289,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
 
     // TODO: have this refreshPools
     // TODO does this need to be public? Users can use `earned` to finds their earnings.
-    function updateReward(address meToken, address account)
-        public
-        nonReentrant
-    {
+    function updateReward(address meToken, address account) public {
         _updateAccrual(meToken);
         PoolInfo storage poolInfo = s.pools[meToken];
         if (account != address(0)) {
@@ -512,9 +506,12 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         uint256 b = s.BASE;
 
         uint256 circulatingSupply = IERC20(meToken).totalSupply();
-        // TODO poolInfo.lastCirculatingSupply may be zero.
-        uint256 oldPctStaked = (b * poolInfo.totalSupply) /
-            poolInfo.lastCirculatingSupply;
+        uint256 oldPctStaked = 0;
+        if (poolInfo.totalSupply > 0) {
+            oldPctStaked =
+                (b * poolInfo.totalSupply) /
+                poolInfo.lastCirculatingSupply;
+        }
         uint256 newPctStaked;
 
         if (add) {
@@ -536,6 +533,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         // TODO: could modifying totalSupply / lastCirculatingSupply have an effect
         // when someone tries to claim rewards from a meToken that isn't in a live season?
         if (poolInfo.seasonId == s.seasonCount) {
+            // TODO try by removing this condition
             seasonInfo.totalPctStaked =
                 seasonInfo.totalPctStaked -
                 oldPctStaked +
