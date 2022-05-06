@@ -14,6 +14,7 @@ import {
   LiquidityMiningFacet,
   MockERC20,
 } from "../../../artifacts/types";
+import { MerkleTree } from "../../utils/merkleTree";
 
 const setup = async () => {
   describe.only("LiquidityMiningFacet.sol", () => {
@@ -35,6 +36,7 @@ const setup = async () => {
     let encodedVaultArgs: string;
     let mockToken: MockERC20;
     let mockToken2: MockERC20;
+    let merkleTree: MerkleTree;
 
     const hubId = 1;
     const name = "Carl meToken";
@@ -117,6 +119,9 @@ const setup = async () => {
       );
 
       mockToken2 = (await deploy<MockERC20>("MockERC20")) as MockERC20;
+
+      const whitelist = [meToken.address, mockToken.address]; // TODO replace 2nd address with valid metoken
+      merkleTree = new MerkleTree(whitelist);
     });
 
     // TODO check initialised variables
@@ -232,13 +237,13 @@ const setup = async () => {
           (await ethers.provider.getBlock("latest")).timestamp + 1;
         const bSenderBalance = await mockToken.balanceOf(account0.address);
         const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
+        const merkleRoot = merkleTree.getHexRoot();
 
-        // TODO add genuine merkle root
         await liquidityMining.initSeason(
           initTime,
           allocationPool,
           allocationIssuers,
-          ethers.constants.HashZero
+          merkleRoot
         );
 
         const aSenderBalance = await mockToken.balanceOf(account0.address);
@@ -260,7 +265,7 @@ const setup = async () => {
         expect(seasonInfo.rewardRate).to.equal(
           BigNumber.from(allocationPool).div(duration)
         );
-        expect(seasonInfo.merkleRoot).to.equal(ethers.constants.HashZero);
+        expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
       });
       it("revert when last season is live", async () => {
         await setNextBlockTimestamp(
@@ -269,6 +274,23 @@ const setup = async () => {
         await expect(
           liquidityMining.initSeason(0, 0, 0, ethers.constants.HashZero)
         ).to.be.revertedWith("last season live");
+      });
+    });
+    describe("stake()", () => {
+      it("revert to stake with zero amount", async () => {
+        await expect(
+          liquidityMining.stake(meToken.address, 0, [ethers.constants.HashZero])
+        ).to.be.revertedWith("RewardsPool: cannot stake zero");
+      });
+
+      // TODO complete checks
+      it("should be able to stake", async () => {
+        await meToken.approve(liquidityMining.address, tokenDeposited);
+        await liquidityMining.stake(
+          meToken.address,
+          tokenDeposited,
+          merkleTree.getHexProof(meToken.address)
+        );
       });
     });
     describe("recoverERC20()", () => {
