@@ -39,6 +39,30 @@ library LibFoundry {
         uint256 assetsReturned
     );
 
+    function mint(
+        address meToken,
+        uint256 assetsDeposited,
+        address recipient
+    ) internal {
+        (
+            ,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = handleMint(meToken, assetsDeposited);
+
+        // Mint meToken to user
+        IMeToken(meToken).mint(recipient, amounts[0]);
+        emit Mint(
+            meToken,
+            asset,
+            sender,
+            recipient,
+            assetsDeposited,
+            amounts[0]
+        );
+    }
+
     function handleMint(address meToken, uint256 assetsDeposited)
         internal
         returns (
@@ -92,30 +116,6 @@ library LibFoundry {
         return (vault, asset, sender, amounts);
     }
 
-    function mint(
-        address meToken,
-        uint256 assetsDeposited,
-        address recipient
-    ) internal {
-        (
-            ,
-            address asset,
-            address sender,
-            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-        ) = handleMint(meToken, assetsDeposited);
-
-        // Mint meToken to user
-        IMeToken(meToken).mint(recipient, amounts[0]);
-        emit Mint(
-            meToken,
-            asset,
-            sender,
-            recipient,
-            assetsDeposited,
-            amounts[0]
-        );
-    }
-
     function mintWithPermit(
         address meToken,
         uint256 assetsDeposited,
@@ -151,6 +151,47 @@ library LibFoundry {
         );
     }
 
+    function _handleMintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    )
+        private
+        returns (
+            address asset,
+            address sender,
+            uint256[2] memory amounts
+        )
+    {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        amounts[1] =
+            assetsDeposited -
+            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
+
+        amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
+
+        asset = _handlingChangesWithPermit(
+            amounts[1],
+            meToken,
+            meTokenInfo,
+            hubInfo,
+            assetsDeposited,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        return (asset, sender, amounts);
+    }
+
     function burn(
         address meToken,
         uint256 meTokensBurned,
@@ -164,12 +205,17 @@ library LibFoundry {
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (
-            meTokenInfo.targetHubId != 0 &&
-            block.timestamp > meTokenInfo.endTime
-        ) {
-            hubInfo = s.hubs[meTokenInfo.targetHubId];
-            meTokenInfo = LibMeToken.finishResubscribe(meToken);
+        } else if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+                meTokenInfo = s.meTokens[meToken];
+            }
+            /*   hubInfo = s.hubs[meTokenInfo.targetHubId];
+            meTokenInfo = LibMeToken.finishResubscribe(meToken); */
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
@@ -214,47 +260,6 @@ library LibFoundry {
             meTokensBurned,
             assetsReturned
         );
-    }
-
-    function _handleMintWithPermit(
-        address meToken,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    )
-        private
-        returns (
-            address asset,
-            address sender,
-            uint256[2] memory amounts
-        )
-    {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
-        amounts[1] =
-            assetsDeposited -
-            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
-
-        amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
-
-        asset = _handlingChangesWithPermit(
-            amounts[1],
-            meToken,
-            meTokenInfo,
-            hubInfo,
-            assetsDeposited,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        return (asset, sender, amounts);
     }
 
     function _handlingChangesWithPermit(
