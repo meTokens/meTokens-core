@@ -143,7 +143,6 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         address recipient,
         uint256 amount
     ) external onlyLiquidityMiningController {
-        // TODO should we allow to withdraw reward tokens?
         require(
             address(token) != address(s.me),
             "Cannot withdraw the reward token"
@@ -291,8 +290,8 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     // TODO does this need to be public? Users can use `earned` to finds their earnings.
     function updateReward(address meToken, address account) public {
         _updateAccrual(meToken);
-        PoolInfo storage poolInfo = s.pools[meToken];
         if (account != address(0)) {
+            PoolInfo storage poolInfo = s.pools[meToken];
             poolInfo.rewards[account] = earned(meToken, account);
             poolInfo.userRewardPerTokenPaid[account] = poolInfo
                 .rewardPerTokenStored;
@@ -317,6 +316,7 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         @param meToken - address a metoken address.
         @param merkleProof - bytes32[] merkle proof that ensures that `meToken` is part of `seasonId`.
      */
+    //  TODO can me made internal- as same calculation can be done off-chain.
     function isMeTokenInSeason(
         uint256 seasonId,
         address meToken,
@@ -462,21 +462,24 @@ contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
         seasonCount = s.seasonCount;
     }
 
-    function getPoolInfo(address meToken)
+    function getPoolInfo(address meToken, address user)
         external
         view
         override
         returns (
             uint256 seasonId,
             uint256 pendingIssuerRewards,
+            // TODO not using this anywhere
             bool pendingIssuerRewardsAdded,
             uint256 lastUpdateTime,
             uint256 totalSupply,
             uint256 lastCirculatingSupply,
-            uint256 rewardPerTokenStored
+            uint256 rewardPerTokenStored,
+            uint256 userRewardPerTokenPaid,
+            uint256 rewards
         )
     {
-        return LibLiquidityMining.getPoolInfo(meToken);
+        return LibLiquidityMining.getPoolInfo(meToken, user);
     }
 
     function getSeasonInfo(uint256 seasonId)

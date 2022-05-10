@@ -33,7 +33,7 @@ interface ILiquidityMiningFacet {
 
     function getSeasonCount() external view returns (uint256 seasonCount);
 
-    function getPoolInfo(address meToken)
+    function getPoolInfo(address meToken, address user)
         external
         view
         returns (
@@ -43,7 +43,9 @@ interface ILiquidityMiningFacet {
             uint256 lastUpdateTime,
             uint256 totalSupply,
             uint256 lastCirculatingSupply,
-            uint256 rewardPerTokenStored
+            uint256 rewardPerTokenStored,
+            uint256 userRewardPerTokenPaid,
+            uint256 rewards
         );
 
     function getSeasonInfo(uint256 seasonId)
