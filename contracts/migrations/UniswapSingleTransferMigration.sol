@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import "hardhat/console.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -9,6 +10,7 @@ import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {ISingleAssetVault} from "../interfaces/ISingleAssetVault.sol";
 import {IV3SwapRouter} from "@uniswap/swap-router-contracts/contracts/interfaces/IV3SwapRouter.sol";
+import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
@@ -35,11 +37,15 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
     IV3SwapRouter private immutable _router =
         IV3SwapRouter(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
+    IQuoter private immutable _quoter =
+        IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
 
     // args for uniswap router
     uint24 public constant MINFEE = 500; // 0.05%
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
+
+    uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
 
     modifier onlyDiamond() {
         require(msg.sender == diamond, "!diamond");
@@ -134,37 +140,18 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     }
 
     /// @inheritdoc Vault
-    function isValid(address meToken, bytes memory encodedArgs)
+    function isValid(bytes memory encodedArgs)
         external
-        view
+        pure
         override
         returns (bool)
     {
         // encodedArgs empty
         if (encodedArgs.length == 0) return false;
-
-        MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
-            .getMeTokenInfo(meToken);
         uint24 fee = abi.decode(encodedArgs, (uint24));
 
-        // MeToken not subscribed to a hub
-        if (meTokenInfo.hubId == 0) return false;
-        // Invalid fee
-        if (fee == MINFEE || fee == MIDFEE || fee == MAXFEE) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /// @inheritdoc IMigration
-    function migrationStarted(address meToken)
-        external
-        view
-        override
-        returns (bool started)
-    {
-        return _uniswapSingleTransfers[meToken].started;
+        // Must have valid fees
+        return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
     /// @dev parent call must have reentrancy check
@@ -190,10 +177,20 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             return 0;
         }
 
+        // Calculate rough expected return based on 5% input
+        uint256 expectedPartialAmount = _quoter.quoteExactInputSingle(
+            hubInfo.asset,
+            targetHubInfo.asset,
+            usts.fee,
+            (amountIn * 5) / 100,
+            0
+        );
+
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
+        // Have amountOutMinimum based on the 20 * expectedPartialAmount assuming swapping 5% has 0 slippage
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: hubInfo.asset,
@@ -201,7 +198,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 fee: usts.fee,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: 0,
+                amountOutMinimum: (expectedPartialAmount * 20 * MAXSLIPPAGE) /
+                    PRECISION,
                 sqrtPriceLimitX96: 0
             });
 

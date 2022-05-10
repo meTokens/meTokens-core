@@ -121,7 +121,7 @@ contract MeTokenRegistryFacet is
             "!approved"
         );
         require(
-            IVault(migration).isValid(meToken, encodedMigrationArgs),
+            IVault(migration).isValid(encodedMigrationArgs),
             "Invalid encodedMigrationArgs"
         );
         meTokenInfo.startTime = block.timestamp + s.meTokenWarmup;
@@ -153,8 +153,8 @@ contract MeTokenRegistryFacet is
         require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
-            !IMigration(meTokenInfo.migration).migrationStarted(meToken),
-            "Resubscription has started"
+            !IMigration(meTokenInfo.migration).isStarted(meToken),
+            "cannot cancel resubscribe"
         );
 
         meTokenInfo.startTime = 0;
