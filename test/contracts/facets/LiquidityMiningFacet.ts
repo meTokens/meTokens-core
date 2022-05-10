@@ -3,7 +3,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
 import { deploy, getContractAt } from "../../utils/helpers";
-import { setNextBlockTimestamp } from "../../utils/hardhatNode";
+import { mineBlock, setNextBlockTimestamp } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   FoundryFacet,
@@ -37,6 +37,7 @@ const setup = async () => {
     let mockToken: MockERC20;
     let mockToken2: MockERC20;
     let merkleTree: MerkleTree;
+    let lastUpdateTime: BigNumber;
 
     const hubId = 1;
     const name = "Carl meToken";
@@ -328,7 +329,7 @@ const setup = async () => {
           await liquidityMining.balanceOf(meToken.address, account0.address)
         ).to.equal(tokenDeposited);
       });
-      it("check new pool information", async () => {
+      it("check new pool and season information", async () => {
         const poolInfo = await liquidityMining.getPoolInfo(
           meToken.address,
           account0.address
@@ -352,6 +353,85 @@ const setup = async () => {
         expect(poolInfo.rewardPerTokenStored).to.equal(0);
         expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
         expect(poolInfo.rewards).to.equal(0);
+
+        expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
+        lastUpdateTime = poolInfo.lastUpdateTime;
+      });
+    });
+
+    describe("withdraw()", () => {
+      let tx: ContractTransaction;
+      before(async () => {
+        // increase time to 100s before season- 1 endTime
+        await mineBlock(
+          (await liquidityMining.getSeasonInfo(1)).endTime.toNumber() - 100
+        );
+      });
+
+      it("revert to withdraw with zero amount", async () => {
+        await expect(
+          liquidityMining.withdraw(meToken.address, 0, [
+            ethers.constants.HashZero,
+          ])
+        ).to.be.revertedWith("RewardsPool: cannot withdraw zero");
+      });
+
+      it("should be able to withdraw", async () => {
+        tx = await liquidityMining.withdraw(
+          meToken.address,
+          tokenDeposited,
+          merkleTree.getHexProof(meToken.address)
+        );
+
+        await expect(tx)
+          .to.emit(meToken, "Transfer")
+          .withArgs(liquidityMining.address, account0.address, tokenDeposited);
+        await expect(tx)
+          .to.emit(liquidityMining, "Withdrawn")
+          .withArgs(meToken.address, account0.address, tokenDeposited);
+
+        expect(
+          await liquidityMining.balanceOf(meToken.address, account0.address)
+        ).to.equal(0);
+      });
+
+      it("check new pool and season information", async () => {
+        const poolInfo = await liquidityMining.getPoolInfo(
+          meToken.address,
+          account0.address
+        );
+        const seasonInfo = await liquidityMining.getSeasonInfo(1);
+        const metokenTotalSupply = await meToken.totalSupply();
+        const calculatedNewPctStaked = 0; // simplified cal
+        const txBlockTime = (
+          await ethers.provider.getBlock((await tx.wait()).blockNumber)
+        ).timestamp;
+        const calculatedRewardPerTokenStored = BigNumber.from(txBlockTime)
+          .sub(lastUpdateTime)
+          .mul(seasonInfo.rewardRate)
+          .mul(PRECISION)
+          .div(tokenDeposited);
+        const calculatedEarned = tokenDeposited
+          .mul(calculatedRewardPerTokenStored)
+          .div(PRECISION); // simplified calculation
+
+        expect(poolInfo.seasonId).to.equal(1);
+        expect(poolInfo.pendingIssuerRewards).to.equal(0);
+        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
+        expect(poolInfo.lastUpdateTime).to.equal(
+          (await ethers.provider.getBlock((await tx.wait()).blockNumber))
+            .timestamp
+        );
+
+        expect(poolInfo.totalSupply).to.equal(0);
+        expect(poolInfo.lastCirculatingSupply).to.equal(metokenTotalSupply);
+        expect(poolInfo.rewardPerTokenStored).to.equal(
+          calculatedRewardPerTokenStored
+        );
+        expect(poolInfo.userRewardPerTokenPaid).to.equal(
+          calculatedRewardPerTokenStored
+        );
+        expect(poolInfo.rewards).to.equal(calculatedEarned);
 
         expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
       });
