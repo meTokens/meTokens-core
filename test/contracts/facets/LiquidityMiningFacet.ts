@@ -1,6 +1,6 @@
 import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Signer, BigNumber } from "ethers";
+import { Signer, BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
 import { deploy, getContractAt } from "../../utils/helpers";
 import { setNextBlockTimestamp } from "../../utils/hardhatNode";
@@ -55,6 +55,7 @@ const setup = async () => {
 
     const allocationPool = ethers.utils.parseEther("20");
     const allocationIssuers = ethers.utils.parseEther("10");
+    const BASE = ethers.utils.parseUnits("1", 54);
 
     before(async () => {
       const MAX_WEIGHT = 1000000;
@@ -127,31 +128,32 @@ const setup = async () => {
     // TODO check initialised variables
     describe("Initial States", () => {
       it("State check", async () => {
-        const poolInfo = await liquidityMining.getPoolInfo(meToken.address);
+        const poolInfo = await liquidityMining.getPoolInfo(
+          meToken.address,
+          ethers.constants.AddressZero
+        );
         const seasonInfo = await liquidityMining.getSeasonInfo(0);
 
-        expect((await liquidityMining.getIssuerCooldown()).toNumber()).to.equal(
-          0
-        );
-        expect((await liquidityMining.getLMWarmup()).toNumber()).to.equal(0);
-        expect((await liquidityMining.getLMWarmup()).toNumber()).to.equal(0);
-        expect((await liquidityMining.getSeasonCount()).toNumber()).to.equal(0);
+        expect(await liquidityMining.getIssuerCooldown()).to.equal(0);
+        expect(await liquidityMining.getLMWarmup()).to.equal(0);
+        expect(await liquidityMining.getLMWarmup()).to.equal(0);
+        expect(await liquidityMining.getSeasonCount()).to.equal(0);
 
-        expect(poolInfo.seasonId.toNumber()).to.equal(0);
-        expect(poolInfo.pendingIssuerRewards.toNumber()).to.equal(0);
+        expect(poolInfo.seasonId).to.equal(0);
+        expect(poolInfo.pendingIssuerRewards).to.equal(0);
         expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
-        expect(poolInfo.lastUpdateTime.toNumber()).to.equal(0);
-        expect(poolInfo.totalSupply.toNumber()).to.equal(0);
-        expect(poolInfo.lastCirculatingSupply.toNumber()).to.equal(0);
-        expect(poolInfo.rewardPerTokenStored.toNumber()).to.equal(0);
+        expect(poolInfo.lastUpdateTime).to.equal(0);
+        expect(poolInfo.totalSupply).to.equal(0);
+        expect(poolInfo.lastCirculatingSupply).to.equal(0);
+        expect(poolInfo.rewardPerTokenStored).to.equal(0);
 
-        expect(seasonInfo.initTime.toNumber()).to.equal(0);
-        expect(seasonInfo.startTime.toNumber()).to.equal(0);
-        expect(seasonInfo.endTime.toNumber()).to.equal(0);
-        expect(seasonInfo.allocationPool.toNumber()).to.equal(0);
-        expect(seasonInfo.allocationIssuers.toNumber()).to.equal(0);
-        expect(seasonInfo.totalPctStaked.toNumber()).to.equal(0);
-        expect(seasonInfo.rewardRate.toNumber()).to.equal(0);
+        expect(seasonInfo.initTime).to.equal(0);
+        expect(seasonInfo.startTime).to.equal(0);
+        expect(seasonInfo.endTime).to.equal(0);
+        expect(seasonInfo.allocationPool).to.equal(0);
+        expect(seasonInfo.allocationIssuers).to.equal(0);
+        expect(seasonInfo.totalPctStaked).to.equal(0);
+        expect(seasonInfo.rewardRate).to.equal(0);
         expect(seasonInfo.merkleRoot).to.equal(ethers.constants.HashZero);
       });
     });
@@ -276,23 +278,85 @@ const setup = async () => {
         ).to.be.revertedWith("last season live");
       });
     });
+
+    describe("isMeTokenInSeason()", () => {
+      const currentSeason = 1;
+      it("should return true if a metoken is present in a season", async () => {
+        expect(
+          await liquidityMining.isMeTokenInSeason(
+            currentSeason,
+            meToken.address,
+            merkleTree.getHexProof(meToken.address)
+          )
+        ).to.equal(true);
+      });
+      it("should return false if a metoken is present in a season", async () => {
+        expect(
+          await liquidityMining.isMeTokenInSeason(
+            currentSeason,
+            account0.address, // wrong token address
+            merkleTree.getHexProof(meToken.address)
+          )
+        ).to.equal(false);
+      });
+    });
+
     describe("stake()", () => {
+      let tx: ContractTransaction;
       it("revert to stake with zero amount", async () => {
         await expect(
           liquidityMining.stake(meToken.address, 0, [ethers.constants.HashZero])
         ).to.be.revertedWith("RewardsPool: cannot stake zero");
       });
 
-      // TODO complete checks
       it("should be able to stake", async () => {
         await meToken.approve(liquidityMining.address, tokenDeposited);
-        await liquidityMining.stake(
+        tx = await liquidityMining.stake(
           meToken.address,
           tokenDeposited,
           merkleTree.getHexProof(meToken.address)
         );
+
+        await expect(tx)
+          .to.emit(meToken, "Transfer")
+          .withArgs(account0.address, liquidityMining.address, tokenDeposited);
+        await expect(tx)
+          .to.emit(liquidityMining, "Staked")
+          .withArgs(meToken.address, account0.address, tokenDeposited);
+
+        expect(
+          await liquidityMining.balanceOf(meToken.address, account0.address)
+        ).to.equal(tokenDeposited);
+      });
+      it("check new pool information", async () => {
+        const poolInfo = await liquidityMining.getPoolInfo(
+          meToken.address,
+          account0.address
+        );
+        const seasonInfo = await liquidityMining.getSeasonInfo(1);
+        const metokenTotalSupply = await meToken.totalSupply();
+        const calculatedNewPctStaked = tokenDeposited
+          .mul(BASE)
+          .div(metokenTotalSupply);
+
+        expect(poolInfo.seasonId).to.equal(1);
+        expect(poolInfo.pendingIssuerRewards).to.equal(0);
+        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
+        expect(poolInfo.lastUpdateTime).to.equal(
+          (await ethers.provider.getBlock((await tx.wait()).blockNumber))
+            .timestamp
+        );
+
+        expect(poolInfo.totalSupply).to.equal(tokenDeposited);
+        expect(poolInfo.lastCirculatingSupply).to.equal(metokenTotalSupply);
+        expect(poolInfo.rewardPerTokenStored).to.equal(0);
+        expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
+        expect(poolInfo.rewards).to.equal(0);
+
+        expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
       });
     });
+
     describe("recoverERC20()", () => {
       before(async () => {
         // add some me and meTokens to liquidityMining contract
