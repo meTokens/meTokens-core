@@ -46,7 +46,7 @@ library LibLiquidityMining {
         }
     }
 
-    function getPoolInfo(address meToken)
+    function getPoolInfo(address meToken, address user)
         internal
         view
         returns (
@@ -56,7 +56,9 @@ library LibLiquidityMining {
             uint256 lastUpdateTime,
             uint256 totalSupply,
             uint256 lastCirculatingSupply,
-            uint256 rewardPerTokenStored
+            uint256 rewardPerTokenStored,
+            uint256 userRewardPerTokenPaid,
+            uint256 rewards
         )
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
@@ -67,6 +69,8 @@ library LibLiquidityMining {
         totalSupply = s.pools[meToken].totalSupply;
         lastCirculatingSupply = s.pools[meToken].lastCirculatingSupply;
         rewardPerTokenStored = s.pools[meToken].rewardPerTokenStored;
+        userRewardPerTokenPaid = s.pools[meToken].userRewardPerTokenPaid[user];
+        rewards = s.pools[meToken].rewards[user];
     }
 
     function getUserPoolInfo(address meToken, address user)
