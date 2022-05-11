@@ -23,6 +23,20 @@ interface ICalendethEscrow {
     function setScheduleFee(uint256 _perMinuteFee) external;
 
     /**
+     * @notice mint `_mintAmount` and schedule meeting with _meHolder
+     * @param _mintAmount amount of metoken to mints. Usually this is minimum amount to schedule the meeting
+     * @param _meHolder inviter for the meeting
+     * @param _minutes duration of meeting in minutes
+     * @param _timestamp starting timestamp of the meeting
+     */
+    function mintAndScheduleMeeting(
+        uint256 _mintAmount,
+        address _meHolder,
+        uint256 _minutes,
+        uint256 _timestamp
+    ) external;
+
+    /**
      * @notice schedule meeting with _meHolder
      * @param _meHolder inviter for the meeting
      * @param _minutes duration of meeting in minutes
