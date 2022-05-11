@@ -85,11 +85,6 @@ const setup = async () => {
         await meTokenRegistry.getOwnerMeToken(account1.address)
       );
 
-      // await foundry.mint(
-      //   account0MeToken.address,
-      //   ethers.utils.parseEther("1"),
-      //   account1.address
-      // );
       await foundry.mint(
         account1MeToken.address,
         ethers.utils.parseEther("1"),
