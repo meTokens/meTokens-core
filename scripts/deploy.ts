@@ -13,6 +13,7 @@ import { DiamondLoupeFacet } from "../artifacts/types/contracts/facets/DiamondLo
 import { OwnershipFacet } from "../artifacts/types/contracts/facets/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
+  CalendethEscrowFacet,
   CurveFacet,
   MeTokenFactory,
   MigrationRegistry,
@@ -28,6 +29,7 @@ const REFUND_RATIO = 50000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
 const feeInitialization = [0, 0, 0, 0, 0, 0];
+const inviterClaimWaiting = 3 * 24 * 60 * 60; // 3 days
 
 async function main() {
   let [deployer, DAO] = await ethers.getSigners();
@@ -111,6 +113,15 @@ async function main() {
     address: foundryFacet.address,
   });
 
+  const calendethEscrowFacet = await deploy<CalendethEscrowFacet>(
+    "CalendethEscrowFacet"
+  );
+  console.log("calendethEscrowFacet deployed at:", foundryFacet.address);
+  contracts.push({
+    name: "contracts/facets/calendethEscrowFacet.sol:calendethEscrowFacet",
+    address: calendethEscrowFacet.address,
+  });
+
   const curveFacet = await deploy<CurveFacet>("CurveFacet");
   console.log("CurveFacet deployed at:", curveFacet.address);
 
@@ -152,6 +163,7 @@ async function main() {
   const facets = [
     hubFacet,
     foundryFacet,
+    calendethEscrowFacet,
     curveFacet,
     feesFacet,
     meTokenRegistryFacet,
@@ -184,6 +196,7 @@ async function main() {
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
+      inviterClaimWaiting: inviterClaimWaiting,
     },
   ];
 
@@ -239,6 +252,7 @@ async function main() {
     "Hub Facet Contract Address": hubFacet.address,
     "Fee Facet Contract Address": feesFacet.address,
     "Foundry Facet Contract Address": foundryFacet.address,
+    "Calendeth Facet Contract Address": calendethEscrowFacet.address,
     "MeToken Registry Facet Contract Address": meTokenRegistryFacet.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
