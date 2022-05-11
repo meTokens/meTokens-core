@@ -7,6 +7,7 @@ import {HubInfo} from "./LibHub.sol";
 import {MeTokenInfo} from "./LibMeToken.sol";
 import {LibDiamond} from "./LibDiamond.sol";
 import {LibMeta} from "./LibMeta.sol";
+import {Meeting} from "./LibCalendethEscrow.sol";
 
 struct AppStorage {
     // Fees-specific
@@ -46,6 +47,11 @@ struct AppStorage {
     address registerController;
     address deactivateController;
     address trustedForwarder;
+    // CalendethEscrow-specific
+    uint256 meetingCounter;
+    uint256 inviterClaimWaiting;
+    mapping(address => uint256) scheduleFee;
+    mapping(uint256 => Meeting) meetings;
 }
 
 library LibAppStorage {

@@ -27,6 +27,7 @@ contract DiamondInit {
         IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
         address meTokenFactory;
+        uint256 inviterClaimWaiting;
     }
 
     address private immutable _owner;
@@ -49,6 +50,7 @@ contract DiamondInit {
         s.transferFee = _args.transferFee;
         s.interestFee = _args.interestFee;
         s.yieldFee = _args.yieldFee;
+        s.inviterClaimWaiting = _args.inviterClaimWaiting;
 
         s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 1e18;
