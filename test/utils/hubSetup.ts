@@ -22,6 +22,7 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   CurveFacet,
+  CalendethEscrowFacet,
 } from "../../artifacts/types";
 
 export async function hubSetup(
@@ -35,6 +36,7 @@ export async function hubSetup(
   erc20Decimals?: number
 ): Promise<{
   foundry: FoundryFacet;
+  calendethEscrow: CalendethEscrowFacet;
   hub: HubFacet;
   fee: FeesFacet;
   meTokenRegistry: MeTokenRegistryFacet;
@@ -55,6 +57,7 @@ export async function hubSetup(
 }> {
   const {
     foundry,
+    calendethEscrow,
     hub,
     fee,
     meTokenRegistry,
@@ -87,6 +90,7 @@ export async function hubSetup(
   );
   return {
     foundry,
+    calendethEscrow,
     hub,
     fee,
     meTokenRegistry,
@@ -147,6 +151,7 @@ export async function transferFromWhale(
 
 export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   foundry: FoundryFacet;
+  calendethEscrow: CalendethEscrowFacet;
   hub: HubFacet;
   meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
@@ -162,6 +167,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   account3: SignerWithAddress;
 }> {
   let foundry: FoundryFacet;
+  let calendethEscrow: CalendethEscrowFacet;
   let hub: HubFacet;
   let meTokenFactory: MeTokenFactory;
   let singleAssetVault: SingleAssetVault;
@@ -184,6 +190,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   if (!feeInitialization) {
     feeInitialization = [0, 0, 0, 0, 0, 0];
   }
+  let inviterClaimWaitingInitialization = 3 * 24 * 60 * 60; // 3 days
   //
   // NOTE: start diamond deploy
   //
@@ -208,6 +215,9 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   // Deploying facets
   const hubFacet = await deploy<HubFacet>("HubFacet");
   const foundryFacet = await deploy<FoundryFacet>("FoundryFacet");
+  const calendethEscrowFacet = await deploy<CalendethEscrowFacet>(
+    "CalendethEscrowFacet"
+  );
   const feesFacet = await deploy<FeesFacet>("FeesFacet");
   const meTokenRegistryFacet = await deploy<MeTokenRegistryFacet>(
     "MeTokenRegistryFacet"
@@ -219,6 +229,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   const facets = [
     hubFacet,
     foundryFacet,
+    calendethEscrowFacet,
     curveFacet,
     feesFacet,
     meTokenRegistryFacet,
@@ -248,6 +259,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
+      inviterClaimWaiting: inviterClaimWaitingInitialization,
     },
   ];
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier
@@ -264,6 +276,10 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     "FoundryFacet",
     diamond.address
   )) as FoundryFacet;
+  calendethEscrow = (await ethers.getContractAt(
+    "CalendethEscrowFacet",
+    diamond.address
+  )) as CalendethEscrowFacet;
   fee = (await ethers.getContractAt("FeesFacet", diamond.address)) as FeesFacet;
   meTokenRegistry = (await ethers.getContractAt(
     "MeTokenRegistryFacet",
@@ -276,6 +292,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   await vaultRegistry.approve(singleAssetVault.address);
   return {
     foundry,
+    calendethEscrow,
     hub,
     diamond,
     meTokenFactory,
