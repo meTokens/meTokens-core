@@ -14,7 +14,6 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
-import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -80,13 +79,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-        console.log(
-            "## poke  usts.fee:%s  block.timestamp:%s meTokenInfo.startTime:%s",
-            usts.fee,
-            block.timestamp,
-            meTokenInfo.startTime
-        );
-        console.log("## poke  usts.started:%s", usts.started);
         if (
             usts.fee != 0 && // make sure meToken is in a state of resubscription
             block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
@@ -176,7 +168,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
         uint256 amountIn = meTokenInfo.balancePooled +
             meTokenInfo.balanceLocked;
-        console.log("## _swap  amountIn:%s", amountIn);
         // Only swap if
         // - There are tokens to swap
         // - The resubscription has started
@@ -214,7 +205,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
-        console.log("## _swap  amountOut:%s", amountOut);
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }

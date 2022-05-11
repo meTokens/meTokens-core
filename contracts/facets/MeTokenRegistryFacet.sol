@@ -17,7 +17,6 @@ import {LibHub, HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
-import "hardhat/console.sol";
 
 /// @title meTokens Registry Facet
 /// @author @cbobrobison, @cartercarlson, @zgorizzo69, @parv3213
@@ -43,17 +42,7 @@ contract MeTokenRegistryFacet is
         HubInfo memory hubInfo = s.hubs[hubId];
         require(hubInfo.active, "Hub inactive");
         require(!hubInfo.updating, "Hub updating");
-        console.log(
-            "## hubInfo.asset:%s  hubInfo.vault:%s sender:%s",
-            hubInfo.asset,
-            hubInfo.vault,
-            sender
-        );
-        console.log(
-            "##  IERC20(hubInfo.asset).balance:%s  hubInfo.vault:%s sender:%s",
-            IERC20(hubInfo.asset).balanceOf(sender),
-            IERC20(hubInfo.asset).allowance(sender, address(this))
-        );
+
         if (assetsDeposited > 0) {
             IERC20(hubInfo.asset).safeTransferFrom(
                 sender,
@@ -61,7 +50,6 @@ contract MeTokenRegistryFacet is
                 assetsDeposited
             );
         }
-        console.log("## after");
         // Create meToken erc20 contract
         address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
             name,

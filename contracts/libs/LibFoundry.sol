@@ -39,6 +39,26 @@ library LibFoundry {
         uint256 assetsReturned
     );
 
+    // MINT FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 mint()                  //
+    //                                                   |                     //
+    //                                             CALCULATE MINT              //
+    //                                                 /    \                  //
+    // is hub updating or meToken migrating? -{      (Y)     (N)               //
+    //                                               /         \               //
+    //                                          CALCULATE       |              //
+    //                                         TARGET MINT      |              //
+    //                                             |            |              //
+    //                                        TIME-WEIGHTED     |              //
+    //                                           AVERAGE        |              //
+    //                                               \         /               //
+    //                                               MINT RETURN               //
+    //                                                   |                     //
+    //                                              .sub(fees)                 //
+    //                                                                         //
+    ****************************************************************************/
     function mint(
         address meToken,
         uint256 assetsDeposited,
@@ -151,47 +171,37 @@ library LibFoundry {
         );
     }
 
-    function _handleMintWithPermit(
-        address meToken,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    )
-        private
-        returns (
-            address asset,
-            address sender,
-            uint256[2] memory amounts
-        )
-    {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
-        amounts[1] =
-            assetsDeposited -
-            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
-
-        amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
-
-        asset = _handlingChangesWithPermit(
-            amounts[1],
-            meToken,
-            meTokenInfo,
-            hubInfo,
-            assetsDeposited,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        return (asset, sender, amounts);
-    }
-
+    // BURN FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 burn()                  //
+    //                                                   |                     //
+    //                                             CALCULATE BURN              //
+    //                                                /     \                  //
+    // is hub updating or meToken migrating? -{     (Y)     (N)                //
+    //                                              /         \                //
+    //                                         CALCULATE       \               //
+    //                                        TARGET BURN       \              //
+    //                                           /               \             //
+    //                                  TIME-WEIGHTED             \            //
+    //                                     AVERAGE                 \           //
+    //                                        |                     |          //
+    //                              WEIGHTED BURN RETURN       BURN RETURN     //
+    //                                     /     \               /    \        //
+    // is msg.sender the -{              (N)     (Y)           (Y)    (N)      //
+    // owner? (vs buyer)                 /         \           /        \      //
+    //                                 GET           CALCULATE         GET     //
+    //                            TIME-WEIGHTED    BALANCE LOCKED     REFUND   //
+    //                            REFUND RATIO        RETURNED        RATIO    //
+    //                                  |                |              |      //
+    //                              .mul(wRR)        .add(BLR)      .mul(RR)   //
+    //                                   \|/       //
+    //                                                   |                     //
+    //                                     ACTUAL (WEIGHTED) BURN RETURN       //
+    //                                                   |                     //
+    //                                               .sub(fees)                //
+    //                                                                         //
+    ****************************************************************************/
     function burn(
         address meToken,
         uint256 meTokensBurned,
@@ -260,6 +270,47 @@ library LibFoundry {
             meTokensBurned,
             assetsReturned
         );
+    }
+
+    function _handleMintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    )
+        private
+        returns (
+            address asset,
+            address sender,
+            uint256[2] memory amounts
+        )
+    {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        amounts[1] =
+            assetsDeposited -
+            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
+
+        amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
+
+        asset = _handlingChangesWithPermit(
+            amounts[1],
+            meToken,
+            meTokenInfo,
+            hubInfo,
+            assetsDeposited,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        return (asset, sender, amounts);
     }
 
     function _handlingChangesWithPermit(
