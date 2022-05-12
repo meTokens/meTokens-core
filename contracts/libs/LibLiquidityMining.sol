@@ -25,9 +25,28 @@ struct SeasonInfo {
     uint256 rewardRate;
     bytes32 merkleRoot;
 }
+struct LiquidityMiningStorage {
+    uint256 status;
+}
 
 library LibLiquidityMining {
-    function getPoolInfo(address meToken)
+    uint256 constant _NOT_ENTERED = 1;
+    uint256 constant _ENTERED = 2;
+    bytes32 public constant LIQUIDITY_MINING_STORAGE_POSITION =
+        keccak256("diamond.standard.liquidity.mining.storage");
+
+    function liquidityMiningStorage()
+        internal
+        pure
+        returns (LiquidityMiningStorage storage ds)
+    {
+        bytes32 position = LIQUIDITY_MINING_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
+    }
+
+    function getPoolInfo(address meToken, address user)
         internal
         view
         returns (
@@ -37,7 +56,9 @@ library LibLiquidityMining {
             uint256 lastUpdateTime,
             uint256 totalSupply,
             uint256 lastCirculatingSupply,
-            uint256 rewardPerTokenStored
+            uint256 rewardPerTokenStored,
+            uint256 userRewardPerTokenPaid,
+            uint256 rewards
         )
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
@@ -48,6 +69,8 @@ library LibLiquidityMining {
         totalSupply = s.pools[meToken].totalSupply;
         lastCirculatingSupply = s.pools[meToken].lastCirculatingSupply;
         rewardPerTokenStored = s.pools[meToken].rewardPerTokenStored;
+        userRewardPerTokenPaid = s.pools[meToken].userRewardPerTokenPaid[user];
+        rewards = s.pools[meToken].rewards[user];
     }
 
     function getUserPoolInfo(address meToken, address user)

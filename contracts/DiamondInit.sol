@@ -12,6 +12,8 @@ import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 
+import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
+
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
@@ -70,5 +72,9 @@ contract DiamondInit {
         cs.one = (uint256(1)).fromUInt();
         cs.maxWeight = uint256(LibCurve.MAX_WEIGHT).fromUInt();
         cs.baseX = uint256(1 ether).fromUInt();
+        //adding reentrancy initial state
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.status = LibLiquidityMining._NOT_ENTERED;
     }
 }
