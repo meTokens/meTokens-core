@@ -149,8 +149,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         if (encodedArgs.length == 0) return false;
         uint24 fee = abi.decode(encodedArgs, (uint24));
 
-        // MeToken not subscribed to a hub
-        if (meTokenInfo.hubId == 0) return false;
         // Invalid fee
         return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }

@@ -155,7 +155,7 @@ contract MeTokenRegistryFacet is
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
             !IMigration(meTokenInfo.migration).isStarted(meToken),
-            "Resubscription has started"
+            "cannot cancel"
         );
 
         meTokenInfo.startTime = 0;
