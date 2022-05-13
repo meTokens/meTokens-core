@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
@@ -8,6 +9,7 @@ import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
+import {PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
 
 struct AppStorageMock {
     // Fees-specific
@@ -20,6 +22,7 @@ struct AppStorageMock {
     // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
+    uint256 BASE;
     uint256 MAX_FEE;
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
@@ -34,19 +37,31 @@ struct AppStorageMock {
     uint256 hubCooldown;
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
+    // reentrancy guard
+    uint256 reentrancyStatus;
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
+    IERC20 me;
     IVaultRegistry vaultRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
+    address trustedForwarder;
     address feesController;
+    address liquidityMiningController;
     address durationsController;
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
-    address trustedForwarder;
+    // LiquidityMining-specific
+    uint256 issuerCooldown; // # of seasons a meToken issuer has to wait before participating again
+    uint256 lmWarmup; // = 3 days; timeframe between initTime and startTime
+    uint256 lmDuration; // = 1000000; // timeframe from a season starting to ending - about 11.5 days
+    uint256 seasonCount; // # of seasons
+    mapping(address => mapping(address => uint256)) stakedBalances; // key 1: meToken addr- key2: staker addr- value: amount staked
+    mapping(address => PoolInfo) pools;
+    mapping(uint256 => SeasonInfo) seasons;
     // NOTE: This is the upgraded value for AppStorage
     address totallyNewAddress;
 }

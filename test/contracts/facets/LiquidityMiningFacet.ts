@@ -17,7 +17,7 @@ import {
 import { MerkleTree } from "../../utils/merkleTree";
 
 const setup = async () => {
-  describe.only("LiquidityMiningFacet.sol", () => {
+  describe("LiquidityMiningFacet.sol", () => {
     let DAI: string;
     let dai: ERC20;
     let WETH: string;

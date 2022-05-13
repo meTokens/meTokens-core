@@ -13,11 +13,12 @@ import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 
 import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
+import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
-contract DiamondInit {
+contract DiamondInit is ReentrancyGuard {
     using ABDKMathQuad for uint256;
     struct Args {
         uint256 mintFee;
@@ -44,6 +45,7 @@ contract DiamondInit {
     function init(Args memory _args) external {
         require(msg.sender == _owner, "!owner");
         require(s.diamond == address(0), "Already initialized");
+        console.log("###### s.args me:%s", address(_args.me));
         s.me = _args.me;
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
@@ -72,9 +74,8 @@ contract DiamondInit {
         cs.one = (uint256(1)).fromUInt();
         cs.maxWeight = uint256(LibCurve.MAX_WEIGHT).fromUInt();
         cs.baseX = uint256(1 ether).fromUInt();
+
         //adding reentrancy initial state
-        LiquidityMiningStorage storage ls = LibLiquidityMining
-            .liquidityMiningStorage();
-        ls.status = LibLiquidityMining._NOT_ENTERED;
+        s.reentrancyStatus = _NOT_ENTERED;
     }
 }

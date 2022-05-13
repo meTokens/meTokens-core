@@ -11,38 +11,18 @@ import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
+import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
 // TODO generalize require strings
 // TODO add logic to claim metoken issuer rewards.
-contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
+contract LiquidityMiningFacet is
+    ILiquidityMiningFacet,
+    Modifiers,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
-    /**
-     * @dev Prevents a contract from calling itself, directly or indirectly.
-     * Calling a `nonReentrant` function from another `nonReentrant`
-     * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and making it call a
-     * `private` function that does the actual work.
-     */
-    modifier nonReentrant() {
-        LiquidityMiningStorage storage ls = LibLiquidityMining
-            .liquidityMiningStorage();
-        // On the first call to nonReentrant, _notEntered will be true
-        require(
-            ls.status != LibLiquidityMining._ENTERED,
-            "ReentrancyGuard: reentrant call"
-        );
-
-        // Any calls to nonReentrant after this point will fail
-        ls.status = LibLiquidityMining._ENTERED;
-
-        _;
-
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        ls.status = LibLiquidityMining._NOT_ENTERED;
-    }
 
     function initSeason(
         uint256 initTime,
