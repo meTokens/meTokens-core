@@ -5,6 +5,7 @@ import { expect } from "chai";
 import {
   calculateCollateralReturned,
   calculateCollateralToDepositFromZero,
+  calculateTokenReturned,
   calculateTokenReturnedFromZero,
   deploy,
   fromETHNumber,
@@ -409,7 +410,7 @@ const setup = async () => {
       });
     });
 
-    /*    describe("multiple burn and mint", () => {
+    describe("multiple burn and mint", () => {
       before(async () => {
         // mint some to owner and burn. To make balance pool and locked 0
         await foundry.mint(meToken.address, 1, account0.address);
@@ -616,7 +617,7 @@ const setup = async () => {
         expect(await meToken.totalSupply()).to.equal(0);
         expect(await token.balanceOf(singleAssetVault.address)).to.equal(0);
       });
-    }); */
+    });
 
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
