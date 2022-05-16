@@ -29,16 +29,46 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
     }
 
     function mintAndScheduleMeeting(
-        uint256 _mintAmount,
+        uint256 _requiredMetokens,
         address _meHolder,
         uint256 _minutes,
         uint256 _timestamp
     ) external override mustBeMeHolder(_meHolder) {
-        if (_mintAmount > 0) {
-            LibFoundry.mint(
-                s.meTokenOwners[_meHolder],
+        if (_requiredMetokens > 0) {
+            address _metoken = s.meTokenOwners[_meHolder];
+            uint256 _mintAmount = LibFoundry.calculateAssetsDeposited(
+                _metoken,
+                _requiredMetokens
+            );
+            LibFoundry.mint(_metoken, _mintAmount, LibMeta.msgSender());
+        }
+        _scheduleMeeting(_meHolder, _minutes, _timestamp);
+    }
+
+    function mintAndScheduleMeetingWithPermit(
+        uint256 _requiredMetokens,
+        address _meHolder,
+        uint256 _minutes,
+        uint256 _timestamp,
+        uint256 _deadline,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external override mustBeMeHolder(_meHolder) {
+        if (_requiredMetokens > 0) {
+            address _metoken = s.meTokenOwners[_meHolder];
+            uint256 _mintAmount = LibFoundry.calculateAssetsDeposited(
+                _metoken,
+                _requiredMetokens
+            );
+            LibFoundry.mintWithPermit(
+                _metoken,
                 _mintAmount,
-                LibMeta.msgSender()
+                LibMeta.msgSender(),
+                _deadline,
+                _v,
+                _r,
+                _s
             );
         }
         _scheduleMeeting(_meHolder, _minutes, _timestamp);
