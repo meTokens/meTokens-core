@@ -87,7 +87,27 @@ interface IFoundryFacet {
     ) external;
 
     /// @notice Donate a meToken's underlying asset to its owner
-    /// @param meToken          Address of meToken to burn
+    /// @param meToken          Address of meToken to donate
     /// @param assetsDeposited  Amount of asset to donate
     function donate(address meToken, uint256 assetsDeposited) external;
+
+    /// @notice Calculate meTokens minted based on assets deposited
+    /// @param meToken          Address of meToken to mint
+    /// @param assetsDeposited  Amount of assets to deposit
+    /// @return meTokensMinted  Amount of meTokens to be minted
+    function calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
+        external
+        view
+        returns (uint256 meTokensMinted);
+
+    /// @notice Calculate assets returned based on meTokens burned
+    /// @param meToken          Address of meToken to burn
+    /// @param meTokensBurned   Amount of meTokens to burn
+    /// @param sender           Address to burn the meTokens
+    /// @return assetsReturned  Amount of assets to be returned to sender
+    function calculateAssetsReturned(
+        address meToken,
+        uint256 meTokensBurned,
+        address sender
+    ) external view returns (uint256 assetsReturned);
 }

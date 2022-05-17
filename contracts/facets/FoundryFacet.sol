@@ -71,4 +71,36 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         emit Donate(meToken, asset, sender, assetsDeposited);
     }
+
+    /// @inheritdoc IFoundryFacet
+    function calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
+        external
+        view
+        override
+        returns (uint256 meTokensMinted)
+    {
+        meTokensMinted = LibFoundry.calculateMeTokensMinted(
+            meToken,
+            assetsDeposited
+        );
+    }
+
+    /// @inheritdoc IFoundryFacet
+    function calculateAssetsReturned(
+        address meToken,
+        uint256 meTokensBurned,
+        address sender
+    ) external view override returns (uint256 assetsReturned) {
+        uint256 rawAssetsReturned = calculateRawAssetsReturned(
+            meToken,
+            meTokensBurned
+        );
+        if (sender == address(0)) sender = LibMeta.msgSender();
+        assetsReturned = calculateAssetsReturned(
+            sender,
+            meToken,
+            meTokensBurned,
+            rawAssetsReturned
+        );
+    }
 }
