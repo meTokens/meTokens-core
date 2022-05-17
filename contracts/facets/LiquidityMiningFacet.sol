@@ -30,7 +30,9 @@ contract LiquidityMiningFacet is
         uint256 allocationIssuers,
         bytes32 merkleRoot
     ) external onlyLiquidityMiningController {
-        require(hasSeasonEnded(s.seasonCount), "last season live");
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        require(hasSeasonEnded(ls.seasonCount), "last season live");
         require(initTime >= block.timestamp, "init time < timestamp");
 
         s.me.safeTransferFrom(
@@ -40,22 +42,22 @@ contract LiquidityMiningFacet is
         );
         // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
         // TODO to solve this, should we take `rewardRate` as param and cal `allocationPool`?
-        uint256 rewardRate = allocationPool / s.lmDuration;
+        uint256 rewardRate = allocationPool / ls.lmDuration;
 
         // can only schedule once last season has ended? No
         // when a season inits, do we distribute allocations to each meToken in the season?
         // - buyer: arg could be 20 meaning each meTokens pool gets 20 ME, OR arg could be 100 meaning each meTokens
         //      pool gets 20 ME (there are 5 meTokens in the season)
         // - issuer - total amount of ME that issuers could win
-        SeasonInfo storage newSeasonInfo = s.seasons[++s.seasonCount];
+        SeasonInfo storage newSeasonInfo = ls.seasons[++ls.seasonCount];
         newSeasonInfo.initTime = initTime;
-        newSeasonInfo.startTime = initTime + s.lmWarmup;
-        newSeasonInfo.endTime = newSeasonInfo.startTime + s.lmDuration;
+        newSeasonInfo.startTime = initTime + ls.lmWarmup;
+        newSeasonInfo.endTime = newSeasonInfo.startTime + ls.lmDuration;
         newSeasonInfo.allocationPool = allocationPool;
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
         newSeasonInfo.rewardRate = rewardRate;
-        emit InitSeason(s.seasonCount);
+        emit InitSeason(ls.seasonCount);
     }
 
     // TODO Not proper implementation. Commenting for now.
@@ -101,8 +103,9 @@ contract LiquidityMiningFacet is
         updateReward(meToken, sender);
 
         IERC20(meToken).safeTransferFrom(sender, address(this), amount);
-
-        s.stakedBalances[meToken][sender] += amount;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.stakedBalances[meToken][sender] += amount;
         _refreshSupplyStats(meToken, amount, true);
 
         emit Staked(meToken, sender, amount);
@@ -113,8 +116,9 @@ contract LiquidityMiningFacet is
         nonReentrant
     {
         address sender = LibMeta.msgSender();
-
-        withdraw(meToken, s.stakedBalances[meToken][sender], merkleProof);
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        withdraw(meToken, ls.stakedBalances[meToken][sender], merkleProof);
         claimReward(meToken, 0);
     }
 
@@ -141,7 +145,9 @@ contract LiquidityMiningFacet is
         onlyDurationsController
     {
         require(lmWarmup != s.meTokenWarmup, "same lmWarmup");
-        s.lmWarmup = lmWarmup;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.lmWarmup = lmWarmup;
     }
 
     function setLMDuration(uint256 lmDuration)
@@ -149,8 +155,11 @@ contract LiquidityMiningFacet is
         override
         onlyDurationsController
     {
-        require(lmDuration != s.meTokenDuration, "same lmDuration");
-        s.lmDuration = lmDuration;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        require(lmDuration != ls.lmDuration, "same lmDuration");
+
+        ls.lmDuration = lmDuration;
     }
 
     function setIssuerCooldown(uint256 issuerCooldown)
@@ -158,8 +167,11 @@ contract LiquidityMiningFacet is
         override
         onlyDurationsController
     {
-        require(issuerCooldown != s.issuerCooldown, "same issuerCooldown");
-        s.issuerCooldown = issuerCooldown;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        require(issuerCooldown != ls.issuerCooldown, "same issuerCooldown");
+
+        ls.issuerCooldown = issuerCooldown;
     }
 
     // TODO: could claim on behalf of someone else?
@@ -167,7 +179,9 @@ contract LiquidityMiningFacet is
     function claimReward(address meToken, uint256 amount) public nonReentrant {
         address sender = LibMeta.msgSender();
         updateReward(meToken, sender);
-        PoolInfo storage poolInfo = s.pools[meToken];
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
 
         // TODO: check that meToken hasn't been more-recently featured than meToken.numSeason
         // using
@@ -198,8 +212,9 @@ contract LiquidityMiningFacet is
 
         refreshPool(meToken, merkleProof);
         updateReward(meToken, sender);
-
-        s.stakedBalances[meToken][sender] -= amount;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        ls.stakedBalances[meToken][sender] -= amount;
         _refreshSupplyStats(meToken, amount, false);
 
         IERC20(meToken).safeTransfer(sender, amount);
@@ -211,10 +226,12 @@ contract LiquidityMiningFacet is
     function refreshPool(address meToken, bytes32[] calldata merkleProof)
         public
     {
-        PoolInfo storage poolInfo = s.pools[meToken];
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
 
         if (
-            poolInfo.seasonId == s.seasonCount ||
+            poolInfo.seasonId == ls.seasonCount ||
             // TODO does addition of this makes any difference?
             !canTokenBeFeaturedInNewSeason(meToken)
         ) {
@@ -224,22 +241,22 @@ contract LiquidityMiningFacet is
 
         uint256 soonestSeason = poolInfo.seasonId == 0
             ? 1
-            : poolInfo.seasonId + s.issuerCooldown;
+            : poolInfo.seasonId + ls.issuerCooldown;
 
         for (
             uint256 seasonId = soonestSeason;
-            seasonId <= s.seasonCount;
+            seasonId <= ls.seasonCount;
             seasonId++
         ) {
             if (isMeTokenInSeason(seasonId, meToken, merkleProof)) {
-                SeasonInfo storage seasonInfo = s.seasons[seasonId];
+                SeasonInfo storage seasonInfo = ls.seasons[seasonId];
                 uint256 pendingIssuerRewards = poolInfo.pendingIssuerRewards;
                 uint256 totalSupply = poolInfo.totalSupply;
 
                 // Check if meToken was featured in a previous season, as we'll need
                 // to update pendingIssuerRewards and totalPctStaked
                 if (soonestSeason > 1) {
-                    SeasonInfo memory oldSeasonInfo = s.seasons[
+                    SeasonInfo memory oldSeasonInfo = ls.seasons[
                         poolInfo.seasonId
                     ];
 
@@ -255,10 +272,10 @@ contract LiquidityMiningFacet is
 
                     // Refund sender since pool has already built up mapped data
                     // TODO why not just update?
-                    delete s.pools[meToken];
+                    delete ls.pools[meToken];
                 }
 
-                PoolInfo storage newMeTokenPool = s.pools[meToken];
+                PoolInfo storage newMeTokenPool = ls.pools[meToken];
                 newMeTokenPool.seasonId = seasonId;
                 newMeTokenPool.pendingIssuerRewards = pendingIssuerRewards;
                 newMeTokenPool.totalSupply = totalSupply;
@@ -270,8 +287,10 @@ contract LiquidityMiningFacet is
     // TODO does this need to be public? Users can use `earned` to finds their earnings.
     function updateReward(address meToken, address account) public {
         _updateAccrual(meToken);
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
         if (account != address(0)) {
-            PoolInfo storage poolInfo = s.pools[meToken];
+            PoolInfo storage poolInfo = ls.pools[meToken];
             poolInfo.rewards[account] = earned(meToken, account);
             poolInfo.userRewardPerTokenPaid[account] = poolInfo
                 .rewardPerTokenStored;
@@ -284,10 +303,11 @@ contract LiquidityMiningFacet is
         returns (bool)
     {
         if (s.meTokens[token].hubId == 0) return false;
-
-        uint256 seasonId = s.pools[token].seasonId;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        uint256 seasonId = ls.pools[token].seasonId;
         return
-            (seasonId == 0) || (seasonId + s.issuerCooldown <= s.seasonCount);
+            (seasonId == 0) || (seasonId + ls.issuerCooldown <= ls.seasonCount);
     }
 
     /**
@@ -305,7 +325,10 @@ contract LiquidityMiningFacet is
         return
             MerkleProof.verify(
                 merkleProof,
-                s.seasons[seasonId].merkleRoot,
+                LibLiquidityMining
+                    .liquidityMiningStorage()
+                    .seasons[seasonId]
+                    .merkleRoot,
                 keccak256(abi.encodePacked(meToken))
             );
     }
@@ -315,8 +338,10 @@ contract LiquidityMiningFacet is
         view
         returns (uint256)
     {
-        uint256 seasonId = s.pools[meToken].seasonId;
-        SeasonInfo memory seasonInfo = s.seasons[seasonId];
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        uint256 seasonId = ls.pools[meToken].seasonId;
+        SeasonInfo memory seasonInfo = ls.seasons[seasonId];
 
         // TODO should this return seasonId endTime instead?
         if (!isSeasonLive(seasonId)) return 0;
@@ -334,7 +359,12 @@ contract LiquidityMiningFacet is
         returns (uint256 amount)
     {
         if (isSeasonLive(seasonId)) {
-            amount = s.seasons[seasonId].endTime - block.timestamp;
+            amount =
+                LibLiquidityMining
+                    .liquidityMiningStorage()
+                    .seasons[seasonId]
+                    .endTime -
+                block.timestamp;
         }
         if (hasSeasonEnded(seasonId)) {
             amount = 0;
@@ -342,14 +372,21 @@ contract LiquidityMiningFacet is
     }
 
     function isSeasonLive(uint256 seasonId) public view returns (bool) {
-        SeasonInfo memory seasonInfo = s.seasons[seasonId];
+        SeasonInfo memory seasonInfo = LibLiquidityMining
+            .liquidityMiningStorage()
+            .seasons[seasonId];
         return
             (block.timestamp >= seasonInfo.startTime) &&
             (block.timestamp <= seasonInfo.endTime);
     }
 
     function hasSeasonEnded(uint256 seasonId) public view returns (bool) {
-        return block.timestamp >= s.seasons[seasonId].endTime;
+        return
+            block.timestamp >=
+            LibLiquidityMining
+                .liquidityMiningStorage()
+                .seasons[seasonId]
+                .endTime;
     }
 
     // TODO: will this ever return an outdated earned balance for a metoken previously featured?
@@ -358,8 +395,10 @@ contract LiquidityMiningFacet is
         view
         returns (uint256)
     {
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
         // Divide by projectTokenBase in accordance with rewardPerToken()
-        PoolInfo storage poolInfo = s.pools[meToken];
+        PoolInfo storage poolInfo = ls.pools[meToken];
         if (poolInfo.seasonId == 0) return 0;
         return
             (balanceOf(meToken, account) *
@@ -370,12 +409,14 @@ contract LiquidityMiningFacet is
     }
 
     function rewardPerToken(address meToken) public view returns (uint256) {
-        PoolInfo storage poolInfo = s.pools[meToken];
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
 
         // If meToken was featured more than issuerCooldown seasons ago, validate
         // that meToken has not been re-listed since
 
-        SeasonInfo memory seasonInfo = s.seasons[poolInfo.seasonId];
+        SeasonInfo memory seasonInfo = ls.seasons[poolInfo.seasonId];
         if (poolInfo.totalSupply == 0) {
             return poolInfo.rewardPerTokenStored;
         }
@@ -406,22 +447,20 @@ contract LiquidityMiningFacet is
         public
         view
         override
-        returns (uint256 stakedBalance)
+        returns (uint256)
     {
-        stakedBalance = s.stakedBalances[meToken][account];
+        return
+            LibLiquidityMining.liquidityMiningStorage().stakedBalances[meToken][
+                account
+            ];
     }
 
-    function getIssuerCooldown()
-        external
-        view
-        override
-        returns (uint256 issuerCooldown)
-    {
-        issuerCooldown = s.issuerCooldown;
+    function getIssuerCooldown() external view override returns (uint256) {
+        return LibLiquidityMining.liquidityMiningStorage().issuerCooldown;
     }
 
-    function getLMWarmup() external view override returns (uint256 lmWarmup) {
-        lmWarmup = s.lmWarmup;
+    function getLMWarmup() external view override returns (uint256) {
+        return LibLiquidityMining.liquidityMiningStorage().lmWarmup;
     }
 
     function getLMDuration()
@@ -430,7 +469,7 @@ contract LiquidityMiningFacet is
         override
         returns (uint256 lmDuration)
     {
-        lmDuration = s.lmDuration;
+        lmDuration = LibLiquidityMining.liquidityMiningStorage().lmDuration;
     }
 
     function getSeasonCount()
@@ -439,7 +478,7 @@ contract LiquidityMiningFacet is
         override
         returns (uint256 seasonCount)
     {
-        seasonCount = s.seasonCount;
+        seasonCount = LibLiquidityMining.liquidityMiningStorage().seasonCount;
     }
 
     function getPoolInfo(address meToken, address user)
@@ -469,11 +508,13 @@ contract LiquidityMiningFacet is
         returns (SeasonInfo memory season)
     {
         // TODO maybe move this to lib
-        season = s.seasons[seasonId];
+        season = LibLiquidityMining.liquidityMiningStorage().seasons[seasonId];
     }
 
     function _updateAccrual(address meToken) private {
-        PoolInfo storage poolInfo = s.pools[meToken];
+        PoolInfo storage poolInfo = LibLiquidityMining
+            .liquidityMiningStorage()
+            .pools[meToken];
         poolInfo.rewardPerTokenStored = rewardPerToken(meToken);
         poolInfo.lastUpdateTime = lastTimeRewardApplicable(meToken);
     }
@@ -484,8 +525,10 @@ contract LiquidityMiningFacet is
         uint256 amount,
         bool add
     ) private {
-        PoolInfo storage poolInfo = s.pools[meToken];
-        SeasonInfo storage seasonInfo = s.seasons[poolInfo.seasonId];
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
+        SeasonInfo storage seasonInfo = ls.seasons[poolInfo.seasonId];
         uint256 b = s.BASE;
 
         uint256 circulatingSupply = IERC20(meToken).totalSupply();
@@ -515,7 +558,7 @@ contract LiquidityMiningFacet is
         // Only update totalPctStaked if it's a new season
         // TODO: could modifying totalSupply / lastCirculatingSupply have an effect
         // when someone tries to claim rewards from a meToken that isn't in a live season?
-        if (poolInfo.seasonId == s.seasonCount) {
+        if (poolInfo.seasonId == ls.seasonCount) {
             // TODO try by removing this condition
             seasonInfo.totalPctStaked =
                 seasonInfo.totalPctStaked -

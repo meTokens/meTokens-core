@@ -3,6 +3,17 @@ pragma solidity 0.8.9;
 
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 
+struct LiquidityMiningStorage {
+    // LiquidityMining-specific
+    uint256 issuerCooldown; // # of seasons a meToken issuer has to wait before participating again
+    uint256 lmWarmup; // = 3 days; timeframe between initTime and startTime
+    uint256 lmDuration; // = 1000000; // timeframe from a season starting to ending - about 11.5 days
+    uint256 seasonCount; // # of seasons
+    mapping(address => mapping(address => uint256)) stakedBalances; // key 1: meToken addr- key2: staker addr- value: amount staked
+    mapping(address => PoolInfo) pools;
+    mapping(uint256 => SeasonInfo) seasons;
+    uint256 status;
+}
 struct PoolInfo {
     uint256 seasonId;
     uint256 pendingIssuerRewards;
@@ -24,9 +35,6 @@ struct SeasonInfo {
     uint256 totalPctStaked;
     uint256 rewardRate;
     bytes32 merkleRoot;
-}
-struct LiquidityMiningStorage {
-    uint256 status;
 }
 
 library LibLiquidityMining {
@@ -59,16 +67,16 @@ library LibLiquidityMining {
             uint256 rewards
         )
     {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        seasonId = s.pools[meToken].seasonId;
-        pendingIssuerRewards = s.pools[meToken].pendingIssuerRewards;
-        pendingIssuerRewardsAdded = s.pools[meToken].pendingIssuerRewardsAdded;
-        lastUpdateTime = s.pools[meToken].lastUpdateTime;
-        totalSupply = s.pools[meToken].totalSupply;
-        lastCirculatingSupply = s.pools[meToken].lastCirculatingSupply;
-        rewardPerTokenStored = s.pools[meToken].rewardPerTokenStored;
-        userRewardPerTokenPaid = s.pools[meToken].userRewardPerTokenPaid[user];
-        rewards = s.pools[meToken].rewards[user];
+        LiquidityMiningStorage storage ls = liquidityMiningStorage();
+        seasonId = ls.pools[meToken].seasonId;
+        pendingIssuerRewards = ls.pools[meToken].pendingIssuerRewards;
+        pendingIssuerRewardsAdded = ls.pools[meToken].pendingIssuerRewardsAdded;
+        lastUpdateTime = ls.pools[meToken].lastUpdateTime;
+        totalSupply = ls.pools[meToken].totalSupply;
+        lastCirculatingSupply = ls.pools[meToken].lastCirculatingSupply;
+        rewardPerTokenStored = ls.pools[meToken].rewardPerTokenStored;
+        userRewardPerTokenPaid = ls.pools[meToken].userRewardPerTokenPaid[user];
+        rewards = ls.pools[meToken].rewards[user];
     }
 
     function getUserPoolInfo(address meToken, address user)
@@ -76,8 +84,8 @@ library LibLiquidityMining {
         view
         returns (uint256 userRewardPerTokenPaid, uint256 rewards)
     {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        PoolInfo storage poolInfo = s.pools[meToken];
+        LiquidityMiningStorage storage ls = liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
         userRewardPerTokenPaid = poolInfo.userRewardPerTokenPaid[user];
         rewards = poolInfo.rewards[user];
     }

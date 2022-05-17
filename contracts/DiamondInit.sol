@@ -45,7 +45,6 @@ contract DiamondInit is ReentrancyGuard {
     function init(Args memory _args) external {
         require(msg.sender == _owner, "!owner");
         require(s.diamond == address(0), "Already initialized");
-        console.log("###### s.args me:%s", address(_args.me));
         s.me = _args.me;
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
