@@ -37,6 +37,7 @@ interface IMeTokenRegistryFacet {
         address migration,
         bytes encodedMigrationArgs
     );
+
     /// @notice Event of canceling a meToken resubscription
     /// @param meToken Address of meToken
     event CancelResubscribe(address indexed meToken);

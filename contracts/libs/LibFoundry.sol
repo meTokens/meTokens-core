@@ -39,6 +39,50 @@ library LibFoundry {
         uint256 assetsReturned
     );
 
+    // MINT FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 mint()                  //
+    //                                                   |                     //
+    //                                             CALCULATE MINT              //
+    //                                                 /    \                  //
+    // is hub updating or meToken migrating? -{      (Y)     (N)               //
+    //                                               /         \               //
+    //                                          CALCULATE       |              //
+    //                                         TARGET MINT      |              //
+    //                                             |            |              //
+    //                                        TIME-WEIGHTED     |              //
+    //                                           AVERAGE        |              //
+    //                                               \         /               //
+    //                                               MINT RETURN               //
+    //                                                   |                     //
+    //                                              .sub(fees)                 //
+    //                                                                         //
+    ****************************************************************************/
+    function mint(
+        address meToken,
+        uint256 assetsDeposited,
+        address recipient
+    ) internal {
+        (
+            ,
+            address asset,
+            address sender,
+            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        ) = handleMint(meToken, assetsDeposited);
+
+        // Mint meToken to user
+        IMeToken(meToken).mint(recipient, amounts[0]);
+        emit Mint(
+            meToken,
+            asset,
+            sender,
+            recipient,
+            assetsDeposited,
+            amounts[0]
+        );
+    }
+
     function handleMint(address meToken, uint256 assetsDeposited)
         internal
         returns (
@@ -92,30 +136,6 @@ library LibFoundry {
         return (vault, asset, sender, amounts);
     }
 
-    function mint(
-        address meToken,
-        uint256 assetsDeposited,
-        address recipient
-    ) internal {
-        (
-            ,
-            address asset,
-            address sender,
-            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-        ) = handleMint(meToken, assetsDeposited);
-
-        // Mint meToken to user
-        IMeToken(meToken).mint(recipient, amounts[0]);
-        emit Mint(
-            meToken,
-            asset,
-            sender,
-            recipient,
-            assetsDeposited,
-            amounts[0]
-        );
-    }
-
     function mintWithPermit(
         address meToken,
         uint256 assetsDeposited,
@@ -151,6 +171,37 @@ library LibFoundry {
         );
     }
 
+    // BURN FLOW CHART
+    /****************************************************************************
+    //                                                                         //
+    //                                                 burn()                  //
+    //                                                   |                     //
+    //                                             CALCULATE BURN              //
+    //                                                /     \                  //
+    // is hub updating or meToken migrating? -{     (Y)     (N)                //
+    //                                              /         \                //
+    //                                         CALCULATE       \               //
+    //                                        TARGET BURN       \              //
+    //                                           /               \             //
+    //                                  TIME-WEIGHTED             \            //
+    //                                     AVERAGE                 \           //
+    //                                        |                     |          //
+    //                              WEIGHTED BURN RETURN       BURN RETURN     //
+    //                                     /     \               /    \        //
+    // is msg.sender the -{              (N)     (Y)           (Y)    (N)      //
+    // owner? (vs buyer)                 /         \           /        \      //
+    //                                 GET           CALCULATE         GET     //
+    //                            TIME-WEIGHTED    BALANCE LOCKED     REFUND   //
+    //                            REFUND RATIO        RETURNED        RATIO    //
+    //                                  |                |              |      //
+    //                              .mul(wRR)        .add(BLR)      .mul(RR)   //
+    //                                   \|/       //
+    //                                                   |                     //
+    //                                     ACTUAL (WEIGHTED) BURN RETURN       //
+    //                                                   |                     //
+    //                                               .sub(fees)                //
+    //                                                                         //
+    ****************************************************************************/
     function burn(
         address meToken,
         uint256 meTokensBurned,
@@ -164,12 +215,17 @@ library LibFoundry {
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
             LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (
-            meTokenInfo.targetHubId != 0 &&
-            block.timestamp > meTokenInfo.endTime
-        ) {
-            hubInfo = s.hubs[meTokenInfo.targetHubId];
-            meTokenInfo = LibMeToken.finishResubscribe(meToken);
+        } else if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+                meTokenInfo = s.meTokens[meToken];
+            }
+            /*   hubInfo = s.hubs[meTokenInfo.targetHubId];
+            meTokenInfo = LibMeToken.finishResubscribe(meToken); */
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(

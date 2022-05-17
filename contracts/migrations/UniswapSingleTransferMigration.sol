@@ -79,7 +79,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
         MeTokenInfo memory meTokenInfo = IMeTokenRegistryFacet(diamond)
             .getMeTokenInfo(meToken);
-
         if (
             usts.fee != 0 && // make sure meToken is in a state of resubscription
             block.timestamp > meTokenInfo.startTime && // swap can only happen after resubscribe
@@ -150,7 +149,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         if (encodedArgs.length == 0) return false;
         uint24 fee = abi.decode(encodedArgs, (uint24));
 
-        // Must have valid fees
+        // Invalid fee
         return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
@@ -167,7 +166,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
         uint256 amountIn = meTokenInfo.balancePooled +
             meTokenInfo.balanceLocked;
-
         // Only swap if
         // - There are tokens to swap
         // - The resubscription has started
@@ -205,7 +203,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
-
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }

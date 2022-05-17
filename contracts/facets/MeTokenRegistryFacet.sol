@@ -42,6 +42,7 @@ contract MeTokenRegistryFacet is
         HubInfo memory hubInfo = s.hubs[hubId];
         require(hubInfo.active, "Hub inactive");
         require(!hubInfo.updating, "Hub updating");
+
         if (assetsDeposited > 0) {
             IERC20(hubInfo.asset).safeTransferFrom(
                 sender,
@@ -154,7 +155,7 @@ contract MeTokenRegistryFacet is
         require(meTokenInfo.targetHubId != 0, "!resubscribing");
         require(
             !IMigration(meTokenInfo.migration).isStarted(meToken),
-            "cannot cancel resubscribe"
+            "cannot cancel"
         );
 
         meTokenInfo.startTime = 0;

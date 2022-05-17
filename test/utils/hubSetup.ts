@@ -48,6 +48,7 @@ export async function hubSetup(
   account1: SignerWithAddress;
   account2: SignerWithAddress;
   account3: SignerWithAddress;
+  account4: SignerWithAddress;
   token: ERC20;
   tokenAddr: string;
   whale: Signer;
@@ -68,6 +69,7 @@ export async function hubSetup(
     account1,
     account2,
     account3,
+    account4,
   } = await hubSetupWithoutRegister(fees);
 
   const { token, tokenAddr, whale, whaleAddr } = await transferFromWhale(
@@ -100,6 +102,7 @@ export async function hubSetup(
     account1,
     account2,
     account3,
+    account4,
     token,
     tokenAddr,
     whale,
@@ -160,6 +163,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   account1: SignerWithAddress;
   account2: SignerWithAddress;
   account3: SignerWithAddress;
+  account4: SignerWithAddress;
 }> {
   let foundry: FoundryFacet;
   let hub: HubFacet;
@@ -174,8 +178,10 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   let account1: SignerWithAddress;
   let account2: SignerWithAddress;
   let account3: SignerWithAddress;
+  let account4: SignerWithAddress;
 
-  [account0, account1, account2, account3] = await ethers.getSigners();
+  [account0, account1, account2, account3, account4] =
+    await ethers.getSigners();
 
   vaultRegistry = await deploy<VaultRegistry>("VaultRegistry");
   migrationRegistry = await deploy<MigrationRegistry>("MigrationRegistry");
@@ -289,6 +295,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     account1,
     account2,
     account3,
+    account4,
   };
 }
 export async function addHubSetup(

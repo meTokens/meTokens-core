@@ -29,7 +29,6 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
 
         require(msg.sender == (meTokenInfo.migration), "!migration");
         uint256 balance = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
-
         if (
             meTokenInfo.migration != address(0) &&
             meTokenInfo.migration != address(this)

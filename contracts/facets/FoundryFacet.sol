@@ -13,26 +13,6 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @author @cartercarlson, @parv3213
 /// @notice This contract manages all minting / burning for meTokens protocol
 contract FoundryFacet is IFoundryFacet, Modifiers {
-    // MINT FLOW CHART
-    /****************************************************************************
-    //                                                                         //
-    //                                                 mint()                  //
-    //                                                   |                     //
-    //                                             CALCULATE MINT              //
-    //                                                 /    \                  //
-    // is hub updating or meToken migrating? -{      (Y)     (N)               //
-    //                                               /         \               //
-    //                                          CALCULATE       |              //
-    //                                         TARGET MINT      |              //
-    //                                             |            |              //
-    //                                        TIME-WEIGHTED     |              //
-    //                                           AVERAGE        |              //
-    //                                               \         /               //
-    //                                               MINT RETURN               //
-    //                                                   |                     //
-    //                                              .sub(fees)                 //
-    //                                                                         //
-    ****************************************************************************/
     /// @inheritdoc IFoundryFacet
     function mint(
         address meToken,
@@ -63,37 +43,6 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         );
     }
 
-    // BURN FLOW CHART
-    /****************************************************************************
-    //                                                                         //
-    //                                                 burn()                  //
-    //                                                   |                     //
-    //                                             CALCULATE BURN              //
-    //                                                /     \                  //
-    // is hub updating or meToken migrating? -{     (Y)     (N)                //
-    //                                              /         \                //
-    //                                         CALCULATE       \               //
-    //                                        TARGET BURN       \              //
-    //                                           /               \             //
-    //                                  TIME-WEIGHTED             \            //
-    //                                     AVERAGE                 \           //
-    //                                        |                     |          //
-    //                              WEIGHTED BURN RETURN       BURN RETURN     //
-    //                                     /     \               /    \        //
-    // is msg.sender the -{              (N)     (Y)           (Y)    (N)      //
-    // owner? (vs buyer)                 /         \           /        \      //
-    //                                 GET           CALCULATE         GET     //
-    //                            TIME-WEIGHTED    BALANCE LOCKED     REFUND   //
-    //                            REFUND RATIO        RETURNED        RATIO    //
-    //                                  |                |              |      //
-    //                              .mul(wRR)        .add(BLR)      .mul(RR)   //
-    //                                   \|/       //
-    //                                                   |                     //
-    //                                     ACTUAL (WEIGHTED) BURN RETURN       //
-    //                                                   |                     //
-    //                                               .sub(fees)                //
-    //                                                                         //
-    ****************************************************************************/
     /// @inheritdoc IFoundryFacet
     function burn(
         address meToken,
