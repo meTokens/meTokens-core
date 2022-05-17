@@ -112,8 +112,8 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
         return LibCalendethEscrow.meetingCounter();
     }
 
-    function inviterClaimWaiting() external view override returns (uint256) {
-        return LibCalendethEscrow.inviterClaimWaiting();
+    function claimDuration() external view override returns (uint256) {
+        return LibCalendethEscrow.claimDuration();
     }
 
     /// @notice internal function to schedule a meeting
@@ -163,7 +163,7 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
         } else {
             require(_meeting._inviter == _sender, "only inviter");
             require(
-                block.timestamp > _meeting._timestamp + s.inviterClaimWaiting,
+                block.timestamp > _meeting._timestamp + s.claimDuration,
                 "too soon"
             );
         }

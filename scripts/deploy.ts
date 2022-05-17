@@ -29,7 +29,7 @@ const REFUND_RATIO = 50000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
 const feeInitialization = [0, 0, 0, 0, 0, 0];
-const inviterClaimWaiting = 3 * 24 * 60 * 60; // 3 days
+const claimDuration = 3 * 24 * 60 * 60; // 3 days
 
 async function main() {
   let [deployer, DAO] = await ethers.getSigners();
@@ -196,7 +196,7 @@ async function main() {
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
-      inviterClaimWaiting: inviterClaimWaiting,
+      claimDuration: claimDuration,
     },
   ];
 

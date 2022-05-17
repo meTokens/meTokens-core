@@ -190,7 +190,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   if (!feeInitialization) {
     feeInitialization = [0, 0, 0, 0, 0, 0];
   }
-  let inviterClaimWaitingInitialization = 3 * 24 * 60 * 60; // 3 days
+  let claimDurationInitialization = 3 * 24 * 60 * 60; // 3 days
   //
   // NOTE: start diamond deploy
   //
@@ -259,7 +259,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
-      inviterClaimWaiting: inviterClaimWaitingInitialization,
+      claimDuration: claimDurationInitialization,
     },
   ];
   // Note, this init contract is used similar to OZ's Initializable.initializer modifier

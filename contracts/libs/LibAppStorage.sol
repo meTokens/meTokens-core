@@ -49,7 +49,7 @@ struct AppStorage {
     address trustedForwarder;
     // CalendethEscrow-specific
     uint256 meetingCounter;
-    uint256 inviterClaimWaiting;
+    uint256 claimDuration;
     mapping(address => uint256) scheduleFee;
     mapping(uint256 => Meeting) meetings;
 }

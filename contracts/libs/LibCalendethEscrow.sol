@@ -29,8 +29,8 @@ library LibCalendethEscrow {
         return s.meetingCounter;
     }
 
-    function inviterClaimWaiting() internal view returns (uint256) {
+    function claimDuration() internal view returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        return s.inviterClaimWaiting;
+        return s.claimDuration;
     }
 }

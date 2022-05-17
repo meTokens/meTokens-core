@@ -28,7 +28,7 @@ const setup = async () => {
     let token: ERC20;
     let singleAssetVault: SingleAssetVault;
 
-    const inviterClaimWaiting = 3 * 24 * 60 * 60; // 3 days
+    const claimDuration = 3 * 24 * 60 * 60; // 3 days
     const account0PerMinuteFee = ethers.utils.parseUnits("0.01", 6);
     const meetingTimestamp = new Date().getTime() + 24 * 60 * 60;
     const minutes = 30;
@@ -98,9 +98,7 @@ const setup = async () => {
     });
 
     it("should have initialized correctly", async () => {
-      expect(await ceContract.inviterClaimWaiting()).to.be.equal(
-        inviterClaimWaiting
-      );
+      expect(await ceContract.claimDuration()).to.be.equal(claimDuration);
       expect(await ceContract.meetingCounter()).to.be.equal(0);
     });
 
@@ -403,12 +401,12 @@ const setup = async () => {
         const tx = ceContract.connect(account0).inviterClaim(meetingId);
         await expect(tx).to.be.revertedWith("only inviter");
       });
-      it("should revert when timestamp < (meeting start timestamp + inviterClaimWaiting)", async () => {
+      it("should revert when timestamp < (meeting start timestamp + claimDuration)", async () => {
         const tx = ceContract.connect(account1).inviterClaim(meetingId);
         await expect(tx).to.be.revertedWith("too soon");
       });
       it("should be able to inviter claim", async () => {
-        await mineBlock(meetingTimestamp + inviterClaimWaiting + 1);
+        await mineBlock(meetingTimestamp + claimDuration + 1);
         const tx = await ceContract.connect(account1).inviterClaim(meetingId);
 
         await expect(tx)

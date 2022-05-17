@@ -77,7 +77,7 @@ interface ICalendethEscrow {
     function noShowClaim(uint256 _meetingId) external;
 
     /**
-     * @notice inviter can call this after meeting start time + inviterClaimWaiting
+     * @notice inviter can call this after meeting start time + claimDuration
      * to claim escrow deposits if invitee has not already claimed no show.
      * @param _meetingId meeting id to claim for
      */
@@ -93,5 +93,5 @@ interface ICalendethEscrow {
     function meetingCounter() external view returns (uint256);
 
     /// @notice waiting period for invite
-    function inviterClaimWaiting() external view returns (uint256);
+    function claimDuration() external view returns (uint256);
 }

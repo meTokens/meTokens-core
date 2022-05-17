@@ -385,7 +385,7 @@ const setup = async () => {
             vaultRegistry: diamond.address,
             migrationRegistry: diamond.address,
             meTokenFactory: diamond.address,
-            inviterClaimWaiting: 1,
+            claimDuration: 1,
           },
         ];
         let functionCall = diamondInit.interface.encodeFunctionData(
