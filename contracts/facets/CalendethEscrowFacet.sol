@@ -90,6 +90,15 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
         _claim(_meetingId, false);
     }
 
+    function setClaimDuration(uint256 _newClaimDuration)
+        external
+        override
+        onlyDurationsController
+    {
+        s.claimDuration = _newClaimDuration;
+        emit SetClaimDuration(_newClaimDuration);
+    }
+
     function scheduleFee(address _user)
         external
         view

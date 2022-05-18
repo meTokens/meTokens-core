@@ -15,6 +15,7 @@ interface ICalendethEscrow {
         uint256 _totalFee
     );
     event Claim(uint256 _meetingId, bool invitee);
+    event SetClaimDuration(uint256 _newClaimDuration);
 
     /**
      * @notice set meeting scheduling fee
@@ -82,6 +83,9 @@ interface ICalendethEscrow {
      * @param _meetingId meeting id to claim for
      */
     function inviterClaim(uint256 _meetingId) external;
+
+    // TODO add docs
+    function setClaimDuration(uint256 _newClaimDuration) external;
 
     /// @notice fee of scheduling meeting for 1 minute
     function scheduleFee(address _user) external view returns (uint256);
