@@ -29,6 +29,7 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
 
     const claimDuration = 3 * 24 * 60 * 60; // 3 days
+    const newClaimDuration = 10 * 24 * 60 * 60; // 10 days
     const account0PerMinuteFee = ethers.utils.parseUnits("0.01", 6);
     const meetingTimestamp = new Date().getTime() + 24 * 60 * 60;
     const minutes = 30;
@@ -395,6 +396,27 @@ const setup = async () => {
       });
     });
 
+    describe("setClaimDuration", () => {
+      before(async () => {
+        expect(await ceContract.claimDuration()).to.equal(claimDuration);
+      });
+      it("should revert update with sender is not onlyDurationsController", async () => {
+        await expect(
+          ceContract.connect(account1).setClaimDuration(newClaimDuration)
+        ).to.be.revertedWith("!durationsController");
+      });
+      it("should be able update claimDuration", async () => {
+        const tx = await ceContract.setClaimDuration(newClaimDuration);
+
+        await expect(tx)
+          .to.emit(ceContract, "SetClaimDuration")
+          .withArgs(newClaimDuration);
+      });
+      after(async () => {
+        expect(await ceContract.claimDuration()).to.equal(newClaimDuration);
+      });
+    });
+
     describe("inviterClaim", () => {
       let meetingId = 1;
       it("should revert with not called with inviter", async () => {
@@ -402,11 +424,12 @@ const setup = async () => {
         await expect(tx).to.be.revertedWith("only inviter");
       });
       it("should revert when timestamp < (meeting start timestamp + claimDuration)", async () => {
+        await mineBlock(meetingTimestamp + claimDuration + 1);
         const tx = ceContract.connect(account1).inviterClaim(meetingId);
         await expect(tx).to.be.revertedWith("too soon");
       });
       it("should be able to inviter claim", async () => {
-        await mineBlock(meetingTimestamp + claimDuration + 1);
+        await mineBlock(meetingTimestamp + newClaimDuration + 1);
         const tx = await ceContract.connect(account1).inviterClaim(meetingId);
 
         await expect(tx)
