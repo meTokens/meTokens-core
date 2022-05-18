@@ -91,12 +91,12 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint256 meTokensBurned,
         address sender
     ) external view override returns (uint256 assetsReturned) {
-        uint256 rawAssetsReturned = calculateRawAssetsReturned(
+        uint256 rawAssetsReturned = LibFoundry.calculateRawAssetsReturned(
             meToken,
             meTokensBurned
         );
         if (sender == address(0)) sender = LibMeta.msgSender();
-        assetsReturned = calculateAssetsReturned(
+        assetsReturned = LibFoundry.calculateActualAssetsReturned(
             sender,
             meToken,
             meTokensBurned,
