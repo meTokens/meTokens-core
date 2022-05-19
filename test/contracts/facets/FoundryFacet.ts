@@ -219,7 +219,9 @@ const setup = async () => {
           );
           const calculatedMeTokensMinted =
             await foundry.calculateMeTokensMinted(meToken.address, PRECISION);
-          expect(calculatedReturn).to.equal(calculatedMeTokensMinted);
+          expect(toETHNumber(calculatedMeTokensMinted)).to.equal(
+            calculatedReturn
+          );
 
           // burn mints some
           await foundry
