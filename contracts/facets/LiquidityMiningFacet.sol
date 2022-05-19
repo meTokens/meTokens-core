@@ -174,6 +174,62 @@ contract LiquidityMiningFacet is
         ls.issuerCooldown = issuerCooldown;
     }
 
+    function getIssuerCooldown() external view override returns (uint256) {
+        return LibLiquidityMining.liquidityMiningStorage().issuerCooldown;
+    }
+
+    function getLMWarmup() external view override returns (uint256) {
+        return LibLiquidityMining.liquidityMiningStorage().lmWarmup;
+    }
+
+    function getLMDuration()
+        external
+        view
+        override
+        returns (uint256 lmDuration)
+    {
+        lmDuration = LibLiquidityMining.liquidityMiningStorage().lmDuration;
+    }
+
+    function getSeasonCount()
+        external
+        view
+        override
+        returns (uint256 seasonCount)
+    {
+        seasonCount = LibLiquidityMining.liquidityMiningStorage().seasonCount;
+    }
+
+    function getPoolInfo(address meToken, address user)
+        external
+        view
+        override
+        returns (
+            uint256 seasonId,
+            uint256 pendingIssuerRewards,
+            // TODO not using this anywhere
+            bool pendingIssuerRewardsAdded,
+            uint256 lastUpdateTime,
+            uint256 totalSupply,
+            uint256 lastCirculatingSupply,
+            uint256 rewardPerTokenStored,
+            uint256 userRewardPerTokenPaid,
+            uint256 rewards
+        )
+    {
+        return LibLiquidityMining.getPoolInfo(meToken, user);
+    }
+
+    function getSeasonInfo(uint256 seasonId)
+        external
+        view
+        override
+        returns (SeasonInfo memory season)
+    {
+        // TODO maybe move this to lib
+        season = LibLiquidityMining.liquidityMiningStorage().seasons[seasonId];
+    }
+
     // TODO: could claim on behalf of someone else?
     /// @param amount pass 0 to claim max else exact amount
     function claimReward(address meToken, uint256 amount) public nonReentrant {
@@ -453,62 +509,6 @@ contract LiquidityMiningFacet is
             LibLiquidityMining.liquidityMiningStorage().stakedBalances[meToken][
                 account
             ];
-    }
-
-    function getIssuerCooldown() external view override returns (uint256) {
-        return LibLiquidityMining.liquidityMiningStorage().issuerCooldown;
-    }
-
-    function getLMWarmup() external view override returns (uint256) {
-        return LibLiquidityMining.liquidityMiningStorage().lmWarmup;
-    }
-
-    function getLMDuration()
-        external
-        view
-        override
-        returns (uint256 lmDuration)
-    {
-        lmDuration = LibLiquidityMining.liquidityMiningStorage().lmDuration;
-    }
-
-    function getSeasonCount()
-        external
-        view
-        override
-        returns (uint256 seasonCount)
-    {
-        seasonCount = LibLiquidityMining.liquidityMiningStorage().seasonCount;
-    }
-
-    function getPoolInfo(address meToken, address user)
-        external
-        view
-        override
-        returns (
-            uint256 seasonId,
-            uint256 pendingIssuerRewards,
-            // TODO not using this anywhere
-            bool pendingIssuerRewardsAdded,
-            uint256 lastUpdateTime,
-            uint256 totalSupply,
-            uint256 lastCirculatingSupply,
-            uint256 rewardPerTokenStored,
-            uint256 userRewardPerTokenPaid,
-            uint256 rewards
-        )
-    {
-        return LibLiquidityMining.getPoolInfo(meToken, user);
-    }
-
-    function getSeasonInfo(uint256 seasonId)
-        external
-        view
-        override
-        returns (SeasonInfo memory season)
-    {
-        // TODO maybe move this to lib
-        season = LibLiquidityMining.liquidityMiningStorage().seasons[seasonId];
     }
 
     function _updateAccrual(address meToken) private {

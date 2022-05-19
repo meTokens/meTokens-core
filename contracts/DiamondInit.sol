@@ -75,6 +75,6 @@ contract DiamondInit is ReentrancyGuard {
         cs.baseX = uint256(1 ether).fromUInt();
 
         //adding reentrancy initial state
-        s.reentrancyStatus = _NOT_ENTERED;
+        s.reentrancyStatus = NOT_ENTERED;
     }
 }

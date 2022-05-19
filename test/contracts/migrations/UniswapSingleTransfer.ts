@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
@@ -68,7 +68,9 @@ const setup = async () => {
       started: boolean;
     };
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI, DAIWhale, WETH, WETHWhale, UNIV3Factory } =
         await getNamedAccounts());
 
@@ -296,24 +298,45 @@ const setup = async () => {
         expect(migrationDetails.started).to.be.equal(false);
       });
       it("Triggers startMigration()", async () => {
-        await mineBlock(
-          (
-            await meTokenRegistry.getMeTokenInfo(meToken.address)
-          ).startTime.toNumber() + 1
+        const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
         );
+        await mineBlock(meTokenRegistryDetails.startTime.toNumber() + 1);
         block = await ethers.provider.getBlock("latest");
-        expect(
-          (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-        ).to.be.lt(block.timestamp);
-
+        expect(meTokenRegistryDetails.startTime).to.be.lt(block.timestamp);
+        const totalBalance = meTokenRegistryDetails.balanceLocked.add(
+          meTokenRegistryDetails.balancePooled
+        );
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
+          totalBalance
+        );
         const tx = await migration.poke(meToken.address);
-        await tx.wait();
+        const receipt = await tx.wait();
+        // extract the balance argument of tUpdateBalances events
+        const newBalance = BigNumber.from(
+          meTokenRegistry.interface.parseLog(
+            receipt.logs.find((l) => l.address == meTokenRegistry.address) ?? {
+              topics: [""],
+              data: "",
+            }
+          ).args[1]
+        );
 
         await expect(tx)
           .to.emit(initialVault, "StartMigration")
-          .withArgs(meToken.address)
-          // TODO check updated balance here
-          .to.emit(meTokenRegistry, "UpdateBalances");
+          .withArgs(meToken.address);
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalances")
+          .withArgs(meToken.address, newBalance);
+        // assert that newBalance make sense compared to the current market price
+        expect(toETHNumber(newBalance)).to.be.approximately(
+          Number(price.token0Price),
+          0.01
+        );
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
       });
@@ -343,8 +366,8 @@ const setup = async () => {
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(weth, "Transfer")
           .withArgs(
             migration.address,
@@ -352,8 +375,8 @@ const setup = async () => {
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
-          )
-          .to.not.emit(initialVault, "StartMigration");
+          );
+        await expect(tx).to.not.emit(initialVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.fee).to.equal(0);
@@ -401,34 +424,75 @@ const setup = async () => {
         ).to.be.revertedWith("block.timestamp < endTime");
       });
       it("Triggers startsMigration() if it hasn't already started", async () => {
-        let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
-          meToken.address
-        );
+        const meTokenRegistryDetailsBefore =
+          await meTokenRegistry.getMeTokenInfo(meToken.address);
 
-        await mineBlock(meTokenRegistryDetails.endTime.toNumber() + 2);
+        await mineBlock(meTokenRegistryDetailsBefore.endTime.toNumber() + 2);
         block = await ethers.provider.getBlock("latest");
-        expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
-
-        const tx = await meTokenRegistry.finishResubscribe(meToken.address);
-        await tx.wait();
-
-        meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
-          meToken.address
+        expect(meTokenRegistryDetailsBefore.endTime).to.be.lt(block.timestamp);
+        const totalBalance = meTokenRegistryDetailsBefore.balanceLocked.add(
+          meTokenRegistryDetailsBefore.balancePooled
         );
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
+          totalBalance
+        );
+        const tx = await meTokenRegistry.finishResubscribe(meToken.address);
+        const receipt = await tx.wait();
+
+        const meTokenRegistryDetailsAfter =
+          await meTokenRegistry.getMeTokenInfo(meToken.address);
+
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(targetVault, "StartMigration")
-          .withArgs(meToken.address)
-          // TODO check updated balance here
+          .withArgs(meToken.address);
+        await expect(tx)
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
             initialVault.address,
-            meTokenRegistryDetails.balancePooled.add(
-              meTokenRegistryDetails.balanceLocked
+            meTokenRegistryDetailsAfter.balancePooled.add(
+              meTokenRegistryDetailsAfter.balanceLocked
             )
-          )
-          .to.emit(meTokenRegistry, "UpdateBalances");
+          );
+        // extract the balance argument of tUpdateBalances events
+        const newBalance = BigNumber.from(
+          meTokenRegistry.interface.parseLog(
+            receipt.logs.find((l) => l.address == meTokenRegistry.address) ?? {
+              topics: [""],
+              data: "",
+            }
+          ).args[1]
+        );
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalances")
+          .withArgs(meToken.address, newBalance);
+        // assert that newBalance make sense compared to the current market price
+        expect(toETHNumber(newBalance)).to.be.approximately(
+          Number(price.token1Price),
+          0.31
+        );
+        const precision = ethers.utils.parseEther("1");
+        const calculatedNewBalancePooled =
+          meTokenRegistryDetailsBefore.balancePooled
+            .mul(precision)
+            .mul(newBalance)
+            .div(totalBalance.mul(precision));
+        expect(meTokenRegistryDetailsAfter.balancePooled).to.equal(
+          calculatedNewBalancePooled
+        );
+        const calculatedNewBalanceLocked =
+          meTokenRegistryDetailsBefore.balanceLocked
+            .mul(precision)
+            .mul(newBalance)
+            .div(totalBalance.mul(precision));
+        expect(meTokenRegistryDetailsAfter.balanceLocked).to.equal(
+          calculatedNewBalanceLocked
+        );
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.fee).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
@@ -594,6 +658,9 @@ const setup = async () => {
           ); // newly minted amount + migration weth balance
         });
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

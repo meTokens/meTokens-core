@@ -450,7 +450,8 @@ const setup = async () => {
 
         await expect(txAfterEndCooldown)
           .to.emit(hub, "FinishUpdate")
-          .withArgs(1)
+          .withArgs(1);
+        await expect(txAfterEndCooldown)
           .to.emit(hub, "InitUpdate")
           .withArgs(
             hubId,

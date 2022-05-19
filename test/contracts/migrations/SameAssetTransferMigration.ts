@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -58,7 +58,9 @@ const setup = async () => {
       started: boolean;
     };
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI, DAIWhale } = await getNamedAccounts());
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
@@ -272,8 +274,8 @@ const setup = async () => {
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -281,8 +283,8 @@ const setup = async () => {
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
-          )
-          .to.not.emit(initialVault, "StartMigration");
+          );
+        await expect(tx).to.not.emit(initialVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.isMigrating).to.equal(false);
@@ -321,10 +323,11 @@ const setup = async () => {
         meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(initialVault, "StartMigration")
-          .withArgs(meToken.address)
+          .withArgs(meToken.address);
+        await expect(tx)
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -448,6 +451,9 @@ const setup = async () => {
           );
         });
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

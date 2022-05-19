@@ -1128,9 +1128,11 @@ const setup = async () => {
             dai.address,
             account0.address,
             assetsDeposited
-          )
+          );
+        await expect(tx)
           .to.emit(singleAssetVault, "HandleDeposit")
-          .withArgs(account0.address, dai.address, assetsDeposited, 0)
+          .withArgs(account0.address, dai.address, assetsDeposited, 0);
+        await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 
@@ -1248,9 +1250,11 @@ const setup = async () => {
             weth.address,
             account0.address,
             assetsDeposited
-          )
+          );
+        await expect(tx)
           .to.emit(singleAssetVault, "HandleDeposit")
-          .withArgs(account0.address, weth.address, assetsDeposited, 0)
+          .withArgs(account0.address, weth.address, assetsDeposited, 0);
+        await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meToken.address, assetsDeposited);
 

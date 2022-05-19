@@ -41,17 +41,6 @@ library LibLiquidityMining {
     bytes32 public constant LIQUIDITY_MINING_STORAGE_POSITION =
         keccak256("diamond.standard.liquidity.mining.storage");
 
-    function liquidityMiningStorage()
-        internal
-        pure
-        returns (LiquidityMiningStorage storage ds)
-    {
-        bytes32 position = LIQUIDITY_MINING_STORAGE_POSITION;
-        assembly {
-            ds.slot := position
-        }
-    }
-
     function getPoolInfo(address meToken, address user)
         internal
         view
@@ -88,5 +77,16 @@ library LibLiquidityMining {
         PoolInfo storage poolInfo = ls.pools[meToken];
         userRewardPerTokenPaid = poolInfo.userRewardPerTokenPaid[user];
         rewards = poolInfo.rewards[user];
+    }
+
+    function liquidityMiningStorage()
+        internal
+        pure
+        returns (LiquidityMiningStorage storage ds)
+    {
+        bytes32 position = LIQUIDITY_MINING_STORAGE_POSITION;
+        assembly {
+            ds.slot := position
+        }
     }
 }

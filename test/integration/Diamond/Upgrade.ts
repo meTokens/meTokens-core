@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -39,7 +39,9 @@ const setup = async () => {
     const firstHubId = 1;
     const refundRatio = 5000;
     const MAX_WEIGHT = 1000000;
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       baseYNum = 1000;
       baseY = one.mul(baseYNum);
       reserveWeight = MAX_WEIGHT / 2;
@@ -123,7 +125,6 @@ const setup = async () => {
             meTokenFactory: diamond.address,
           },
         ];
-        console.log(`------------args:${JSON.stringify(args)}`);
         let functionCall = diamondInit.interface.encodeFunctionData(
           "init",
           args
@@ -457,6 +458,9 @@ const setup = async () => {
         const newOwner = await ownFacet.deactivateController();
         expect(newOwner).to.equal(account2.address);
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

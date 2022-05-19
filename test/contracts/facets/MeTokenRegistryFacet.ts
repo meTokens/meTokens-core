@@ -30,6 +30,7 @@ import {
   UniswapSingleTransferMigration,
   ICurveFacet,
 } from "../../../artifacts/types";
+import { getQuote } from "../../utils/uniswap";
 
 export const checkUniswapPoolLiquidity = async (
   DAI: string,
@@ -93,6 +94,7 @@ const setup = async () => {
     let meToken: Address;
     let encodedMigrationArgs: string;
     let receipt: ContractReceipt;
+    let UNIV3Factory: string;
 
     const hubId = 1; // DAI
     const hubId2 = 2; // WETH
@@ -112,7 +114,7 @@ const setup = async () => {
     );
     let block: any;
     before(async () => {
-      ({ DAI, WETH, USDT } = await getNamedAccounts());
+      ({ DAI, WETH, USDT, UNIV3Factory } = await getNamedAccounts());
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
@@ -438,6 +440,7 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
+
         await expect(tx).to.be.revertedWith("!owner");
       });
       it("Fails if resubscribing to same hub", async () => {
@@ -765,6 +768,7 @@ const setup = async () => {
     });
 
     describe("updateBalances()", () => {
+      let expectedEndCooldownTime: number;
       before(async () => {
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
           ["uint24"],
@@ -779,7 +783,10 @@ const setup = async () => {
             migration.address,
             encodedMigrationArgs
           );
-        await tx.wait();
+        const receipt = await tx.wait();
+        const block = await ethers.provider.getBlock(receipt.blockNumber);
+        expectedEndCooldownTime =
+          block.timestamp + warmup + duration + coolDown;
       });
 
       it("revert when sender is not migration", async () => {
@@ -797,30 +804,58 @@ const setup = async () => {
         block = await ethers.provider.getBlock("latest");
         expect(meTokenRegistryDetails.endTime).to.be.lt(block.timestamp);
 
+        const migrationDetails = await migration.getDetails(meTokenAddr1);
+        const totalBalance = meTokenRegistryDetails.balanceLocked.add(
+          meTokenRegistryDetails.balancePooled
+        );
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
+          totalBalance
+        );
+
         tx = await meTokenRegistry
           .connect(account1)
           .finishResubscribe(meTokenAddr1);
-        await tx.wait();
-
+        const receipt = await tx.wait();
+        // extract the balance argument of tUpdateBalances events
+        const newBalance = BigNumber.from(
+          (receipt.events?.find((e) => e.event == "UpdateBalances")?.args ??
+            [])[1]
+        );
         await expect(tx)
           .to.emit(singleAssetVault, "StartMigration")
-          .withArgs(meTokenAddr1)
-          .to.emit(meTokenRegistry, "UpdateBalances")
-          // TODO check args
-          // .withArgs()
+          .withArgs(meTokenAddr1);
+        await expect(tx)
           .to.emit(meTokenRegistry, "FinishResubscribe")
           .withArgs(meTokenAddr1);
-
+        await expect(tx)
+          .to.emit(meTokenRegistry, "UpdateBalances")
+          .withArgs(meTokenAddr1, newBalance);
+        // assert that newBalance make sense compared to the current market price
+        expect(toETHNumber(newBalance)).to.be.approximately(
+          Number(price.token0Price),
+          0.01
+        );
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meTokenAddr1);
         expect(meTokenInfo.owner).to.equal(account1.address);
         expect(meTokenInfo.hubId).to.equal(targetHubId);
-        // TODO check args
-        // expect(meTokenInfo.balancePooled).to.equal();
-        // expect(meTokenInfo.balanceLocked).to.equal();
+        const precision = ethers.utils.parseEther("1");
+        const calculatedNewBalancePooled = meTokenRegistryDetails.balancePooled
+          .mul(precision)
+          .mul(newBalance)
+          .div(totalBalance.mul(precision));
+        expect(meTokenInfo.balancePooled).to.equal(calculatedNewBalancePooled);
+        const calculatedNewBalanceLocked = meTokenRegistryDetails.balanceLocked
+          .mul(precision)
+          .mul(newBalance)
+          .div(totalBalance.mul(precision));
+        expect(meTokenInfo.balanceLocked).to.equal(calculatedNewBalanceLocked);
         expect(meTokenInfo.startTime).to.equal(0);
         expect(meTokenInfo.endTime).to.equal(0);
-        // TODO check next line
-        // expect(meTokenInfo.endCooldown).to.equal(0);
+        expect(meTokenInfo.endCooldown).to.equal(expectedEndCooldownTime);
         expect(meTokenInfo.targetHubId).to.equal(0);
         expect(meTokenInfo.migration).to.equal(ethers.constants.AddressZero);
       });
@@ -1017,10 +1052,10 @@ const setup = async () => {
         );
         await tx.wait();
 
+        await expect(tx).to.emit(meTokenRegistry, "UpdateBalancePooled");
+        // TODO fails in next line, loosing precision by 1 wei.
+        // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
         await expect(tx)
-          .to.emit(meTokenRegistry, "UpdateBalancePooled")
-          // TODO fails in next line, loosing precision by 1 wei.
-          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
           .to.emit(meTokenRegistry, "UpdateBalanceLocked")
           .withArgs(true, meTokenAddr1, lockedAmount);
         const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
@@ -1067,11 +1102,10 @@ const setup = async () => {
           .burn(meTokenAddr1, ownerMeToken, account1.address);
         await tx.wait();
 
-        await expect(tx)
-          .to.emit(meTokenRegistry, "UpdateBalancePooled")
-          // TODO fails in next line, loosing precision
-          // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
-          .to.emit(meTokenRegistry, "UpdateBalanceLocked");
+        await expect(tx).to.emit(meTokenRegistry, "UpdateBalancePooled");
+        // TODO fails in next line, loosing precision
+        // .withArgs(false, meTokenAddr1, fromETHNumber(rawAssetsReturned))
+        await expect(tx).to.emit(meTokenRegistry, "UpdateBalanceLocked");
         // TODO fails in next line, loosing precision
         // .withArgs(false, meTokenAddr1, fromETHNumber(lockedAmount));
         const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(

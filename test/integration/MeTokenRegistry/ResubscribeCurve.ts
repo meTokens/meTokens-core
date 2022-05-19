@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import Decimal from "decimal.js";
 import { BigNumber, Signer } from "ethers";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import {
@@ -65,8 +65,9 @@ const setup = async () => {
     );
     const burnOwnerFee = 1e8;
     const burnBuyerFee = 1e9;
-
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       let token: ERC20;
       let DAI, WETH;
       ({ DAI, WETH, UNIV3Factory } = await getNamedAccounts());
@@ -646,6 +647,9 @@ const setup = async () => {
         expect(ownerMeTokenAfter).to.equal(0);
         expect(toETHNumber(meTokenTotalSupplyAfter)).to.equal(0);
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };
