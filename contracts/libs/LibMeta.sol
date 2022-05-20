@@ -4,35 +4,35 @@ pragma solidity 0.8.9;
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 
 library LibMeta {
-    bytes32 internal constant _EIP712_DOMAIN_TYPEHASH =
-        keccak256(
-            bytes(
-                "EIP712Domain(string name,string version,uint256 salt,address verifyingContract)"
-            )
-        );
+    // bytes32 internal constant _EIP712_DOMAIN_TYPEHASH =
+    //     keccak256(
+    //         bytes(
+    //             "EIP712Domain(string name,string version,uint256 salt,address verifyingContract)"
+    //         )
+    //     );
 
-    function domainSeparator(string memory name, string memory version)
-        internal
-        view
-        returns (bytes32)
-    {
-        return
-            keccak256(
-                abi.encode(
-                    _EIP712_DOMAIN_TYPEHASH,
-                    keccak256(bytes(name)),
-                    keccak256(bytes(version)),
-                    getChainID(),
-                    address(this)
-                )
-            );
-    }
+    // function domainSeparator(string memory name, string memory version)
+    //     internal
+    //     view
+    //     returns (bytes32)
+    // {
+    //     return
+    //         keccak256(
+    //             abi.encode(
+    //                 _EIP712_DOMAIN_TYPEHASH,
+    //                 keccak256(bytes(name)),
+    //                 keccak256(bytes(version)),
+    //                 getChainID(),
+    //                 address(this)
+    //             )
+    //         );
+    // }
 
-    function getChainID() internal view returns (uint256 id) {
-        assembly {
-            id := chainid()
-        }
-    }
+    // function getChainID() internal view returns (uint256 id) {
+    //     assembly {
+    //         id := chainid()
+    //     }
+    // }
 
     function msgSender() internal view returns (address sender) {
         AppStorage storage s = LibAppStorage.diamondStorage();
