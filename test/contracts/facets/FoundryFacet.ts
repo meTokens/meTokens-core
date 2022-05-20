@@ -257,6 +257,25 @@ const setup = async () => {
             reserveWeight / MAX_WEIGHT
           );
 
+          const calculateAssetsReturned = await foundry.calculateAssetsReturned(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+          const calculateAssetsReturned2 =
+            await foundry.calculateAssetsReturned(
+              meToken.address,
+              await meToken.balanceOf(account0.address),
+              ethers.constants.AddressZero
+            );
+
+          expect(toETHNumber(calculateAssetsReturned)).to.equal(
+            rawAssetsReturned
+          );
+          expect(toETHNumber(calculateAssetsReturned2)).to.equal(
+            rawAssetsReturned
+          );
+
           await foundry.burn(
             meToken.address,
             await meToken.balanceOf(account0.address),
