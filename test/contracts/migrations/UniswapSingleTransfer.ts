@@ -316,7 +316,7 @@ const setup = async () => {
         );
         const tx = await migration.poke(meToken.address);
         const receipt = await tx.wait();
-        // extract the balance argument of tUpdateBalances events
+        // extract the balance argument of UpdateBalances events
         const newBalance = BigNumber.from(
           meTokenRegistry.interface.parseLog(
             receipt.logs.find((l) => l.address == meTokenRegistry.address) ?? {
@@ -459,7 +459,7 @@ const setup = async () => {
               meTokenRegistryDetailsAfter.balanceLocked
             )
           );
-        // extract the balance argument of tUpdateBalances events
+        // extract the balance argument of UpdateBalances events
         const newBalance = BigNumber.from(
           meTokenRegistry.interface.parseLog(
             receipt.logs.find((l) => l.address == meTokenRegistry.address) ?? {
