@@ -114,19 +114,19 @@ contract Modifiers {
         _;
     }
 
-    modifier onlyVaultRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.vaultRegistry),
-            "!vaultRegistry"
-        );
-        _;
-    }
+    // modifier onlyVaultRegistry() {
+    //     require(
+    //         LibMeta.msgSender() == address(s.vaultRegistry),
+    //         "!vaultRegistry"
+    //     );
+    //     _;
+    // }
 
-    modifier onlyMigrationRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.migrationRegistry),
-            "!migrationRegistry"
-        );
-        _;
-    }
+    // modifier onlyMigrationRegistry() {
+    //     require(
+    //         LibMeta.msgSender() == address(s.migrationRegistry),
+    //         "!migrationRegistry"
+    //     );
+    //     _;
+    // }
 }
