@@ -210,7 +210,7 @@ contract HubFacet is IHubFacet, Modifiers {
 
     /// @inheritdoc IHubFacet
     function count() external view override returns (uint256) {
-        return s.hubCount;
+        return LibHub.count();
     }
 
     /// @inheritdoc IHubFacet
