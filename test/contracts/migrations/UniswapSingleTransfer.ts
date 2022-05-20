@@ -216,51 +216,6 @@ const setup = async () => {
             )
         ).to.be.revertedWith("Invalid encodedMigrationArgs");
       });
-      it("should revert when try to approve already approved vaults", async () => {
-        await expect(
-          migrationRegistry.approve(
-            initialVault.address,
-            targetVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration already approved");
-      });
-      it("should be able to unapprove migration vaults", async () => {
-        let tx = await migrationRegistry.unapprove(
-          initialVault.address,
-          targetVault.address,
-          migration.address
-        );
-        await tx.wait();
-
-        // should revert to init resubscribe when unapproved
-        await expect(
-          meTokenRegistry
-            .connect(account1)
-            .initResubscribe(
-              meToken.address,
-              hubId2,
-              migration.address,
-              encodedMigrationArgs
-            )
-        ).to.be.revertedWith("!approved");
-      });
-      it("should revert when try to unapprove already unapproved vaults", async () => {
-        await expect(
-          migrationRegistry.unapprove(
-            initialVault.address,
-            targetVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration not approved");
-
-        // approve vaults again
-        await migrationRegistry.approve(
-          initialVault.address,
-          targetVault.address,
-          migration.address
-        );
-      });
       it("Set correct _ust values", async () => {
         await meTokenRegistry
           .connect(account1)
