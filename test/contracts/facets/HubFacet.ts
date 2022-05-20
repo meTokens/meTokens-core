@@ -15,6 +15,8 @@ import {
   MeToken,
   ERC20,
   SingleAssetVault,
+  UniswapSingleTransferMigration,
+  VaultRegistry,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -25,6 +27,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let foundry: FoundryFacet;
     let hub: HubFacet;
+    let vaultRegistry: VaultRegistry;
 
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
@@ -70,6 +73,7 @@ const setup = async () => {
         account0,
         account1,
         account2,
+        vaultRegistry,
       } = await hubSetupWithoutRegister());
       ({ token, whale } = await transferFromWhale(account1.address));
     });
@@ -152,8 +156,7 @@ const setup = async () => {
           )
         ).to.be.revertedWith("!reserveWeight");
       });
-      it("should revert from invalid encodedVaultArgs", async () => {
-        // Invalid _encodedVaultArgs
+      it("should revert from invalid asset", async () => {
         const tx = hub.register(
           account0.address,
           ethers.constants.AddressZero,
@@ -164,6 +167,27 @@ const setup = async () => {
           encodedVaultDAIArgs // invalid _encodedVaultArgs
         );
         await expect(tx).to.be.revertedWith("asset !valid");
+      });
+      it("should revert from invalid encodedVaultArgs", async () => {
+        const uniswapMigration = await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined,
+          account0.address,
+          hub.address // diamond
+        );
+        await vaultRegistry.approve(uniswapMigration.address);
+
+        // Invalid _encodedVaultArgs
+        const tx = hub.register(
+          account0.address,
+          DAI,
+          uniswapMigration.address,
+          refundRatio1,
+          baseY,
+          reserveWeight,
+          "0x" // invalid _encodedVaultArgs
+        );
+        await expect(tx).to.be.revertedWith("!encodedVaultArgs");
       });
       it("should revert from invalid _refundRatio", async () => {
         // _refundRatio > MAX_REFUND_RATIO
