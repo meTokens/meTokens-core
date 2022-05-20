@@ -1,4 +1,4 @@
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
@@ -58,7 +58,9 @@ const setup = async () => {
     const allocationIssuers = ethers.utils.parseEther("10");
     const BASE = ethers.utils.parseUnits("1", 54);
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       const MAX_WEIGHT = 1000000;
       const reserveWeight = MAX_WEIGHT / 2;
       const baseY = PRECISION.div(1000);
@@ -465,6 +467,9 @@ const setup = async () => {
           .to.emit(liquidityMining, "Recovered")
           .withArgs(mockToken2.address, 1);
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

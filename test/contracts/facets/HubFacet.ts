@@ -1,4 +1,4 @@
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { Signer } from "ethers";
@@ -49,7 +49,9 @@ const setup = async () => {
     const name = "Carl meToken";
     const symbol = "CARL";
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI } = await getNamedAccounts());
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -728,6 +730,9 @@ const setup = async () => {
       it("should revert when hub already inactive", async () => {
         await expect(hub.deactivate(hubId)).to.be.revertedWith("!active");
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

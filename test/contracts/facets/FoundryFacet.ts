@@ -1,4 +1,4 @@
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { expect } from "chai";
@@ -80,7 +80,9 @@ const setup = async () => {
     // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
     // weight at 50% linear curve
     // const reserveWeight = BigNumber.from(MAX_WEIGHT).div(2).toString();
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI, WETH } = await getNamedAccounts());
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -1711,6 +1713,9 @@ const setup = async () => {
         expect(await meToken.totalSupply()).to.equal(0);
         expect(balEthAfter).to.be.gt(balEthBefore);
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };
