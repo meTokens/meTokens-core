@@ -32,6 +32,7 @@ const setup = async () => {
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
+    let account3: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let meTokenRegistry: MeTokenRegistryFacet;
@@ -98,6 +99,7 @@ const setup = async () => {
         account0,
         account1,
         account2,
+        account3,
       } = await hubSetup(
         baseY,
         reserveWeight,
@@ -217,6 +219,35 @@ const setup = async () => {
               badEncodedMigrationArgs
             )
         ).to.be.revertedWith("Invalid encodedMigrationArgs");
+      });
+      it("Reverts when hub and targetHub asset are same", async () => {
+        // Hub 3
+        await hub.register(
+          account0.address,
+          DAI,
+          initialVault.address,
+          refundRatio,
+          baseY,
+          reserveWeight,
+          encodedVaultDAIArgs
+        );
+
+        await migrationRegistry.approve(
+          initialVault.address,
+          initialVault.address,
+          migration.address
+        );
+
+        await expect(
+          meTokenRegistry
+            .connect(account1)
+            .initResubscribe(
+              meToken.address,
+              3,
+              migration.address,
+              encodedMigrationArgs
+            )
+        ).to.be.revertedWith("same asset");
       });
       it("Set correct _ust values", async () => {
         await meTokenRegistry
@@ -452,166 +483,205 @@ const setup = async () => {
         expect(migrationDetails.fee).to.equal(0);
         expect(migrationDetails.started).to.equal(false);
       });
+    });
+    describe("During resubscribe", () => {
+      before(async () => {
+        await meTokenRegistry
+          .connect(account2)
+          .subscribe(name, symbol, hubId1, 0);
+        const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+          account2.address
+        );
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
-      describe("During resubscribe", () => {
-        before(async () => {
-          await meTokenRegistry
-            .connect(account2)
-            .subscribe(name, symbol, hubId1, 0);
-          const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-            account2.address
-          );
-          meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+        block = await ethers.provider.getBlock("latest");
 
-          block = await ethers.provider.getBlock("latest");
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fees]
+        );
 
-          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-            ["uint24"],
-            [fees]
+        await meTokenRegistry
+          .connect(account2)
+          .initResubscribe(
+            meToken.address,
+            hubId2,
+            migration.address,
+            encodedMigrationArgs
           );
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(fees);
+      });
 
-          await meTokenRegistry
-            .connect(account2)
-            .initResubscribe(
-              meToken.address,
-              hubId2,
-              migration.address,
-              encodedMigrationArgs
-            );
-          migrationDetails = await migration.getDetails(meToken.address);
-          expect(migrationDetails.fee).to.equal(fees);
-        });
+      it("From warmup => startTime: assets transferred to/from initial vault", async () => {
+        const initialVaultBalanceBefore = await dai.balanceOf(
+          initialVault.address
+        );
 
-        it("From warmup => startTime: assets transferred to/from initial vault", async () => {
-          const initialVaultBalanceBefore = await dai.balanceOf(
-            initialVault.address
-          );
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+        await tx.wait();
 
-          const tx = await foundry
-            .connect(account2)
-            .mint(meToken.address, amount, account2.address);
-          await tx.wait();
+        await expect(tx).to.be.emit(dai, "Transfer");
 
-          await expect(tx).to.be.emit(dai, "Transfer");
+        const initialVaultBalanceAfter = await dai.balanceOf(
+          initialVault.address
+        );
 
-          const initialVaultBalanceAfter = await dai.balanceOf(
-            initialVault.address
-          );
+        expect(
+          initialVaultBalanceAfter.sub(initialVaultBalanceBefore)
+        ).to.equal(amount);
+      });
+      it("From startTime => endTime: assets transferred to/from migration vault", async () => {
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
 
-          expect(
-            initialVaultBalanceAfter.sub(initialVaultBalanceBefore)
-          ).to.equal(amount);
-        });
-        it("From startTime => endTime: assets transferred to/from migration vault", async () => {
-          const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
-            meToken.address
-          );
+        await mineBlock(meTokenInfo.startTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
 
-          await mineBlock(meTokenInfo.startTime.toNumber() + 2);
-          block = await ethers.provider.getBlock("latest");
-          expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
+        const initialVaultDAIBefore = await dai.balanceOf(initialVault.address);
+        const initialVaultWETHBefore = await weth.balanceOf(
+          initialVault.address
+        );
+        const migrationDAIBefore = await dai.balanceOf(migration.address);
+        const migrationWETHBefore = await weth.balanceOf(migration.address);
+        expect(migrationWETHBefore).to.be.equal(0);
+        const DAIBalanceBefore = await dai.balanceOf(account2.address);
+        const price = await getQuote(
+          UNIV3Factory,
+          dai,
+          weth,
+          migrationDetails.fee,
+          amount.add(meTokenInfo.balanceLocked).add(meTokenInfo.balancePooled)
+        );
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+        await tx.wait();
 
-          const initialVaultDAIBefore = await dai.balanceOf(
-            initialVault.address
-          );
-          const initialVaultWETHBefore = await weth.balanceOf(
-            initialVault.address
-          );
-          const migrationDAIBefore = await dai.balanceOf(migration.address);
-          const migrationWETHBefore = await weth.balanceOf(migration.address);
-          expect(migrationWETHBefore).to.be.equal(0);
-          const DAIBalanceBefore = await dai.balanceOf(account2.address);
-          const price = await getQuote(
-            UNIV3Factory,
-            dai,
-            weth,
-            migrationDetails.fee,
-            amount.add(meTokenInfo.balanceLocked).add(meTokenInfo.balancePooled)
-          );
-          const tx = await foundry
-            .connect(account2)
-            .mint(meToken.address, amount, account2.address);
-          await tx.wait();
+        await expect(tx).to.be.emit(dai, "Transfer");
+        const DAIBalanceAfter = await dai.balanceOf(account2.address);
+        expect(DAIBalanceBefore.sub(DAIBalanceAfter)).to.equal(amount);
+        const initialVaultDAIAfter = await dai.balanceOf(initialVault.address);
+        const initialVaultWETHAfter = await weth.balanceOf(
+          initialVault.address
+        );
+        const migrationDAIAfter = await dai.balanceOf(migration.address);
+        const migrationWETHAfter = await weth.balanceOf(migration.address);
+        // initial vault weth balance has no change
+        expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
+          0
+        );
+        // amount deposited before start time
+        expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
+          amount
+        );
+        expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
+        // dai to eth swap amount
+        expect(toETHNumber(migrationWETHAfter)).to.be.approximately(
+          Number(price.token0Price),
+          0.01
+        );
+      });
+      it("After endTime: assets transferred to/from target vault", async () => {
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
 
-          await expect(tx).to.be.emit(dai, "Transfer");
-          const DAIBalanceAfter = await dai.balanceOf(account2.address);
-          expect(DAIBalanceBefore.sub(DAIBalanceAfter)).to.equal(amount);
-          const initialVaultDAIAfter = await dai.balanceOf(
-            initialVault.address
-          );
-          const initialVaultWETHAfter = await weth.balanceOf(
-            initialVault.address
-          );
-          const migrationDAIAfter = await dai.balanceOf(migration.address);
-          const migrationWETHAfter = await weth.balanceOf(migration.address);
-          // initial vault weth balance has no change
-          expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
-            0
-          );
-          // amount deposited before start time
-          expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(
-            amount
-          );
-          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
-          // dai to eth swap amount
-          expect(toETHNumber(migrationWETHAfter)).to.be.approximately(
-            Number(price.token0Price),
-            0.01
-          );
-        });
-        it("After endTime: assets transferred to/from target vault", async () => {
-          const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
-            meToken.address
-          );
+        await mineBlock(meTokenInfo.endTime.toNumber() + 2);
+        block = await ethers.provider.getBlock("latest");
+        expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
 
-          await mineBlock(meTokenInfo.endTime.toNumber() + 2);
-          block = await ethers.provider.getBlock("latest");
-          expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
+        const initialVaultDAIBefore = await dai.balanceOf(initialVault.address);
+        const initialVaultWETHBefore = await weth.balanceOf(
+          initialVault.address
+        );
+        const migrationDAIBefore = await dai.balanceOf(migration.address);
+        const migrationWETHBefore = await weth.balanceOf(migration.address);
+        const targetVaultDAIBefore = await dai.balanceOf(targetVault.address);
+        const targetVaultWETHBefore = await weth.balanceOf(targetVault.address);
 
-          const initialVaultDAIBefore = await dai.balanceOf(
-            initialVault.address
-          );
-          const initialVaultWETHBefore = await weth.balanceOf(
-            initialVault.address
-          );
-          const migrationDAIBefore = await dai.balanceOf(migration.address);
-          const migrationWETHBefore = await weth.balanceOf(migration.address);
-          const targetVaultDAIBefore = await dai.balanceOf(targetVault.address);
-          const targetVaultWETHBefore = await weth.balanceOf(
-            targetVault.address
-          );
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+        await tx.wait();
 
-          const tx = await foundry
-            .connect(account2)
-            .mint(meToken.address, amount, account2.address);
-          await tx.wait();
+        await expect(tx).to.be.emit(weth, "Transfer");
 
-          await expect(tx).to.be.emit(weth, "Transfer");
+        const initialVaultDAIAfter = await dai.balanceOf(initialVault.address);
+        const initialVaultWETHAfter = await weth.balanceOf(
+          initialVault.address
+        );
+        const migrationDAIAfter = await dai.balanceOf(migration.address);
+        const migrationWETHAfter = await weth.balanceOf(migration.address);
+        const targetVaultDAIAfter = await dai.balanceOf(targetVault.address);
+        const targetVaultWETHAfter = await weth.balanceOf(targetVault.address);
 
-          const initialVaultDAIAfter = await dai.balanceOf(
-            initialVault.address
-          );
-          const initialVaultWETHAfter = await weth.balanceOf(
-            initialVault.address
-          );
-          const migrationDAIAfter = await dai.balanceOf(migration.address);
-          const migrationWETHAfter = await weth.balanceOf(migration.address);
-          const targetVaultDAIAfter = await dai.balanceOf(targetVault.address);
-          const targetVaultWETHAfter = await weth.balanceOf(
-            targetVault.address
-          );
+        expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
+          0
+        ); // initial vault weth balance has no change
+        expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(0); // initial vault dai balance has no change
+        expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
+        expect(migrationWETHAfter).to.be.equal(0); // migration balance goes to target vault
+        expect(targetVaultDAIAfter.sub(targetVaultDAIBefore)).to.be.equal(0); // no change
+        expect(targetVaultWETHAfter.sub(targetVaultWETHBefore)).to.be.equal(
+          amount.add(migrationWETHBefore)
+        ); // newly minted amount + migration weth balance
+      });
+    });
 
-          expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
-            0
-          ); // initial vault weth balance has no change
-          expect(initialVaultDAIBefore.sub(initialVaultDAIAfter)).to.equal(0); // initial vault dai balance has no change
-          expect(migrationDAIAfter.sub(migrationDAIBefore)).to.be.equal(0); // no change
-          expect(migrationWETHAfter).to.be.equal(0); // migration balance goes to target vault
-          expect(targetVaultDAIAfter.sub(targetVaultDAIBefore)).to.be.equal(0); // no change
-          expect(targetVaultWETHAfter.sub(targetVaultWETHBefore)).to.be.equal(
-            amount.add(migrationWETHBefore)
-          ); // newly minted amount + migration weth balance
-        });
+    describe("Migrate with zero supply (0 balance)", () => {
+      before(async () => {
+        await meTokenRegistry
+          .connect(account3)
+          .subscribe(name, symbol, hubId1, 0);
+        const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+          account3.address
+        );
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+        block = await ethers.provider.getBlock("latest");
+
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fees]
+        );
+
+        await meTokenRegistry
+          .connect(account3)
+          .initResubscribe(
+            meToken.address,
+            hubId2,
+            migration.address,
+            encodedMigrationArgs
+          );
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(fees);
+      });
+
+      it("Call to poke does not swap as amountIn is 0", async () => {
+        await mineBlock(
+          (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).startTime.toNumber() + 1
+        );
+        block = await ethers.provider.getBlock("latest");
+        expect(
+          (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+        ).to.be.lt(block.timestamp);
+
+        const tx = await migration.poke(meToken.address);
+        await tx.wait();
+
+        await expect(tx)
+          .to.emit(initialVault, "StartMigration")
+          .withArgs(meToken.address);
+        await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.started).to.be.equal(true);
       });
     });
     after(async () => {

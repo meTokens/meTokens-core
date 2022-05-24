@@ -14,11 +14,13 @@ import {
   ERC20,
   SingleAssetVault,
   SameAssetTransferMigration,
+  VaultRegistry,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("SameAssetTransferMigration.sol", () => {
     let DAI: string;
+    let WETH: string;
     let DAIWhale: string;
     let daiHolder: Signer;
     let dai: ERC20;
@@ -26,6 +28,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
+    let vaultRegistry: VaultRegistry;
     let migration: SameAssetTransferMigration;
     let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
@@ -61,7 +64,7 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      ({ DAI, DAIWhale, WETH } = await getNamedAccounts());
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -73,6 +76,7 @@ const setup = async () => {
       ({
         hub,
         foundry,
+        vaultRegistry,
         migrationRegistry,
         singleAssetVault: initialVault,
         meTokenRegistry,
@@ -151,50 +155,42 @@ const setup = async () => {
           migration.initMigration(meToken.address, encodedMigrationArgs)
         ).to.be.revertedWith("!diamond");
       });
-      it("should revert when try to approve already approved vaults", async () => {
-        await expect(
-          migrationRegistry.approve(
-            initialVault.address,
-            initialVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration already approved");
-      });
-      it("should be able to unapprove migration vaults", async () => {
-        let tx = await migrationRegistry.unapprove(
+      it("Reverts when hub and targetHub asset are not same", async () => {
+        const targetVault = await deploy<SingleAssetVault>(
+          "SingleAssetVault",
+          undefined, //no libs
+          account0.address, // DAO
+          hub.address // diamond
+        );
+        await vaultRegistry.approve(targetVault.address);
+
+        // Hub 3
+        await hub.register(
+          account0.address,
+          WETH,
+          targetVault.address,
+          refundRatio,
+          baseY,
+          reserveWeight,
+          encodedVaultDAIArgs
+        );
+
+        await migrationRegistry.approve(
           initialVault.address,
-          initialVault.address,
+          targetVault.address,
           migration.address
         );
-        await tx.wait();
 
-        // should revert to init resubscribe when unapproved
         await expect(
           meTokenRegistry
             .connect(account1)
             .initResubscribe(
               meToken.address,
-              hubId2,
+              3,
               migration.address,
               encodedMigrationArgs
             )
-        ).to.be.revertedWith("!approved");
-      });
-      it("should revert when try to unapprove already unapproved vaults", async () => {
-        await expect(
-          migrationRegistry.unapprove(
-            initialVault.address,
-            initialVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration not approved");
-
-        // approve vaults again
-        await migrationRegistry.approve(
-          initialVault.address,
-          initialVault.address,
-          migration.address
-        );
+        ).to.be.revertedWith("same asset");
       });
       it("Set correct _ust values", async () => {
         migrationDetails = await migration.getDetails(meToken.address);
