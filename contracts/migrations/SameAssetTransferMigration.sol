@@ -47,7 +47,7 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
         require(
             IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).asset ==
                 IHubFacet(diamond).getHubInfo(meTokenInfo.targetHubId).asset,
-            "same asset"
+            "!same asset"
         );
 
         _sameAssetMigration[meToken].isMigrating = true;
