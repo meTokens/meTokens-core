@@ -202,7 +202,8 @@ library LibCurve {
         require(
             balancePooled > 0 &&
                 reserveWeight > 0 &&
-                reserveWeight <= MAX_WEIGHT
+                reserveWeight <= MAX_WEIGHT,
+            "!valid"
         );
         // special case for 0 deposit amount
         if (assetsDeposited == 0) {
