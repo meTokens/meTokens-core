@@ -122,15 +122,4 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
 
         emit Donate(meToken, asset, sender, assetsDeposited);
     }
-
-    function calculateAssetsDeposited(
-        address _meToken,
-        uint256 _desiredMeTokensMinted
-    ) external view returns (uint256 assetsDeposited) {
-        return
-            LibFoundry.calculateAssetsDeposited(
-                _meToken,
-                _desiredMeTokensMinted
-            );
-    }
 }
