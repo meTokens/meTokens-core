@@ -92,6 +92,12 @@ const setup = async () => {
       );
 
       await foundry.mint(
+        account0MeToken.address,
+        ethers.utils.parseUnits("1", 6),
+        account1.address
+      );
+
+      await foundry.mint(
         account1MeToken.address,
         ethers.utils.parseUnits("1", 6),
         account0.address
@@ -124,7 +130,7 @@ const setup = async () => {
       });
     });
 
-    describe("mintAndScheduleMeeting", () => {
+    describe("scheduleMeeting()", () => {
       before(async () => {
         const meetingDetails = await ceContract.meetings(1);
         expect(meetingDetails._claim).to.equal(false);
@@ -137,20 +143,9 @@ const setup = async () => {
         const invitee = account0.address;
         const minutes = 30;
 
-        let tx = ceContract
+        const tx = ceContract
           .connect(account1)
-          .mintAndScheduleMeeting(0, invitee, minutes, meetingTimestamp);
-
-        tx = ceContract.connect(account1).mintAndScheduleMeetingWithPermit(
-          0,
-          invitee,
-          minutes,
-          meetingTimestamp,
-          1,
-          1, // sample
-          "0x4a6a44e83890ae511d471975f3894951bd62efcb53fba37a585fefdb81a8e8e4", // sample
-          "0x26d9cb8a4855c22e64dfa77beb021e0f96c42b926d99a66895802dc0c5639712" // sample
-        );
+          .scheduleMeeting(invitee, minutes, meetingTimestamp);
         await expect(tx).to.revertedWith("ERC20: insufficient allowance");
       });
       it("should be able to schedule meeting with schedule cost > 0", async () => {
@@ -170,12 +165,7 @@ const setup = async () => {
 
         const tx = await ceContract
           .connect(account1)
-          .mintAndScheduleMeeting(
-            expectedTotalFee,
-            invitee,
-            minutes,
-            meetingTimestamp
-          );
+          .scheduleMeeting(invitee, minutes, meetingTimestamp);
 
         await expect(tx)
           .to.emit(ceContract, "ScheduleMeeting")
@@ -187,7 +177,6 @@ const setup = async () => {
             expectedTotalFee
           );
 
-        await expect(tx).to.emit(foundry, "Mint");
         await expect(tx)
           .to.emit(account0MeToken, "Transfer")
           .withArgs(account1.address, ceContract.address, expectedTotalFee);
@@ -200,9 +189,9 @@ const setup = async () => {
           expectedMeetingCounter
         );
 
-        expect(newCEMetokens.sub(oldCEMetokens)).to.equal(expectedTotalFee);
-        // TODO FIXME total meToken minted for expectedTotalFee amount of DAI > expectedTotalFee
-        // expect(oldA1Metokens).to.equal(newA1Metokens);
+        expect(newCEMetokens.sub(oldCEMetokens))
+          .to.equal(oldA1Metokens.sub(newA1Metokens))
+          .to.equal(expectedTotalFee);
         expect(meetingDetails._claim).to.equal(false);
         expect(meetingDetails._inviter).to.equal(account1.address);
         expect(meetingDetails._meHolder).to.equal(account0.address);
@@ -210,115 +199,9 @@ const setup = async () => {
         expect(meetingDetails._totalFee).to.equal(expectedTotalFee);
         expect(await ceContract.meetingCounter()).to.be.equal(1);
       });
-    });
-
-    describe("mintAndScheduleMeetingWithPermit()", () => {
-      it("should be able to schedule meeting with permit", async () => {
-        const invitee = account0.address;
-        const expectedMeetingCounter = 2;
-        const expectedTotalFee = account0PerMinuteFee.mul(minutes);
-        const usdcPermit = await getContractAt<IERC20Permit>(
-          "IERC20Permit",
-          token.address
-        );
-
-        await token.connect(account1).approve(singleAssetVault.address, 0);
-
-        // approve to escrow
-        await account0MeToken
-          .connect(account1)
-          .approve(ceContract.address, expectedTotalFee);
-
-        const oldCEMetokens = await account0MeToken.balanceOf(
-          ceContract.address
-        );
-        const oldA1Metokens = await account0MeToken.balanceOf(account1.address);
-
-        const Permit = [
-          { name: "owner", type: "address" },
-          { name: "spender", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "nonce", type: "uint256" },
-          { name: "deadline", type: "uint256" },
-        ];
-
-        const deadline = ethers.constants.MaxUint256;
-
-        const domain = {
-          name: "USD Coin",
-          version: "2",
-          chainId: "1",
-          verifyingContract: token.address,
-        };
-        const message = {
-          owner: account1.address,
-          spender: singleAssetVault.address,
-          value: expectedTotalFee,
-          nonce: Number(await usdcPermit.nonces(account1.address)),
-          deadline,
-        };
-
-        const signature = await account1._signTypedData(
-          domain,
-          { Permit },
-          message
-        );
-        const { v, r, s } = ethers.utils.splitSignature(signature);
-
-        const tx = await ceContract
-          .connect(account1)
-          .mintAndScheduleMeetingWithPermit(
-            expectedTotalFee,
-            invitee,
-            minutes,
-            meetingTimestamp,
-            deadline,
-            v,
-            r,
-            s
-          );
-
-        await expect(tx)
-          .to.emit(ceContract, "ScheduleMeeting")
-          .withArgs(
-            account1.address,
-            invitee,
-            expectedMeetingCounter,
-            minutes,
-            expectedTotalFee
-          );
-
-        await expect(tx).to.emit(foundry, "Mint");
-        await expect(tx)
-          .to.emit(account0MeToken, "Transfer")
-          .withArgs(account1.address, ceContract.address, expectedTotalFee);
-
-        const newCEMetokens = await account0MeToken.balanceOf(
-          ceContract.address
-        );
-        const newA1Metokens = await account0MeToken.balanceOf(account1.address);
-        const meetingDetails = await ceContract.meetings(
-          expectedMeetingCounter
-        );
-
-        expect(newCEMetokens.sub(oldCEMetokens)).to.equal(expectedTotalFee);
-        // TODO FIXME total meToken minted for expectedTotalFee amount of DAI > expectedTotalFee
-        // expect(oldA1Metokens).to.equal(newA1Metokens);
-        expect(meetingDetails._claim).to.equal(false);
-        expect(meetingDetails._inviter).to.equal(account1.address);
-        expect(meetingDetails._meHolder).to.equal(account0.address);
-        expect(meetingDetails._timestamp).to.equal(meetingTimestamp);
-        expect(meetingDetails._totalFee).to.equal(expectedTotalFee);
-        expect(await ceContract.meetingCounter()).to.be.equal(
-          expectedMeetingCounter
-        );
-      });
-    });
-
-    describe("scheduleMeeting()", () => {
       it("should be able to schedule meeting when schedule cost is 0", async () => {
         const invitee = account1.address;
-        const expectedMeetingCounter = 3;
+        const expectedMeetingCounter = 2;
         const minutes = 30;
         const expectedTotalFee = 0;
 
@@ -366,7 +249,7 @@ const setup = async () => {
     });
 
     describe("noShowClaim", () => {
-      let meetingId = 3;
+      let meetingId = 2;
       it("should revert with not called with invitee", async () => {
         const tx = ceContract.connect(account0).noShowClaim(meetingId);
         await expect(tx).to.be.revertedWith("only invitee");
