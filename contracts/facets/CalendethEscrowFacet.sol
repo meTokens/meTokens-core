@@ -28,58 +28,34 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
         emit SetScheduleFee(_perMinuteFee);
     }
 
-    function mintAndScheduleMeeting(
-        uint256 _requiredMetokens,
-        address _meHolder,
-        uint256 _minutes,
-        uint256 _timestamp
-    ) external override mustBeMeHolder(_meHolder) {
-        if (_requiredMetokens > 0) {
-            address _metoken = s.meTokenOwners[_meHolder];
-            uint256 _mintAmount = LibFoundry.calculateAssetsDeposited(
-                _metoken,
-                _requiredMetokens
-            );
-            LibFoundry.mint(_metoken, _mintAmount, LibMeta.msgSender());
-        }
-        _scheduleMeeting(_meHolder, _minutes, _timestamp);
-    }
-
-    function mintAndScheduleMeetingWithPermit(
-        uint256 _requiredMetokens,
-        address _meHolder,
-        uint256 _minutes,
-        uint256 _timestamp,
-        uint256 _deadline,
-        uint8 _v,
-        bytes32 _r,
-        bytes32 _s
-    ) external override mustBeMeHolder(_meHolder) {
-        if (_requiredMetokens > 0) {
-            address _metoken = s.meTokenOwners[_meHolder];
-            uint256 _mintAmount = LibFoundry.calculateAssetsDeposited(
-                _metoken,
-                _requiredMetokens
-            );
-            LibFoundry.mintWithPermit(
-                _metoken,
-                _mintAmount,
-                LibMeta.msgSender(),
-                _deadline,
-                _v,
-                _r,
-                _s
-            );
-        }
-        _scheduleMeeting(_meHolder, _minutes, _timestamp);
-    }
-
     function scheduleMeeting(
         address _meHolder,
         uint256 _minutes,
         uint256 _timestamp
     ) external override mustBeMeHolder(_meHolder) {
-        _scheduleMeeting(_meHolder, _minutes, _timestamp);
+        address _sender = LibMeta.msgSender();
+        uint256 _totalFee = s.scheduleFee[_meHolder] * _minutes;
+        if (_totalFee > 0) {
+            IERC20(s.meTokenOwners[_meHolder]).transferFrom(
+                _sender,
+                address(this),
+                _totalFee
+            );
+        }
+
+        Meeting storage _meeting = s.meetings[++s.meetingCounter];
+        _meeting._meHolder = _meHolder;
+        _meeting._inviter = _sender;
+        _meeting._totalFee = _totalFee;
+        _meeting._timestamp = _timestamp;
+
+        emit ScheduleMeeting(
+            _sender,
+            _meHolder,
+            s.meetingCounter,
+            _minutes,
+            _totalFee
+        );
     }
 
     function noShowClaim(uint256 _meetingId) external override {
@@ -123,37 +99,6 @@ contract CalendethEscrowFacet is ICalendethEscrow, Modifiers {
 
     function claimDuration() external view override returns (uint256) {
         return LibCalendethEscrow.claimDuration();
-    }
-
-    /// @notice internal function to schedule a meeting
-    function _scheduleMeeting(
-        address _meHolder,
-        uint256 _minutes,
-        uint256 _timestamp
-    ) internal {
-        address _sender = LibMeta.msgSender();
-        uint256 _totalFee = s.scheduleFee[_meHolder] * _minutes;
-        if (_totalFee > 0) {
-            IERC20(s.meTokenOwners[_meHolder]).transferFrom(
-                _sender,
-                address(this),
-                _totalFee
-            );
-        }
-
-        Meeting storage _meeting = s.meetings[++s.meetingCounter];
-        _meeting._meHolder = _meHolder;
-        _meeting._inviter = _sender;
-        _meeting._totalFee = _totalFee;
-        _meeting._timestamp = _timestamp;
-
-        emit ScheduleMeeting(
-            _sender,
-            _meHolder,
-            s.meetingCounter,
-            _minutes,
-            _totalFee
-        );
     }
 
     /**
