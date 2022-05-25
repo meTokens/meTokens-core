@@ -27,14 +27,9 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
             meTokenInfo.hubId
         );
 
-        require(msg.sender == (meTokenInfo.migration), "!migration");
+        require(msg.sender == meTokenInfo.migration, "!migration");
         uint256 balance = meTokenInfo.balancePooled + meTokenInfo.balanceLocked;
-        if (
-            meTokenInfo.migration != address(0) &&
-            meTokenInfo.migration != address(this)
-        ) {
-            IERC20(hubInfo.asset).safeTransfer(meTokenInfo.migration, balance);
-        }
+        IERC20(hubInfo.asset).safeTransfer(meTokenInfo.migration, balance);
         emit StartMigration(meToken);
     }
 
