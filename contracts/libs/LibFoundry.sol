@@ -361,13 +361,6 @@ library LibFoundry {
         );
     }
 
-    function calculateAssetsDeposited(
-        address _meToken,
-        uint256 _desiredMeTokensMinted
-    ) internal view returns (uint256 assetsDeposited) {
-        return _desiredMeTokensMinted; // just a placeholders
-    }
-
     function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
         private
         view
