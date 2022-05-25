@@ -32,20 +32,6 @@ contract Vault is IVault, ReentrancyGuard {
     }
 
     /// @inheritdoc IVault
-    function handleDeposit(
-        address from,
-        address asset,
-        uint256 depositAmount,
-        uint256 feeAmount
-    ) public virtual override nonReentrant onlyDiamond {
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleDeposit(from, asset, depositAmount, feeAmount);
-    }
-
-    /// @inheritdoc IVault
     function handleDepositWithPermit(
         address from,
         address asset,
@@ -105,5 +91,19 @@ contract Vault is IVault, ReentrancyGuard {
         bytes memory /* encodedArgs */
     ) external pure virtual override returns (bool) {
         return true;
+    }
+
+    /// @inheritdoc IVault
+    function handleDeposit(
+        address from,
+        address asset,
+        uint256 depositAmount,
+        uint256 feeAmount
+    ) public virtual override nonReentrant onlyDiamond {
+        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
+        if (feeAmount > 0) {
+            accruedFees[asset] += feeAmount;
+        }
+        emit HandleDeposit(from, asset, depositAmount, feeAmount);
     }
 }
