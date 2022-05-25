@@ -21,6 +21,11 @@ contract Vault is IVault, ReentrancyGuard {
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
 
+    modifier onlyDiamond() {
+        require(msg.sender == diamond, "!diamond");
+        _;
+    }
+
     constructor(address _dao, address _diamond) {
         dao = _dao;
         diamond = _diamond;
@@ -32,8 +37,7 @@ contract Vault is IVault, ReentrancyGuard {
         address asset,
         uint256 depositAmount,
         uint256 feeAmount
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
+    ) public virtual override nonReentrant onlyDiamond {
         IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
         if (feeAmount > 0) {
             accruedFees[asset] += feeAmount;
@@ -51,8 +55,7 @@ contract Vault is IVault, ReentrancyGuard {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
+    ) external virtual override {
         IERC20Permit(asset).permit(
             from,
             address(this),
@@ -62,11 +65,7 @@ contract Vault is IVault, ReentrancyGuard {
             r,
             s
         );
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleDeposit(from, asset, depositAmount, feeAmount);
+        handleDeposit(from, asset, depositAmount, feeAmount);
     }
 
     /// @inheritdoc IVault
@@ -75,8 +74,7 @@ contract Vault is IVault, ReentrancyGuard {
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
+    ) external virtual override nonReentrant onlyDiamond {
         IERC20(asset).safeTransfer(to, withdrawalAmount);
         if (feeAmount > 0) {
             accruedFees[asset] += feeAmount;
