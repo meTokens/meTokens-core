@@ -47,11 +47,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
 
-    modifier onlyDiamond() {
-        require(msg.sender == diamond, "!diamond");
-        _;
-    }
-
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     /// @inheritdoc IMigration

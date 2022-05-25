@@ -29,11 +29,6 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     mapping(address => SameAssetMigration) private _sameAssetMigration;
 
-    modifier onlyDiamond() {
-        require(msg.sender == diamond, "!diamond");
-        _;
-    }
-
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 
     /// @inheritdoc IMigration
