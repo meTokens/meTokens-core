@@ -224,8 +224,6 @@ library LibFoundry {
                 IMigration(meTokenInfo.migration).poke(meToken);
                 meTokenInfo = s.meTokens[meToken];
             }
-            /*   hubInfo = s.hubs[meTokenInfo.targetHubId];
-            meTokenInfo = LibMeToken.finishResubscribe(meToken); */
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = _calculateRawAssetsReturned(
@@ -238,10 +236,6 @@ library LibFoundry {
             meTokensBurned,
             rawAssetsReturned
         );
-
-        // Burn metoken from user
-        IMeToken(meToken).burn(sender, meTokensBurned);
-
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
 
@@ -260,6 +254,8 @@ library LibFoundry {
                 rawAssetsReturned - assetsReturned
             );
         }
+        // Burn metoken from user
+        IMeToken(meToken).burn(sender, meTokensBurned);
 
         _vaultWithdrawal(
             sender,
