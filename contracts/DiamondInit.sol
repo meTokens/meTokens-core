@@ -11,8 +11,6 @@ import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
-
-import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
 import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
 /// @title Diamond Init
