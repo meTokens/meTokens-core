@@ -6,7 +6,6 @@ import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {HubInfo} from "./LibHub.sol";
 import {MeTokenInfo} from "./LibMeToken.sol";
-import {PoolInfo, SeasonInfo} from "./LibLiquidityMining.sol";
 import {LibDiamond} from "./LibDiamond.sol";
 import {LibMeta} from "./LibMeta.sol";
 

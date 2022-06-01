@@ -16,7 +16,6 @@ import {
   HubFacet,
   MeTokenRegistryFacet,
   FeesFacet,
-  LiquidityMiningFacet,
   ERC20,
   MeTokenFactory,
   VaultRegistry,
@@ -38,7 +37,6 @@ export async function hubSetup(
 ): Promise<{
   foundry: FoundryFacet;
   hub: HubFacet;
-  liquidityMining: LiquidityMiningFacet;
   fee: FeesFacet;
   meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
@@ -61,7 +59,6 @@ export async function hubSetup(
   const {
     foundry,
     hub,
-    liquidityMining,
     fee,
     meTokenRegistry,
     diamond,
@@ -96,7 +93,6 @@ export async function hubSetup(
   return {
     foundry,
     hub,
-    liquidityMining,
     fee,
     meTokenRegistry,
     diamond,
@@ -159,7 +155,6 @@ export async function transferFromWhale(
 export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   foundry: FoundryFacet;
   hub: HubFacet;
-  liquidityMining: LiquidityMiningFacet;
   meTokenRegistry: MeTokenRegistryFacet;
   diamond: Diamond;
   meTokenFactory: MeTokenFactory;
@@ -177,7 +172,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
 }> {
   let foundry: FoundryFacet;
   let hub: HubFacet;
-  let liquidityMining: LiquidityMiningFacet;
   let meTokenFactory: MeTokenFactory;
   let singleAssetVault: SingleAssetVault;
   let curve: ICurveFacet;
@@ -233,9 +227,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     "DiamondLoupeFacet"
   );
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
-  const liquidityMiningFacet = await deploy<LiquidityMiningFacet>(
-    "LiquidityMiningFacet"
-  );
+
   const mockToken = await deploy<MockERC20>("MockERC20");
 
   const facets = [
@@ -246,7 +238,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     meTokenRegistryFacet,
     diamondLoupeFacet,
     ownershipFacet,
-    liquidityMiningFacet,
   ];
   const cut = [];
   const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
@@ -293,10 +284,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     "MeTokenRegistryFacet",
     diamond.address
   )) as MeTokenRegistryFacet;
-  liquidityMining = (await ethers.getContractAt(
-    "LiquidityMiningFacet",
-    diamond.address
-  )) as LiquidityMiningFacet;
 
   //
   // NOTE: end diamond deploy
@@ -305,7 +292,6 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   return {
     foundry,
     hub,
-    liquidityMining,
     diamond,
     meTokenFactory,
     singleAssetVault,

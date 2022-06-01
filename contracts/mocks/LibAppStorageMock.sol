@@ -9,7 +9,6 @@ import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
-import {PoolInfo, SeasonInfo} from "../libs/LibLiquidityMining.sol";
 
 struct AppStorageMock {
     // Fees-specific
@@ -54,14 +53,6 @@ struct AppStorageMock {
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
-    // LiquidityMining-specific
-    uint256 issuerCooldown; // # of seasons a meToken issuer has to wait before participating again
-    uint256 lmWarmup; // = 3 days; timeframe between initTime and startTime
-    uint256 lmDuration; // = 1000000; // timeframe from a season starting to ending - about 11.5 days
-    uint256 seasonCount; // # of seasons
-    mapping(address => mapping(address => uint256)) stakedBalances; // key 1: meToken addr- key2: staker addr- value: amount staked
-    mapping(address => PoolInfo) pools;
-    mapping(uint256 => SeasonInfo) seasons;
     // NOTE: This is the upgraded value for AppStorage
     address totallyNewAddress;
 }
