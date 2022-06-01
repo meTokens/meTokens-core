@@ -11,6 +11,11 @@ contract MeToken is ERC20Burnable, ERC20Permit {
     string public version;
     address public diamond;
 
+    modifier onlyDiamond() {
+        require(msg.sender == diamond, "!authorized");
+        _;
+    }
+
     constructor(
         string memory name,
         string memory symbol,
@@ -20,13 +25,11 @@ contract MeToken is ERC20Burnable, ERC20Permit {
         diamond = diamondAdr;
     }
 
-    function mint(address to, uint256 amount) external {
-        require(msg.sender == diamond, "!authorized");
+    function mint(address to, uint256 amount) external onlyDiamond {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 value) external {
-        require(msg.sender == diamond, "!authorized");
+    function burn(address from, uint256 value) external onlyDiamond {
         _burn(from, value);
     }
 

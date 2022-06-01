@@ -77,6 +77,12 @@ export const curvesTestsHelper = async ({
       .reverted;
   });
 
+  it("viewMeTokensMinted() should fail in some conditions", async () => {
+    await expect(curve.viewMeTokensMinted(1, hubId, 1, 0)).to.be.revertedWith(
+      "!valid"
+    ); // fails as balancePooled = 0
+  });
+
   it("viewMeTokensMinted() from 0 supply should work", async () => {
     const etherAmount = 20;
     let amount = one.mul(etherAmount);
@@ -86,6 +92,10 @@ export const curvesTestsHelper = async ({
       calculatedReturn,
       precision
     );
+  });
+  it("viewMeTokensMinted() for 0 assetsDeposited should return 0", async () => {
+    expect(await curve.viewMeTokensMinted(0, hubId, 0, 0)).to.equal(0);
+    expect(await curve.viewMeTokensMinted(0, hubId, 1, 1)).to.equal(0);
   });
   it("viewMeTokensMinted from non-zero supply should work", async () => {
     const amountNum = 2;
@@ -136,6 +146,7 @@ export const curvesTestsHelper = async ({
       precision // *4
     );
   });
+
   it("viewMeTokensMinted() from 999999999999999 supply should work", async () => {
     let amount = one.mul(999999999999999);
     let estimate = await curve.viewMeTokensMinted(amount, hubId, 0, 0);
@@ -145,6 +156,16 @@ export const curvesTestsHelper = async ({
       precision // *4
     );
   });
+
+  it("viewAssetsReturned() should fail in some conditions", async () => {
+    await expect(curve.viewAssetsReturned(1, hubId, 0, 1)).to.be.revertedWith(
+      "!valid"
+    ); // fails as supply = 0
+    await expect(curve.viewAssetsReturned(1, hubId, 1, 0)).to.be.revertedWith(
+      "!valid"
+    ); // fails as balancePooled = 0
+  });
+
   it("viewAssetsReturned() from 0 supply should work", async () => {
     // we need to have the right balancedPooled for supply
     let balancedPooledNum = 7568;

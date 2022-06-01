@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { BigNumber, Signer } from "ethers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -49,7 +49,9 @@ const setup = async () => {
     let UNIV3Factory: string;
     let tokenDeposited: BigNumber;
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       baseY = one.mul(1000);
       const reserveWeight = MAX_WEIGHT / 2;
       let DAI;
@@ -488,6 +490,9 @@ const setup = async () => {
           tokenDeposited.sub(refundAmount)
         );
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {HubInfo} from "./LibHub.sol";
@@ -33,6 +34,8 @@ struct AppStorage {
     uint256 hubCooldown;
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
+    // reentrancy guard
+    uint256 reentrancyStatus;
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
@@ -40,12 +43,12 @@ struct AppStorage {
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
+    address trustedForwarder;
     address feesController;
     address durationsController;
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
-    address trustedForwarder;
 }
 
 library LibAppStorage {
@@ -114,19 +117,19 @@ contract Modifiers {
         _;
     }
 
-    modifier onlyVaultRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.vaultRegistry),
-            "!vaultRegistry"
-        );
-        _;
-    }
+    // modifier onlyVaultRegistry() {
+    //     require(
+    //         LibMeta.msgSender() == address(s.vaultRegistry),
+    //         "!vaultRegistry"
+    //     );
+    //     _;
+    // }
 
-    modifier onlyMigrationRegistry() {
-        require(
-            LibMeta.msgSender() == address(s.migrationRegistry),
-            "!migrationRegistry"
-        );
-        _;
-    }
+    // modifier onlyMigrationRegistry() {
+    //     require(
+    //         LibMeta.msgSender() == address(s.migrationRegistry),
+    //         "!migrationRegistry"
+    //     );
+    //     _;
+    // }
 }

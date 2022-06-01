@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
@@ -21,24 +21,14 @@ contract Vault is IVault, ReentrancyGuard {
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
 
+    modifier onlyDiamond() {
+        require(msg.sender == diamond, "!diamond");
+        _;
+    }
+
     constructor(address _dao, address _diamond) {
         dao = _dao;
         diamond = _diamond;
-    }
-
-    /// @inheritdoc IVault
-    function handleDeposit(
-        address from,
-        address asset,
-        uint256 depositAmount,
-        uint256 feeAmount
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleDeposit(from, asset, depositAmount, feeAmount);
     }
 
     /// @inheritdoc IVault
@@ -51,8 +41,7 @@ contract Vault is IVault, ReentrancyGuard {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
+    ) external virtual override {
         IERC20Permit(asset).permit(
             from,
             address(this),
@@ -62,11 +51,7 @@ contract Vault is IVault, ReentrancyGuard {
             r,
             s
         );
-        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
-        if (feeAmount > 0) {
-            accruedFees[asset] += feeAmount;
-        }
-        emit HandleDeposit(from, asset, depositAmount, feeAmount);
+        handleDeposit(from, asset, depositAmount, feeAmount);
     }
 
     /// @inheritdoc IVault
@@ -75,8 +60,7 @@ contract Vault is IVault, ReentrancyGuard {
         address asset,
         uint256 withdrawalAmount,
         uint256 feeAmount
-    ) external virtual override nonReentrant {
-        require(msg.sender == diamond, "!diamond");
+    ) external virtual override nonReentrant onlyDiamond {
         IERC20(asset).safeTransfer(to, withdrawalAmount);
         if (feeAmount > 0) {
             accruedFees[asset] += feeAmount;
@@ -107,5 +91,19 @@ contract Vault is IVault, ReentrancyGuard {
         bytes memory /* encodedArgs */
     ) external pure virtual override returns (bool) {
         return true;
+    }
+
+    /// @inheritdoc IVault
+    function handleDeposit(
+        address from,
+        address asset,
+        uint256 depositAmount,
+        uint256 feeAmount
+    ) public virtual override nonReentrant onlyDiamond {
+        IERC20(asset).safeTransferFrom(from, address(this), depositAmount);
+        if (feeAmount > 0) {
+            accruedFees[asset] += feeAmount;
+        }
+        emit HandleDeposit(from, asset, depositAmount, feeAmount);
     }
 }

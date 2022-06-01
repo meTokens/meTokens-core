@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
@@ -34,6 +35,8 @@ struct AppStorageMock {
     uint256 hubCooldown;
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
+    // reentrancy guard
+    uint256 reentrancyStatus;
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
@@ -41,12 +44,12 @@ struct AppStorageMock {
     IMigrationRegistry migrationRegistry;
     // Controllers
     address diamondController;
+    address trustedForwarder;
     address feesController;
     address durationsController;
     address meTokenRegistryController;
     address registerController;
     address deactivateController;
-    address trustedForwarder;
     // NOTE: This is the upgraded value for AppStorage
     address totallyNewAddress;
 }

@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -14,11 +14,13 @@ import {
   ERC20,
   SingleAssetVault,
   SameAssetTransferMigration,
+  VaultRegistry,
 } from "../../../artifacts/types";
 
 const setup = async () => {
   describe("SameAssetTransferMigration.sol", () => {
     let DAI: string;
+    let WETH: string;
     let DAIWhale: string;
     let daiHolder: Signer;
     let dai: ERC20;
@@ -26,6 +28,7 @@ const setup = async () => {
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let migrationRegistry: MigrationRegistry;
+    let vaultRegistry: VaultRegistry;
     let migration: SameAssetTransferMigration;
     let meTokenRegistry: MeTokenRegistryFacet;
     let initialVault: SingleAssetVault;
@@ -58,8 +61,10 @@ const setup = async () => {
       started: boolean;
     };
 
+    let snapshotId: any;
     before(async () => {
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      snapshotId = await network.provider.send("evm_snapshot");
+      ({ DAI, DAIWhale, WETH } = await getNamedAccounts());
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -71,6 +76,7 @@ const setup = async () => {
       ({
         hub,
         foundry,
+        vaultRegistry,
         migrationRegistry,
         singleAssetVault: initialVault,
         meTokenRegistry,
@@ -149,50 +155,42 @@ const setup = async () => {
           migration.initMigration(meToken.address, encodedMigrationArgs)
         ).to.be.revertedWith("!diamond");
       });
-      it("should revert when try to approve already approved vaults", async () => {
-        await expect(
-          migrationRegistry.approve(
-            initialVault.address,
-            initialVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration already approved");
-      });
-      it("should be able to unapprove migration vaults", async () => {
-        let tx = await migrationRegistry.unapprove(
+      it("Reverts when hub and targetHub asset are not same", async () => {
+        const targetVault = await deploy<SingleAssetVault>(
+          "SingleAssetVault",
+          undefined, //no libs
+          account0.address, // DAO
+          hub.address // diamond
+        );
+        await vaultRegistry.approve(targetVault.address);
+
+        // Hub 3
+        await hub.register(
+          account0.address,
+          WETH,
+          targetVault.address,
+          refundRatio,
+          baseY,
+          reserveWeight,
+          encodedVaultDAIArgs
+        );
+
+        await migrationRegistry.approve(
           initialVault.address,
-          initialVault.address,
+          targetVault.address,
           migration.address
         );
-        await tx.wait();
 
-        // should revert to init resubscribe when unapproved
         await expect(
           meTokenRegistry
             .connect(account1)
             .initResubscribe(
               meToken.address,
-              hubId2,
+              3,
               migration.address,
               encodedMigrationArgs
             )
-        ).to.be.revertedWith("!approved");
-      });
-      it("should revert when try to unapprove already unapproved vaults", async () => {
-        await expect(
-          migrationRegistry.unapprove(
-            initialVault.address,
-            initialVault.address,
-            migration.address
-          )
-        ).to.be.revertedWith("migration not approved");
-
-        // approve vaults again
-        await migrationRegistry.approve(
-          initialVault.address,
-          initialVault.address,
-          migration.address
-        );
+        ).to.be.revertedWith("same asset");
       });
       it("Set correct _ust values", async () => {
         migrationDetails = await migration.getDetails(meToken.address);
@@ -272,8 +270,8 @@ const setup = async () => {
         const tx = await meTokenRegistry.finishResubscribe(meToken.address);
         await tx.wait();
 
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -281,8 +279,8 @@ const setup = async () => {
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
-          )
-          .to.not.emit(initialVault, "StartMigration");
+          );
+        await expect(tx).to.not.emit(initialVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.isMigrating).to.equal(false);
@@ -321,10 +319,11 @@ const setup = async () => {
         meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
+        await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(meTokenRegistry, "FinishResubscribe")
           .to.emit(initialVault, "StartMigration")
-          .withArgs(meToken.address)
+          .withArgs(meToken.address);
+        await expect(tx)
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
@@ -448,6 +447,9 @@ const setup = async () => {
           );
         });
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

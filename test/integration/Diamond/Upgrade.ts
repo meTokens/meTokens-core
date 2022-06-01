@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -16,6 +16,7 @@ import {
   FeesFacet,
   OwnershipFacet,
   DiamondInit,
+  DiamondInitMock,
 } from "../../../artifacts/types";
 const setup = async () => {
   describe("Upgrade diamond", () => {
@@ -38,7 +39,9 @@ const setup = async () => {
     const firstHubId = 1;
     const refundRatio = 5000;
     const MAX_WEIGHT = 1000000;
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       baseYNum = 1000;
       baseY = one.mul(baseYNum);
       reserveWeight = MAX_WEIGHT / 2;
@@ -92,7 +95,45 @@ const setup = async () => {
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
     });
+    describe("init", () => {
+      it("twice init should fail", async () => {
+        updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
+        const diamondInit = await deploy<DiamondInit>("DiamondInit");
+        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        );
+        const cut = [
+          {
+            facetAddress: updatedFeesFacet.address,
+            action: FacetCutAction.Add,
+            functionSelectors: [interestPlusYieldFee],
+          },
+        ];
 
+        let args: any = [
+          {
+            mintFee: 1,
+            burnBuyerFee: 2,
+            burnOwnerFee: 3,
+            transferFee: 4,
+            interestFee: 24568974545,
+            yieldFee: 89746654654,
+            diamond: diamond.address,
+            me: ethers.constants.AddressZero,
+            vaultRegistry: diamond.address,
+            migrationRegistry: diamond.address,
+            meTokenFactory: diamond.address,
+          },
+        ];
+        let functionCall = diamondInit.interface.encodeFunctionData(
+          "init",
+          args
+        );
+        await expect(
+          diamondCut.diamondCut(cut, diamondInit.address, functionCall)
+        ).to.be.revertedWith("Already initialized");
+      });
+    });
     describe("facet", () => {
       it("add a new one should work", async () => {
         updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
@@ -353,7 +394,7 @@ const setup = async () => {
 
       it("add a new one with init data should work", async () => {
         updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
-        const diamondInit = await deploy<DiamondInit>("DiamondInit");
+        const diamondInit = await deploy<DiamondInitMock>("DiamondInitMock");
         const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
           updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
         );
@@ -368,29 +409,15 @@ const setup = async () => {
           "FeesFacet",
           diamond.address
         );
+
         const interestFeeBefore = await feesFacet.interestFee();
         expect(interestFeeBefore).to.equal(43);
         const yieldFeeBefore = await feesFacet.yieldFee();
         expect(yieldFeeBefore).to.equal(14);
 
-        let args: any = [
-          {
-            mintFee: 1,
-            burnBuyerFee: 2,
-            burnOwnerFee: 3,
-            transferFee: 4,
-            interestFee: 24568974545,
-            yieldFee: 89746654654,
-            diamond: diamond.address,
-            vaultRegistry: diamond.address,
-            migrationRegistry: diamond.address,
-            meTokenFactory: diamond.address,
-          },
-        ];
-        let functionCall = diamondInit.interface.encodeFunctionData(
-          "init",
-          args
-        );
+        let functionCall = diamondInit.interface.encodeFunctionData("init", [
+          "24568974545",
+        ]);
         const tx = await diamondCut.diamondCut(
           cut,
           diamondInit.address,
@@ -403,7 +430,7 @@ const setup = async () => {
         const interestFeeAfter = await feesFacet.interestFee();
         expect(interestFeeAfter).to.equal(24568974545);
         const yieldFeeAfter = await feesFacet.yieldFee();
-        expect(yieldFeeAfter).to.equal(89746654654);
+        expect(yieldFeeAfter).to.equal(14);
         const loupe = await getContractAt<DiamondLoupeFacet>(
           "DiamondLoupeFacet",
           diamond.address
@@ -419,7 +446,7 @@ const setup = async () => {
         );
 
         const newAdr = await updatedFees.interestPlusYieldFee();
-        expect(newAdr).to.equal(24568974545 + 89746654654);
+        expect(newAdr).to.equal(24568974545 + 14);
         //call to other facet also works
         const ownFacet = await getContractAt<OwnershipFacet>(
           "OwnershipFacet",
@@ -431,6 +458,9 @@ const setup = async () => {
         const newOwner = await ownFacet.deactivateController();
         expect(newOwner).to.equal(account2.address);
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

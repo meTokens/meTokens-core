@@ -2,6 +2,7 @@
 pragma solidity 0.8.9;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
 import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
@@ -10,11 +11,12 @@ import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
+import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
-contract DiamondInit {
+contract DiamondInit is ReentrancyGuard {
     using ABDKMathQuad for uint256;
     struct Args {
         uint256 mintFee;
@@ -38,7 +40,8 @@ contract DiamondInit {
     AppStorage internal s; // solhint-disable-line
 
     function init(Args memory _args) external {
-        require(msg.sender == _owner, "!owner");
+        require(msg.sender == s.diamondController, "!diamondController");
+        require(s.diamond == address(0), "Already initialized");
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.migrationRegistry = _args.migrationRegistry;
@@ -65,5 +68,8 @@ contract DiamondInit {
         cs.one = (uint256(1)).fromUInt();
         cs.maxWeight = uint256(LibCurve.MAX_WEIGHT).fromUInt();
         cs.baseX = uint256(1 ether).fromUInt();
+
+        //adding reentrancy initial state
+        s.reentrancyStatus = NOT_ENTERED;
     }
 }

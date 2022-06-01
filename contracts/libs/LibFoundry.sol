@@ -101,7 +101,7 @@ library LibFoundry {
         amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
         amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
 
-        amounts[0] = _calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
+        amounts[0] = calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
         IVault vault = IVault(hubInfo.vault);
         address asset = hubInfo.asset;
 
@@ -224,24 +224,18 @@ library LibFoundry {
                 IMigration(meTokenInfo.migration).poke(meToken);
                 meTokenInfo = s.meTokens[meToken];
             }
-            /*   hubInfo = s.hubs[meTokenInfo.targetHubId];
-            meTokenInfo = LibMeToken.finishResubscribe(meToken); */
         }
         // Calculate how many tokens are returned
-        uint256 rawAssetsReturned = _calculateRawAssetsReturned(
+        uint256 rawAssetsReturned = calculateRawAssetsReturned(
             meToken,
             meTokensBurned
         );
-        uint256 assetsReturned = _calculateActualAssetsReturned(
+        uint256 assetsReturned = calculateActualAssetsReturned(
             sender,
             meToken,
             meTokensBurned,
             rawAssetsReturned
         );
-
-        // Burn metoken from user
-        IMeToken(meToken).burn(sender, meTokensBurned);
-
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
 
@@ -260,6 +254,8 @@ library LibFoundry {
                 rawAssetsReturned - assetsReturned
             );
         }
+        // Burn metoken from user
+        IMeToken(meToken).burn(sender, meTokensBurned);
 
         _vaultWithdrawal(
             sender,
@@ -270,6 +266,161 @@ library LibFoundry {
             meTokensBurned,
             assetsReturned
         );
+    }
+
+    function calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
+        internal
+        view
+        returns (uint256 meTokensMinted)
+    {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        // gas savings
+        uint256 totalSupply = IERC20(meToken).totalSupply();
+        // Calculate return assuming update/resubscribe is not happening
+        meTokensMinted = LibCurve.viewMeTokensMinted(
+            assetsDeposited,
+            meTokenInfo.hubId,
+            totalSupply,
+            meTokenInfo.balancePooled
+        );
+
+        // Logic for if we're switching to a new curve type // reconfiguring
+        if (hubInfo.reconfigure) {
+            uint256 targetMeTokensMinted = LibCurve.viewTargetMeTokensMinted(
+                assetsDeposited,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            meTokensMinted = LibWeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                hubInfo.startTime,
+                hubInfo.endTime
+            );
+        } else if (meTokenInfo.targetHubId != 0) {
+            uint256 targetMeTokensMinted = LibCurve.viewMeTokensMinted(
+                assetsDeposited,
+                meTokenInfo.targetHubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            meTokensMinted = LibWeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                meTokenInfo.startTime,
+                meTokenInfo.endTime
+            );
+        }
+    }
+
+    function calculateRawAssetsReturned(address meToken, uint256 meTokensBurned)
+        internal
+        view
+        returns (uint256 rawAssetsReturned)
+    {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        uint256 totalSupply = IERC20(meToken).totalSupply(); // gas savings
+
+        // Calculate return assuming update is not happening
+        rawAssetsReturned = LibCurve.viewAssetsReturned(
+            meTokensBurned,
+            meTokenInfo.hubId,
+            totalSupply,
+            meTokenInfo.balancePooled
+        );
+
+        // Logic for if we're updating curveInfo
+        if (hubInfo.reconfigure) {
+            // Must mean we're updating curveInfo
+            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            rawAssetsReturned = LibWeightedAverage.calculate(
+                rawAssetsReturned,
+                targetAssetsReturned,
+                hubInfo.startTime,
+                hubInfo.endTime
+            );
+        } else if (meTokenInfo.targetHubId != 0) {
+            // Calculate return assuming meToken is resubscribing
+            uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.targetHubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            rawAssetsReturned = LibWeightedAverage.calculate(
+                rawAssetsReturned,
+                targetAssetsReturned,
+                meTokenInfo.startTime,
+                meTokenInfo.endTime
+            );
+        }
+    }
+
+    /// @dev applies refundRatio
+    function calculateActualAssetsReturned(
+        address sender,
+        address meToken,
+        uint256 meTokensBurned,
+        uint256 rawAssetsReturned
+    ) internal view returns (uint256 actualAssetsReturned) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        // If msg.sender != owner, give msg.sender the burn rate
+        if (sender == meTokenInfo.owner) {
+            actualAssetsReturned =
+                rawAssetsReturned +
+                (((s.PRECISION * meTokensBurned) /
+                    IERC20(meToken).totalSupply()) *
+                    meTokenInfo.balanceLocked) /
+                s.PRECISION;
+        } else {
+            if (
+                hubInfo.targetRefundRatio == 0 && meTokenInfo.targetHubId == 0
+            ) {
+                // Not updating targetRefundRatio or resubscribing
+                actualAssetsReturned =
+                    (rawAssetsReturned * hubInfo.refundRatio) /
+                    s.MAX_REFUND_RATIO;
+            } else {
+                if (hubInfo.targetRefundRatio > 0) {
+                    // Hub is updating
+                    actualAssetsReturned =
+                        (rawAssetsReturned *
+                            LibWeightedAverage.calculate(
+                                hubInfo.refundRatio,
+                                hubInfo.targetRefundRatio,
+                                hubInfo.startTime,
+                                hubInfo.endTime
+                            )) /
+                        s.MAX_REFUND_RATIO;
+                } else {
+                    // meToken is resubscribing
+                    actualAssetsReturned =
+                        (rawAssetsReturned *
+                            LibWeightedAverage.calculate(
+                                hubInfo.refundRatio,
+                                s.hubs[meTokenInfo.targetHubId].refundRatio,
+                                meTokenInfo.startTime,
+                                meTokenInfo.endTime
+                            )) /
+                        s.MAX_REFUND_RATIO;
+                }
+            }
+        }
     }
 
     function _handleMintWithPermit(
@@ -297,7 +448,7 @@ library LibFoundry {
             assetsDeposited -
             ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
 
-        amounts[0] = _calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
+        amounts[0] = calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
 
         asset = _handlingChangesWithPermit(
             amounts[1],
@@ -415,159 +566,5 @@ library LibFoundry {
             meTokensBurned,
             assetsReturned
         );
-    }
-
-    function _calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
-        private
-        view
-        returns (uint256 meTokensMinted)
-    {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-        // gas savings
-        uint256 totalSupply = IERC20(meToken).totalSupply();
-        // Calculate return assuming update/resubscribe is not happening
-        meTokensMinted = LibCurve.viewMeTokensMinted(
-            assetsDeposited,
-            meTokenInfo.hubId,
-            totalSupply,
-            meTokenInfo.balancePooled
-        );
-
-        // Logic for if we're switching to a new curve type // reconfiguring
-        if (hubInfo.reconfigure) {
-            uint256 targetMeTokensMinted = LibCurve.viewTargetMeTokensMinted(
-                assetsDeposited,
-                meTokenInfo.hubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            meTokensMinted = LibWeightedAverage.calculate(
-                meTokensMinted,
-                targetMeTokensMinted,
-                hubInfo.startTime,
-                hubInfo.endTime
-            );
-        } else if (meTokenInfo.targetHubId != 0) {
-            uint256 targetMeTokensMinted = LibCurve.viewMeTokensMinted(
-                assetsDeposited,
-                meTokenInfo.targetHubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            meTokensMinted = LibWeightedAverage.calculate(
-                meTokensMinted,
-                targetMeTokensMinted,
-                meTokenInfo.startTime,
-                meTokenInfo.endTime
-            );
-        }
-    }
-
-    function _calculateRawAssetsReturned(
-        address meToken,
-        uint256 meTokensBurned
-    ) private view returns (uint256 rawAssetsReturned) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
-        uint256 totalSupply = IERC20(meToken).totalSupply(); // gas savings
-
-        // Calculate return assuming update is not happening
-        rawAssetsReturned = LibCurve.viewAssetsReturned(
-            meTokensBurned,
-            meTokenInfo.hubId,
-            totalSupply,
-            meTokenInfo.balancePooled
-        );
-
-        // Logic for if we're updating curveInfo
-        if (hubInfo.reconfigure) {
-            // Must mean we're updating curveInfo
-            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
-                meTokensBurned,
-                meTokenInfo.hubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            rawAssetsReturned = LibWeightedAverage.calculate(
-                rawAssetsReturned,
-                targetAssetsReturned,
-                hubInfo.startTime,
-                hubInfo.endTime
-            );
-        } else if (meTokenInfo.targetHubId != 0) {
-            // Calculate return assuming meToken is resubscribing
-            uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
-                meTokensBurned,
-                meTokenInfo.targetHubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            rawAssetsReturned = LibWeightedAverage.calculate(
-                rawAssetsReturned,
-                targetAssetsReturned,
-                meTokenInfo.startTime,
-                meTokenInfo.endTime
-            );
-        }
-    }
-
-    /// @dev applies refundRatio
-    function _calculateActualAssetsReturned(
-        address sender,
-        address meToken,
-        uint256 meTokensBurned,
-        uint256 rawAssetsReturned
-    ) private view returns (uint256 actualAssetsReturned) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
-        //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meTokenInfo.owner) {
-            actualAssetsReturned =
-                rawAssetsReturned +
-                (((s.PRECISION * meTokensBurned) /
-                    IERC20(meToken).totalSupply()) *
-                    meTokenInfo.balanceLocked) /
-                s.PRECISION;
-        } else {
-            if (
-                hubInfo.targetRefundRatio == 0 && meTokenInfo.targetHubId == 0
-            ) {
-                // Not updating targetRefundRatio or resubscribing
-                actualAssetsReturned =
-                    (rawAssetsReturned * hubInfo.refundRatio) /
-                    s.MAX_REFUND_RATIO;
-            } else {
-                if (hubInfo.targetRefundRatio > 0) {
-                    // Hub is updating
-                    actualAssetsReturned =
-                        (rawAssetsReturned *
-                            LibWeightedAverage.calculate(
-                                hubInfo.refundRatio,
-                                hubInfo.targetRefundRatio,
-                                hubInfo.startTime,
-                                hubInfo.endTime
-                            )) /
-                        s.MAX_REFUND_RATIO;
-                } else {
-                    // meToken is resubscribing
-                    actualAssetsReturned =
-                        (rawAssetsReturned *
-                            LibWeightedAverage.calculate(
-                                hubInfo.refundRatio,
-                                s.hubs[meTokenInfo.targetHubId].refundRatio,
-                                meTokenInfo.startTime,
-                                meTokenInfo.endTime
-                            )) /
-                        s.MAX_REFUND_RATIO;
-                }
-            }
-        }
     }
 }

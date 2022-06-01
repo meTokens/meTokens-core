@@ -26,19 +26,23 @@ library LibCurve {
     bytes32 public constant CURVE_STORAGE_POSITION =
         keccak256("diamond.standard.bancor.curves.storage");
 
-    function register(
-        uint256 hubId,
-        uint256 baseY,
-        uint32 reserveWeight
-    ) internal {
-        CurveStorage storage cs = curveStorage();
-        CurveInfo storage curveInfo = cs.curves[hubId];
-
-        require(baseY > 0, "!baseY");
+    modifier checkReserveWeight(uint256 reserveWeight) {
         require(
             reserveWeight > 0 && reserveWeight <= MAX_WEIGHT,
             "!reserveWeight"
         );
+        _;
+    }
+
+    function register(
+        uint256 hubId,
+        uint256 baseY,
+        uint32 reserveWeight
+    ) internal checkReserveWeight(reserveWeight) {
+        CurveStorage storage cs = curveStorage();
+        CurveInfo storage curveInfo = cs.curves[hubId];
+
+        require(baseY > 0, "!baseY");
 
         curveInfo.baseY = baseY;
         curveInfo.reserveWeight = reserveWeight;
@@ -46,11 +50,11 @@ library LibCurve {
 
     function initReconfigure(uint256 hubId, uint32 targetReserveWeight)
         internal
+        checkReserveWeight(targetReserveWeight)
     {
         CurveStorage storage cs = curveStorage();
         CurveInfo storage curveInfo = cs.curves[hubId];
 
-        require(targetReserveWeight > 0, "!reserveWeight");
         require(
             targetReserveWeight != curveInfo.reserveWeight,
             "targetWeight!=Weight"
@@ -199,11 +203,7 @@ library LibCurve {
         uint256 balancePooled
     ) private view returns (uint256) {
         // validate input
-        require(
-            balancePooled > 0 &&
-                reserveWeight > 0 &&
-                reserveWeight <= MAX_WEIGHT
-        );
+        require(balancePooled > 0, "!valid");
         // special case for 0 deposit amount
         if (assetsDeposited == 0) {
             return 0;
@@ -299,11 +299,7 @@ library LibCurve {
     ) private view returns (uint256) {
         // validate input
         require(
-            supply > 0 &&
-                balancePooled > 0 &&
-                reserveWeight > 0 &&
-                reserveWeight <= MAX_WEIGHT &&
-                meTokensBurned <= supply,
+            supply > 0 && balancePooled > 0 && meTokensBurned <= supply,
             "!valid"
         );
         // special case for 0 sell amount

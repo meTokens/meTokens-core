@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import "hardhat/console.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
@@ -46,11 +45,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MAXFEE = 1e4; // 1%
 
     uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
-
-    modifier onlyDiamond() {
-        require(msg.sender == diamond, "!diamond");
-        _;
-    }
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
 

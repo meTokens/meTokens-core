@@ -1,4 +1,4 @@
-import { ethers, getNamedAccounts } from "hardhat";
+import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { Signer } from "ethers";
@@ -15,6 +15,8 @@ import {
   MeToken,
   ERC20,
   SingleAssetVault,
+  UniswapSingleTransferMigration,
+  VaultRegistry,
 } from "../../../artifacts/types";
 
 const setup = async () => {
@@ -25,6 +27,7 @@ const setup = async () => {
     let account2: SignerWithAddress;
     let foundry: FoundryFacet;
     let hub: HubFacet;
+    let vaultRegistry: VaultRegistry;
 
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
@@ -49,7 +52,9 @@ const setup = async () => {
     const name = "Carl meToken";
     const symbol = "CARL";
 
+    let snapshotId: any;
     before(async () => {
+      snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI } = await getNamedAccounts());
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -68,6 +73,7 @@ const setup = async () => {
         account0,
         account1,
         account2,
+        vaultRegistry,
       } = await hubSetupWithoutRegister());
       ({ token, whale } = await transferFromWhale(account1.address));
     });
@@ -134,7 +140,7 @@ const setup = async () => {
             singleAssetVault.address,
             refundRatio1,
             0,
-            0,
+            1,
             encodedVaultDAIArgs
           )
         ).to.be.revertedWith("!baseY");
@@ -150,8 +156,7 @@ const setup = async () => {
           )
         ).to.be.revertedWith("!reserveWeight");
       });
-      it("should revert from invalid encodedVaultArgs", async () => {
-        // Invalid _encodedVaultArgs
+      it("should revert from invalid asset", async () => {
         const tx = hub.register(
           account0.address,
           ethers.constants.AddressZero,
@@ -162,6 +167,27 @@ const setup = async () => {
           encodedVaultDAIArgs // invalid _encodedVaultArgs
         );
         await expect(tx).to.be.revertedWith("asset !valid");
+      });
+      it("should revert from invalid encodedVaultArgs", async () => {
+        const uniswapMigration = await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined,
+          account0.address,
+          hub.address // diamond
+        );
+        await vaultRegistry.approve(uniswapMigration.address);
+
+        // Invalid _encodedVaultArgs
+        const tx = hub.register(
+          account0.address,
+          DAI,
+          uniswapMigration.address,
+          refundRatio1,
+          baseY,
+          reserveWeight,
+          "0x" // invalid _encodedVaultArgs
+        );
+        await expect(tx).to.be.revertedWith("!encodedVaultArgs");
       });
       it("should revert from invalid _refundRatio", async () => {
         // _refundRatio > MAX_REFUND_RATIO
@@ -450,7 +476,8 @@ const setup = async () => {
 
         await expect(txAfterEndCooldown)
           .to.emit(hub, "FinishUpdate")
-          .withArgs(1)
+          .withArgs(1);
+        await expect(txAfterEndCooldown)
           .to.emit(hub, "InitUpdate")
           .withArgs(
             hubId,
@@ -727,6 +754,9 @@ const setup = async () => {
       it("should revert when hub already inactive", async () => {
         await expect(hub.deactivate(hubId)).to.be.revertedWith("!active");
       });
+    });
+    after(async () => {
+      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

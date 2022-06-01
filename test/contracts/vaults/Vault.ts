@@ -79,7 +79,6 @@ const setup = async () => {
       await token.connect(whale).transfer(account1.address, tokenDeposited);
       await token.connect(whale).transfer(account2.address, tokenDeposited);
 
-      await token.approve(meTokenRegistry.address, ethers.constants.MaxUint256);
       await token.approve(vault.address, ethers.constants.MaxUint256);
       const tx = await meTokenRegistry.subscribe("METOKEN", "MT", hubId, 0);
       await tx.wait();
@@ -96,6 +95,12 @@ const setup = async () => {
         expect(await vault.dao()).to.be.equal(dao.address);
         expect(await vault.diamond()).to.be.equal(diamond.address);
         expect(await vault.accruedFees(DAI)).to.be.equal(0);
+      });
+    });
+
+    describe("isValid", () => {
+      it("should return true for inValid in all normal vaults", async () => {
+        expect(await vault.isValid("0x")).to.equal(true);
       });
     });
 
