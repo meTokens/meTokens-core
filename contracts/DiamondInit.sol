@@ -41,7 +41,7 @@ contract DiamondInit is ReentrancyGuard {
     AppStorage internal s; // solhint-disable-line
 
     function init(Args memory _args) external {
-        require(msg.sender == _owner, "!owner");
+        require(msg.sender == s.diamondController, "!diamondController");
         require(s.diamond == address(0), "Already initialized");
         s.me = _args.me;
         s.diamond = _args.diamond;
