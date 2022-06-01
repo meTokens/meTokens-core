@@ -181,7 +181,6 @@ async function main() {
       interestFee: feeInitialization[4],
       yieldFee: feeInitialization[5],
       diamond: diamond.address,
-      me: ethers.constants.AddressZero,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,

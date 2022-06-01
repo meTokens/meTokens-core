@@ -20,7 +20,6 @@ struct AppStorage {
     // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
-    uint256 BASE;
     uint256 MAX_FEE;
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
@@ -40,7 +39,6 @@ struct AppStorage {
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
-    IERC20 me;
     IVaultRegistry vaultRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
