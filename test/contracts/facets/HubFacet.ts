@@ -140,7 +140,7 @@ const setup = async () => {
             singleAssetVault.address,
             refundRatio1,
             0,
-            0,
+            1,
             encodedVaultDAIArgs
           )
         ).to.be.revertedWith("!baseY");
