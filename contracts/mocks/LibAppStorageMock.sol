@@ -48,7 +48,6 @@ struct AppStorageMock {
     address diamondController;
     address trustedForwarder;
     address feesController;
-    address liquidityMiningController;
     address durationsController;
     address meTokenRegistryController;
     address registerController;
