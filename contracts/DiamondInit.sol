@@ -10,6 +10,7 @@ import {IVaultRegistry} from "./interfaces/IVaultRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
+import {LibLiquidityMining, LiquidityMiningStorage} from "./libs/LibLiquidityMining.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
@@ -43,7 +44,7 @@ contract DiamondInit is ReentrancyGuard {
     function init(Args memory _args) external {
         require(msg.sender == s.diamondController, "!diamondController");
         require(s.diamond == address(0), "Already initialized");
-        s.me = _args.me;
+
         s.diamond = _args.diamond;
         s.vaultRegistry = _args.vaultRegistry;
         s.migrationRegistry = _args.migrationRegistry;
@@ -74,5 +75,9 @@ contract DiamondInit is ReentrancyGuard {
 
         //adding reentrancy initial state
         s.reentrancyStatus = NOT_ENTERED;
+
+        LiquidityMiningStorage storage lms = LibLiquidityMining
+            .liquidityMiningStorage();
+        lms.me = _args.me;
     }
 }

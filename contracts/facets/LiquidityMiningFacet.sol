@@ -35,7 +35,7 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         require(initTime >= block.timestamp, "init time < timestamp");
 
-        s.me.safeTransferFrom(
+        ls.me.safeTransferFrom(
             LibMeta.msgSender(),
             address(this),
             allocationPool + allocationIssuers
@@ -57,6 +57,7 @@ contract LiquidityMiningFacet is
         newSeasonInfo.allocationIssuers = allocationIssuers;
         newSeasonInfo.merkleRoot = merkleRoot;
         newSeasonInfo.rewardRate = rewardRate;
+
         emit InitSeason(merkleRoot);
     }
 
@@ -127,8 +128,10 @@ contract LiquidityMiningFacet is
         address recipient,
         uint256 amount
     ) external onlyLiquidityMiningController {
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
         require(
-            address(token) != address(s.me),
+            address(token) != address(ls.me),
             "Cannot withdraw the reward token"
         );
         require(
@@ -238,11 +241,11 @@ contract LiquidityMiningFacet is
 
         if (amount > 0) {
             poolInfo.rewards[sender] -= amount;
-            s.me.safeTransfer(sender, amount);
+            ls.me.safeTransfer(sender, amount);
         } else {
             amount = reward;
             poolInfo.rewards[sender] = 0;
-            s.me.safeTransfer(sender, reward);
+            ls.me.safeTransfer(sender, reward);
         }
 
         emit RewardPaid(meToken, sender, reward);
@@ -458,6 +461,7 @@ contract LiquidityMiningFacet is
             poolInfo.rewardPerTokenStored
         );
         if (poolInfo.totalSupply == 0) {
+            // TODO WHY ISN'T  IT 0 ??
             return poolInfo.rewardPerTokenStored;
         }
 
@@ -484,7 +488,7 @@ contract LiquidityMiningFacet is
             lastUpdateTime = seasonInfo.startTime;
         }
         console.log(
-            "## rewardPerToken poolInfo.rewardPerTokenStored :%s",
+            "## rewardPerToken poolInfo.rewardPerTokenStored :%s rewar",
             poolInfo.rewardPerTokenStored
         );
         // TODO if lastTimeRewardApplicable_=0 and lastUpdateTime>0, then this reverts.

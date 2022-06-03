@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {HubInfo} from "./LibHub.sol";
@@ -40,7 +39,6 @@ struct AppStorage {
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
-    IERC20 me;
     IVaultRegistry vaultRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers

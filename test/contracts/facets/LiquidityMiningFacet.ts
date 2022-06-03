@@ -45,7 +45,7 @@ const setup = async () => {
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount1 = ethers.utils.parseEther("100");
-    const tokenDepositedInETH = 10;
+    const tokenDepositedInETH = 100;
     const tokenDeposited = ethers.utils.parseEther(
       tokenDepositedInETH.toString()
     );
@@ -112,7 +112,7 @@ const setup = async () => {
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
       await foundry.mint(meToken.address, tokenDeposited, account0.address);
-
+      await foundry.mint(meToken.address, tokenDeposited, account1.address);
       await mockToken.setBalance(
         account0.address,
         ethers.utils.parseEther("1000")
@@ -420,18 +420,26 @@ const setup = async () => {
         rewardRate            :${seasonInfo.rewardRate.toString()}
         tokenDeposited        :${toETHNumber(tokenDeposited)}
         
-        
-        
         `);
+        // only begins at start time and not before
+        // reward takes only into account previously deposited token amount so tokenDeposited.div(2)
         const calculatedRewardPerTokenStored = BigNumber.from(txBlockTime)
           .sub(seasonInfo.startTime)
           .mul(seasonInfo.rewardRate)
           .mul(PRECISION)
-          .div(tokenDeposited);
+          .div(tokenDeposited.div(2));
         expect(poolInfo.rewardPerTokenStored).to.equal(
           calculatedRewardPerTokenStored
         );
-        expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
+        expect(poolInfo.userRewardPerTokenPaid).to.equal(
+          calculatedRewardPerTokenStored
+        );
+        console.log(`
+        poolInfo.rewards                       :${poolInfo.rewards}
+        poolInfo.userRewardPerTokenPaid        :${poolInfo.userRewardPerTokenPaid}
+        calculatedRewardPerTokenStored         :${calculatedRewardPerTokenStored} 
+        
+        `);
         expect(poolInfo.rewards).to.equal(0);
 
         expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
