@@ -2,6 +2,7 @@
 pragma solidity 0.8.9;
 
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 struct LiquidityMiningStorage {
     // LiquidityMining-specific
@@ -12,6 +13,7 @@ struct LiquidityMiningStorage {
     mapping(address => PoolInfo) pools;
     SeasonInfo season;
     uint256 status;
+    IERC20 me; // reward token
 }
 struct PoolInfo {
     bytes32 seasonMerkleRoot; // used to identify if it is a new season
