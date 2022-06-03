@@ -11,6 +11,7 @@ import { FeesFacet } from "../artifacts/types/contracts/facets/FeesFacet";
 import { MeTokenRegistryFacet } from "../artifacts/types/contracts/facets/MeTokenRegistryFacet";
 import { DiamondLoupeFacet } from "../artifacts/types/contracts/facets/DiamondLoupeFacet";
 import { OwnershipFacet } from "../artifacts/types/contracts/facets/OwnershipFacet";
+import { LiquidityMiningFacet } from "../artifacts/types/contracts/facets/LiquidityMiningFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
   CurveFacet,
@@ -148,7 +149,17 @@ async function main() {
     name: "contracts/facets/OwnershipFacet.sol:OwnershipFacet",
     address: ownershipFacet.address,
   });
-
+  const liquidityMiningFacet = await deploy<LiquidityMiningFacet>(
+    "LiquidityMiningFacet"
+  );
+  console.log(
+    "LiquidityMiningFacet deployed at:",
+    liquidityMiningFacet.address
+  );
+  contracts.push({
+    name: "contracts/facets/LiquidityMiningFacet.sol:LiquidityMiningFacet",
+    address: liquidityMiningFacet.address,
+  });
   const facets = [
     hubFacet,
     foundryFacet,
@@ -157,6 +168,7 @@ async function main() {
     meTokenRegistryFacet,
     diamondLoupeFacet,
     ownershipFacet,
+    liquidityMiningFacet,
   ];
   const cut = [];
   for (const facet of facets) {
@@ -181,6 +193,7 @@ async function main() {
       interestFee: feeInitialization[4],
       yieldFee: feeInitialization[5],
       diamond: diamond.address,
+      me: ethers.constants.AddressZero,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
@@ -240,6 +253,7 @@ async function main() {
     "Fee Facet Contract Address": feesFacet.address,
     "Foundry Facet Contract Address": foundryFacet.address,
     "MeToken Registry Facet Contract Address": meTokenRegistryFacet.address,
+    "Liquidity Mining Facet Contract Address": liquidityMiningFacet.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,

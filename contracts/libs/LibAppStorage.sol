@@ -20,6 +20,7 @@ struct AppStorage {
     // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
+    uint256 BASE;
     uint256 MAX_FEE;
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
@@ -39,6 +40,7 @@ struct AppStorage {
     // Widely-used addresses/interfaces
     address diamond;
     address meTokenFactory;
+    IERC20 me;
     IVaultRegistry vaultRegistry;
     IMigrationRegistry migrationRegistry;
     // Controllers
@@ -47,6 +49,7 @@ struct AppStorage {
     address feesController;
     address durationsController;
     address meTokenRegistryController;
+    address liquidityMiningController;
     address registerController;
     address deactivateController;
 }
@@ -63,6 +66,7 @@ library LibAppStorage {
         s.diamondController = _firstController;
         s.feesController = _firstController;
         s.durationsController = _firstController;
+        s.liquidityMiningController = _firstController;
         s.meTokenRegistryController = _firstController;
         s.registerController = _firstController;
         s.deactivateController = _firstController;
@@ -71,6 +75,14 @@ library LibAppStorage {
 
 contract Modifiers {
     AppStorage internal s;
+
+    modifier onlyLiquidityMiningController() {
+        require(
+            LibMeta.msgSender() == s.liquidityMiningController,
+            "!liquidityMiningController"
+        );
+        _;
+    }
 
     modifier onlyDiamondController() {
         require(
