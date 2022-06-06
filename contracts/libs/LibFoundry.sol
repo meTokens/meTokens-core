@@ -1,23 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
+
 import {IVault} from "../interfaces/IVault.sol";
-
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
-
 import {IMeToken} from "../interfaces/IMeToken.sol";
-
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
-
 import {IMigration} from "../interfaces/IMigration.sol";
-
 import {LibMeta} from "../libs/LibMeta.sol";
-
 import {LibHub, HubInfo} from "../libs/LibHub.sol";
-
 import {LibCurve} from "../libs/LibCurve.sol";
-
 import {LibWeightedAverage} from "../libs/LibWeightedAverage.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 library LibFoundry {
@@ -64,32 +56,29 @@ library LibFoundry {
         uint256 assetsDeposited,
         address recipient
     ) internal {
-        (
-            ,
-            address asset,
-            address sender,
-            uint256[3] memory amounts // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-        ) = handleMint(meToken, assetsDeposited);
+        (address asset, address sender, uint256 meTokensMinted) = handleMint(
+            meToken,
+            assetsDeposited
+        );
 
         // Mint meToken to user
-        IMeToken(meToken).mint(recipient, amounts[0]);
+        IMeToken(meToken).mint(recipient, meTokensMinted);
         emit Mint(
             meToken,
             asset,
             sender,
             recipient,
             assetsDeposited,
-            amounts[0]
+            meTokensMinted
         );
     }
 
     function handleMint(address meToken, uint256 assetsDeposited)
         internal
         returns (
-            IVault,
             address,
             address,
-            uint256[3] memory
+            uint256
         )
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
@@ -133,7 +122,7 @@ library LibFoundry {
             }
         }
 
-        return (vault, asset, sender, amounts);
+        return (asset, sender, amounts[0]);
     }
 
     function mintWithPermit(
@@ -476,7 +465,6 @@ library LibFoundry {
         bytes32 sSig
     ) private returns (address asset) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        address sender = LibMeta.msgSender();
         IVault vault = IVault(hubInfo.vault);
         asset = hubInfo.asset;
 
@@ -490,7 +478,7 @@ library LibFoundry {
             asset = s.hubs[meTokenInfo.targetHubId].asset;
         }
         vault.handleDepositWithPermit(
-            sender,
+            LibMeta.msgSender(),
             asset,
             assetsDeposited,
             (assetsDeposited * s.mintFee) / s.PRECISION,

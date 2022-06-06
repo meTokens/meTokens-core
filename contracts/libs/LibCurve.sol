@@ -39,8 +39,7 @@ library LibCurve {
         uint256 baseY,
         uint32 reserveWeight
     ) internal checkReserveWeight(reserveWeight) {
-        CurveStorage storage cs = curveStorage();
-        CurveInfo storage curveInfo = cs.curves[hubId];
+        CurveInfo storage curveInfo = curveStorage().curves[hubId];
 
         require(baseY > 0, "!baseY");
 
@@ -52,8 +51,7 @@ library LibCurve {
         internal
         checkReserveWeight(targetReserveWeight)
     {
-        CurveStorage storage cs = curveStorage();
-        CurveInfo storage curveInfo = cs.curves[hubId];
+        CurveInfo storage curveInfo = curveStorage().curves[hubId];
 
         require(
             targetReserveWeight != curveInfo.reserveWeight,
@@ -68,8 +66,7 @@ library LibCurve {
     }
 
     function finishReconfigure(uint256 hubId) internal {
-        CurveStorage storage cs = curveStorage();
-        CurveInfo storage curveInfo = cs.curves[hubId];
+        CurveInfo storage curveInfo = curveStorage().curves[hubId];
 
         curveInfo.reserveWeight = curveInfo.targetReserveWeight;
         curveInfo.baseY = curveInfo.targetBaseY;
@@ -142,10 +139,9 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 assetsReturned) {
-        CurveStorage storage cs = curveStorage();
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            cs.curves[hubId].reserveWeight,
+            curveStorage().curves[hubId].reserveWeight,
             supply,
             balancePooled
         );
@@ -157,11 +153,9 @@ library LibCurve {
         uint256 supply,
         uint256 balancePooled
     ) internal view returns (uint256 assetsReturned) {
-        CurveStorage storage cs = curveStorage();
-
         assetsReturned = _viewAssetsReturned(
             meTokensBurned,
-            cs.curves[hubId].targetReserveWeight,
+            curveStorage().curves[hubId].targetReserveWeight,
             supply,
             balancePooled
         );

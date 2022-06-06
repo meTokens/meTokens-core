@@ -84,13 +84,11 @@ contract SameAssetTransferMigration is ReentrancyGuard, Vault, IMigration {
                 IHubFacet(diamond).getHubInfo(meTokenInfo.hubId).vault
             ).startMigration(meToken);
         }
-        uint256 amountOut = meTokenInfo.balancePooled +
-            meTokenInfo.balanceLocked;
 
         // Send asset to new vault only if there's a migration vault
         IERC20(targetHubInfo.asset).safeTransfer(
             targetHubInfo.vault,
-            amountOut
+            meTokenInfo.balancePooled + meTokenInfo.balanceLocked // amountOut
         );
 
         // reset mappings
