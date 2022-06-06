@@ -110,6 +110,7 @@ contract LiquidityMiningFacet is
         uint256 reward = poolInfo.pendingIssuerRewards;
         require(reward > 0, "No reward");
         ls.me.safeTransfer(sender, reward);
+        poolInfo.pendingIssuerRewards = 0;
 
         emit IssuerRewardPaid(meToken, sender, reward);
     }
