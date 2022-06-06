@@ -289,7 +289,7 @@ contract MeTokenRegistryFacet is
         override
         returns (address)
     {
-        return s.meTokenOwners[owner];
+        return LibMeToken.getOwnerMeToken(owner);
     }
 
     /// @inheritdoc IMeTokenRegistryFacet

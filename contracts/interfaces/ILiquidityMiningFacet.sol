@@ -9,6 +9,7 @@ import {SeasonInfo} from "../libs/LibLiquidityMining.sol";
 interface ILiquidityMiningFacet {
     event InitSeason(bytes32 merkleRoot);
     event RewardPaid(address meToken, address sender, uint256 reward);
+    event IssuerRewardPaid(address meToken, address sender, uint256 reward);
     event Staked(address meToken, address sender, uint256 amount);
     event Withdrawn(address meToken, address sender, uint256 amount);
     // event RewardAdded(uint256 seasonId, uint256 amount);

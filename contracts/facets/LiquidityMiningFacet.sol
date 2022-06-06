@@ -11,6 +11,7 @@ import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
+import {LibMeToken} from "../libs/LibMeToken.sol";
 import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
@@ -61,34 +62,6 @@ contract LiquidityMiningFacet is
         emit InitSeason(merkleRoot);
     }
 
-    // TODO Not proper implementation. Commenting for now.
-    // TODO - should this update every meToken in a season?
-    // function addToRewardsAllocation(address meToken, uint256 amount)
-    //     external
-    //     nonReentrant
-    //     onlyLiquidityMiningController
-    // {
-    //     require(
-    //         amount <= balanceOf(meToken, address(this)),
-    //         "_addToRewardsAllocation: insufficient rewards balance."
-    //     );
-    //     _updateAccrual(meToken);
-
-    //     SeasonInfo storage seasonInfo = s.seasons[s.seasonCount];
-    //     uint256 remainingTime;
-    //     if (!isSeasonLive(s.seasonCount) || hasSeasonEnded(s.seasonCount)) {
-    //         remainingTime = seasonInfo.endTime - seasonInfo.startTime;
-    //     } else {
-    //         remainingTime = timeRemainingInSeason(s.seasonCount);
-    //     }
-
-    //     seasonInfo.rewardRate =
-    //         seasonInfo.rewardRate +
-    //         (amount / (remainingTime));
-
-    //     emit RewardAdded(s.seasonCount, amount);
-    // }
-
     // NOTE: only updates pool from stake/withdraw
     // TODO should revert with `meToken` does not have a hub
     function stake(
@@ -121,6 +94,24 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         withdraw(meToken, ls.stakedBalances[meToken][sender], merkleProof);
         claimReward(meToken, 0);
+    }
+
+    function issuerClaimReward() external {
+        address sender = LibMeta.msgSender();
+
+        address meToken = LibMeToken.getOwnerMeToken(sender);
+        // Get the pool associated to the meToken issuer
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        PoolInfo storage poolInfo = ls.pools[meToken];
+
+        // Give the issuer the rewards
+        // TODO: ensure pendingIssuerRewards is updated after season end
+        uint256 reward = poolInfo.pendingIssuerRewards;
+        require(reward > 0, "No reward");
+        ls.me.safeTransfer(sender, reward);
+
+        emit IssuerRewardPaid(meToken, sender, reward);
     }
 
     function recoverERC20(

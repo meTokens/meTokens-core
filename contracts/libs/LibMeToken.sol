@@ -105,6 +105,11 @@ library LibMeToken {
         meToken.migration = s.meTokens[token].migration;
     }
 
+    function getOwnerMeToken(address owner) internal view returns (address) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        return s.meTokenOwners[owner];
+    }
+
     function warmup() internal view returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         return s.meTokenWarmup;
