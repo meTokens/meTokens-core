@@ -37,7 +37,6 @@ const setup = async () => {
     let mockToken: MockERC20;
     let mockToken2: MockERC20;
     let merkleTree: MerkleTree;
-    let lastUpdateTime: BigNumber;
 
     const hubId = 1;
     const name = "Carl meToken";
@@ -50,12 +49,10 @@ const setup = async () => {
       tokenDepositedInETH.toString()
     );
 
-    const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
-    const issuerCooldown = 4 * 60 * 24 * 24; // 4 days
 
     const allocationPool = ethers.utils.parseEther("20");
-    const allocationIssuers = ethers.utils.parseEther("10");
+    const metokenCount = 10;
     const BASE = ethers.utils.parseUnits("1", 54);
 
     let snapshotId: any;
@@ -137,43 +134,15 @@ const setup = async () => {
         );
         const seasonInfo = await liquidityMining.getSeasonInfo();
 
-        expect(await liquidityMining.getIssuerCooldown()).to.equal(0);
-        expect(await liquidityMining.getLMWarmup()).to.equal(0);
-        expect(await liquidityMining.getLMWarmup()).to.equal(0);
-
         expect(poolInfo.seasonMerkleRoot).to.equal(ethers.constants.HashZero);
-        expect(poolInfo.pendingIssuerRewards).to.equal(0);
-        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
         expect(poolInfo.lastUpdateTime).to.equal(0);
         expect(poolInfo.totalSupply).to.equal(0);
-        expect(poolInfo.lastCirculatingSupply).to.equal(0);
         expect(poolInfo.rewardPerTokenStored).to.equal(0);
-
-        expect(seasonInfo.initTime).to.equal(0);
         expect(seasonInfo.startTime).to.equal(0);
         expect(seasonInfo.endTime).to.equal(0);
         expect(seasonInfo.allocationPool).to.equal(0);
-        expect(seasonInfo.allocationIssuers).to.equal(0);
-        expect(seasonInfo.totalPctStaked).to.equal(0);
         expect(seasonInfo.rewardRate).to.equal(0);
         expect(seasonInfo.merkleRoot).to.equal(ethers.constants.HashZero);
-      });
-    });
-
-    describe("setLMWarmup()", () => {
-      it("revert when sender is not durationController", async () => {
-        await expect(
-          liquidityMining.connect(account1).setLMWarmup(warmup)
-        ).to.revertedWith("!durationsController");
-      });
-      it("revert when setting same value", async () => {
-        await expect(liquidityMining.setLMWarmup(0)).to.revertedWith(
-          "same lmWarmup"
-        );
-      });
-      it("should set lmwWarmup", async () => {
-        await liquidityMining.setLMWarmup(warmup);
-        expect(await liquidityMining.getLMWarmup()).to.equal(warmup);
       });
     });
 
@@ -194,25 +163,6 @@ const setup = async () => {
       });
     });
 
-    describe("setIssuerCooldown()", () => {
-      it("revert when sender is not durationController", async () => {
-        await expect(
-          liquidityMining.connect(account1).setIssuerCooldown(issuerCooldown)
-        ).to.revertedWith("!durationsController");
-      });
-      it("revert when setting same value", async () => {
-        await expect(liquidityMining.setIssuerCooldown(0)).to.revertedWith(
-          "same issuerCooldown"
-        );
-      });
-      it("should set issuerCooldown", async () => {
-        await liquidityMining.setIssuerCooldown(issuerCooldown);
-        expect(await liquidityMining.getIssuerCooldown()).to.equal(
-          issuerCooldown
-        );
-      });
-    });
-
     describe("initSeason()", () => {
       it("revert when sender is not liquidityMiningController", async () => {
         const initTime =
@@ -223,22 +173,26 @@ const setup = async () => {
             .initSeason(initTime, 0, 0, ethers.constants.HashZero)
         ).to.be.revertedWith("!liquidityMiningController");
       });
+      it("revert when allocation or metoken count is zero", async () => {
+        const initTime =
+          (await ethers.provider.getBlock("latest")).timestamp + 100;
+        await expect(
+          liquidityMining.initSeason(initTime, 0, 1, ethers.constants.HashZero)
+        ).to.be.revertedWith("allocationPool=0");
+        await expect(
+          liquidityMining.initSeason(initTime, 1, 0, ethers.constants.HashZero)
+        ).to.be.revertedWith("meTokenCount=0");
+      });
       it("revert when season initialization time is less than block timestamp", async () => {
         const initTime =
           (await ethers.provider.getBlock("latest")).timestamp - 10;
         await expect(
-          liquidityMining.initSeason(initTime, 0, 0, ethers.constants.HashZero)
+          liquidityMining.initSeason(initTime, 1, 1, ethers.constants.HashZero)
         ).to.be.revertedWith("init time < timestamp");
       });
       it("should be able to initSeason", async () => {
-        expect(
-          await liquidityMining.canTokenBeFeaturedInNewSeason(mockToken.address)
-        ).to.equal(false);
-        expect(
-          await liquidityMining.canTokenBeFeaturedInNewSeason(meToken.address)
-        ).to.equal(true);
         const initTime =
-          (await ethers.provider.getBlock("latest")).timestamp + 1;
+          (await ethers.provider.getBlock("latest")).timestamp + 10;
         const bSenderBalance = await mockToken.balanceOf(account0.address);
         const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
         const merkleRoot = merkleTree.getHexRoot();
@@ -246,7 +200,7 @@ const setup = async () => {
         await liquidityMining.initSeason(
           initTime,
           allocationPool,
-          allocationIssuers,
+          metokenCount,
           merkleRoot
         );
 
@@ -255,33 +209,20 @@ const setup = async () => {
         const seasonInfo = await liquidityMining.getSeasonInfo();
 
         expect(bSenderBalance.sub(aSenderBalance))
-          .to.equal(allocationPool.add(allocationIssuers))
+          .to.equal(allocationPool)
           .to.equal(aLMBalance.sub(bLMBalance));
 
-        expect(seasonInfo.initTime.toNumber()).to.equal(initTime);
-        expect(seasonInfo.startTime.toNumber()).to.equal(initTime + warmup);
-        expect(seasonInfo.endTime.toNumber()).to.equal(
-          initTime + warmup + duration
-        );
+        expect(seasonInfo.startTime.toNumber()).to.equal(initTime);
+        expect(seasonInfo.endTime.toNumber()).to.equal(initTime + duration);
         expect(seasonInfo.allocationPool).to.equal(allocationPool);
-        expect(seasonInfo.allocationIssuers).to.equal(allocationIssuers);
-        expect(seasonInfo.totalPctStaked).to.equal(0);
         expect(seasonInfo.rewardRate).to.equal(
-          BigNumber.from(allocationPool).div(duration)
+          BigNumber.from(allocationPool).div(metokenCount).div(duration)
         );
         expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
       });
     });
 
     describe("isMeTokenInSeason()", () => {
-      it("should return true if a metoken is present in a season", async () => {
-        expect(
-          await liquidityMining.isMeTokenInSeason(
-            meToken.address,
-            merkleTree.getHexProof(meToken.address)
-          )
-        ).to.equal(true);
-      });
       it("should return false if a metoken is present in a season", async () => {
         expect(
           await liquidityMining.isMeTokenInSeason(
@@ -294,95 +235,49 @@ const setup = async () => {
 
     describe("stake()", () => {
       let tx: ContractTransaction;
+      it("revert to stake when season is not live", async () => {
+        const isSeasonLive = await liquidityMining.isSeasonLive();
+        expect(isSeasonLive).to.be.false;
+        await meToken.approve(liquidityMining.address, tokenDeposited);
+
+        await expect(
+          liquidityMining.stake(
+            meToken.address,
+            tokenDeposited.div(2),
+            merkleTree.getHexProof(meToken.address)
+          )
+        ).to.be.revertedWith("not live");
+        const seasonInfo = await liquidityMining.getSeasonInfo();
+        await setNextBlockTimestamp(seasonInfo.startTime.toNumber());
+      });
       it("revert to stake with zero amount", async () => {
         await expect(
           liquidityMining.stake(meToken.address, 0, [ethers.constants.HashZero])
-        ).to.be.revertedWith("RewardsPool: cannot stake zero");
+        ).to.be.revertedWith("not in season");
       });
-      it("should be able to stake even if season is not live", async () => {
-        const isSeasonLive = await liquidityMining.isSeasonLive();
-        expect(isSeasonLive).to.be.false;
-        await meToken.approve(liquidityMining.address, tokenDeposited);
-        tx = await liquidityMining.stake(
-          meToken.address,
-          tokenDeposited.div(2),
-          merkleTree.getHexProof(meToken.address)
-        );
-
-        await expect(tx)
-          .to.emit(meToken, "Transfer")
-          .withArgs(
-            account0.address,
-            liquidityMining.address,
-            tokenDeposited.div(2)
-          );
-        await expect(tx)
-          .to.emit(liquidityMining, "Staked")
-          .withArgs(meToken.address, account0.address, tokenDeposited.div(2));
-
-        expect(
-          await liquidityMining.balanceOf(meToken.address, account0.address)
-        ).to.equal(tokenDeposited.div(2));
+      it("revert to stake with zero amount", async () => {
+        await expect(
+          liquidityMining.stake(
+            meToken.address,
+            0,
+            merkleTree.getHexProof(meToken.address)
+          )
+        ).to.be.revertedWith("cannot stake 0");
       });
-      it("check pool and season information", async () => {
-        // increase time to 100s before season- 1 endTime
-        const startTime = (
-          await liquidityMining.getSeasonInfo()
-        ).startTime.toNumber();
-        expect(startTime).to.be.gt(
-          (await ethers.provider.getBlock((await tx.wait()).blockNumber))
-            .timestamp
-        );
-        await mineBlock(startTime - 1);
-        const poolInfo = await liquidityMining.getPoolInfo(
-          meToken.address,
-          account0.address
-        );
-        const seasonInfo = await liquidityMining.getSeasonInfo();
-        const metokenTotalSupply = await meToken.totalSupply();
-        const calculatedNewPctStaked = tokenDeposited
-          .div(2)
-          .mul(BASE)
-          .div(metokenTotalSupply);
-        const merkleRoot = merkleTree.getHexRoot();
-        expect(poolInfo.seasonMerkleRoot).to.equal(merkleRoot);
-        expect(poolInfo.pendingIssuerRewards).to.equal(0);
-        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
-        const isSeasonLive = await liquidityMining.isSeasonLive();
-        expect(isSeasonLive).to.be.false;
-        console.log(
-          "poolInfo.lastUpdateTime",
-          poolInfo.lastUpdateTime.toString()
-        );
-        expect(poolInfo.lastUpdateTime).to.equal(0);
 
-        expect(poolInfo.totalSupply).to.equal(tokenDeposited.div(2));
-        expect(poolInfo.lastCirculatingSupply).to.equal(metokenTotalSupply);
-        expect(poolInfo.rewardPerTokenStored).to.equal(0);
-        expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
-        expect(poolInfo.rewards).to.equal(0);
-
-        expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
-        lastUpdateTime = poolInfo.lastUpdateTime;
-      });
       it("should be able to stake when season is live", async () => {
-        await meToken.approve(liquidityMining.address, tokenDeposited);
         tx = await liquidityMining.stake(
           meToken.address,
-          tokenDeposited.div(2),
+          tokenDeposited,
           merkleTree.getHexProof(meToken.address)
         );
 
         await expect(tx)
           .to.emit(meToken, "Transfer")
-          .withArgs(
-            account0.address,
-            liquidityMining.address,
-            tokenDeposited.div(2)
-          );
+          .withArgs(account0.address, liquidityMining.address, tokenDeposited);
         await expect(tx)
           .to.emit(liquidityMining, "Staked")
-          .withArgs(meToken.address, account0.address, tokenDeposited.div(2));
+          .withArgs(meToken.address, account0.address, tokenDeposited);
 
         expect(
           await liquidityMining.balanceOf(meToken.address, account0.address)
@@ -400,8 +295,6 @@ const setup = async () => {
           .div(metokenTotalSupply);
         const merkleRoot = merkleTree.getHexRoot();
         expect(poolInfo.seasonMerkleRoot).to.equal(merkleRoot);
-        expect(poolInfo.pendingIssuerRewards).to.equal(0);
-        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
 
         expect(poolInfo.lastUpdateTime).to.equal(
           (await ethers.provider.getBlock((await tx.wait()).blockNumber))
@@ -409,17 +302,20 @@ const setup = async () => {
         );
 
         expect(poolInfo.totalSupply).to.equal(tokenDeposited);
-        expect(poolInfo.lastCirculatingSupply).to.equal(metokenTotalSupply);
         const txBlockTime = (
           await ethers.provider.getBlock((await tx.wait()).blockNumber)
         ).timestamp;
 
         console.log(`
         txBlockTime           :${txBlockTime.toString()}
-        lastUpdateTime        :${lastUpdateTime.toString()}
+         startTime        :${seasonInfo.startTime}
+         minus           :${BigNumber.from(txBlockTime).sub(
+           seasonInfo.startTime
+         )} 
         rewardRate            :${seasonInfo.rewardRate.toString()}
         tokenDeposited        :${toETHNumber(tokenDeposited)}
-        
+        rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
+       
         `);
         // only begins at start time and not before
         // reward takes only into account previously deposited token amount so tokenDeposited.div(2)
@@ -427,7 +323,11 @@ const setup = async () => {
           .sub(seasonInfo.startTime)
           .mul(seasonInfo.rewardRate)
           .mul(PRECISION)
-          .div(tokenDeposited.div(2));
+          .div(tokenDeposited);
+        console.log(` 
+          calculatedRewardPerTokenStored
+          :${calculatedRewardPerTokenStored}
+          `);
         expect(poolInfo.rewardPerTokenStored).to.equal(
           calculatedRewardPerTokenStored
         );
@@ -440,10 +340,12 @@ const setup = async () => {
         calculatedRewardPerTokenStored         :${calculatedRewardPerTokenStored} 
         
         `);
-        expect(poolInfo.rewards).to.equal(0);
 
-        expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
-        lastUpdateTime = poolInfo.lastUpdateTime;
+        //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
+        const calculatedEarned = tokenDeposited
+          .mul(calculatedRewardPerTokenStored)
+          .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
+        expect(poolInfo.rewards).to.equal(calculatedEarned);
       });
     });
 

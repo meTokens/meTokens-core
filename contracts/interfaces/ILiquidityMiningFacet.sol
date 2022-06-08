@@ -14,20 +14,12 @@ interface ILiquidityMiningFacet {
     // event RewardAdded(uint256 seasonId, uint256 amount);
     event Recovered(IERC20 token, uint256 amount);
 
-    function setLMWarmup(uint256 lmWarmup) external;
-
     function setLMDuration(uint256 lmDuration) external;
-
-    function setIssuerCooldown(uint256 issuerCooldown) external;
 
     function balanceOf(address meToken, address account)
         external
         view
         returns (uint256 stakedBalance);
-
-    function getIssuerCooldown() external view returns (uint256 issuerCooldown);
-
-    function getLMWarmup() external view returns (uint256 lmWarmup);
 
     function getLMDuration() external view returns (uint256 lmDuration);
 
@@ -36,11 +28,8 @@ interface ILiquidityMiningFacet {
         view
         returns (
             bytes32 seasonMerkleRoot,
-            uint256 pendingIssuerRewards,
-            bool pendingIssuerRewardsAdded,
             uint256 lastUpdateTime,
             uint256 totalSupply,
-            uint256 lastCirculatingSupply,
             uint256 rewardPerTokenStored,
             uint256 userRewardPerTokenPaid,
             uint256 rewards
