@@ -21,6 +21,7 @@ struct AppStorageMock {
     // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
+    uint256 BASE;
     uint256 MAX_FEE;
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
@@ -48,6 +49,7 @@ struct AppStorageMock {
     address feesController;
     address durationsController;
     address meTokenRegistryController;
+    address liquidityMiningController;
     address registerController;
     address deactivateController;
     // NOTE: This is the upgraded value for AppStorage
