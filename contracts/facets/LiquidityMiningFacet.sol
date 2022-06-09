@@ -38,7 +38,9 @@ contract LiquidityMiningFacet is
     modifier onlyLiveSeason() {
         require(
             block.timestamp >=
-                LibLiquidityMining.liquidityMiningStorage().startTime,
+                LibLiquidityMining.liquidityMiningStorage().startTime &&
+                block.timestamp <=
+                LibLiquidityMining.liquidityMiningStorage().endTime,
             "not live"
         );
         _;
@@ -212,10 +214,10 @@ contract LiquidityMiningFacet is
         // _totalSupply = _totalSupply.sub(amount);
         poolInfo.totalSupply -= amount;
         // _balances[msg.sender] = _balances[msg.sender].sub(amount);
-        ls.stakedBalances[meToken][sender] += amount;
+        ls.stakedBalances[meToken][sender] -= amount;
         // stakingToken.safeTransfer(msg.sender, amount);
-        IERC20(meToken).safeTransferFrom(sender, address(this), amount);
-        emit Staked(meToken, sender, amount);
+        IERC20(meToken).safeTransfer(sender, amount);
+        emit Withdrawn(meToken, sender, amount);
     }
 
     function claimReward(address meToken) public nonReentrant {
