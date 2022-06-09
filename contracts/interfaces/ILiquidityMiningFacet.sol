@@ -2,7 +2,6 @@
 pragma solidity 0.8.9;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SeasonInfo} from "../libs/LibLiquidityMining.sol";
 
 /// @title MeToken liquidity mining interface
 /// @author Carter Carlson (@cartercarlson)
@@ -35,5 +34,14 @@ interface ILiquidityMiningFacet {
             uint256 rewards
         );
 
-    function getSeasonInfo() external view returns (SeasonInfo memory);
+    function getSeasonInfo()
+        external
+        view
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256 allocationPool,
+            uint256 rewardRate,
+            bytes32 merkleRoot
+        );
 }

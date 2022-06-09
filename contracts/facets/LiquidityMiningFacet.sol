@@ -7,7 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ILiquidityMiningFacet} from "../interfaces/ILiquidityMiningFacet.sol";
-import {LibLiquidityMining, PoolInfo, SeasonInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
+import {LibLiquidityMining, PoolInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -38,7 +38,7 @@ contract LiquidityMiningFacet is
     modifier onlyLiveSeason() {
         require(
             block.timestamp >=
-                LibLiquidityMining.liquidityMiningStorage().season.startTime,
+                LibLiquidityMining.liquidityMiningStorage().startTime,
             "not live"
         );
         _;
@@ -70,12 +70,11 @@ contract LiquidityMiningFacet is
         );
         uint256 rewardRate = allocationPool / meTokenCount / ls.lmDuration;
 
-        SeasonInfo storage newSeasonInfo = ls.season;
-        newSeasonInfo.startTime = initTime;
-        newSeasonInfo.endTime = newSeasonInfo.startTime + ls.lmDuration;
-        newSeasonInfo.allocationPool = allocationPool;
-        newSeasonInfo.merkleRoot = merkleRoot;
-        newSeasonInfo.rewardRate = rewardRate;
+        ls.startTime = initTime;
+        ls.endTime = ls.startTime + ls.lmDuration;
+        ls.allocationPool = allocationPool;
+        ls.merkleRoot = merkleRoot;
+        ls.rewardRate = rewardRate;
 
         emit InitSeason(merkleRoot);
     }
@@ -181,10 +180,15 @@ contract LiquidityMiningFacet is
         external
         view
         override
-        returns (SeasonInfo memory season)
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256 allocationPool, // allocation for each meToken in a season
+            uint256 rewardRate,
+            bytes32 merkleRoot
+        )
     {
-        // TODO maybe move this to lib
-        season = LibLiquidityMining.liquidityMiningStorage().season;
+        return LibLiquidityMining.getSeasonInfo();
     }
 
     function withdraw(
@@ -271,11 +275,8 @@ contract LiquidityMiningFacet is
     function lastTimeRewardApplicable() public view returns (uint256) {
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
-        SeasonInfo memory seasonInfo = ls.season;
-        return
-            block.timestamp < seasonInfo.endTime
-                ? block.timestamp
-                : seasonInfo.endTime;
+
+        return block.timestamp < ls.endTime ? block.timestamp : ls.endTime;
         // return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
@@ -283,7 +284,7 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        SeasonInfo memory seasonInfo = ls.season;
+
         /*   if (_totalSupply == 0) {
             return rewardPerTokenStored;
         } */
@@ -303,31 +304,31 @@ contract LiquidityMiningFacet is
         return
             poolInfo.rewardPerTokenStored +
             (((lastTimeRewardApplicable() - poolInfo.lastUpdateTime) *
-                seasonInfo.rewardRate *
+                ls.rewardRate *
                 s.PRECISION) / poolInfo.totalSupply);
     }
 
     function timeRemainingInSeason() public view returns (uint256 amount) {
         if (isSeasonLive()) {
             amount =
-                LibLiquidityMining.liquidityMiningStorage().season.endTime -
+                LibLiquidityMining.liquidityMiningStorage().endTime -
                 block.timestamp;
         }
     }
 
     function isSeasonLive() public view returns (bool) {
-        SeasonInfo memory seasonInfo = LibLiquidityMining
-            .liquidityMiningStorage()
-            .season;
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+
         return
-            (block.timestamp >= seasonInfo.startTime) &&
-            (block.timestamp <= seasonInfo.endTime);
+            (block.timestamp >= ls.startTime) &&
+            (block.timestamp <= ls.endTime);
     }
 
     function hasSeasonEnded() public view returns (bool) {
         return
             block.timestamp >=
-            LibLiquidityMining.liquidityMiningStorage().season.endTime;
+            LibLiquidityMining.liquidityMiningStorage().endTime;
     }
 
     /// @notice checks if `meToken` is part of `season`.
@@ -341,7 +342,7 @@ contract LiquidityMiningFacet is
         return
             MerkleProof.verify(
                 merkleProof,
-                LibLiquidityMining.liquidityMiningStorage().season.merkleRoot,
+                LibLiquidityMining.liquidityMiningStorage().merkleRoot,
                 keccak256(abi.encodePacked(meToken))
             );
     }
@@ -351,18 +352,17 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        SeasonInfo storage seasonInfo = ls.season;
         uint256 totalSupply = poolInfo.totalSupply;
         // clean pool from previous season
         if (
             poolInfo.seasonMerkleRoot != 0 &&
-            poolInfo.seasonMerkleRoot != seasonInfo.merkleRoot
+            poolInfo.seasonMerkleRoot != ls.merkleRoot
         ) {
             delete ls.pools[meToken];
         }
 
         PoolInfo storage newMeTokenPool = ls.pools[meToken];
-        newMeTokenPool.seasonMerkleRoot = seasonInfo.merkleRoot;
+        newMeTokenPool.seasonMerkleRoot = ls.merkleRoot;
         newMeTokenPool.totalSupply = totalSupply;
     }
 

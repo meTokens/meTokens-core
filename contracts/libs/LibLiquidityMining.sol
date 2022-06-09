@@ -10,9 +10,13 @@ struct LiquidityMiningStorage {
     uint256 lmDuration; // = 1000000; // timeframe from a season starting to ending - about 11.5 days
     mapping(address => mapping(address => uint256)) stakedBalances; // key 1: meToken addr- key2: staker addr- value: amount staked
     mapping(address => PoolInfo) pools;
-    SeasonInfo season;
     uint256 status;
     IERC20 me; // reward token
+    uint256 startTime;
+    uint256 endTime;
+    uint256 allocationPool; // allocation for each meToken in a season
+    uint256 rewardRate;
+    bytes32 merkleRoot;
 }
 struct PoolInfo {
     bytes32 seasonMerkleRoot; // used to identify if it is a new season
@@ -21,14 +25,6 @@ struct PoolInfo {
     uint256 rewardPerTokenStored;
     mapping(address => uint256) userRewardPerTokenPaid;
     mapping(address => uint256) rewards; // key: staker addr
-}
-
-struct SeasonInfo {
-    uint256 startTime;
-    uint256 endTime;
-    uint256 allocationPool; // allocation for each meToken in a season
-    uint256 rewardRate;
-    bytes32 merkleRoot;
 }
 
 library LibLiquidityMining {
@@ -54,6 +50,25 @@ library LibLiquidityMining {
         rewardPerTokenStored = ls.pools[meToken].rewardPerTokenStored;
         userRewardPerTokenPaid = ls.pools[meToken].userRewardPerTokenPaid[user];
         rewards = ls.pools[meToken].rewards[user];
+    }
+
+    function getSeasonInfo()
+        internal
+        view
+        returns (
+            uint256 startTime,
+            uint256 endTime,
+            uint256 allocationPool, // allocation for each meToken in a season
+            uint256 rewardRate,
+            bytes32 merkleRoot
+        )
+    {
+        LiquidityMiningStorage storage ls = liquidityMiningStorage();
+        startTime = ls.startTime;
+        endTime = ls.endTime;
+        allocationPool = ls.allocationPool;
+        rewardRate = ls.rewardRate;
+        merkleRoot = ls.merkleRoot;
     }
 
     function getUserPoolInfo(address meToken, address user)
