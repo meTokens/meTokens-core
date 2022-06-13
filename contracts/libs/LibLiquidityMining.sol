@@ -42,7 +42,9 @@ library LibLiquidityMining {
             uint256 totalSupply,
             uint256 rewardPerTokenStored,
             uint256 userRewardPerTokenPaid,
-            uint256 rewards
+            uint256 rewards,
+            uint256 rewardRate,
+            uint256 endTime
         )
     {
         LiquidityMiningStorage storage ls = liquidityMiningStorage();
@@ -52,6 +54,8 @@ library LibLiquidityMining {
         rewardPerTokenStored = ls.pools[meToken].rewardPerTokenStored;
         userRewardPerTokenPaid = ls.pools[meToken].userRewardPerTokenPaid[user];
         rewards = ls.pools[meToken].rewards[user];
+        rewardRate = ls.pools[meToken].rewardRate;
+        endTime = ls.pools[meToken].endTime;
     }
 
     function getSeasonInfo()

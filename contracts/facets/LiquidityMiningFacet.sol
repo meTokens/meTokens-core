@@ -110,14 +110,11 @@ contract LiquidityMiningFacet is
         emit Staked(meToken, sender, amount);
     }
 
-    function exit(address meToken, bytes32[] calldata merkleProof)
-        external
-        nonReentrant
-    {
+    function exit(address meToken) external nonReentrant {
         address sender = LibMeta.msgSender();
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
-        withdraw(meToken, ls.stakedBalances[meToken][sender], merkleProof);
+        withdraw(meToken, ls.stakedBalances[meToken][sender]);
         claimReward(meToken);
     }
 
@@ -175,7 +172,9 @@ contract LiquidityMiningFacet is
             uint256 totalSupply,
             uint256 rewardPerTokenStored,
             uint256 userRewardPerTokenPaid,
-            uint256 rewards
+            uint256 rewards,
+            uint256 rewardRate,
+            uint256 endTime
         )
     {
         return LibLiquidityMining.getPoolInfo(meToken, user);
