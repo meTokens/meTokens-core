@@ -629,116 +629,8 @@ const setup = async () => {
           expect(poolInfoAfter.rewards).to.equal(0);
         });
       });
-
-      /*    describe("withdraw()", () => {
-      let tx: ContractTransaction;
-      before(async () => {
-        // increase time to 100s before season- 1 endTime
-        await mineBlock(
-          (await liquidityMining.getSeasonInfo()).endTime.toNumber() - 100
-        );
-      });
-
-      it("revert to withdraw with zero amount", async () => {
-        await expect(
-          liquidityMining.withdraw(meToken.address, 0, [
-            ethers.constants.HashZero,
-          ])
-        ).to.be.revertedWith("RewardsPool: cannot withdraw zero");
-      });
-
-      it("should be able to withdraw", async () => {
-        tx = await liquidityMining.withdraw(
-          meToken.address,
-          tokenDeposited,
-          merkleTree.getHexProof(meToken.address)
-        );
-
-        await expect(tx)
-          .to.emit(meToken, "Transfer")
-          .withArgs(liquidityMining.address, account0.address, tokenDeposited);
-        await expect(tx)
-          .to.emit(liquidityMining, "Withdrawn")
-          .withArgs(meToken.address, account0.address, tokenDeposited);
-
-        expect(
-          await liquidityMining.balanceOf(meToken.address, account0.address)
-        ).to.equal(0);
-      });
-
-      it("check new pool and season information", async () => {
-        const poolInfo = await liquidityMining.getPoolInfo(
-          meToken.address,
-          account0.address
-        );
-        const seasonInfo = await liquidityMining.getSeasonInfo();
-        const metokenTotalSupply = await meToken.totalSupply();
-        const calculatedNewPctStaked = 0; // simplified cal
-        const txBlockTime = (
-          await ethers.provider.getBlock((await tx.wait()).blockNumber)
-        ).timestamp;
-        const calculatedRewardPerTokenStored = BigNumber.from(txBlockTime)
-          .sub(lastUpdateTime)
-          .mul(seasonInfo.rewardRate)
-          .mul(PRECISION)
-          .div(tokenDeposited);
-        const calculatedEarned = tokenDeposited
-          .mul(calculatedRewardPerTokenStored)
-          .div(PRECISION); // simplified calculation
-        const merkleRoot = merkleTree.getHexRoot();
-        expect(poolInfo.seasonMerkleRoot).to.equal(merkleRoot);
-        expect(poolInfo.pendingIssuerRewards).to.equal(0);
-        expect(poolInfo.pendingIssuerRewardsAdded).to.equal(false);
-        expect(poolInfo.lastUpdateTime).to.equal(
-          (await ethers.provider.getBlock((await tx.wait()).blockNumber))
-            .timestamp
-        );
-
-        expect(poolInfo.totalSupply).to.equal(0);
-        expect(poolInfo.lastCirculatingSupply).to.equal(metokenTotalSupply);
-        expect(poolInfo.rewardPerTokenStored).to.equal(
-          calculatedRewardPerTokenStored
-        );
-        expect(poolInfo.userRewardPerTokenPaid).to.equal(
-          calculatedRewardPerTokenStored
-        );
-        expect(poolInfo.rewards).to.equal(calculatedEarned);
-
-        expect(seasonInfo.totalPctStaked).to.equal(calculatedNewPctStaked);
-      });
     });
-
-    describe("recoverERC20()", () => {
-      before(async () => {
-        // add some me and meTokens to liquidityMining contract
-        await meToken.transfer(liquidityMining.address, 1);
-        await mockToken.transfer(liquidityMining.address, 1);
-        await mockToken2.setBalance(liquidityMining.address, 1);
-      });
-      it("revert to recover me(reward) token", async () => {
-        await expect(
-          liquidityMining.recoverERC20(mockToken.address, account0.address, 1)
-        ).to.be.revertedWith("Cannot withdraw the reward token");
-      });
-      it("revert to recover meToken", async () => {
-        await expect(
-          liquidityMining.recoverERC20(meToken.address, account0.address, 1)
-        ).to.be.revertedWith("Cannot withdraw a meToken");
-      });
-      it("should be able to recover other tokens", async () => {
-        const tx = await liquidityMining.recoverERC20(
-          mockToken2.address,
-          account0.address,
-          1
-        );
-
-        await expect(tx)
-          .to.emit(liquidityMining, "Recovered")
-          .withArgs(mockToken2.address, 1);
-      });
-    }); */
-    });
-    /*    describe("second season", () => {
+    describe("second season", () => {
       before(async () => {
         // let's send more rewards
         await mockToken.setBalance(account0.address, allocationPoolSeason2);
@@ -1229,6 +1121,7 @@ const setup = async () => {
         });
       });
     });
+    /*
     describe("third season", () => {
       before(async () => {
         // the goal here will be mainly to check calculation for several accounts
