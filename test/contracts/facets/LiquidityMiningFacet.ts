@@ -154,11 +154,14 @@ const setup = async () => {
           .connect(account3)
           .mint(meToken3.address, tokenDeposited, account3.address);
 
+        // meToken approvals
+        await meToken.approve(liquidityMining.address, max);
+        await meToken2.approve(liquidityMining.address, max);
+        await meToken2.connect(account2).approve(liquidityMining.address, max);
+        await meToken3.connect(account3).approve(liquidityMining.address, max);
+
         await mockToken.setBalance(account0.address, allocationPool);
-        await mockToken.approve(
-          liquidityMining.address,
-          ethers.constants.MaxUint256
-        );
+        await mockToken.approve(liquidityMining.address, max);
         // second metokens will be used to check that we can claim rewards during season 2 if I am not featured in season 2
         // third metoken will be used to check that rewards form season 1 are lost if we claim rewards during season 2 when I am featured in season 2
         const whitelist = [meToken.address, meToken2.address, meToken3.address];
@@ -293,7 +296,6 @@ const setup = async () => {
         it("revert to stake when season is not live", async () => {
           const isSeasonLive = await liquidityMining.isSeasonLive();
           expect(isSeasonLive).to.be.false;
-          await meToken.approve(liquidityMining.address, tokenDeposited);
 
           await expect(
             liquidityMining.stake(
@@ -367,8 +369,8 @@ const setup = async () => {
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
 
-          // travel to one day in the futur
-          await setNextBlockTimestamp(txBlockTime + oneDayInSeconds);
+          // travel to one day in the future
+          await mineBlock(txBlockTime + oneDayInSeconds);
 
           const poolInfo = await liquidityMining.getPoolInfo(
             meToken.address,
@@ -386,16 +388,21 @@ const setup = async () => {
 
           expect(poolInfo.totalSupply).to.equal(tokenDeposited);
 
+          const rewardPerToken = await liquidityMining.rewardPerToken(
+            meToken.address
+          );
           console.log(`
         txBlockTime           :${txBlockTime.toString()}
          startTime        :${seasonInfo.startTime}
          minus           :${BigNumber.from(txBlockTime).sub(
            seasonInfo.startTime
          )} 
-        rewardRate            :${seasonInfo.rewardRate.toString()}
-        tokenDeposited        :${toETHNumber(tokenDeposited)}
-        rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
-       
+         rewardRate            :${seasonInfo.rewardRate.toString()}
+         tokenDeposited        :${toETHNumber(tokenDeposited)}
+         rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
+         lastUpdateTime        :${poolInfo.lastUpdateTime}
+         userRewardPerTokenPaid:${poolInfo.userRewardPerTokenPaid}
+         rewardPerToken()      :${rewardPerToken}
         `);
           // only begins at start time and not before
           // reward takes only into account previously deposited token amount so tokenDeposited.div(2)
@@ -634,10 +641,6 @@ const setup = async () => {
       before(async () => {
         // let's send more rewards
         await mockToken.setBalance(account0.address, allocationPoolSeason2);
-        await mockToken.approve(
-          liquidityMining.address,
-          ethers.constants.MaxUint256
-        );
         await meTokenRegistry
           .connect(account1)
           .subscribe(`${name}-1`, `${symbol}1`, hubId, tokenDeposited);
@@ -680,7 +683,6 @@ const setup = async () => {
         it("revert to stake when season is not live", async () => {
           const isSeasonLive = await liquidityMining.isSeasonLive();
           expect(isSeasonLive).to.be.false;
-          await meToken2.approve(liquidityMining.address, tokenDeposited);
 
           await expect(
             liquidityMining.stake(
@@ -726,7 +728,6 @@ const setup = async () => {
 
           const isSeasonLive = await liquidityMining.isSeasonLive();
           expect(isSeasonLive).to.be.true;
-          await meToken.approve(liquidityMining.address, tokenDeposited);
 
           await expect(
             liquidityMining.stake(
