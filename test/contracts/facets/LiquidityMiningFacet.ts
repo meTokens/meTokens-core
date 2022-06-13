@@ -391,49 +391,27 @@ const setup = async () => {
           const rewardPerToken = await liquidityMining.rewardPerToken(
             meToken.address
           );
-          console.log(`
-        txBlockTime           :${txBlockTime.toString()}
-         startTime        :${seasonInfo.startTime}
-         minus           :${BigNumber.from(txBlockTime).sub(
-           seasonInfo.startTime
-         )} 
-         rewardRate            :${seasonInfo.rewardRate.toString()}
-         tokenDeposited        :${toETHNumber(tokenDeposited)}
-         rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
-         lastUpdateTime        :${poolInfo.lastUpdateTime}
-         userRewardPerTokenPaid:${poolInfo.userRewardPerTokenPaid}
-         rewardPerToken()      :${rewardPerToken}
-        `);
+
           // only begins at start time and not before
           // reward takes only into account previously deposited token amount so tokenDeposited.div(2)
-          const calculatedRewardPerTokenStored = BigNumber.from(oneDayInSeconds)
+          const calculatedRewardPerToken = BigNumber.from(oneDayInSeconds)
             .mul(seasonInfo.rewardRate)
             .mul(PRECISION)
             .div(tokenDeposited);
-          console.log(` 
-          calculatedRewardPerTokenStored
-          :${calculatedRewardPerTokenStored}
-          `);
-          expect(poolInfo.rewardPerTokenStored).to.equal(
-            calculatedRewardPerTokenStored
-          );
-          // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
-          expect(poolInfo.userRewardPerTokenPaid).to.equal(
-            calculatedRewardPerTokenStored
-          );
-          console.log(`
-        poolInfo.rewards                       :${poolInfo.rewards}
-        poolInfo.userRewardPerTokenPaid        :${poolInfo.userRewardPerTokenPaid}
-        calculatedRewardPerTokenStored         :${calculatedRewardPerTokenStored} 
-        
-        `);
+          expect(rewardPerToken).to.equal(calculatedRewardPerToken);
+          // poolInfo.userRewardPerTokenPaid[account] is equal to 0 when they've received no rewards
+          expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
 
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
-            .mul(calculatedRewardPerTokenStored)
+            .mul(calculatedRewardPerToken)
             .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
           expect(calculatedEarned).to.be.gt(0);
-          expect(poolInfo.rewards).to.equal(calculatedEarned);
+          const earned = await liquidityMining.earned(
+            meToken.address,
+            account0.address
+          );
+          expect(earned).to.equal(calculatedEarned);
         });
         it("should be able to claim when season is live", async () => {
           const poolInfo = await liquidityMining.getPoolInfo(
