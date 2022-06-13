@@ -31,7 +31,9 @@ interface ILiquidityMiningFacet {
             uint256 totalSupply,
             uint256 rewardPerTokenStored,
             uint256 userRewardPerTokenPaid,
-            uint256 rewards
+            uint256 rewards,
+            uint256 rewardRate,
+            uint256 endTime
         );
 
     function getSeasonInfo()
