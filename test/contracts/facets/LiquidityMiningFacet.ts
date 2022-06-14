@@ -414,22 +414,21 @@ const setup = async () => {
           expect(earned).to.equal(calculatedEarned);
         });
         it("should be able to claim when season is live", async () => {
+          tx = await liquidityMining.claimReward(meToken.address);
           const poolInfo = await liquidityMining.getPoolInfo(
             meToken.address,
             account0.address
           );
-          tx = await liquidityMining.claimReward(meToken.address);
+          const rewardPaid =
+            poolInfo.userRewardPerTokenPaid.mul(tokenDepositedInETH);
+
           // it should send ME tokens corresponding to the rewards
           await expect(tx)
             .to.emit(mockToken, "Transfer")
-            .withArgs(
-              liquidityMining.address,
-              account0.address,
-              poolInfo.rewards
-            );
+            .withArgs(liquidityMining.address, account0.address, rewardPaid);
           await expect(tx)
             .to.emit(liquidityMining, "RewardPaid")
-            .withArgs(meToken.address, account0.address, poolInfo.rewards);
+            .withArgs(meToken.address, account0.address, rewardPaid);
 
           expect(
             await liquidityMining.balanceOf(meToken.address, account0.address)
@@ -448,7 +447,8 @@ const setup = async () => {
             account0.address
           );
           // last tx holds the lastUpdateTime
-          const lastUpdateTime = tx.timestamp ?? 0;
+          // const lastUpdateTime = tx.timestamp ?? 0;
+          const lastUpdateTime = poolInfo.lastUpdateTime.toNumber();
           // travel to the futur
           await setNextBlockTimestamp(lastUpdateTime + oneDayInSeconds);
 
@@ -471,8 +471,8 @@ const setup = async () => {
           await expect(tx)
             .to.emit(meToken, "Transfer")
             .withArgs(
-              account0.address,
               liquidityMining.address,
+              account0.address,
               tokenDeposited.div(2)
             );
           await expect(tx)
@@ -540,12 +540,12 @@ const setup = async () => {
             account0.address
           );
           // nothing is staked anymore
-          expect(balanceStakedBefore).to.equal(0);
+          expect(balanceStakedAfter).to.equal(0);
           await expect(tx)
             .to.emit(meToken, "Transfer")
             .withArgs(
-              account0.address,
               liquidityMining.address,
+              account0.address,
               tokenDeposited.div(2)
             );
           await expect(tx)
