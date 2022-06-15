@@ -198,9 +198,10 @@ contract LiquidityMiningFacet is
     function withdraw(address meToken, uint256 amount) public nonReentrant {
         require(amount > 0, "Cannot withdraw 0");
 
+        address sender = LibMeta.msgSender();
+        _updateReward(meToken, sender);
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
-        address sender = LibMeta.msgSender();
         PoolInfo storage poolInfo = ls.pools[meToken];
 
         // _totalSupply = _totalSupply.sub(amount);
