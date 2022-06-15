@@ -65,11 +65,6 @@ contract LiquidityMiningFacet is
         );
         // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
         // TODO to solve this, should we take `rewardRate` as param and cal `allocationPool`?
-        console.log(
-            "## allocationPool:%s ls.lmDuration:%s",
-            allocationPool,
-            ls.lmDuration
-        );
         uint256 rewardRate = allocationPool / meTokenCount / ls.lmDuration;
 
         ls.startTime = initTime;
@@ -381,10 +376,6 @@ contract LiquidityMiningFacet is
         if (account != address(0)) {
             //  rewards[account] = earned(account);
             poolInfo.rewards[account] = earned(meToken, account);
-            console.log(
-                "_updateReward  poolInfo.rewards[account]:%s",
-                poolInfo.rewards[account]
-            );
             //   userRewardPerTokenPaid[account] = rewardPerTokenStored;
             poolInfo.userRewardPerTokenPaid[account] = poolInfo
                 .rewardPerTokenStored;
