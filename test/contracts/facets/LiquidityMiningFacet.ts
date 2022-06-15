@@ -158,6 +158,7 @@ const setup = async () => {
         await meToken.approve(liquidityMining.address, max);
         await meToken2.approve(liquidityMining.address, max);
         await meToken2.connect(account2).approve(liquidityMining.address, max);
+        await meToken2.connect(account3).approve(liquidityMining.address, max);
         await meToken3.connect(account3).approve(liquidityMining.address, max);
         await meToken2.connect(account3).approve(liquidityMining.address, max);
         await mockToken.setBalance(account0.address, allocationPool);
@@ -1171,6 +1172,11 @@ const setup = async () => {
         const whitelist = [meToken.address, meToken2.address];
         merkleTree = new MerkleTree(whitelist);
         // account3 and account4 will stake metoken2 while account0 will stake metoken
+
+        // withdraw metoken2 staked by account2 for calculations
+        await liquidityMining
+          .connect(account2)
+          .withdraw(meToken2.address, tokenDeposited);
       });
 
       describe("initSeason()", () => {
@@ -1226,6 +1232,10 @@ const setup = async () => {
         it("should be able to stake from one account when season is live", async () => {
           // stake for metoken 3 to check in the next tests that claiming during season 2
           // works but erase rewards from season 1 as it is featured in this new season.
+
+          // fast-fwd to when season is live
+          const seasonInfo = await liquidityMining.getSeasonInfo();
+          await setNextBlockTimestamp(seasonInfo.startTime.toNumber());
           tx = await liquidityMining
             .connect(account3)
             .stake(
@@ -1235,7 +1245,7 @@ const setup = async () => {
             );
 
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken2, "Transfer")
             .withArgs(
               account3.address,
               liquidityMining.address,
@@ -1246,7 +1256,7 @@ const setup = async () => {
             .withArgs(meToken2.address, account3.address, tokenDeposited);
 
           expect(
-            await liquidityMining.balanceOf(meToken.address, account0.address)
+            await liquidityMining.balanceOf(meToken2.address, account3.address)
           ).to.equal(tokenDeposited);
         });
         it("should be able to stake later from another account ", async () => {
@@ -1276,6 +1286,7 @@ const setup = async () => {
             .mul(PRECISION)
             .div(tokenDeposited);
 
+          // poolInfo.rewardPerTokenStored when account last interacted with LM
           expect(poolInfo.rewardPerTokenStored).to.equal(
             calculatedRewardPerTokenStored
           );
@@ -1301,7 +1312,7 @@ const setup = async () => {
             );
 
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken2, "Transfer")
             .withArgs(
               account4.address,
               liquidityMining.address,
@@ -1398,23 +1409,27 @@ const setup = async () => {
             account3.address
           );
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken2, "Transfer")
             .withArgs(
-              account3.address,
               liquidityMining.address,
+              account3.address,
               tokenDeposited
             );
           // exit withdraw and claim reward
           await expect(tx)
             .to.emit(liquidityMining, "Withdrawn")
             .withArgs(meToken2.address, account3.address, tokenDeposited);
-          await expect(tx)
-            .to.emit(liquidityMining, "RewardPaid")
-            .withArgs(meToken2.address, account3.address, poolInfo.rewards);
+
           const poolInfoAfter = await liquidityMining.getPoolInfo(
-            meToken.address,
+            meToken2.address,
             account3.address
           );
+          const rewardPaid =
+            poolInfoAfter.userRewardPerTokenPaid.mul(tokenDepositedInETH);
+          await expect(tx)
+            .to.emit(liquidityMining, "RewardPaid")
+            .withArgs(meToken2.address, account3.address, rewardPaid);
+
           //balance staked has been updated
           expect(balanceStakedBefore).to.equal(tokenDeposited);
           expect(balanceStakedAfter).to.equal(0);
@@ -1453,7 +1468,13 @@ const setup = async () => {
             meToken2.address,
             account4.address
           );
-          tx = await liquidityMining.connect(account4).exit(meToken2.address);
+          // tx = await liquidityMining.connect(account4).exit(meToken2.address);
+          const balance = await liquidityMining.balanceOf(
+            meToken2.address,
+            account4.address
+          );
+          console.log(`acc4 balance metoken2: ${balance}`);
+
           const txBlockTime = (
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
@@ -1462,11 +1483,18 @@ const setup = async () => {
             meToken2.address,
             account4.address
           );
+          const poolInfoAfter = await liquidityMining.getPoolInfo(
+            meToken2.address,
+            account4.address
+          );
+          const rewardPaid =
+            poolInfoAfter.userRewardPerTokenPaid.mul(tokenDepositedInETH);
+
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken2, "Transfer")
             .withArgs(
-              account4.address,
               liquidityMining.address,
+              account4.address,
               tokenDeposited
             );
           // exit withdraw and claim reward
@@ -1475,11 +1503,8 @@ const setup = async () => {
             .withArgs(meToken2.address, account4.address, tokenDeposited);
           await expect(tx)
             .to.emit(liquidityMining, "RewardPaid")
-            .withArgs(meToken2.address, account4.address, poolInfo.rewards);
-          const poolInfoAfter = await liquidityMining.getPoolInfo(
-            meToken.address,
-            account4.address
-          );
+            .withArgs(meToken2.address, account4.address, rewardPaid);
+
           //balance staked has been updated
           expect(balanceStakedBefore).to.equal(tokenDeposited);
           expect(balanceStakedAfter).to.equal(0);
