@@ -449,6 +449,10 @@ const setup = async () => {
           // last tx holds the lastUpdateTime
           // const lastUpdateTime = tx.timestamp ?? 0;
           const lastUpdateTime = poolInfo.lastUpdateTime.toNumber();
+          expect(
+            (await ethers.provider.getBlock((await tx.wait()).blockNumber))
+              .timestamp
+          ).to.equal(lastUpdateTime);
           // travel to the futur
           await setNextBlockTimestamp(lastUpdateTime + oneDayInSeconds);
 
@@ -516,8 +520,12 @@ const setup = async () => {
             meToken.address,
             account0.address
           );
+          const lastUpdateTime = (
+            await ethers.provider.getBlock((await tx.wait()).blockNumber)
+          ).timestamp;
+          expect(lastUpdateTime).to.equal(poolInfo.lastUpdateTime);
           // last withdraw tx holds the lastUpdateTime
-          const lastUpdateTime = tx.timestamp ?? 0;
+
           const balanceStakedBefore = await liquidityMining.balanceOf(
             meToken.address,
             account0.address
@@ -533,8 +541,9 @@ const setup = async () => {
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
           expect(txBlockTime).to.equal(
-            lastUpdateTime + seasonInfo.endTime.toNumber() + oneDayInSeconds
+            seasonInfo.endTime.toNumber() + oneDayInSeconds
           );
+          expect(txBlockTime).to.be.gt(lastUpdateTime);
           const balanceStakedAfter = await liquidityMining.balanceOf(
             meToken.address,
             account0.address
@@ -555,12 +564,12 @@ const setup = async () => {
             meToken.address,
             account0.address
           );
-
+          expect(poolInfoAfter.lastUpdateTime).to.equal(seasonInfo.endTime);
           // reward per token stored has been updated
-          // Previous reward per token stored + ((now-lastUpdateTime)  * RewardRate)/ (TotalSupply staked))
+          // Previous reward per token stored + ((seasonInfo.endTime-lastUpdateTime)  * RewardRate)/ (TotalSupply staked))
           // at that time TotalSupply staked == tokenDeposited.div(2) because it was updated after previous withdraw
           const calculatedRewardPerTokenStored = BigNumber.from(
-            txBlockTime - lastUpdateTime
+            seasonInfo.endTime.toNumber() - lastUpdateTime
           )
             .mul(poolInfo.rewardRate)
             .mul(PRECISION)
@@ -579,8 +588,13 @@ const setup = async () => {
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
             .div(2)
-            .mul(calculatedRewardPerTokenStored)
-            .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
+            .mul(
+              calculatedRewardPerTokenStored.sub(
+                poolInfo.userRewardPerTokenPaid
+              )
+            )
+            .div(PRECISION)
+            .add(poolInfo.rewards);
           expect(calculatedEarned).to.be.gt(0);
           expect(poolInfoAfter.rewards).to.equal(calculatedEarned);
         });
@@ -590,6 +604,7 @@ const setup = async () => {
             account0.address
           );
           tx = await liquidityMining.claimReward(meToken.address);
+          const balanceBefore = await mockToken.balanceOf(account0.address);
           // it should send ME tokens corresponding to the rewards
           await expect(tx)
             .to.emit(mockToken, "Transfer")
@@ -604,14 +619,17 @@ const setup = async () => {
 
           expect(
             await liquidityMining.balanceOf(meToken.address, account0.address)
-          ).to.equal(tokenDeposited);
-
+          ).to.equal(0);
+          const balanceAfter = await mockToken.balanceOf(account0.address);
           // reward should now be 0
           const poolInfoAfter = await liquidityMining.getPoolInfo(
             meToken.address,
             account0.address
           );
           expect(poolInfoAfter.rewards).to.equal(0);
+          expect(poolInfoAfter.rewards).to.equal(
+            balanceAfter.sub(balanceBefore)
+          );
         });
       });
     });
@@ -761,28 +779,13 @@ const setup = async () => {
           );
 
           expect(poolInfo.totalSupply).to.equal(tokenDeposited);
-
-          console.log(`
-        txBlockTime           :${txBlockTime.toString()}
-         startTime        :${seasonInfo.startTime}
-         minus           :${BigNumber.from(txBlockTime).sub(
-           seasonInfo.startTime
-         )} 
-        rewardRate            :${seasonInfo.rewardRate.toString()}
-        tokenDeposited        :${toETHNumber(tokenDeposited)}
-        rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
-       
-        `);
           // only begins at start time and not before
           // reward takes only into account previously deposited token amount so tokenDeposited.div(2)
           const calculatedRewardPerTokenStored = BigNumber.from(oneDayInSeconds)
             .mul(seasonInfo.rewardRate)
             .mul(PRECISION)
             .div(tokenDeposited);
-          console.log(` 
-          calculatedRewardPerTokenStored
-          :${calculatedRewardPerTokenStored}
-          `);
+
           expect(poolInfo.rewardPerTokenStored).to.equal(
             calculatedRewardPerTokenStored
           );
@@ -790,12 +793,6 @@ const setup = async () => {
           expect(poolInfo.userRewardPerTokenPaid).to.equal(
             calculatedRewardPerTokenStored
           );
-          console.log(`
-        poolInfo.rewards                       :${poolInfo.rewards}
-        poolInfo.userRewardPerTokenPaid        :${poolInfo.userRewardPerTokenPaid}
-        calculatedRewardPerTokenStored         :${calculatedRewardPerTokenStored} 
-        
-        `);
 
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
@@ -1236,13 +1233,6 @@ const setup = async () => {
           expect(poolInfo.userRewardPerTokenPaid).to.equal(
             calculatedRewardPerTokenStored
           );
-          console.log(`
-        poolInfo.rewards                       :${poolInfo.rewards}
-        poolInfo.userRewardPerTokenPaid        :${poolInfo.userRewardPerTokenPaid}
-        calculatedRewardPerTokenStored         :${calculatedRewardPerTokenStored} 
-        
-        `);
-
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
             .mul(calculatedRewardPerTokenStored)
