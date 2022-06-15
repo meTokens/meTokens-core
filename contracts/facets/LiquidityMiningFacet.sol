@@ -81,6 +81,7 @@ contract LiquidityMiningFacet is
         emit InitSeason(merkleRoot);
     }
 
+    // Staking is only allowed while the season is live and the meToken is featured
     function stake(
         address meToken,
         uint256 amount,
@@ -92,6 +93,8 @@ contract LiquidityMiningFacet is
         onlyMeTokenInSeason(meToken, merkleProof)
     {
         require(amount > 0, "cannot stake 0");
+        _resetPool(meToken);
+
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         address sender = LibMeta.msgSender();
@@ -193,22 +196,12 @@ contract LiquidityMiningFacet is
         return LibLiquidityMining.getSeasonInfo();
     }
 
-    function withdraw(
-        address meToken,
-        uint256 amount,
-        bytes32[] calldata merkleProof
-    )
-        public
-        nonReentrant
-        onlyLiveSeason
-        onlyMeTokenInSeason(meToken, merkleProof)
-    {
+    function withdraw(address meToken, uint256 amount) public nonReentrant {
         require(amount > 0, "Cannot withdraw 0");
 
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         address sender = LibMeta.msgSender();
-        _updateReward(meToken, sender);
         PoolInfo storage poolInfo = ls.pools[meToken];
 
         // _totalSupply = _totalSupply.sub(amount);
@@ -274,11 +267,16 @@ contract LiquidityMiningFacet is
             ];
     }
 
-    function lastTimeRewardApplicable() public view returns (uint256) {
+    function lastTimeRewardApplicable(address meToken)
+        public
+        view
+        returns (uint256)
+    {
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
+        uint256 endTime = ls.pools[meToken].endTime;
 
-        return block.timestamp < ls.endTime ? block.timestamp : ls.endTime;
+        return block.timestamp < endTime ? block.timestamp : endTime;
         // return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
@@ -305,8 +303,8 @@ contract LiquidityMiningFacet is
 
         return
             poolInfo.rewardPerTokenStored +
-            (((lastTimeRewardApplicable() - poolInfo.lastUpdateTime) *
-                ls.rewardRate *
+            (((lastTimeRewardApplicable(meToken) - poolInfo.lastUpdateTime) *
+                poolInfo.rewardRate *
                 s.PRECISION) / poolInfo.totalSupply);
     }
 
@@ -354,18 +352,23 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
+
+        // If meToken pool has the same merkle root as the active season,
+        //   we don't need to reset the pool as it's active
+        if (poolInfo.seasonMerkleRoot == ls.merkleRoot) return;
+
+        // Keep track of total supply so that we still know how much is staked if we
+        // clean the pool
         uint256 totalSupply = poolInfo.totalSupply;
-        // clean pool from previous season
-        if (
-            poolInfo.seasonMerkleRoot != 0 &&
-            poolInfo.seasonMerkleRoot != ls.merkleRoot
-        ) {
-            delete ls.pools[meToken];
-        }
+
+        // clean pool info if already featured
+        if (poolInfo.seasonMerkleRoot != 0) delete ls.pools[meToken];
 
         PoolInfo storage newMeTokenPool = ls.pools[meToken];
         newMeTokenPool.seasonMerkleRoot = ls.merkleRoot;
         newMeTokenPool.totalSupply = totalSupply;
+        newMeTokenPool.rewardRate = ls.rewardRate;
+        newMeTokenPool.endTime = ls.endTime;
     }
 
     function _updateReward(address meToken, address account) internal {
@@ -373,8 +376,7 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         poolInfo.rewardPerTokenStored = rewardPerToken(meToken);
-        _resetPool(meToken);
-        poolInfo.lastUpdateTime = lastTimeRewardApplicable();
+        poolInfo.lastUpdateTime = lastTimeRewardApplicable(meToken);
 
         if (account != address(0)) {
             //  rewards[account] = earned(account);

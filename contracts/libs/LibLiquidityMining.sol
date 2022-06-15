@@ -23,6 +23,8 @@ struct PoolInfo {
     uint256 lastUpdateTime;
     uint256 totalSupply; // supply staked
     uint256 rewardPerTokenStored;
+    uint256 rewardRate;
+    uint256 endTime;
     mapping(address => uint256) userRewardPerTokenPaid;
     mapping(address => uint256) rewards; // key: staker addr
 }
