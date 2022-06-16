@@ -647,17 +647,19 @@ const setup = async () => {
         await foundry
           .connect(account1)
           .mint(meToken1.address, tokenDeposited, account1.address);
-        const whitelist = [meToken1.address, meToken3.address]; // metoken2 from account2 and metoken from account0 are not part of season 2
+        // metoken2 from account2 and metoken from account0 are not part of season 2
+        // metoken3 from account3 is again part of this season
+        const whitelist = [meToken1.address, meToken3.address];
         merkleTree = new MerkleTree(whitelist);
-        // mint more metokens for metoken 2 and 3
 
-        await foundry
-          .connect(account2)
-          .mint(meToken2.address, tokenDeposited, account2.address);
+        // mint more metokens for metoken 1 and 3
 
         await foundry
           .connect(account3)
           .mint(meToken3.address, tokenDeposited, account3.address);
+        // allow liquidity mining contract to move their metokens
+        await meToken1.connect(account1).approve(liquidityMining.address, max);
+        await meToken3.connect(account3).approve(liquidityMining.address, max);
       });
       describe("stake withdraw claim for second season", () => {
         let tx: ContractTransaction;
@@ -681,9 +683,9 @@ const setup = async () => {
 
           await expect(
             liquidityMining.stake(
-              meToken2.address,
+              meToken3.address,
               tokenDeposited.div(2),
-              merkleTree.getHexProof(meToken2.address)
+              merkleTree.getHexProof(meToken3.address)
             )
           ).to.be.revertedWith("not live");
         });
@@ -697,7 +699,7 @@ const setup = async () => {
           await liquidityMining.initSeason(
             initTime,
             allocationPoolSeason2,
-            3,
+            2, // two metokens featured in this season
             merkleRoot
           );
 
@@ -713,22 +715,26 @@ const setup = async () => {
           expect(seasonInfo.endTime.toNumber()).to.equal(initTime + duration);
           expect(seasonInfo.allocationPool).to.equal(allocationPoolSeason2);
           expect(seasonInfo.rewardRate).to.equal(
-            BigNumber.from(allocationPoolSeason2).div(3).div(duration)
+            BigNumber.from(allocationPoolSeason2).div(2).div(duration)
           );
           expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
         });
         it("revert to stake when not part of the season", async () => {
           const seasonInfo = await liquidityMining.getSeasonInfo();
           await setNextBlockTimestamp(seasonInfo.startTime.toNumber());
-
-          const isSeasonLive = await liquidityMining.isSeasonLive();
-          expect(isSeasonLive).to.be.true;
-
           await expect(
             liquidityMining.stake(
               meToken.address,
               tokenDeposited.div(2),
-              merkleTree.getHexProof(meToken.address)
+              merkleTree.getHexProof(meToken3.address)
+            )
+          ).to.be.revertedWith("not in season");
+
+          await expect(
+            liquidityMining.stake(
+              meToken2.address,
+              tokenDeposited.div(2),
+              merkleTree.getHexProof(meToken1.address)
             )
           ).to.be.revertedWith("not in season");
         });
@@ -740,9 +746,8 @@ const setup = async () => {
               tokenDeposited,
               merkleTree.getHexProof(meToken1.address)
             );
-
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken1, "Transfer")
             .withArgs(
               account1.address,
               liquidityMining.address,
@@ -762,17 +767,21 @@ const setup = async () => {
           ).timestamp;
 
           // travel to one day in the futur
-          await setNextBlockTimestamp(txBlockTime + oneDayInSeconds);
+          await mineBlock(txBlockTime + oneDayInSeconds);
 
-          const poolInfo = await liquidityMining.getPoolInfo(
+          const previousPoolInfo = await liquidityMining.getPoolInfo(
             meToken.address,
             account0.address
+          );
+          const poolInfo = await liquidityMining.getPoolInfo(
+            meToken1.address,
+            account1.address
           );
           const seasonInfo = await liquidityMining.getSeasonInfo();
 
           const merkleRoot = merkleTree.getHexRoot();
+          expect(previousPoolInfo.seasonMerkleRoot).not.to.equal(merkleRoot);
           expect(poolInfo.seasonMerkleRoot).to.equal(merkleRoot);
-
           expect(poolInfo.lastUpdateTime).to.equal(
             (await ethers.provider.getBlock((await tx.wait()).blockNumber))
               .timestamp
@@ -785,22 +794,28 @@ const setup = async () => {
             .mul(seasonInfo.rewardRate)
             .mul(PRECISION)
             .div(tokenDeposited);
-
-          expect(poolInfo.rewardPerTokenStored).to.equal(
+          const instantRewardPerToken = await liquidityMining.rewardPerToken(
+            meToken1.address
+          );
+          expect(instantRewardPerToken).to.equal(
             calculatedRewardPerTokenStored
           );
+          // this is zero because when we stake for the first time the total supply staked at that time was 0
+          expect(poolInfo.rewardPerTokenStored).to.equal(0);
           // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
-          expect(poolInfo.userRewardPerTokenPaid).to.equal(
-            calculatedRewardPerTokenStored
-          );
-
+          expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
+          expect(poolInfo.rewards).to.equal(0);
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
             .mul(calculatedRewardPerTokenStored)
             .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
           expect(calculatedEarned).to.be.gt(0);
-          expect(poolInfo.rewards).to.equal(calculatedEarned);
+
+          expect(
+            await liquidityMining.earned(meToken1.address, account1.address)
+          ).to.equal(calculatedEarned);
         });
+
         it("should be able to claim rewards from season 1 ", async () => {
           tx = await liquidityMining
             .connect(account2)
@@ -829,9 +844,14 @@ const setup = async () => {
             meToken3.address,
             account3.address
           );
-          // staked from season 1
-          expect(balanceBefore).to.be.gt(0);
 
+          // staked from season 1 and rewards are not claimed
+          expect(balanceBefore).to.be.gt(0);
+          const rewardsFromS1 = await liquidityMining.earned(
+            meToken3.address,
+            account3.address
+          );
+          expect(rewardsFromS1).to.be.gt(0);
           tx = await liquidityMining
             .connect(account3)
             .stake(
@@ -841,7 +861,7 @@ const setup = async () => {
             );
 
           await expect(tx)
-            .to.emit(meToken, "Transfer")
+            .to.emit(meToken3, "Transfer")
             .withArgs(
               account3.address,
               liquidityMining.address,
@@ -861,22 +881,56 @@ const setup = async () => {
             meToken3.address,
             account3.address
           );
-          // move forward only 10 seconds
           const txBlockTime = (
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
-          await setNextBlockTimestamp(txBlockTime + 10);
           const seasonInfo = await liquidityMining.getSeasonInfo();
+          // rewards from season1 are wiped
+          // but as the user was already staked when season2 begun he is entitled to some rewards
+          const calculatedInitialRewardPerTokenStored = BigNumber.from(
+            txBlockTime - seasonInfo.startTime.toNumber()
+          )
+            .mul(poolInfo.rewardRate)
+            .mul(PRECISION)
+            .div(tokenDeposited);
+          expect(poolInfo.rewardPerTokenStored).to.equal(
+            calculatedInitialRewardPerTokenStored
+          );
+          expect(poolInfo.userRewardPerTokenPaid).to.equal(
+            calculatedInitialRewardPerTokenStored
+          );
+          const balanceDeposited = await liquidityMining.balanceOf(
+            meToken3.address,
+            account3.address
+          );
+          expect(balanceDeposited).to.equal(tokenDeposited.mul(2));
+          //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
+          const calculatedInitialEarned = tokenDeposited
+            .mul(calculatedInitialRewardPerTokenStored)
+            .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
+          expect(poolInfo.rewards).to.equal(calculatedInitialEarned);
+          // move forward only 10 seconds
+          await setNextBlockTimestamp(txBlockTime + 10);
 
           // Previous reward per token stored + ((now-lastUpdateTime)  * RewardRate)/ (TotalSupply staked))
           // at that time TotalSupply staked == tokenDeposited
           const calculatedRewardPerTokenStored = BigNumber.from(10)
             .mul(poolInfo.rewardRate)
             .mul(PRECISION)
-            .div(tokenDeposited);
+            .div(balanceDeposited)
+            .add(poolInfo.rewardPerTokenStored);
+          //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
+          const calculatedEarned = balanceDeposited
+            .mul(
+              calculatedRewardPerTokenStored.sub(
+                poolInfo.userRewardPerTokenPaid
+              )
+            )
+            .div(PRECISION)
+            .add(calculatedInitialEarned);
 
-          // rewards for 10 seconds should be less than rewards for whole season1
-          expect(calculatedRewardPerTokenStored).to.lt(pendingS1Acc3Rewards);
+          // rewards should be less than rewards for whole season1
+          expect(calculatedEarned).to.lt(pendingS1Acc3Rewards);
           // rewards should not take into account previous season rewards
           // it should reflect rewards accrued this season
           tx = await liquidityMining
@@ -888,15 +942,11 @@ const setup = async () => {
             .withArgs(
               liquidityMining.address,
               account3.address,
-              calculatedRewardPerTokenStored
+              calculatedEarned
             );
           await expect(tx)
             .to.emit(liquidityMining, "RewardPaid")
-            .withArgs(
-              meToken3.address,
-              account3.address,
-              calculatedRewardPerTokenStored
-            );
+            .withArgs(meToken3.address, account3.address, calculatedEarned);
 
           // reward should now be 0
           const poolInfoAfter = await liquidityMining.getPoolInfo(
@@ -1453,6 +1503,7 @@ const setup = async () => {
           );
           expect(poolInfoAfter.lastUpdateTime).to.equal(txBlockTime);
         });
+        // TODO ASSESS account0 can unstake and get rewards from season3 after it ends !!!
       });
     });
 

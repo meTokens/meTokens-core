@@ -222,6 +222,7 @@ contract LiquidityMiningFacet is
             rewardsToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward); */
             poolInfo.rewards[sender] = 0;
+
             ls.me.safeTransfer(sender, reward);
             emit RewardPaid(meToken, sender, reward);
         }
@@ -295,7 +296,18 @@ contract LiquidityMiningFacet is
                     .mul(1e18)
                     .div(_totalSupply)
             ); */
-
+        /* console.log(
+            "##  rewardPerToken \n lastTimeRewardApplicable(meToken):%s \n poolInfo.lastUpdateTime:%s \n poolInfo.rewardPerTokenStored:%s  ",
+            lastTimeRewardApplicable(meToken),
+            poolInfo.lastUpdateTime,
+            poolInfo.rewardPerTokenStored
+        );
+        console.log(
+            " poolInfo.rewardRate):%s \n poolInfo.totalSupply:%s \n meToken:%s \n##",
+            poolInfo.rewardRate,
+            poolInfo.totalSupply,
+            meToken
+        ); */
         return
             poolInfo.rewardPerTokenStored +
             (((lastTimeRewardApplicable(meToken) - poolInfo.lastUpdateTime) *
@@ -355,6 +367,7 @@ contract LiquidityMiningFacet is
         // Keep track of total supply so that we still know how much is staked if we
         // clean the pool
         uint256 totalSupply = poolInfo.totalSupply;
+        uint256 lastUpdateTime = poolInfo.lastUpdateTime;
 
         // clean pool info if already featured
         if (poolInfo.seasonMerkleRoot != 0) delete ls.pools[meToken];
@@ -364,6 +377,7 @@ contract LiquidityMiningFacet is
         newMeTokenPool.totalSupply = totalSupply;
         newMeTokenPool.rewardRate = ls.rewardRate;
         newMeTokenPool.endTime = ls.endTime;
+        newMeTokenPool.lastUpdateTime = ls.startTime;
     }
 
     function _updateReward(address meToken, address account) internal {
