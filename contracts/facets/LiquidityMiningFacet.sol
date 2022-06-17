@@ -105,7 +105,7 @@ contract LiquidityMiningFacet is
         emit Staked(meToken, sender, amount);
     }
 
-    function exit(address meToken) external nonReentrant {
+    function exit(address meToken) external {
         address sender = LibMeta.msgSender();
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
@@ -367,7 +367,6 @@ contract LiquidityMiningFacet is
         // Keep track of total supply so that we still know how much is staked if we
         // clean the pool
         uint256 totalSupply = poolInfo.totalSupply;
-        uint256 lastUpdateTime = poolInfo.lastUpdateTime;
 
         // clean pool info if already featured
         if (poolInfo.seasonMerkleRoot != 0) delete ls.pools[meToken];
