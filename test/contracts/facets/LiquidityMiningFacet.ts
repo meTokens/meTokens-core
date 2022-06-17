@@ -1369,11 +1369,27 @@ const setup = async () => {
             .mul(seasonInfo.rewardRate)
             .mul(PRECISION)
             .div(tokenDeposited.mul(2));
-          expect(poolInfoAfter.rewardPerTokenStored).to.equal(
+          expect(
+            await liquidityMining.rewardPerToken(meToken2.address)
+          ).to.equal(
             calculatedRewardPerTokenStored.add(
               acc4CalculatedRewardPerTokenStored
             )
           );
+
+          const pendingCalculatedEarned = tokenDeposited
+            .mul(2)
+            .mul(
+              acc4CalculatedRewardPerTokenStored.sub(
+                poolInfoAfter.userRewardPerTokenPaid
+              )
+            )
+            .div(PRECISION);
+          expect(
+            await liquidityMining.earned(meToken2.address, account4.address)
+          ).to.equal(pendingCalculatedEarned);
+          //.add(calculatedInitialEarned);
+
           // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
           expect(poolInfoAfter.userRewardPerTokenPaid).to.equal(
             calculatedRewardPerTokenStored.add(
