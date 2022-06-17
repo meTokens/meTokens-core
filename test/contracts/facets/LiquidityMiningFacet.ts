@@ -159,7 +159,7 @@ const setup = async () => {
         await meToken2.approve(liquidityMining.address, max);
         await meToken2.connect(account2).approve(liquidityMining.address, max);
         await meToken3.connect(account3).approve(liquidityMining.address, max);
-
+        await meToken2.connect(account3).approve(liquidityMining.address, max);
         await mockToken.setBalance(account0.address, allocationPool);
         await mockToken.approve(liquidityMining.address, max);
         // second metokens will be used to check that we can claim rewards during season 2 if I am not featured in season 2
