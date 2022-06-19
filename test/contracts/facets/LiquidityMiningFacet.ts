@@ -1378,13 +1378,9 @@ const setup = async () => {
           );
 
           const pendingCalculatedEarned = tokenDeposited
-            .mul(2)
-            .mul(
-              acc4CalculatedRewardPerTokenStored.sub(
-                poolInfoAfter.userRewardPerTokenPaid
-              )
-            )
+            .mul(poolInfoAfter.userRewardPerTokenPaid)
             .div(PRECISION);
+          console.log(`${acc4CalculatedRewardPerTokenStored}`);
           expect(
             await liquidityMining.earned(meToken2.address, account4.address)
           ).to.equal(pendingCalculatedEarned);
@@ -1392,9 +1388,7 @@ const setup = async () => {
 
           // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
           expect(poolInfoAfter.userRewardPerTokenPaid).to.equal(
-            calculatedRewardPerTokenStored.add(
-              acc4CalculatedRewardPerTokenStored
-            )
+            acc4CalculatedRewardPerTokenStored
           );
 
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
@@ -1403,7 +1397,9 @@ const setup = async () => {
             .mul(calculatedRewardPerTokenStored)
             .div(PRECISION); // simplified calculation as userRewardPerTokenPaid == 0
           expect(acc4CalculatedEarned).to.be.gt(0);
-          expect(poolInfo.rewards).to.equal(acc4CalculatedEarned);
+          expect(
+            acc4CalculatedRewardPerTokenStored.mul(tokenDepositedInETH)
+          ).to.equal(acc4CalculatedEarned);
 
           // check that rewards for account3 are greater
           const acc3PoolInfoAfter = await liquidityMining.getPoolInfo(
@@ -1418,7 +1414,7 @@ const setup = async () => {
             .mul(PRECISION)
             .div(tokenDeposited)
             .add(poolInfo.rewardPerTokenStored);
-          expect(acc3PoolInfoAfter).to.be.gt(0);
+          expect(acc3PoolInfoAfter.rewardPerTokenStored).to.be.gt(0);
           expect(acc3PoolInfoAfter.rewards).to.equal(
             acc3CalculatedRewardPerTokenStored
           );
