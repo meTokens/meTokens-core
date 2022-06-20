@@ -1620,8 +1620,9 @@ const setup = async () => {
           );
           expect(poolInfoAfter.lastUpdateTime).to.equal(txBlockTime);
         });
-        it("should be able to withdraw and claim rewards when season is over", async () => {});
-        // TODO ASSESS account0 can unstake and get rewards from season3 after it ends !!!
+        it("should be able to withdraw and claim rewards when season is over", async () => {
+          // TODO ASSESS account0 can unstake and get rewards from season3 after it ends !!!
+        });
       });
     });
 
