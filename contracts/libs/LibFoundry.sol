@@ -197,9 +197,18 @@ library LibFoundry {
         address recipient
     ) internal {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        address sender = LibMeta.msgSender();
+
+        // If msg.sender == owner, give owner the sell rate, ie. all of tokens returned plus a %
+        //      of balancePooled based on how much % of supply will be burned
+        // If recipient == owner, also give the sell rate so we can reduce 2 potential txs of...
+        //      1. Spender pays meToken owner in meToken  2. owner burns token for collateral + balancePooled
+        //      ...into 1:  1. Spender pays meToken owner in meToken, owner receives collateral + balancePooled
+        // If owner is not involved in burn, give msg.sender the burn rate
+        bool owner = (sender == meTokenInfo.owner) ||
+            (recipient == meTokenInfo.owner);
 
         // Handling changes
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
@@ -220,15 +229,15 @@ library LibFoundry {
             meTokensBurned
         );
         uint256 assetsReturned = calculateActualAssetsReturned(
-            sender,
             meToken,
             meTokensBurned,
-            rawAssetsReturned
+            rawAssetsReturned,
+            owner
         );
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
 
-        if (sender == meTokenInfo.owner) {
+        if (owner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
                 false,
@@ -247,6 +256,7 @@ library LibFoundry {
         IMeToken(meToken).burn(sender, meTokensBurned);
 
         _vaultWithdrawal(
+            owner,
             sender,
             recipient,
             meToken,
@@ -358,18 +368,18 @@ library LibFoundry {
 
     /// @dev applies refundRatio
     function calculateActualAssetsReturned(
-        address sender,
         address meToken,
         uint256 meTokensBurned,
-        uint256 rawAssetsReturned
+        uint256 rawAssetsReturned,
+        bool owner
     ) internal view returns (uint256 actualAssetsReturned) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
+        // If owner, give owner the sell rate, ie. all of tokens returned plus a %
         //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meTokenInfo.owner) {
+        // If !owner, give the burn rate
+        if (owner) {
             actualAssetsReturned =
                 rawAssetsReturned +
                 (((s.PRECISION * meTokensBurned) /
@@ -428,7 +438,7 @@ library LibFoundry {
         )
     {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        // 0-meTokensMinted 1-assetsDepositedAfterFees
 
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
@@ -501,6 +511,7 @@ library LibFoundry {
     }
 
     function _vaultWithdrawal(
+        bool owner,
         address sender,
         address recipient,
         address meToken,
@@ -512,10 +523,7 @@ library LibFoundry {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         uint256 fee;
-        // If msg.sender == owner, give owner the sell rate. - all of tokens returned plus a %
-        //      of balancePooled based on how much % of supply will be burned
-        // If msg.sender != owner, give msg.sender the burn rate
-        if (sender == meTokenInfo.owner) {
+        if (owner) {
             fee = (s.burnOwnerFee * assetsReturned) / s.PRECISION;
         } else {
             fee = (s.burnBuyerFee * assetsReturned) / s.PRECISION;

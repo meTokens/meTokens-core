@@ -89,18 +89,18 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
     function calculateAssetsReturned(
         address meToken,
         uint256 meTokensBurned,
-        address sender
+        bool owner
     ) external view override returns (uint256 assetsReturned) {
         uint256 rawAssetsReturned = LibFoundry.calculateRawAssetsReturned(
             meToken,
             meTokensBurned
         );
-        if (sender == address(0)) sender = LibMeta.msgSender();
+        // if (sender == address(0)) sender = LibMeta.msgSender();
         assetsReturned = LibFoundry.calculateActualAssetsReturned(
-            sender,
             meToken,
             meTokensBurned,
-            rawAssetsReturned
+            rawAssetsReturned,
+            owner
         );
     }
 }

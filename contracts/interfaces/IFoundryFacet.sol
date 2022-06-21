@@ -103,11 +103,11 @@ interface IFoundryFacet {
     /// @notice Calculate assets returned based on meTokens burned
     /// @param meToken          Address of meToken to burn
     /// @param meTokensBurned   Amount of meTokens to burn
-    /// @param sender           Address to burn the meTokens
+    /// @param owner            True if sender or recipient of burn is meToken owner
     /// @return assetsReturned  Amount of assets to be returned to sender
     function calculateAssetsReturned(
         address meToken,
         uint256 meTokensBurned,
-        address sender
+        bool owner
     ) external view returns (uint256 assetsReturned);
 }
