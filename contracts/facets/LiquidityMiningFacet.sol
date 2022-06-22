@@ -237,7 +237,17 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         if (poolInfo.seasonMerkleRoot == 0) return 0;
-
+        console.log(
+            "## earned \n meToken:%s \n account:%s \n  poolInfo.userRewardPerTokenPaid[account]:%s",
+            meToken,
+            account,
+            poolInfo.userRewardPerTokenPaid[account]
+        );
+        console.log(
+            " rewardPerToken(meToken):%s \n balanceOf(meToken, account):%s \n ##",
+            rewardPerToken(meToken),
+            balanceOf(meToken, account)
+        );
         return
             ((balanceOf(meToken, account) *
                 (rewardPerToken(meToken) -
@@ -359,7 +369,11 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-
+        console.log("## _resetPool \n poolInfo.seasonMerkleRoot ");
+        console.logBytes32(poolInfo.seasonMerkleRoot);
+        console.log(" ls.merkleRoot  ");
+        console.logBytes32(ls.merkleRoot);
+        console.log("meToken:%s  ", meToken);
         // If meToken pool has the same merkle root as the active season,
         //   we don't need to reset the pool as it's active
         if (poolInfo.seasonMerkleRoot == ls.merkleRoot) return;
