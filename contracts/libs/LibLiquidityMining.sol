@@ -18,23 +18,29 @@ struct LiquidityMiningStorage {
     uint256 rewardRate;
     bytes32 merkleRoot;
 }
+struct UserPoolInfo {
+    bytes32 currentMerkleRoot;
+    uint256 rewardPerTokenPaid;
+    uint256 rewards;
+}
 struct PoolInfo {
-    //  bytes32 seasonMerkleRoot; // used to identify if it is a new season
+    bytes32 seasonMerkleRoot; // used to identify if it is a new season
     uint256 lastUpdateTime;
     uint256 totalSupply; // supply staked
     uint256 rewardPerTokenStored;
     uint256 rewardRate;
     uint256 endTime;
-    mapping(address => bytes32) seasonMerkleRoot;
+    mapping(address => UserPoolInfo) user;
+    /*  mapping(address => bytes32) seasonMerkleRoot;
     mapping(address => uint256) userRewardPerTokenPaid;
-    mapping(address => uint256) rewards; // key: staker addr
+    mapping(address => uint256) rewards; // key: staker addr */
 }
 
 library LibLiquidityMining {
     bytes32 public constant LIQUIDITY_MINING_STORAGE_POSITION =
         keccak256("diamond.standard.liquidity.mining.storage");
 
-    function getPoolInfo(address meToken, address user)
+    function getPoolInfo(address meToken, address account)
         internal
         view
         returns (
@@ -48,15 +54,21 @@ library LibLiquidityMining {
             uint256 endTime
         )
     {
-        LiquidityMiningStorage storage ls = liquidityMiningStorage();
-        seasonMerkleRoot = ls.pools[meToken].seasonMerkleRoot[user];
-        lastUpdateTime = ls.pools[meToken].lastUpdateTime;
-        totalSupply = ls.pools[meToken].totalSupply;
-        rewardPerTokenStored = ls.pools[meToken].rewardPerTokenStored;
-        userRewardPerTokenPaid = ls.pools[meToken].userRewardPerTokenPaid[user];
-        rewards = ls.pools[meToken].rewards[user];
-        rewardRate = ls.pools[meToken].rewardRate;
-        endTime = ls.pools[meToken].endTime;
+        PoolInfo storage p = liquidityMiningStorage().pools[meToken];
+        UserPoolInfo memory u = liquidityMiningStorage().pools[meToken].user[
+            account
+        ];
+        seasonMerkleRoot = p.seasonMerkleRoot;
+        lastUpdateTime = p.lastUpdateTime;
+        totalSupply = p.totalSupply;
+        // rewardPerTokenStored and userRewardPerTokenPaid might no be
+        // accurate for the current season. Indeed it could come from a previous season
+        // unless user stake again in a new season these amounts will stay the same
+        rewardPerTokenStored = p.rewardPerTokenStored;
+        userRewardPerTokenPaid = u.rewardPerTokenPaid;
+        rewards = u.rewards;
+        rewardRate = p.rewardRate;
+        endTime = p.endTime;
     }
 
     function getSeasonInfo()
@@ -78,15 +90,16 @@ library LibLiquidityMining {
         merkleRoot = ls.merkleRoot;
     }
 
-    function getUserPoolInfo(address meToken, address user)
+    function getUserPoolInfo(address meToken, address account)
         internal
         view
         returns (uint256 userRewardPerTokenPaid, uint256 rewards)
     {
-        LiquidityMiningStorage storage ls = liquidityMiningStorage();
-        PoolInfo storage poolInfo = ls.pools[meToken];
-        userRewardPerTokenPaid = poolInfo.userRewardPerTokenPaid[user];
-        rewards = poolInfo.rewards[user];
+        UserPoolInfo storage poolInfo = liquidityMiningStorage()
+            .pools[meToken]
+            .user[account];
+        userRewardPerTokenPaid = poolInfo.rewardPerTokenPaid;
+        rewards = poolInfo.rewards;
     }
 
     function liquidityMiningStorage()

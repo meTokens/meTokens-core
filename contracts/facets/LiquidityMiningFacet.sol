@@ -7,7 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {ILiquidityMiningFacet} from "../interfaces/ILiquidityMiningFacet.sol";
-import {LibLiquidityMining, PoolInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
+import {LibLiquidityMining, PoolInfo, UserPoolInfo, LiquidityMiningStorage} from "../libs/LibLiquidityMining.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
@@ -89,8 +89,8 @@ contract LiquidityMiningFacet is
     {
         require(amount > 0, "cannot stake 0");
         address sender = LibMeta.msgSender();
-        _resetPool(meToken, sender);
-
+        _resetPool(meToken);
+        _resetUserPool(meToken, sender);
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
 
@@ -214,15 +214,15 @@ contract LiquidityMiningFacet is
         _updateReward(meToken, sender);
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
-        PoolInfo storage poolInfo = ls.pools[meToken];
+        UserPoolInfo storage poolInfo = ls.pools[meToken].user[sender];
 
         //uint256 reward = rewards[msg.sender];
-        uint256 reward = poolInfo.rewards[sender];
+        uint256 reward = poolInfo.rewards;
         if (reward > 0) {
             /*    rewards[msg.sender] = 0;
             rewardsToken.safeTransfer(msg.sender, reward);
             emit RewardPaid(msg.sender, reward); */
-            poolInfo.rewards[sender] = 0;
+            poolInfo.rewards = 0;
 
             ls.me.safeTransfer(sender, reward);
             emit RewardPaid(meToken, sender, reward);
@@ -237,23 +237,17 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        if (poolInfo.seasonMerkleRoot[account] == 0) return 0;
-        console.log(
-            "## earned \n meToken:%s \n account:%s \n  poolInfo.userRewardPerTokenPaid[account]:%s",
-            meToken,
-            account,
-            poolInfo.userRewardPerTokenPaid[account]
-        );
+        if (poolInfo.seasonMerkleRoot == 0) return 0;
+
         console.log(
             " rewardPerToken(meToken):%s \n balanceOf(meToken, account):%s \n ##",
             rewardPerToken(meToken),
             balanceOf(meToken, account)
         );
-        return
-            ((balanceOf(meToken, account) *
-                (rewardPerToken(meToken) -
-                    poolInfo.userRewardPerTokenPaid[account])) / s.PRECISION) +
-            poolInfo.rewards[account];
+        return (((balanceOf(meToken, account) *
+            (rewardPerToken(meToken) -
+                poolInfo.user[account].rewardPerTokenPaid)) / s.PRECISION) +
+            poolInfo.user[account].rewards);
 
         /*   return
             _balances[account]
@@ -366,36 +360,57 @@ contract LiquidityMiningFacet is
     }
 
     /// @notice resets meToken pool if featured in a new season
-    function _resetPool(address meToken, address account) internal {
+    function _resetPool(address meToken) internal {
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        console.log("## _resetPool \n poolInfo.seasonMerkleRoot ");
-        console.logBytes32(poolInfo.seasonMerkleRoot[account]);
+        console.log("## _resetPool  \n poolInfo.seasonMerkleRoot ");
+        console.logBytes32(poolInfo.seasonMerkleRoot);
         console.log(" ls.merkleRoot  ");
         console.logBytes32(ls.merkleRoot);
         console.log("meToken:%s  ", meToken);
         // If meToken pool has the same merkle root as the active season,
         //   we don't need to reset the pool as it's active
-        if (poolInfo.seasonMerkleRoot[account] == ls.merkleRoot) return;
+        if (poolInfo.seasonMerkleRoot == ls.merkleRoot) return;
 
         // Keep track of total supply so that we still know how much is staked if we
         // clean the pool
         uint256 totalSupply = poolInfo.totalSupply;
 
         // clean pool info if already featured
-        if (poolInfo.seasonMerkleRoot[account] != 0) {
+        if (poolInfo.seasonMerkleRoot != 0) {
             delete ls.pools[meToken];
-            delete ls.pools[meToken].userRewardPerTokenPaid[account];
-            delete ls.pools[meToken].rewards[account];
         }
 
         PoolInfo storage newMeTokenPool = ls.pools[meToken];
-        newMeTokenPool.seasonMerkleRoot[account] = ls.merkleRoot;
+        newMeTokenPool.seasonMerkleRoot = ls.merkleRoot;
         newMeTokenPool.totalSupply = totalSupply;
         newMeTokenPool.rewardRate = ls.rewardRate;
         newMeTokenPool.endTime = ls.endTime;
         newMeTokenPool.lastUpdateTime = ls.startTime;
+    }
+
+    function _resetUserPool(address meToken, address account) internal {
+        LiquidityMiningStorage storage ls = LibLiquidityMining
+            .liquidityMiningStorage();
+        UserPoolInfo storage userInfo = ls.pools[meToken].user[account];
+        console.log(
+            "## _resetUserPool account:%s \n poolInfo.currentMerkleRoot ",
+            account
+        );
+        console.logBytes32(userInfo.currentMerkleRoot);
+
+        // If meToken pool has the same merkle root as the active season,
+        //   we don't need to reset the pool as it's active
+        if (userInfo.currentMerkleRoot == ls.merkleRoot) return;
+
+        // clean user info if already featured
+        if (userInfo.currentMerkleRoot != 0) {
+            delete ls.pools[meToken].user[account];
+        }
+
+        UserPoolInfo storage newMeTokenPool = ls.pools[meToken].user[account];
+        newMeTokenPool.currentMerkleRoot = ls.merkleRoot;
     }
 
     function _updateReward(address meToken, address account) internal {
@@ -403,13 +418,19 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         poolInfo.rewardPerTokenStored = rewardPerToken(meToken);
+        console.log(
+            "## _updateReward \n account:%s \n meToken:%s \n rewardPerTokenStored:%s ##",
+            account,
+            meToken,
+            poolInfo.rewardPerTokenStored
+        );
         poolInfo.lastUpdateTime = lastTimeRewardApplicable(meToken);
 
         if (account != address(0)) {
             //  rewards[account] = earned(account);
-            poolInfo.rewards[account] = earned(meToken, account);
+            poolInfo.user[account].rewards = earned(meToken, account);
             //   userRewardPerTokenPaid[account] = rewardPerTokenStored;
-            poolInfo.userRewardPerTokenPaid[account] = poolInfo
+            poolInfo.user[account].rewardPerTokenPaid = poolInfo
                 .rewardPerTokenStored;
         }
     }
