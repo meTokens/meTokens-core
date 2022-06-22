@@ -634,7 +634,7 @@ const setup = async () => {
         });
       });
     });
-    /* describe("second season", () => {
+    describe("second season", () => {
       before(async () => {
         // let's send more rewards
         await mockToken.setBalance(account0.address, allocationPoolSeason2);
@@ -1207,7 +1207,7 @@ const setup = async () => {
           expect(poolInfoBefore.rewards).to.equal(poolInfoAfter.rewards);
         });
       });
-    }); */
+    });
     describe("third season", () => {
       before(async () => {
         // the goal here will be mainly to check calculation for several accounts
@@ -1333,7 +1333,7 @@ const setup = async () => {
             await liquidityMining.balanceOf(meToken2.address, account3.address)
           ).to.equal(tokenDeposited);
         });
-        /*  it("should be able to stake later from another account ", async () => {
+        it("should be able to stake later from another account ", async () => {
           const txBlockTime = (
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
@@ -1363,11 +1363,16 @@ const setup = async () => {
             .mul(PRECISION)
             .div(tokenDeposited);
 
+          console.log(`
+ calculatedRewardPerTokenStored:${calculatedRewardPerTokenStored}
+poolInfo.rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
+poolInfo.userRewardPerTokenPaid:${poolInfo.userRewardPerTokenPaid}
+poolInfo.rewards               :${poolInfo.rewards}
+`);
           // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
+          // it should have been reset by acc3 staking
           expect(poolInfo.rewardPerTokenStored).to.equal(0);
-          expect(poolInfo.userRewardPerTokenPaid).to.equal(
-            poolInfo.rewardPerTokenStored
-          );
+          expect(poolInfo.userRewardPerTokenPaid).to.equal(0);
           //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
           const calculatedEarned = tokenDeposited
             .mul(calculatedRewardPerTokenStored)
@@ -1406,6 +1411,10 @@ const setup = async () => {
 
           const currentRewardPerTokenStored =
             await liquidityMining.rewardPerToken(meToken2.address);
+          console.log(`
+            txBlockTimeAfter:${txBlockTimeAfter}
+            currentRewardPerTokenStored :${currentRewardPerTokenStored} 
+           `);
           expect(currentRewardPerTokenStored).to.equal(
             calculatedRewardPerTokenStored
           );
@@ -1633,16 +1642,16 @@ const setup = async () => {
             calculatedRewardPerTokenStored
           );
           expect(poolInfoAfter.lastUpdateTime).to.equal(txBlockTime);
-        }); */
+        });
         it("should be able to withdraw and claim rewards when season is over", async () => {
           // TODO ASSESS account0 can unstake and get rewards from season3 after it ends !!!
-          /*    console.log(`
-          rewardPaid                     :${rewardPaid}
-          rewards                        :${poolInfo.rewards}
-          rewards after                  :${poolInfoAfter.rewards}
-          calculatedRewardPerTokenStored :${calculatedRewardPerTokenStored}
-          rewardPerTokenStored after     :${poolInfoAfter.rewardPerTokenStored}
-          `); */
+          //  console.log(`
+          // rewardPaid                     :${rewardPaid}
+          // rewards                        :${poolInfo.rewards}
+          // rewards after                  :${poolInfoAfter.rewards}
+          // calculatedRewardPerTokenStored :${calculatedRewardPerTokenStored}
+          // rewardPerTokenStored after     :${poolInfoAfter.rewardPerTokenStored}
+          // `);
         });
       });
     });
