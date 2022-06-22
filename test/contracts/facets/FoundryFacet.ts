@@ -177,7 +177,6 @@ const setup = async () => {
     });
 
     describe("burn() from buyer", () => {
-      let collateralReturned = fromETHNumber(0);
       it("to non-owner: applies buyer rate", async () => {
         const balBefore = await meToken.balanceOf(account2.address);
         const balDaiBefore = await dai.balanceOf(account2.address);
@@ -186,7 +185,6 @@ const setup = async () => {
           .burn(meToken.address, balBefore, account2.address);
         const balAfter = await meToken.balanceOf(account2.address);
         const balDaiAfter = await dai.balanceOf(account2.address);
-        collateralReturned = balDaiAfter.sub(balDaiBefore);
         expect(balAfter).equal(0);
         expect(await meToken.totalSupply()).to.equal(0);
 
@@ -202,29 +200,28 @@ const setup = async () => {
       it("to owner: applies owner rate", async () => {
         await foundry.mint(meToken.address, amount, account2.address);
 
-        const ownerMeToken = await meToken.balanceOf(account2.address);
+        const acc2Balance = await meToken.balanceOf(account2.address);
         const meTokenTotalSupply = await meToken.totalSupply();
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
         const DAIBefore = await token.balanceOf(account0.address);
         const rawAssetsReturned = calculateCollateralReturned(
-          toETHNumber(ownerMeToken),
+          toETHNumber(acc2Balance),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenInfo.balancePooled),
           reserveWeight / MAX_WEIGHT
         );
         const assetsReturned =
           rawAssetsReturned +
-          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+          (toETHNumber(acc2Balance) / toETHNumber(meTokenTotalSupply)) *
             toETHNumber(meTokenInfo.balanceLocked);
 
         await foundry
           .connect(account2)
-          .burn(meToken.address, ownerMeToken, account0.address);
+          .burn(meToken.address, acc2Balance, account0.address);
 
         const DAIAfter = await token.balanceOf(account0.address);
-        collateralReturned = collateralReturned.add(DAIAfter.sub(DAIBefore));
         expect(toETHNumber(DAIAfter.sub(DAIBefore))).to.equal(assetsReturned);
       });
     });

@@ -207,7 +207,7 @@ library LibFoundry {
         //      1. Spender pays meToken owner in meToken  2. owner burns token for collateral + balancePooled
         //      ...into 1:  1. Spender pays meToken owner in meToken, owner receives collateral + balancePooled
         // If owner is not involved in burn, give msg.sender the burn rate
-        bool owner = (sender == meTokenInfo.owner) ||
+        bool isOwner = (sender == meTokenInfo.owner) ||
             (recipient == meTokenInfo.owner);
 
         // Handling changes
@@ -232,12 +232,12 @@ library LibFoundry {
             meToken,
             meTokensBurned,
             rawAssetsReturned,
-            owner
+            isOwner
         );
         // Subtract tokens returned from balance pooled
         LibMeToken.updateBalancePooled(false, meToken, rawAssetsReturned);
 
-        if (owner) {
+        if (isOwner) {
             // Is owner, subtract from balance locked
             LibMeToken.updateBalanceLocked(
                 false,
@@ -256,7 +256,7 @@ library LibFoundry {
         IMeToken(meToken).burn(sender, meTokensBurned);
 
         _vaultWithdrawal(
-            owner,
+            isOwner,
             sender,
             recipient,
             meToken,
@@ -511,7 +511,7 @@ library LibFoundry {
     }
 
     function _vaultWithdrawal(
-        bool owner,
+        bool isOwner,
         address sender,
         address recipient,
         address meToken,
@@ -523,7 +523,7 @@ library LibFoundry {
         AppStorage storage s = LibAppStorage.diamondStorage();
 
         uint256 fee;
-        if (owner) {
+        if (isOwner) {
             fee = (s.burnOwnerFee * assetsReturned) / s.PRECISION;
         } else {
             fee = (s.burnBuyerFee * assetsReturned) / s.PRECISION;
