@@ -19,12 +19,13 @@ struct LiquidityMiningStorage {
     bytes32 merkleRoot;
 }
 struct PoolInfo {
-    bytes32 seasonMerkleRoot; // used to identify if it is a new season
+    //  bytes32 seasonMerkleRoot; // used to identify if it is a new season
     uint256 lastUpdateTime;
     uint256 totalSupply; // supply staked
     uint256 rewardPerTokenStored;
     uint256 rewardRate;
     uint256 endTime;
+    mapping(address => bytes32) seasonMerkleRoot;
     mapping(address => uint256) userRewardPerTokenPaid;
     mapping(address => uint256) rewards; // key: staker addr
 }
@@ -48,7 +49,7 @@ library LibLiquidityMining {
         )
     {
         LiquidityMiningStorage storage ls = liquidityMiningStorage();
-        seasonMerkleRoot = ls.pools[meToken].seasonMerkleRoot;
+        seasonMerkleRoot = ls.pools[meToken].seasonMerkleRoot[user];
         lastUpdateTime = ls.pools[meToken].lastUpdateTime;
         totalSupply = ls.pools[meToken].totalSupply;
         rewardPerTokenStored = ls.pools[meToken].rewardPerTokenStored;

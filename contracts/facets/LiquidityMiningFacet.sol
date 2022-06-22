@@ -88,11 +88,12 @@ contract LiquidityMiningFacet is
         onlyMeTokenInSeason(meToken, merkleProof)
     {
         require(amount > 0, "cannot stake 0");
-        _resetPool(meToken);
+        address sender = LibMeta.msgSender();
+        _resetPool(meToken, sender);
 
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
-        address sender = LibMeta.msgSender();
+
         _updateReward(meToken, sender);
         PoolInfo storage poolInfo = ls.pools[meToken];
         poolInfo.totalSupply += amount;
@@ -236,7 +237,7 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        if (poolInfo.seasonMerkleRoot == 0) return 0;
+        if (poolInfo.seasonMerkleRoot[account] == 0) return 0;
         console.log(
             "## earned \n meToken:%s \n account:%s \n  poolInfo.userRewardPerTokenPaid[account]:%s",
             meToken,
@@ -365,28 +366,32 @@ contract LiquidityMiningFacet is
     }
 
     /// @notice resets meToken pool if featured in a new season
-    function _resetPool(address meToken) internal {
+    function _resetPool(address meToken, address account) internal {
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         console.log("## _resetPool \n poolInfo.seasonMerkleRoot ");
-        console.logBytes32(poolInfo.seasonMerkleRoot);
+        console.logBytes32(poolInfo.seasonMerkleRoot[account]);
         console.log(" ls.merkleRoot  ");
         console.logBytes32(ls.merkleRoot);
         console.log("meToken:%s  ", meToken);
         // If meToken pool has the same merkle root as the active season,
         //   we don't need to reset the pool as it's active
-        if (poolInfo.seasonMerkleRoot == ls.merkleRoot) return;
+        if (poolInfo.seasonMerkleRoot[account] == ls.merkleRoot) return;
 
         // Keep track of total supply so that we still know how much is staked if we
         // clean the pool
         uint256 totalSupply = poolInfo.totalSupply;
 
         // clean pool info if already featured
-        if (poolInfo.seasonMerkleRoot != 0) delete ls.pools[meToken];
+        if (poolInfo.seasonMerkleRoot[account] != 0) {
+            delete ls.pools[meToken];
+            delete ls.pools[meToken].userRewardPerTokenPaid[account];
+            delete ls.pools[meToken].rewards[account];
+        }
 
         PoolInfo storage newMeTokenPool = ls.pools[meToken];
-        newMeTokenPool.seasonMerkleRoot = ls.merkleRoot;
+        newMeTokenPool.seasonMerkleRoot[account] = ls.merkleRoot;
         newMeTokenPool.totalSupply = totalSupply;
         newMeTokenPool.rewardRate = ls.rewardRate;
         newMeTokenPool.endTime = ls.endTime;
