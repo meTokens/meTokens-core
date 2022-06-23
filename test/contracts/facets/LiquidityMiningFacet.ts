@@ -34,6 +34,7 @@ const setup = async () => {
     let meToken1: MeToken;
     let meToken2: MeToken;
     let meToken3: MeToken;
+    let meToken4: MeToken;
     let whale: Signer;
     let liquidityMining: LiquidityMiningFacet;
     let singleAssetVault: SingleAssetVault;
@@ -154,18 +155,36 @@ const setup = async () => {
           .connect(account3)
           .mint(meToken3.address, tokenDeposited, account3.address);
 
+        // account4 is registering another metoken
+        await meTokenRegistry
+          .connect(account4)
+          .subscribe(`${name}-4`, `${symbol}4`, hubId, tokenDeposited);
+        const meTokenAddr4 = await meTokenRegistry.getOwnerMeToken(
+          account4.address
+        );
+        meToken4 = await getContractAt<MeToken>("MeToken", meTokenAddr4);
+        await foundry
+          .connect(account4)
+          .mint(meToken4.address, tokenDeposited, account4.address);
+
         // meToken approvals
         await meToken.approve(liquidityMining.address, max);
         await meToken2.approve(liquidityMining.address, max);
         await meToken2.connect(account2).approve(liquidityMining.address, max);
         await meToken2.connect(account3).approve(liquidityMining.address, max);
         await meToken3.connect(account3).approve(liquidityMining.address, max);
+        await meToken4.connect(account4).approve(liquidityMining.address, max);
         await meToken2.connect(account3).approve(liquidityMining.address, max);
         await mockToken.setBalance(account0.address, allocationPool);
         await mockToken.approve(liquidityMining.address, max);
         // second metokens will be used to check that we can claim rewards during season 2 if I am not featured in season 2
         // third metoken will be used to check that rewards form season 1 are lost if we claim rewards during season 2 when I am featured in season 2
-        const whitelist = [meToken.address, meToken2.address, meToken3.address];
+        const whitelist = [
+          meToken.address,
+          meToken2.address,
+          meToken3.address,
+          meToken4.address,
+        ];
         merkleTree = new MerkleTree(whitelist);
       });
 
@@ -335,6 +354,17 @@ const setup = async () => {
               tokenDeposited,
               merkleTree.getHexProof(meToken2.address)
             );
+
+          // stake for meToken4 to check in next the tests that claiming during season 2
+          //  *warmup* works
+          await liquidityMining
+            .connect(account4)
+            .stake(
+              meToken4.address,
+              tokenDeposited,
+              merkleTree.getHexProof(meToken4.address)
+            );
+
           // stake for metoken 3 to check in the next tests that claiming during season 2
           // works but erase rewards from season 1 as it is featured in this new season.
           await liquidityMining
@@ -344,6 +374,8 @@ const setup = async () => {
               tokenDeposited,
               merkleTree.getHexProof(meToken3.address)
             );
+
+          // Normal stake which we are testing
           tx = await liquidityMining.stake(
             meToken.address,
             tokenDeposited,
@@ -650,7 +682,11 @@ const setup = async () => {
           .mint(meToken1.address, tokenDeposited, account1.address);
         // metoken2 from account2 and metoken from account0 are not part of season 2
         // metoken3 from account3 is again part of this season
-        const whitelist = [meToken1.address, meToken3.address];
+        const whitelist = [
+          meToken1.address,
+          meToken3.address,
+          meToken4.address,
+        ];
         merkleTree = new MerkleTree(whitelist);
 
         // mint more metokens for metoken 1 and 3
@@ -724,6 +760,46 @@ const setup = async () => {
           seasonRewardRate = seasonInfo.rewardRate;
           expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
         });
+        it("should be able to withdraw featured meToken before season is live", async () => {
+          // Check that season has not started and meToken is in season
+          expect(
+            await liquidityMining.isMeTokenInSeason(
+              meToken4.address,
+              merkleTree.getHexProof(meToken4.address)
+            )
+          ).to.equal(true);
+
+          const poolInfoBefore = await liquidityMining.getPoolInfo(
+            meToken4.address,
+            account4.address
+          );
+
+          tx = await liquidityMining
+            .connect(account4)
+            .withdraw(meToken4.address, tokenDeposited);
+
+          const txBlockTime = (
+            await ethers.provider.getBlock((await tx.wait()).blockNumber)
+          ).timestamp;
+          const { startTime } = await liquidityMining.getSeasonInfo();
+          expect(txBlockTime).to.be.lt(startTime);
+
+          expect(tx)
+            .to.emit(meToken4, "Transfer")
+            .withArgs(
+              liquidityMining.address,
+              account4.address,
+              tokenDeposited
+            );
+
+          const poolInfoAfter = await liquidityMining.getPoolInfo(
+            meToken4.address,
+            account4.address
+          );
+          // Ensure poolInfo still shows state from season 1
+          expect(poolInfoBefore.endTime).to.equal(poolInfoAfter.lastUpdateTime);
+        });
+
         it("revert to stake when not part of the season", async () => {
           const seasonInfo = await liquidityMining.getSeasonInfo();
           await setNextBlockTimestamp(seasonInfo.startTime.toNumber());
@@ -822,7 +898,7 @@ const setup = async () => {
           ).to.equal(calculatedEarned);
         });
 
-        it("should be able to claim rewards from season 1 ", async () => {
+        it("should be able to claim rewards from season 1 if no one has staked yet", async () => {
           tx = await liquidityMining
             .connect(account2)
             .claimReward(meToken2.address);
