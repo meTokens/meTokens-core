@@ -15,8 +15,8 @@ contract DiamondInitMock {
 
     AppStorage internal s; // solhint-disable-line
 
-    function init(uint256 interestFee) external {
+    function init(uint256 mintFee) external {
         require(msg.sender == _owner, "!owner");
-        s.interestFee = interestFee;
+        s.mintFee = mintFee;
     }
 }

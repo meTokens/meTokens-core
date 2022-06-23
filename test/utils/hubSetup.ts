@@ -193,7 +193,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
   let feeInitialization = fees;
   if (!feeInitialization) {
-    feeInitialization = [0, 0, 0, 0, 0, 0];
+    feeInitialization = [0, 0, 0 /* 0, 0, 0 */];
   }
   //
   // NOTE: start diamond deploy
@@ -255,9 +255,9 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       mintFee: feeInitialization[0],
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
-      transferFee: feeInitialization[3],
-      interestFee: feeInitialization[4],
-      yieldFee: feeInitialization[5],
+      // transferFee: feeInitialization[3],
+      // interestFee: feeInitialization[4],
+      // yieldFee: feeInitialization[5],
       diamond: diamond.address,
       me: mockToken.address,
       vaultRegistry: vaultRegistry.address,
