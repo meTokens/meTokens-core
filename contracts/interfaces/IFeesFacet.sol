@@ -40,17 +40,17 @@ interface IFeesFacet {
     /// @param rate New fee rate
     function setBurnOwnerFee(uint256 rate) external;
 
-    /// @notice Set Transfer fee for meTokens protocol
-    /// @param rate New fee rate
-    function setTransferFee(uint256 rate) external;
+    // /// @notice Set Transfer fee for meTokens protocol
+    // /// @param rate New fee rate
+    // function setTransferFee(uint256 rate) external;
 
-    /// @notice Set Interest fee for meTokens protocol
-    /// @param rate New fee rate
-    function setInterestFee(uint256 rate) external;
+    // /// @notice Set Interest fee for meTokens protocol
+    // /// @param rate New fee rate
+    // function setInterestFee(uint256 rate) external;
 
-    /// @notice Set Yield fee for meTokens protocol
-    /// @param rate New fee rate
-    function setYieldFee(uint256 rate) external;
+    // /// @notice Set Yield fee for meTokens protocol
+    // /// @param rate New fee rate
+    // function setYieldFee(uint256 rate) external;
 
     /// @notice Get Mint fee
     /// @return uint256 mintFee
@@ -64,15 +64,15 @@ interface IFeesFacet {
     /// @return uint256 burnOwnerFee
     function burnOwnerFee() external view returns (uint256);
 
-    /// @notice Get Transfer fee
-    /// @return uint256 transferFee
-    function transferFee() external view returns (uint256);
+    // /// @notice Get Transfer fee
+    // /// @return uint256 transferFee
+    // function transferFee() external view returns (uint256);
 
-    /// @notice Get Interest fee
-    /// @return uint256 interestFee
-    function interestFee() external view returns (uint256);
+    // /// @notice Get Interest fee
+    // /// @return uint256 interestFee
+    // function interestFee() external view returns (uint256);
 
-    /// @notice Get Yield fee
-    /// @return uint256 yieldFee
-    function yieldFee() external view returns (uint256);
+    // /// @notice Get Yield fee
+    // /// @return uint256 yieldFee
+    // function yieldFee() external view returns (uint256);
 }

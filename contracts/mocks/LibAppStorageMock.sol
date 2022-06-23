@@ -15,9 +15,9 @@ struct AppStorageMock {
     uint256 mintFee;
     uint256 burnBuyerFee;
     uint256 burnOwnerFee;
-    uint256 transferFee;
-    uint256 interestFee;
-    uint256 yieldFee;
+    // uint256 transferFee;
+    // uint256 interestFee;
+    // uint256 yieldFee;
     // Constants
     uint256 MAX_REFUND_RATIO;
     uint256 PRECISION;
