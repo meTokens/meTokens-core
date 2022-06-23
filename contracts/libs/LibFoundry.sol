@@ -136,7 +136,6 @@ library LibFoundry {
     ) internal {
         (
             address asset,
-            address sender,
             uint256[2] memory amounts // 0-meTokensMinted 1-assetsDepositedAfterFees
         ) = _handleMintWithPermit(
                 meToken,
@@ -153,7 +152,7 @@ library LibFoundry {
         emit Mint(
             meToken,
             asset,
-            sender,
+            LibMeta.msgSender(),
             recipient,
             assetsDeposited,
             amounts[0]
@@ -419,14 +418,7 @@ library LibFoundry {
         uint8 vSig,
         bytes32 rSig,
         bytes32 sSig
-    )
-        private
-        returns (
-            address asset,
-            address sender,
-            uint256[2] memory amounts
-        )
-    {
+    ) private returns (address asset, uint256[2] memory amounts) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
 
@@ -450,7 +442,7 @@ library LibFoundry {
             rSig,
             sSig
         );
-        return (asset, sender, amounts);
+        return (asset, amounts);
     }
 
     function _handlingChangesWithPermit(
