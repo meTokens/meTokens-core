@@ -210,7 +210,6 @@ library LibFoundry {
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
-                meTokenInfo = s.meTokens[meToken];
             }
         }
         // Calculate how many tokens are returned
