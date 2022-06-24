@@ -12,7 +12,6 @@ import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
@@ -63,8 +62,6 @@ contract LiquidityMiningFacet is
             address(this),
             allocationPool
         );
-        // TODO: need to check for precision here? At least allocationPool > s.lmDuration.
-        // TODO to solve this, should we take `rewardRate` as param and cal `allocationPool`?
         uint256 rewardRate = allocationPool / meTokenCount / ls.lmDuration;
 
         ls.startTime = initTime;
@@ -97,11 +94,8 @@ contract LiquidityMiningFacet is
         _updateReward(meToken, sender);
         PoolInfo storage poolInfo = ls.pools[meToken];
         poolInfo.totalSupply += amount;
-        // _totalSupply = _totalSupply.add(amount);
-        //_balances[msg.sender] = _balances[msg.sender].add(amount);
         ls.stakedBalances[meToken][sender] += amount;
 
-        //stakingToken.safeTransferFrom(msg.sender, address(this), amount);
         IERC20(meToken).safeTransferFrom(sender, address(this), amount);
         emit Staked(meToken, sender, amount);
     }
@@ -200,11 +194,8 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
 
-        // _totalSupply = _totalSupply.sub(amount);
         poolInfo.totalSupply -= amount;
-        // _balances[msg.sender] = _balances[msg.sender].sub(amount);
         ls.stakedBalances[meToken][sender] -= amount;
-        // stakingToken.safeTransfer(msg.sender, amount);
         IERC20(meToken).safeTransfer(sender, amount);
         emit Withdrawn(meToken, sender, amount);
     }
@@ -216,12 +207,8 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         UserPoolInfo storage poolInfo = ls.pools[meToken].user[sender];
 
-        //uint256 reward = rewards[msg.sender];
         uint256 reward = poolInfo.rewards;
         if (reward > 0) {
-            /*    rewards[msg.sender] = 0;
-            rewardsToken.safeTransfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward); */
             poolInfo.rewards = 0;
 
             ls.me.safeTransfer(sender, reward);
@@ -238,22 +225,10 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         if (poolInfo.seasonMerkleRoot == 0) return 0;
-
-        console.log(
-            " rewardPerToken(meToken):%s \n balanceOf(meToken, account):%s \n ##",
-            rewardPerToken(meToken),
-            balanceOf(meToken, account)
-        );
         return (((balanceOf(meToken, account) *
             (rewardPerToken(meToken) -
                 poolInfo.user[account].rewardPerTokenPaid)) / s.PRECISION) +
             poolInfo.user[account].rewards);
-
-        /*   return
-            _balances[account]
-                .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
-                .div(1e18)
-                .add(rewards[account]); */
     }
 
     function balanceOf(address meToken, address account)
@@ -278,7 +253,6 @@ contract LiquidityMiningFacet is
         uint256 endTime = ls.pools[meToken].endTime;
 
         return block.timestamp < endTime ? block.timestamp : endTime;
-        // return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken(address meToken) public view returns (uint256) {
@@ -286,33 +260,9 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
 
-        /*   if (_totalSupply == 0) {
-            return rewardPerTokenStored;
-        } */
-
         if (poolInfo.totalSupply == 0) {
             return poolInfo.rewardPerTokenStored;
         }
-        /*         return
-            rewardPerTokenStored.add(
-                lastTimeRewardApplicable()
-                    .sub(lastUpdateTime)
-                    .mul(rewardRate)
-                    .mul(1e18)
-                    .div(_totalSupply)
-            ); */
-        /* console.log(
-            "##  rewardPerToken \n lastTimeRewardApplicable(meToken):%s \n poolInfo.lastUpdateTime:%s \n poolInfo.rewardPerTokenStored:%s  ",
-            lastTimeRewardApplicable(meToken),
-            poolInfo.lastUpdateTime,
-            poolInfo.rewardPerTokenStored
-        );
-        console.log(
-            " poolInfo.rewardRate):%s \n poolInfo.totalSupply:%s \n meToken:%s \n##",
-            poolInfo.rewardRate,
-            poolInfo.totalSupply,
-            meToken
-        ); */
         return
             poolInfo.rewardPerTokenStored +
             (((lastTimeRewardApplicable(meToken) - poolInfo.lastUpdateTime) *
@@ -364,11 +314,6 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
-        console.log("## _resetPool  \n poolInfo.seasonMerkleRoot ");
-        console.logBytes32(poolInfo.seasonMerkleRoot);
-        console.log(" ls.merkleRoot  ");
-        console.logBytes32(ls.merkleRoot);
-        console.log("meToken:%s  ", meToken);
         // If meToken pool has the same merkle root as the active season,
         //   we don't need to reset the pool as it's active
         if (poolInfo.seasonMerkleRoot == ls.merkleRoot) return;
@@ -394,11 +339,6 @@ contract LiquidityMiningFacet is
         LiquidityMiningStorage storage ls = LibLiquidityMining
             .liquidityMiningStorage();
         UserPoolInfo storage userInfo = ls.pools[meToken].user[account];
-        console.log(
-            "## _resetUserPool account:%s \n poolInfo.currentMerkleRoot ",
-            account
-        );
-        console.logBytes32(userInfo.currentMerkleRoot);
 
         // If meToken pool has the same merkle root as the active season,
         //   we don't need to reset the pool as it's active
@@ -418,18 +358,10 @@ contract LiquidityMiningFacet is
             .liquidityMiningStorage();
         PoolInfo storage poolInfo = ls.pools[meToken];
         poolInfo.rewardPerTokenStored = rewardPerToken(meToken);
-        console.log(
-            "## _updateReward \n account:%s \n meToken:%s \n rewardPerTokenStored:%s ##",
-            account,
-            meToken,
-            poolInfo.rewardPerTokenStored
-        );
         poolInfo.lastUpdateTime = lastTimeRewardApplicable(meToken);
 
         if (account != address(0)) {
-            //  rewards[account] = earned(account);
             poolInfo.user[account].rewards = earned(meToken, account);
-            //   userRewardPerTokenPaid[account] = rewardPerTokenStored;
             poolInfo.user[account].rewardPerTokenPaid = poolInfo
                 .rewardPerTokenStored;
         }
