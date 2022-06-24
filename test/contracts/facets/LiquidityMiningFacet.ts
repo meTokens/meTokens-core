@@ -168,7 +168,7 @@ const setup = async () => {
         const whitelist = [meToken.address, meToken2.address, meToken3.address];
         merkleTree = new MerkleTree(whitelist);
       });
-      // TODO check initialised variables
+
       describe("Initial States", () => {
         it("State check", async () => {
           const poolInfo = await liquidityMining.getPoolInfo(
@@ -1304,14 +1304,6 @@ const setup = async () => {
               tokenDeposited,
               merkleTree.getHexProof(meToken2.address)
             );
-          console.log(`
-            account3                     :${account3.address}
-            meToken2                     :${meToken2.address}
-            meToken                      :${meToken.address}
-            account0                     :${account0.address}
-            tokenDeposited               :${tokenDeposited}
-            merkleroot                   :${merkleTree.getHexRoot()}
-            `);
           // stake now for last test
           await liquidityMining.stake(
             meToken.address,
@@ -1363,12 +1355,6 @@ const setup = async () => {
             .mul(PRECISION)
             .div(tokenDeposited);
 
-          console.log(`
- calculatedRewardPerTokenStored:${calculatedRewardPerTokenStored}
-poolInfo.rewardPerTokenStored  :${poolInfo.rewardPerTokenStored}
-poolInfo.userRewardPerTokenPaid:${poolInfo.userRewardPerTokenPaid}
-poolInfo.rewards               :${poolInfo.rewards}
-`);
           // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
           // it should have been reset by acc3 staking
           expect(poolInfo.rewardPerTokenStored).to.equal(0);
@@ -1411,10 +1397,7 @@ poolInfo.rewards               :${poolInfo.rewards}
 
           const currentRewardPerTokenStored =
             await liquidityMining.rewardPerToken(meToken2.address);
-          console.log(`
-            txBlockTimeAfter:${txBlockTimeAfter}
-            currentRewardPerTokenStored :${currentRewardPerTokenStored} 
-           `);
+
           expect(currentRewardPerTokenStored).to.equal(
             calculatedRewardPerTokenStored
           );
@@ -1644,14 +1627,83 @@ poolInfo.rewards               :${poolInfo.rewards}
           expect(poolInfoAfter.lastUpdateTime).to.equal(txBlockTime);
         });
         it("should be able to withdraw and claim rewards when season is over", async () => {
-          // TODO ASSESS account0 can unstake and get rewards from season3 after it ends !!!
-          //  console.log(`
-          // rewardPaid                     :${rewardPaid}
-          // rewards                        :${poolInfo.rewards}
-          // rewards after                  :${poolInfoAfter.rewards}
-          // calculatedRewardPerTokenStored :${calculatedRewardPerTokenStored}
-          // rewardPerTokenStored after     :${poolInfoAfter.rewardPerTokenStored}
-          // `);
+          const seasonInfo = await liquidityMining.getSeasonInfo();
+          // move forward to end of season
+          await setNextBlockTimestamp(
+            seasonInfo.endTime.toNumber() + oneDayInSeconds
+          );
+
+          const poolInfo = await liquidityMining.getPoolInfo(
+            meToken.address,
+            account0.address
+          );
+
+          const balanceStakedBefore = await liquidityMining.balanceOf(
+            meToken.address,
+            account0.address
+          );
+
+          tx = await liquidityMining.connect(account0).exit(meToken.address);
+          const txBlockTime = (
+            await ethers.provider.getBlock((await tx.wait()).blockNumber)
+          ).timestamp;
+
+          const balanceStakedAfter = await liquidityMining.balanceOf(
+            meToken.address,
+            account0.address
+          );
+          const poolInfoAfter = await liquidityMining.getPoolInfo(
+            meToken.address,
+            account0.address
+          );
+
+          await expect(tx)
+            .to.emit(meToken, "Transfer")
+            .withArgs(
+              liquidityMining.address,
+              account0.address,
+              tokenDeposited
+            );
+          // exit withdraw and claim reward
+          await expect(tx)
+            .to.emit(liquidityMining, "Withdrawn")
+            .withArgs(meToken.address, account0.address, tokenDeposited);
+
+          //balance staked has been updated
+          expect(balanceStakedBefore).to.equal(tokenDeposited);
+          expect(balanceStakedAfter).to.equal(0);
+          // reward per token stored has been updated
+          // Previous reward per token stored + ((now-lastUpdateTime)  * RewardRate)/ (TotalSupply staked))
+          // at that time TotalSupply staked == tokenDeposited because _updateReward is ran before updating totalSupply
+          const calculatedRewardPerTokenStored = BigNumber.from(
+            seasonInfo.endTime.toNumber() -
+              (seasonInfo.startTime.toNumber() + 1)
+          )
+            .mul(poolInfo.rewardRate)
+            .mul(PRECISION)
+            .div(tokenDeposited)
+            .add(poolInfo.rewardPerTokenStored);
+
+          expect(poolInfoAfter.rewardPerTokenStored).to.equal(
+            calculatedRewardPerTokenStored
+          );
+          //(balance account * (rewardPerToken - userRewardPerTokenPaid) ) + rewards
+          const rewardPaid = tokenDeposited
+            .mul(
+              calculatedRewardPerTokenStored.sub(
+                poolInfo.userRewardPerTokenPaid
+              )
+            )
+            .div(PRECISION);
+
+          await expect(tx)
+            .to.emit(liquidityMining, "RewardPaid")
+            .withArgs(meToken.address, account0.address, rewardPaid);
+          // poolInfo.userRewardPerTokenPaid[account] is equal to the value of rewardPerTokenStored when account last interacted with LM
+          expect(poolInfoAfter.userRewardPerTokenPaid).to.equal(
+            calculatedRewardPerTokenStored
+          );
+          expect(poolInfoAfter.lastUpdateTime).to.equal(seasonInfo.endTime);
         });
       });
     });
