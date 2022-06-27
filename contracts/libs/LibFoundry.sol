@@ -110,9 +110,7 @@ library LibFoundry {
         LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
 
         // Handling changes
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 //hubInfo = s.hubs[meTokenInfo.targetHubId];
                 LibMeToken.finishResubscribe(meToken);
@@ -120,6 +118,9 @@ library LibFoundry {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
 
         return (asset, sender, amounts[0]);
@@ -201,9 +202,7 @@ library LibFoundry {
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
         // Handling changes
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
                 meTokenInfo = LibMeToken.finishResubscribe(meToken);
@@ -211,6 +210,9 @@ library LibFoundry {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
@@ -383,18 +385,7 @@ library LibFoundry {
                     (rawAssetsReturned * hubInfo.refundRatio) /
                     s.MAX_REFUND_RATIO;
             } else {
-                if (hubInfo.targetRefundRatio > 0) {
-                    // Hub is updating
-                    actualAssetsReturned =
-                        (rawAssetsReturned *
-                            LibWeightedAverage.calculate(
-                                hubInfo.refundRatio,
-                                hubInfo.targetRefundRatio,
-                                hubInfo.startTime,
-                                hubInfo.endTime
-                            )) /
-                        s.MAX_REFUND_RATIO;
-                } else {
+                if (meTokenInfo.targetHubId != 0) {
                     // meToken is resubscribing
                     actualAssetsReturned =
                         (rawAssetsReturned *
@@ -403,6 +394,17 @@ library LibFoundry {
                                 s.hubs[meTokenInfo.targetHubId].refundRatio,
                                 meTokenInfo.startTime,
                                 meTokenInfo.endTime
+                            )) /
+                        s.MAX_REFUND_RATIO;
+                } else {
+                    // Hub is updating
+                    actualAssetsReturned =
+                        (rawAssetsReturned *
+                            LibWeightedAverage.calculate(
+                                hubInfo.refundRatio,
+                                hubInfo.targetRefundRatio,
+                                hubInfo.startTime,
+                                hubInfo.endTime
                             )) /
                         s.MAX_REFUND_RATIO;
                 }
