@@ -259,7 +259,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       // interestFee: feeInitialization[4],
       // yieldFee: feeInitialization[5],
       diamond: diamond.address,
-      me: mockToken.address,
+      // me: mockToken.address,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
