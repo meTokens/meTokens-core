@@ -2,7 +2,7 @@ import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber, ContractTransaction } from "ethers";
 import { expect } from "chai";
-import { deploy, getContractAt, toETHNumber } from "../../utils/helpers";
+import { getContractAt } from "../../utils/helpers";
 import { mineBlock, setNextBlockTimestamp } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
@@ -57,9 +57,9 @@ const setup = async () => {
     const oneDayInSeconds = 60 * 60 * 24;
     const duration = oneDayInSeconds * 20; // 20 days in seconds
 
-    const allocationPool = ethers.utils.parseEther("30");
-    const allocationPoolSeason2 = ethers.utils.parseEther("200");
-    const BASE = ethers.utils.parseUnits("1", 54);
+    const allocationForOneMetoken = ethers.utils.parseEther("10");
+    let whitelist = [];
+    const allocationForOneMetokenSeason2 = ethers.utils.parseEther("100");
 
     let snapshotId: any;
     before(async () => {
@@ -175,17 +175,21 @@ const setup = async () => {
         await meToken3.connect(account3).approve(liquidityMining.address, max);
         await meToken4.connect(account4).approve(liquidityMining.address, max);
         await meToken2.connect(account3).approve(liquidityMining.address, max);
-        await mockToken.setBalance(account0.address, allocationPool);
+
         await mockToken.approve(liquidityMining.address, max);
         // second metokens will be used to check that we can claim rewards during season 2 if I am not featured in season 2
         // third metoken will be used to check that rewards form season 1 are lost if we claim rewards during season 2 when I am featured in season 2
-        const whitelist = [
+        whitelist = [
           meToken.address,
           meToken2.address,
           meToken3.address,
           meToken4.address,
         ];
         merkleTree = new MerkleTree(whitelist);
+        await mockToken.setBalance(
+          account0.address,
+          allocationForOneMetoken.mul(whitelist.length)
+        );
       });
 
       describe("Initial States", () => {
@@ -273,11 +277,11 @@ const setup = async () => {
           const bSenderBalance = await mockToken.balanceOf(account0.address);
           const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
           const merkleRoot = merkleTree.getHexRoot();
-
+          const allocationPool = allocationForOneMetoken.mul(whitelist.length);
           await liquidityMining.initSeason(
             initTime,
             allocationPool,
-            3,
+            whitelist.length,
             merkleRoot
           );
 
@@ -293,7 +297,7 @@ const setup = async () => {
           expect(seasonInfo.endTime.toNumber()).to.equal(initTime + duration);
           expect(seasonInfo.allocationPool).to.equal(allocationPool);
           expect(seasonInfo.rewardRate).to.equal(
-            BigNumber.from(allocationPool).div(3).div(duration)
+            allocationForOneMetoken.div(duration)
           );
           expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
         });
@@ -669,7 +673,7 @@ const setup = async () => {
     describe("second season", () => {
       before(async () => {
         // let's send more rewards
-        await mockToken.setBalance(account0.address, allocationPoolSeason2);
+
         await meTokenRegistry
           .connect(account1)
           .subscribe(`${name}-1`, `${symbol}1`, hubId, tokenDeposited);
@@ -682,13 +686,12 @@ const setup = async () => {
           .mint(meToken1.address, tokenDeposited, account1.address);
         // metoken2 from account2 and metoken from account0 are not part of season 2
         // metoken3 from account3 is again part of this season
-        const whitelist = [
-          meToken1.address,
-          meToken3.address,
-          meToken4.address,
-        ];
+        whitelist = [meToken1.address, meToken3.address, meToken4.address];
         merkleTree = new MerkleTree(whitelist);
-
+        await mockToken.setBalance(
+          account0.address,
+          allocationForOneMetokenSeason2.mul(whitelist.length)
+        );
         // mint more metokens for metoken 1 and 3
 
         await foundry
@@ -702,8 +705,6 @@ const setup = async () => {
         let tx: ContractTransaction;
         let pendingS1Acc2Rewards: BigNumber;
         let pendingS1Acc3Rewards: BigNumber;
-        let timeAcc1Stake: number;
-        let timeAcc3Stake: number;
         let seasonRewardRate: BigNumber;
         it("should have pending rewards from previous season", async () => {
           pendingS1Acc2Rewards = await liquidityMining.earned(
@@ -735,11 +736,13 @@ const setup = async () => {
           const bSenderBalance = await mockToken.balanceOf(account0.address);
           const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
           const merkleRoot = merkleTree.getHexRoot();
-
+          const allocationPoolSeason2 = allocationForOneMetokenSeason2.mul(
+            whitelist.length
+          );
           await liquidityMining.initSeason(
             initTime,
             allocationPoolSeason2,
-            2, // two metokens featured in this season
+            whitelist.length, // two metokens featured in this season
             merkleRoot
           );
 
@@ -755,7 +758,7 @@ const setup = async () => {
           expect(seasonInfo.endTime.toNumber()).to.equal(initTime + duration);
           expect(seasonInfo.allocationPool).to.equal(allocationPoolSeason2);
           expect(seasonInfo.rewardRate).to.equal(
-            BigNumber.from(allocationPoolSeason2).div(2).div(duration)
+            allocationForOneMetokenSeason2.div(duration)
           );
           seasonRewardRate = seasonInfo.rewardRate;
           expect(seasonInfo.merkleRoot).to.equal(merkleRoot);
@@ -846,7 +849,6 @@ const setup = async () => {
           const txBlockTime = (
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
-          timeAcc1Stake = txBlockTime;
           // travel to one day in the futur
           await mineBlock(txBlockTime + oneDayInSeconds);
 
@@ -966,7 +968,6 @@ const setup = async () => {
           const txBlockTime = (
             await ethers.provider.getBlock((await tx.wait()).blockNumber)
           ).timestamp;
-          timeAcc3Stake = txBlockTime;
           const seasonInfo = await liquidityMining.getSeasonInfo();
           // rewards from season1 are wiped
           // but as the user was already staked when season2 begun he is entitled to some rewards
@@ -1288,7 +1289,7 @@ const setup = async () => {
       before(async () => {
         // the goal here will be mainly to check calculation for several accounts
         // staking the same metoken
-        await mockToken.setBalance(account0.address, allocationPool);
+
         await mockToken.approve(
           liquidityMining.address,
           ethers.constants.MaxUint256
@@ -1306,8 +1307,12 @@ const setup = async () => {
           .connect(account4)
           .mint(meToken2.address, tokenDeposited, account4.address);
 
-        const whitelist = [meToken.address, meToken2.address];
+        whitelist = [meToken.address, meToken2.address];
         merkleTree = new MerkleTree(whitelist);
+        await mockToken.setBalance(
+          account0.address,
+          allocationForOneMetoken.mul(whitelist.length)
+        );
         // account3 and account4 will stake metoken2 while account0 will stake metoken
 
         // withdraw metoken2 staked by account2 for calculations
@@ -1323,11 +1328,11 @@ const setup = async () => {
           const bSenderBalance = await mockToken.balanceOf(account0.address);
           const bLMBalance = await mockToken.balanceOf(liquidityMining.address);
           const merkleRoot = merkleTree.getHexRoot();
-
+          const allocationPool = allocationForOneMetoken.mul(whitelist.length);
           await liquidityMining.initSeason(
             initTime,
             allocationPool,
-            2,
+            whitelist.length,
             merkleRoot
           );
 
@@ -1473,7 +1478,6 @@ const setup = async () => {
 
           const currentRewardPerTokenStored =
             await liquidityMining.rewardPerToken(meToken2.address);
-
           expect(currentRewardPerTokenStored).to.equal(
             calculatedRewardPerTokenStored
           );
