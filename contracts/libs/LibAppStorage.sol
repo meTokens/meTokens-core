@@ -35,6 +35,8 @@ struct AppStorage {
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
     // reentrancy guard
+    uint256 NOT_ENTERED;
+    uint256 ENTERED;
     uint256 reentrancyStatus;
     // Widely-used addresses/interfaces
     address diamond;
@@ -71,6 +73,33 @@ library LibAppStorage {
 
 contract Modifiers {
     AppStorage internal s;
+
+    /**
+     * @dev Prevents a contract from calling itself, directly or indirectly.
+     * Calling a `nonReentrant` function from another `nonReentrant`
+     * function is not supported. It is possible to prevent this from happening
+     * by making the `nonReentrant` function external, and making it call a
+     * `private` function that does the actual work.
+
+     * @dev Works identically to OZ's nonReentrant.
+     * @dev Used to avoid state storage collision within diamond.
+     */
+
+    modifier nonReentrant() {
+        // On the first call to nonReentrant, _notEntered will be true
+        require(
+            s.reentrancyStatus != s.ENTERED,
+            "ReentrancyGuard: reentrant call"
+        );
+
+        // Any calls to nonReentrant after this point will fail
+        s.reentrancyStatus = s.ENTERED;
+        _;
+
+        // By storing the original value once again, a refund is triggered (see
+        // https://eips.ethereum.org/EIPS/eip-2200)
+        s.reentrancyStatus = s.NOT_ENTERED;
+    }
 
     modifier onlyDiamondController() {
         require(
