@@ -11,15 +11,10 @@ import {LibLiquidityMining, PoolInfo, UserPoolInfo, LiquidityMiningStorage} from
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
-import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
 
 /// @author @cartercarlson, @bunsdev, @cbobrobison
 /// @title Rewards contract for meTokens liquidity mining
-contract LiquidityMiningFacet is
-    ILiquidityMiningFacet,
-    Modifiers,
-    ReentrancyGuard
-{
+contract LiquidityMiningFacet is ILiquidityMiningFacet, Modifiers {
     using SafeERC20 for IERC20;
     /// @notice checks if `meToken` is part of `season`.
     /// @param  meToken - address a metoken address.
