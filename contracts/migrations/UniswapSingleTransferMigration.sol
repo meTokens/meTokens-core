@@ -4,6 +4,7 @@ pragma solidity 0.8.9;
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "../utils/ReentrancyGuard.sol";
+import {IChainlinkFeedRegistry} from "../interfaces/IChainlinkFeedRegistry.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
@@ -38,6 +39,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         IV3SwapRouter(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
     IQuoter private immutable _quoter =
         IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
+    IChainlinkFeedRegistry private immutable _feedRegistry =
+        IChainlinkFeedRegistry(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
 
     // args for uniswap router
     uint24 public constant MINFEE = 500; // 0.05%
@@ -46,7 +49,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
 
-    constructor(address _dao, address _diamond) Vault(_dao, _diamond) {}
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant USD = 0x0000000000000000000000000000000000000348;
+    mapping(address => bool) private _stable;
+
+    constructor(address _dao, address _diamond) Vault(_dao, _diamond) {
+        _stable[DAI] = true;
+    }
 
     /// @inheritdoc IMigration
     function initMigration(address meToken, bytes memory encodedArgs)
@@ -199,5 +212,80 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         amountOut = _router.exactInputSingle(params);
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
+    }
+
+    function _calculateChainlinkPrice(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) private view returns (uint256 amountOut) {
+        // TODO: add decimals() to IERC20
+        uint256 decimalsIn = 1; // IERC20(tokenIn).decimals();
+        uint256 decimalsOut = 1; // IERC20(tokenOut).decimals();
+
+        (address base, address quote, uint256 convertedAmountIn) = _convert(
+            tokenIn,
+            tokenOut,
+            amountIn
+        );
+
+        uint256 price;
+        if (quote == USD) {
+            // Chainlink oracles use XXX / USD as "base" / "quote"
+            price = uint256(_feedRegistry.latestAnswer(base, quote));
+            amountOut = (convertedAmountIn * price * decimalsIn) / decimalsOut;
+        } else if (base == USD) {
+            price = uint256(_feedRegistry.latestAnswer(quote, base));
+            // need to divide by price since we're switching the order in the feedRegistry query
+            amountOut = (convertedAmountIn * decimalsIn) / price / decimalsOut;
+        } else {
+            // TODO: try/catch handling
+        }
+    }
+
+    function _convert(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    )
+        private
+        view
+        returns (
+            address base,
+            address quote,
+            uint256 convertedAmountIn
+        )
+    {
+        // handle tokenIn (which would be base) - we multiply as it's tokenIn / tokenOut
+        if (_stable[tokenIn]) {
+            base = USD;
+            // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
+            // This protects from black swan event of a stable coin going off peg (cough terra)
+            amountIn *= uint256(_feedRegistry.latestAnswer(tokenIn, USD)) / 1e8;
+        } else if (tokenIn == WETH) {
+            base = ETH;
+        } else if (tokenIn == WBTC) {
+            base = BTC;
+            amountIn *= uint256(_feedRegistry.latestAnswer(WBTC, BTC)) / 1e8;
+        } else {
+            base = tokenIn;
+        }
+
+        // handle tokenIn (which would be quote) - we divide
+        if (_stable[tokenOut]) {
+            quote = USD;
+            // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
+            // This protects from black swan event of a stable coin going off peg (cough terra)
+            amountIn /= uint256(_feedRegistry.latestAnswer(tokenIn, USD)) / 1e8;
+        } else if (tokenOut == WETH) {
+            quote = ETH;
+        } else if (tokenIn == WBTC) {
+            quote = BTC;
+            amountIn /= uint256(_feedRegistry.latestAnswer(WBTC, BTC)) / 1e8;
+        } else {
+            quote = tokenOut;
+        }
+
+        convertedAmountIn = amountIn;
     }
 }
