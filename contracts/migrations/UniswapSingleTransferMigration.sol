@@ -3,6 +3,7 @@ pragma solidity 0.8.9;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IChainlinkFeedRegistry} from "../interfaces/IChainlinkFeedRegistry.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
@@ -14,6 +15,7 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
+import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -182,20 +184,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             return 0;
         }
 
-        // Calculate rough expected return based on 5% input
-        uint256 expectedPartialAmount = _quoter.quoteExactInputSingle(
+        // Get expected amount from chainlink
+        uint256 expectedAmountOutNoSlippage = _calculateAmountOutWithChainlink(
             hubInfo.asset,
             targetHubInfo.asset,
-            usts.fee,
-            (amountIn * 5) / 100,
-            0
+            amountIn
         );
 
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
         // https://docs.uniswap.org/protocol/guides/swaps/single-swaps
-        // Have amountOutMinimum based on the 20 * expectedPartialAmount assuming swapping 5% has 0 slippage
         IV3SwapRouter.ExactInputSingleParams memory params = IV3SwapRouter
             .ExactInputSingleParams({
                 tokenIn: hubInfo.asset,
@@ -203,7 +202,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 fee: usts.fee,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: (expectedPartialAmount * 20 * MAXSLIPPAGE) /
+                amountOutMinimum: (expectedAmountOutNoSlippage * MAXSLIPPAGE) /
                     PRECISION,
                 sqrtPriceLimitX96: 0
             });
@@ -214,14 +213,13 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }
 
-    function _calculateChainlinkPrice(
+    function _calculateAmountOutWithChainlink(
         address tokenIn,
         address tokenOut,
         uint256 amountIn
     ) private view returns (uint256 amountOut) {
-        // TODO: add decimals() to IERC20
-        uint256 decimalsIn = 1; // IERC20(tokenIn).decimals();
-        uint256 decimalsOut = 1; // IERC20(tokenOut).decimals();
+        uint256 decimalsIn = IERC20Metadata(tokenIn).decimals();
+        uint256 decimalsOut = IERC20Metadata(tokenOut).decimals();
 
         (address base, address quote, uint256 convertedAmountIn) = _convert(
             tokenIn,
@@ -230,16 +228,28 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         );
 
         uint256 price;
-        if (quote == USD) {
-            // Chainlink oracles use XXX / USD as "base" / "quote"
+
+        // Chainlink oracles commonly use XXX / USD and XXX / ETH as "base" / "quote"
+        // Note: && condition handles for failed USD / ETH price as feed does not exist
+        if (quote == USD || (quote == ETH && base != USD)) {
+            uint256 decimalsQuote = _feedRegistry.decimals(base, quote);
             price = uint256(_feedRegistry.latestAnswer(base, quote));
-            amountOut = (convertedAmountIn * price * decimalsIn) / decimalsOut;
-        } else if (base == USD) {
+            amountOut =
+                (convertedAmountIn * decimalsIn * price) /
+                10**decimalsQuote /
+                decimalsOut;
+        } else if (base == USD || base == ETH) {
+            uint256 decimalsQuote = _feedRegistry.decimals(quote, base);
             price = uint256(_feedRegistry.latestAnswer(quote, base));
             // need to divide by price since we're switching the order in the feedRegistry query
-            amountOut = (convertedAmountIn * decimalsIn) / price / decimalsOut;
+            // and since we're dividing by price which has decimals, multiply by decimalsQuote
+            amountOut =
+                (convertedAmountIn * decimalsIn * 10**decimalsQuote) /
+                price /
+                decimalsOut;
         } else {
-            // TODO: try/catch handling
+            // panic mode - we couldn't get a quote (TODO)
+            amountOut = 0;
         }
     }
 
@@ -256,7 +266,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             uint256 convertedAmountIn
         )
     {
-        // handle tokenIn (which would be base) - we multiply as it's tokenIn / tokenOut
+        // handle tokenIn (aka "base") - we multiply as it's tokenIn / tokenOut
         if (_stable[tokenIn]) {
             base = USD;
             // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
@@ -266,22 +276,26 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             base = ETH;
         } else if (tokenIn == WBTC) {
             base = BTC;
+            // wbtc black swan protection
             amountIn *= uint256(_feedRegistry.latestAnswer(WBTC, BTC)) / 1e8;
         } else {
             base = tokenIn;
         }
 
-        // handle tokenIn (which would be quote) - we divide
+        // handle tokenOut (aka "quote") - we divide
         if (_stable[tokenOut]) {
             quote = USD;
             // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
             // This protects from black swan event of a stable coin going off peg (cough terra)
-            amountIn /= uint256(_feedRegistry.latestAnswer(tokenIn, USD)) / 1e8;
+            amountIn *=
+                1e8 /
+                uint256(_feedRegistry.latestAnswer(tokenOut, USD));
         } else if (tokenOut == WETH) {
             quote = ETH;
         } else if (tokenIn == WBTC) {
             quote = BTC;
-            amountIn /= uint256(_feedRegistry.latestAnswer(WBTC, BTC)) / 1e8;
+            // wbtc black swan protection
+            amountIn *= 1e8 / uint256(_feedRegistry.latestAnswer(WBTC, BTC));
         } else {
             quote = tokenOut;
         }
