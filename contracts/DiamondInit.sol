@@ -11,12 +11,11 @@ import {AppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
-import {ReentrancyGuard} from "./utils/ReentrancyGuard.sol";
 
 /// @title Diamond Init
 /// @author Carter Carlson (@cartercarlson), @zgorizzo69
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
-contract DiamondInit is ReentrancyGuard {
+contract DiamondInit {
     using ABDKMathQuad for uint256;
     struct Args {
         uint256 mintFee;
@@ -56,6 +55,8 @@ contract DiamondInit is ReentrancyGuard {
         s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 1e18;
         s.MAX_FEE = 5e16; // 5%
+        s.NOT_ENTERED = 1;
+        s.ENTERED = 2;
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
@@ -70,6 +71,6 @@ contract DiamondInit is ReentrancyGuard {
         cs.baseX = uint256(1 ether).fromUInt();
 
         //adding reentrancy initial state
-        s.reentrancyStatus = NOT_ENTERED;
+        s.reentrancyStatus = s.NOT_ENTERED;
     }
 }
