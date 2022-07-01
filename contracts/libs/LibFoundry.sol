@@ -110,19 +110,17 @@ library LibFoundry {
         LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
 
         // Handling changes
-        uint256 hubToUpdate = meTokenInfo.hubId;
         if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
-                hubToUpdate = meTokenInfo.targetHubId;
-                LibMeToken.finishResubscribe(meToken);
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
         }
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(hubToUpdate);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
 
         return (asset, sender, amounts[0]);
@@ -484,19 +482,17 @@ library LibFoundry {
         LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
 
         // Handling changes
-        uint256 hubToUpdate = meTokenInfo.hubId;
         if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
-                hubToUpdate = meTokenInfo.targetHubId;
-                LibMeToken.finishResubscribe(meToken);
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
         }
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(hubToUpdate);
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
     }
 
