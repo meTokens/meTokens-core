@@ -12,7 +12,7 @@ import {
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
-import { mineBlock } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   HubFacet,
@@ -75,6 +75,7 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
+    const max = ethers.constants.MaxUint256;
 
     // for 1 DAI we get 1000 metokens
     // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
@@ -116,7 +117,6 @@ const setup = async () => {
       await weth.connect(whale).transfer(account0.address, amount1.mul(10));
       await dai.connect(whale).transfer(account1.address, amount1.mul(10));
       await dai.connect(whale).transfer(account2.address, amount1.mul(10));
-      const max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(singleAssetVault.address, max);
       await weth.connect(account0).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(singleAssetVault.address, max);
@@ -1729,6 +1729,120 @@ const setup = async () => {
         expect(balAfter).equal(0);
         expect(await meToken.totalSupply()).to.equal(0);
         expect(balEthAfter).to.be.gt(balEthBefore);
+      });
+    });
+    describe("Resubscribe and hub updating at same time", () => {
+      let hubToMigrate = hubIdDAI;
+      let migration: UniswapSingleTransferMigration;
+      let newRefundRatio: BigNumber;
+      let newReserveWeight: BigNumber;
+
+      beforeEach(async () => {
+        // Finish endCoolDown of last hub update
+        await mineBlock(
+          Number((await hub.getHubInfo(hubIdDAI)).endCooldown.add(1))
+        );
+
+        migration = await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined,
+          account0.address, // DAO
+          foundry.address // diamond
+        );
+        await migrationRegistry.approve(
+          singleAssetVault.address,
+          singleAssetVault.address,
+          migration.address
+        );
+        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fee]
+        );
+
+        await meTokenRegistry
+          .connect(account2)
+          .initResubscribe(
+            meToken.address,
+            hubToMigrate,
+            migration.address,
+            encodedMigrationArgs
+          );
+
+        // update hub curve details
+        newRefundRatio = BigNumber.from(20001);
+        newReserveWeight = BigNumber.from(MAX_WEIGHT).div(hubToMigrate * 2);
+        await hub.initUpdate(hubToMigrate, newRefundRatio, newReserveWeight);
+      });
+
+      it("Mint: Poke or finishResubscribe should be called first and then finishUpdate", async () => {
+        await mineBlock(
+          Number((await hub.getHubInfo(hubToMigrate)).endTime.add(1))
+        );
+
+        let wethWhale: string;
+        ({ WETHWhale: wethWhale } = await getNamedAccounts());
+        const whale = await impersonate(wethWhale);
+        await weth.connect(whale).transfer(account2.address, amount);
+        await weth.connect(account2).approve(singleAssetVault.address, max);
+
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .withArgs(meToken.address);
+
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubToMigrate);
+
+        hubToMigrate = hubIdWETH;
+      });
+
+      it("Burn: Poke or finish resubscribe should be called first and then finishUpdate", async () => {
+        await mineBlock(
+          Number((await hub.getHubInfo(hubToMigrate)).endTime.add(1))
+        );
+
+        const ownerMeToken = await meToken.balanceOf(account2.address);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenInfo.balancePooled),
+          Number(newReserveWeight) / MAX_WEIGHT
+        );
+        const assetsReturned =
+          rawAssetsReturned +
+          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+            toETHNumber(meTokenInfo.balanceLocked);
+        const lockedAmount = assetsReturned - rawAssetsReturned;
+
+        const tx = await foundry
+          .connect(account2)
+          .burn(meToken.address, ownerMeToken, account2.address);
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .withArgs(meToken.address);
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubToMigrate);
+
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+
+        expect(
+          toETHNumber(
+            meTokenInfo.balancePooled.sub(newMeTokenInfo.balancePooled)
+          )
+        ).to.be.approximately(rawAssetsReturned, 1e-15);
+        expect(
+          toETHNumber(
+            meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
+          )
+        ).to.be.approximately(lockedAmount, 1e-13);
       });
     });
     after(async () => {
