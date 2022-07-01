@@ -144,7 +144,7 @@ const setup = async () => {
       wethHolder = await impersonate(WETHWhale);
       dai
         .connect(daiHolder)
-        .transfer(account0.address, ethers.utils.parseEther("100"));
+        .transfer(account0.address, ethers.utils.parseEther("50000000"));
       dai
         .connect(daiHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
@@ -155,6 +155,7 @@ const setup = async () => {
         .connect(wethHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
       let max = ethers.constants.MaxUint256;
+      await dai.connect(account0).approve(meTokenRegistry.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
       await dai.connect(account2).approve(initialVault.address, max);
       await weth.connect(account2).approve(migration.address, max);
@@ -682,6 +683,53 @@ const setup = async () => {
         await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
+      });
+    });
+
+    describe("Migration reverts from slippage", () => {
+      before(async () => {
+        // NOTE: at current market, 50M DAI would incur 6% slippage
+        await meTokenRegistry
+          .connect(account0)
+          .subscribe(name, symbol, hubId1, ethers.utils.parseEther("50000000"));
+        const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+          account0.address
+        );
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+        block = await ethers.provider.getBlock("latest");
+
+        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fees]
+        );
+
+        await meTokenRegistry
+          .connect(account0)
+          .initResubscribe(
+            meToken.address,
+            hubId2,
+            migration.address,
+            encodedMigrationArgs
+          );
+        migrationDetails = await migration.getDetails(meToken.address);
+        expect(migrationDetails.fee).to.equal(fees);
+      });
+
+      it("Call to poke reverts", async () => {
+        await mineBlock(
+          (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).startTime.toNumber() + 1
+        );
+        block = await ethers.provider.getBlock("latest");
+        expect(
+          (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+        ).to.be.lt(block.timestamp);
+
+        await expect(migration.poke(meToken.address)).to.be.revertedWith(
+          "Too little received"
+        );
       });
     });
     after(async () => {

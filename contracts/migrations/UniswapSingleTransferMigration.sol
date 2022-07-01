@@ -49,7 +49,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     uint24 public constant MIDFEE = 3000; // 0.3% (Default fee)
     uint24 public constant MAXFEE = 1e4; // 1%
 
-    uint256 public constant MAXSLIPPAGE = 95 * 1e16; // *0.95 = -5%
+    uint256 public constant MIN_PCT_OUT = 95 * 1e16; // 95% returned - 5% slippage
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -202,7 +202,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 fee: usts.fee,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: (expectedAmountOutNoSlippage * MAXSLIPPAGE) /
+                amountOutMinimum: (expectedAmountOutNoSlippage * MIN_PCT_OUT) /
                     PRECISION,
                 sqrtPriceLimitX96: 0
             });
@@ -226,12 +226,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             tokenOut,
             amountIn
         );
-
         uint256 price;
 
         // Chainlink oracles commonly use XXX / USD and XXX / ETH as "base" / "quote"
         // Note: && condition handles for failed USD / ETH price as feed does not exist
         if (quote == USD || (quote == ETH && base != USD)) {
+            console.log("in first if");
             uint256 decimalsQuote = _feedRegistry.decimals(base, quote);
             price = uint256(_feedRegistry.latestAnswer(base, quote));
             amountOut =
@@ -239,9 +239,10 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 10**decimalsQuote /
                 decimalsOut;
         } else if (base == USD || base == ETH) {
+            console.log("in else");
             uint256 decimalsQuote = _feedRegistry.decimals(quote, base);
             price = uint256(_feedRegistry.latestAnswer(quote, base));
-            // need to divide by price since we're switching the order in the feedRegistry query
+            // need to multiply by price since we're switching the order in the feedRegistry query
             // and since we're dividing by price which has decimals, multiply by decimalsQuote
             amountOut =
                 (convertedAmountIn * decimalsIn * 10**decimalsQuote) /
@@ -271,13 +272,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             base = USD;
             // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
             // This protects from black swan event of a stable coin going off peg (cough terra)
-            amountIn *= uint256(_feedRegistry.latestAnswer(tokenIn, USD)) / 1e8;
+            amountIn =
+                (amountIn * uint256(_feedRegistry.latestAnswer(tokenIn, USD))) /
+                1e8;
         } else if (tokenIn == WETH) {
             base = ETH;
         } else if (tokenIn == WBTC) {
             base = BTC;
             // wbtc black swan protection
-            amountIn *= uint256(_feedRegistry.latestAnswer(WBTC, BTC)) / 1e8;
+            amountIn =
+                (amountIn * uint256(_feedRegistry.latestAnswer(WBTC, BTC))) /
+                1e8;
         } else {
             base = tokenIn;
         }
@@ -287,15 +292,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             quote = USD;
             // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
             // This protects from black swan event of a stable coin going off peg (cough terra)
-            amountIn *=
-                1e8 /
+            amountIn =
+                (amountIn * 1e8) /
                 uint256(_feedRegistry.latestAnswer(tokenOut, USD));
         } else if (tokenOut == WETH) {
             quote = ETH;
         } else if (tokenIn == WBTC) {
             quote = BTC;
             // wbtc black swan protection
-            amountIn *= 1e8 / uint256(_feedRegistry.latestAnswer(WBTC, BTC));
+            amountIn =
+                (amountIn * 1e8) /
+                uint256(_feedRegistry.latestAnswer(WBTC, BTC));
         } else {
             quote = tokenOut;
         }
