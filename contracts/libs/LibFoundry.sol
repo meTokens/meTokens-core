@@ -110,9 +110,11 @@ library LibFoundry {
         LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
 
         // Handling changes
+        uint256 hubToUpdate = meTokenInfo.hubId;
         if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
+                hubToUpdate = meTokenInfo.targetHubId;
                 LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
@@ -120,7 +122,7 @@ library LibFoundry {
             }
         }
         if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
+            LibHub.finishUpdate(hubToUpdate);
         }
 
         return (asset, sender, amounts[0]);
@@ -324,22 +326,7 @@ library LibFoundry {
             meTokenInfo.balancePooled
         );
 
-        // Logic for if we're updating curveInfo
-        if (hubInfo.reconfigure) {
-            // Must mean we're updating curveInfo
-            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
-                meTokensBurned,
-                meTokenInfo.hubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            rawAssetsReturned = LibWeightedAverage.calculate(
-                rawAssetsReturned,
-                targetAssetsReturned,
-                hubInfo.startTime,
-                hubInfo.endTime
-            );
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             // Calculate return assuming meToken is resubscribing
             uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
                 meTokensBurned,
@@ -352,6 +339,20 @@ library LibFoundry {
                 targetAssetsReturned,
                 meTokenInfo.startTime,
                 meTokenInfo.endTime
+            );
+        } else if (hubInfo.reconfigure) {
+            // Must mean we're updating curveInfo
+            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            rawAssetsReturned = LibWeightedAverage.calculate(
+                rawAssetsReturned,
+                targetAssetsReturned,
+                hubInfo.startTime,
+                hubInfo.endTime
             );
         }
     }
@@ -481,15 +482,21 @@ library LibFoundry {
             sSig
         );
         LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+
+        // Handling changes
+        uint256 hubToUpdate = meTokenInfo.hubId;
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                hubToUpdate = meTokenInfo.targetHubId;
                 LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(hubToUpdate);
         }
     }
 
