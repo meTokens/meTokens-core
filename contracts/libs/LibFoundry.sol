@@ -112,7 +112,7 @@ library LibFoundry {
         // Handling changes
         if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
-                //hubInfo = s.hubs[meTokenInfo.targetHubId];
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
                 LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
