@@ -220,10 +220,9 @@ const setup = async () => {
 };
 
 setup().then((tests) => {
-  describe(`${tests.length} Curves should work`, async () => {
-    tests.forEach(async (args) => {
-      await curvesTestsHelper(args);
-    });
+  tests.forEach(async (args, index) => {
+    await curvesTestsHelper(args, index);
   });
+
   run();
 });
