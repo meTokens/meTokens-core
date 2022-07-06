@@ -267,42 +267,46 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             uint256 convertedAmountIn
         )
     {
-        // handle tokenIn (aka "base") - we multiply as it's tokenIn / tokenOut
+        // handle tokenIn (aka "base") - we divide by price
         if (_stable[tokenIn]) {
             base = USD;
-            // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
-            // This protects from black swan event of a stable coin going off peg (cough terra)
+            // - Apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
+            // - Then, if the stablecoin depegs, meToken will still migrate with the proper
+            // slippage protection, even though the price of the stablecoin isn't stable.
+            // - Scenario: swap $100 DAI => ETH, 1 DAI = $0.5, we'll get the quote of ETH/USD and
+            // use that quote with saying our amountIn is $50
             amountIn =
-                (amountIn * uint256(_feedRegistry.latestAnswer(tokenIn, USD))) /
-                1e8;
+                (amountIn * 1e8) /
+                uint256(_feedRegistry.latestAnswer(tokenIn, USD));
         } else if (tokenIn == WETH) {
             base = ETH;
         } else if (tokenIn == WBTC) {
             base = BTC;
-            // wbtc black swan protection
+            // wbtc depeg migration protection
             amountIn =
-                (amountIn * uint256(_feedRegistry.latestAnswer(WBTC, BTC))) /
-                1e8;
+                (amountIn * 1e8) /
+                uint256(_feedRegistry.latestAnswer(WBTC, BTC));
         } else {
             base = tokenIn;
         }
 
-        // handle tokenOut (aka "quote") - we divide
+        // handle tokenOut (aka "quote") - we multiply by price
         if (_stable[tokenOut]) {
             quote = USD;
-            // apply discount rate - if DAI = $0.9998, convert amount to that instead of 1:1
-            // This protects from black swan event of a stable coin going off peg (cough terra)
+            // Scenario: swap $100 DAI => ETH, 1 DAI = $2.0, we'll get the quote of ETH/USD and
+            // use that quote with saying our amountIn is $200
             amountIn =
-                (amountIn * 1e8) /
-                uint256(_feedRegistry.latestAnswer(tokenOut, USD));
+                (amountIn *
+                    uint256(_feedRegistry.latestAnswer(tokenOut, USD))) /
+                1e8;
         } else if (tokenOut == WETH) {
             quote = ETH;
         } else if (tokenIn == WBTC) {
             quote = BTC;
-            // wbtc black swan protection
+            // wbtc depeg migration protection
             amountIn =
-                (amountIn * 1e8) /
-                uint256(_feedRegistry.latestAnswer(WBTC, BTC));
+                (amountIn * uint256(_feedRegistry.latestAnswer(WBTC, BTC))) /
+                1e8;
         } else {
             quote = tokenOut;
         }
