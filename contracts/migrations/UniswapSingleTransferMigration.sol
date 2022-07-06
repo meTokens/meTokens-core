@@ -229,9 +229,12 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         uint256 price;
 
         // Chainlink oracles commonly use XXX / USD and XXX / ETH as "base" / "quote"
-        // Note: && condition handles for failed USD / ETH price as feed does not exist
-        if (quote == USD || (quote == ETH && base != USD)) {
-            console.log("in first if");
+        if (quote == USD && base == USD) {
+            // NOTE: if both currencies are stables - amountOut should be 1:1 after applying
+            // discount rates to peg the stablecoins to $1.
+            amountOut = convertedAmountIn;
+        } else if (quote == USD || (quote == ETH && base != USD)) {
+            // NOTE: && condition handles for failed USD / ETH price as feed does not exist
             uint256 decimalsQuote = _feedRegistry.decimals(base, quote);
             price = uint256(_feedRegistry.latestAnswer(base, quote));
             amountOut =
@@ -239,17 +242,15 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 10**decimalsQuote /
                 decimalsOut;
         } else if (base == USD || base == ETH) {
-            console.log("in else");
             uint256 decimalsQuote = _feedRegistry.decimals(quote, base);
             price = uint256(_feedRegistry.latestAnswer(quote, base));
-            // need to multiply by price since we're switching the order in the feedRegistry query
-            // and since we're dividing by price which has decimals, multiply by decimalsQuote
+            // need to multiply by price since we switch the order of base/quote in the feedRegistry query
             amountOut =
                 (convertedAmountIn * decimalsIn * 10**decimalsQuote) /
                 price /
                 decimalsOut;
         } else {
-            // panic mode - we couldn't get a quote (TODO)
+            // Chainlink doesn't return a price for the pair, so we can't protect from slippage
             amountOut = 0;
         }
     }
