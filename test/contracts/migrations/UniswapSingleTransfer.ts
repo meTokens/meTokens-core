@@ -43,8 +43,8 @@ const setup = async () => {
     let hub: HubFacet;
     let vaultRegistry: VaultRegistry;
 
-    const hubId1 = 1;
-    const hubId2 = 2;
+    const hubId1 = 1; // DAI Hub
+    const hubId2 = 2; // WETH Hub
     const name = "Carl meToken";
     const symbol = "CARL";
     const amount = ethers.utils.parseEther("100");
@@ -70,6 +70,8 @@ const setup = async () => {
     };
 
     let snapshotId: any;
+    let max = ethers.constants.MaxUint256;
+
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
       ({ DAI, DAIWhale, WETH, WETHWhale, UNIV3Factory } =
@@ -154,7 +156,6 @@ const setup = async () => {
       weth
         .connect(wethHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
-      let max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(meTokenRegistry.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
       await dai.connect(account2).approve(initialVault.address, max);
@@ -686,7 +687,8 @@ const setup = async () => {
       });
     });
 
-    describe("Migration reverts from slippage", () => {
+    describe("Slippage Tests", () => {
+      // DAI -> WETH
       before(async () => {
         // NOTE: at current market, 50M DAI would incur 6% slippage
         await meTokenRegistry
@@ -698,40 +700,110 @@ const setup = async () => {
         meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
 
         block = await ethers.provider.getBlock("latest");
-
-        encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
-          ["uint24"],
-          [fees]
-        );
-
-        await meTokenRegistry
-          .connect(account0)
-          .initResubscribe(
-            meToken.address,
-            hubId2,
-            migration.address,
-            encodedMigrationArgs
-          );
-        migrationDetails = await migration.getDetails(meToken.address);
-        expect(migrationDetails.fee).to.equal(fees);
       });
 
-      it("Call to poke reverts", async () => {
-        await mineBlock(
-          (
-            await meTokenRegistry.getMeTokenInfo(meToken.address)
-          ).startTime.toNumber() + 1
-        );
-        block = await ethers.provider.getBlock("latest");
-        expect(
-          (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-        ).to.be.lt(block.timestamp);
+      describe("DAI -> WETH resubscribe fails when slippage > 5%", () => {
+        before(async () => {
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
 
-        await expect(migration.poke(meToken.address)).to.be.revertedWith(
-          "Too little received"
-        );
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+        });
+        it("Call to poke reverts", async () => {
+          // NOTE: at current market, 50M DAI would incur 6% slippage
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).startTime.toNumber() + 1
+          );
+          block = await ethers.provider.getBlock("latest");
+          expect(
+            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+          ).to.be.lt(block.timestamp);
+
+          await expect(
+            migration.callStatic.poke(meToken.address)
+          ).to.be.revertedWith("Too little received");
+        });
+        after(async () => {
+          await meTokenRegistry
+            .connect(account0)
+            .cancelResubscribe(meToken.address);
+        });
+      });
+
+      describe("DAI -> WETH resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          // NOTE: at current market, 30M DAI would incur 4% slippage
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+          await dai.connect(account0).approve(initialVault.address, max);
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseEther("10000000"),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+        });
+        it("Call to poke should NOT revert", async () => {
+          // NOTE: at current market, 50M DAI would incur 6% slippage
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).startTime.toNumber() + 1
+          );
+          block = await ethers.provider.getBlock("latest");
+          expect(
+            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+          ).to.be.lt(block.timestamp);
+
+          await expect(
+            migration.callStatic.poke(meToken.address)
+          ).to.not.be.revertedWith("Too little received");
+        });
+        after(async () => {
+          await meTokenRegistry
+            .connect(account0)
+            .cancelResubscribe(meToken.address);
+        });
       });
     });
+
     after(async () => {
       await network.provider.send("evm_revert", [snapshotId]);
     });

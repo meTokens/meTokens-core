@@ -111,7 +111,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
         accounts,
-        blockNumber: 14448329,
+        blockNumber: 15094617,
       },
       gas: "auto",
       timeout: 1800000,

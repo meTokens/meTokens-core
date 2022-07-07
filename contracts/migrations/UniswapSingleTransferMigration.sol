@@ -15,6 +15,7 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
+// TODO remove
 import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
@@ -39,8 +40,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
     IV3SwapRouter private immutable _router =
         IV3SwapRouter(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
-    IQuoter private immutable _quoter =
-        IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     IChainlinkFeedRegistry private immutable _feedRegistry =
         IChainlinkFeedRegistry(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
 
@@ -51,16 +50,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     uint256 public constant MIN_PCT_OUT = 95 * 1e16; // 95% returned - 5% slippage
 
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
-    address public constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
-    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address public constant USD = 0x0000000000000000000000000000000000000348;
+    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address internal constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
+    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address internal constant USD = 0x0000000000000000000000000000000000000348;
     mapping(address => bool) private _stable;
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {
         _stable[DAI] = true;
+        // TODO add usd?
     }
 
     /// @inheritdoc IMigration
