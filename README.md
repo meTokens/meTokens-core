@@ -51,24 +51,6 @@
       ✓ Cannot set fee to the same fee
       ✓ Cannot set fee above the fee max
       ✓ Sets fee to the new value
-    setTransferFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
-    setInterestFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
-    setYieldFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
 
   Foundry.sol
     mint()
