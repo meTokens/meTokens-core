@@ -620,6 +620,7 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
         expect(meTokenRegistryDetails.endTime).to.be.equal(0);
+        expect(meTokenRegistryDetails.endCooldown).to.be.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
         expect(meTokenRegistryDetails.migration).to.be.equal(
           ethers.constants.AddressZero
