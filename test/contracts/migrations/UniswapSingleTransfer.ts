@@ -18,14 +18,60 @@ import {
 } from "../../../artifacts/types";
 import { getQuote } from "../../utils/uniswap";
 
+const resubscribe = async (
+  meToken: MeToken,
+  owner: SignerWithAddress,
+  toHub: number | string | BigNumber,
+  meTokenRegistry: MeTokenRegistryFacet,
+  migrationRegistry: MigrationRegistry,
+  fromVault: SingleAssetVault,
+  toVault: SingleAssetVault,
+  migration: any,
+  fee: any
+): Promise<any> => {
+  const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+    ["uint24"],
+    [fee]
+  );
+
+  await migrationRegistry.approve(
+    fromVault.address,
+    toVault.address,
+    migration.address
+  );
+
+  await meTokenRegistry
+    .connect(owner)
+    .initResubscribe(
+      meToken.address,
+      toHub,
+      migration.address,
+      encodedMigrationArgs
+    );
+
+  await mineBlock(
+    (
+      await meTokenRegistry.getMeTokenInfo(meToken.address)
+    ).endCooldown.toNumber() + 1
+  );
+  const block = await ethers.provider.getBlock("latest");
+  expect(
+    (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+  ).to.be.lt(block.timestamp);
+
+  await meTokenRegistry.finishResubscribe(meToken.address);
+};
+
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
     let DAI: string;
     let WETH: string;
     let USDC: string;
-    let DAIWhale: string;
+    let WBTC: string;
     let WETHWhale: string;
     let USDCWhale: string;
+    let DAIWhale: string;
+    let WBTCWhale: string;
     let daiHolder: Signer;
     let wethHolder: Signer;
     let UNIV3Factory: string;
@@ -41,6 +87,7 @@ const setup = async () => {
     let initialVault: SingleAssetVault;
     let targetVault: SingleAssetVault;
     let usdcVault: SingleAssetVault;
+    let wbtcVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let meToken: MeToken;
     let hub: HubFacet;
@@ -49,6 +96,7 @@ const setup = async () => {
     const hubId1 = 1; // DAI Hub
     const hubId2 = 2; // WETH Hub
     const hubId3 = 3; // USDC Hub
+    const hubId4 = 4; // WBTC Hub
     const name = "Carl meToken";
     const symbol = "CARL";
     const amount = ethers.utils.parseEther("100");
@@ -78,8 +126,17 @@ const setup = async () => {
 
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      ({ DAI, DAIWhale, WETH, WETHWhale, UNIV3Factory, USDC, USDCWhale } =
-        await getNamedAccounts());
+      ({
+        DAI,
+        DAIWhale,
+        WETH,
+        WETHWhale,
+        UNIV3Factory,
+        USDC,
+        USDCWhale,
+        WBTC,
+        WBTCWhale,
+      } = await getNamedAccounts());
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -129,6 +186,14 @@ const setup = async () => {
       );
       await vaultRegistry.approve(usdcVault.address);
 
+      wbtcVault = await deploy<SingleAssetVault>(
+        "SingleAssetVault",
+        undefined, //no libs
+        account0.address, // DAO
+        hub.address // diamond
+      );
+      await vaultRegistry.approve(wbtcVault.address);
+
       // Register 2nd hub to which we'll migrate to
       await hub.register(
         account0.address,
@@ -139,11 +204,21 @@ const setup = async () => {
         reserveWeight,
         encodedVaultWETHArgs
       );
-      // Register 3nd hub to which we'll migrate to
+      // Register 3rd hub to which we'll migrate to
       await hub.register(
         account0.address,
         USDC,
         usdcVault.address,
+        refundRatio,
+        baseY,
+        reserveWeight,
+        encodedVaultWETHArgs
+      );
+      // Register 4th hub to which we'll migrate to
+      await hub.register(
+        account0.address,
+        WBTC,
+        wbtcVault.address,
         refundRatio,
         baseY,
         reserveWeight,
@@ -268,7 +343,7 @@ const setup = async () => {
             .connect(account1)
             .initResubscribe(
               meToken.address,
-              4,
+              5,
               migration.address,
               encodedMigrationArgs
             )
@@ -1081,6 +1156,161 @@ const setup = async () => {
               ethers.utils.formatUnits(
                 (await meTokenRegistry.getMeTokenInfo(meToken.address))
                   .balancePooled
+              )
+            );
+          }
+        });
+        // after(async () => {
+        //   // TODO will need to update this when the above tests pass
+        //   await meTokenRegistry
+        //     .connect(account0)
+        //     .cancelResubscribe(meToken.address);
+        //   await mineBlock(
+        //     (
+        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
+        //     ).endCooldown.toNumber() + 1
+        //   );
+        //   // Burn all collateral
+        //   await foundry.burn(
+        //     meToken.address,
+        //     await meToken.balanceOf(account0.address),
+        //     account0.address
+        //   );
+        // });
+      });
+      describe("WBTC -> USDC resubscribe fails when slippage > 5%", () => {
+        before(async () => {
+          // TODO delete
+          {
+            await mineBlock(
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).endCooldown.toNumber() + 1
+            );
+
+            // Burn all collateral
+            await foundry.burn(
+              meToken.address,
+              await meToken.balanceOf(account0.address),
+              account0.address
+            );
+          }
+
+          await resubscribe(
+            meToken,
+            account0,
+            hubId4,
+            meTokenRegistry,
+            migrationRegistry,
+            initialVault,
+            wbtcVault,
+            migration,
+            fees
+          );
+
+          const wbtc = await getContractAt<ERC20>("ERC20", WBTC);
+          const wbtcHolder = await impersonate(WBTCWhale);
+          await wbtc
+            .connect(wbtcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(5 * 1e2), 8)
+            );
+
+          await wbtc.connect(account0).approve(wbtcVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(5 * 1e2), 8),
+              account0.address
+            );
+
+          // TODO delete
+          {
+            console.log(
+              "WBTC Balance Pooled (wei):\t\t",
+              String(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled
+              )
+            );
+            console.log(
+              "WBTC Balance Pooled (tokens):\t\t",
+              ethers.utils.formatUnits(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled,
+                8
+              )
+            );
+          }
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wbtcVault.address,
+            usdcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId3,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          // TODO delete
+          {
+            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+              meToken.address
+            );
+
+            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+              WBTC
+            );
+            expect(
+              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+            ).to.equal(USDC);
+          }
+        });
+        it("Call to poke should NOT revert", async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).startTime.toNumber() + 1
+          );
+          block = await ethers.provider.getBlock("latest");
+          expect(
+            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+          ).to.be.lt(block.timestamp);
+
+          await expect(migration.poke(meToken.address)).to.not.be.revertedWith(
+            "Too little received"
+          );
+
+          // TODO delete
+          {
+            console.log(
+              "USDC Balance Pooled (wei):\t\t",
+              String(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled
+              )
+            );
+            console.log(
+              "USDC Balance Pooled (tokens):\t\t",
+              ethers.utils.formatUnits(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled,
+                6
               )
             );
           }
