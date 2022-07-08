@@ -961,6 +961,148 @@ const setup = async () => {
         //   );
         // });
       });
+      describe("USDC -> DAI resubscribe fails when slippage > 5%", () => {
+        before(async () => {
+          // TODO delete
+          {
+            await mineBlock(
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).endCooldown.toNumber() + 1
+            );
+
+            // Burn all collateral
+            await foundry.burn(
+              meToken.address,
+              await meToken.balanceOf(account0.address),
+              account0.address
+            );
+          }
+
+          const usdc = await getContractAt<ERC20>("ERC20", USDC);
+          const usdcHolder = await impersonate(USDCWhale);
+
+          await usdc
+            .connect(usdcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1e6), 6)
+            );
+
+          await usdc.connect(account0).approve(usdcVault.address, max);
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1e6), 6),
+              account0.address
+            );
+
+          // TODO delete
+          {
+            console.log(
+              "USDC Balance Pooled (wei):\t\t",
+              String(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled
+              )
+            );
+            console.log(
+              "USDC Balance Pooled (tokens):\t\t",
+              ethers.utils.formatUnits(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled,
+                6
+              )
+            );
+          }
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [500]
+          );
+
+          await migrationRegistry.approve(
+            usdcVault.address,
+            initialVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId1,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          // TODO delete
+          {
+            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+              meToken.address
+            );
+
+            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+              USDC
+            );
+            expect(
+              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+            ).to.equal(DAI);
+          }
+        });
+        it("Call to poke should NOT revert", async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).startTime.toNumber() + 1
+          );
+          block = await ethers.provider.getBlock("latest");
+          expect(
+            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+          ).to.be.lt(block.timestamp);
+
+          await expect(migration.poke(meToken.address)).to.not.be.revertedWith(
+            "Too little received"
+          );
+
+          // TODO delete
+          {
+            console.log(
+              "DAI Balance Pooled (wei):\t\t",
+              String(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled
+              )
+            );
+            console.log(
+              "DAI Balance Pooled (tokens):\t\t",
+              ethers.utils.formatUnits(
+                (await meTokenRegistry.getMeTokenInfo(meToken.address))
+                  .balancePooled
+              )
+            );
+          }
+        });
+        // after(async () => {
+        //   // TODO will need to update this when the above tests pass
+        //   await meTokenRegistry
+        //     .connect(account0)
+        //     .cancelResubscribe(meToken.address);
+        //   await mineBlock(
+        //     (
+        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
+        //     ).endCooldown.toNumber() + 1
+        //   );
+        //   // Burn all collateral
+        //   await foundry.burn(
+        //     meToken.address,
+        //     await meToken.balanceOf(account0.address),
+        //     account0.address
+        //   );
+        // });
+      });
     });
     after(async () => {
       await network.provider.send("evm_revert", [snapshotId]);
