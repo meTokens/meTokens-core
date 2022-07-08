@@ -36,7 +36,6 @@ const resubscribe = async (
   );
 
   if (needVaultApproval !== false) {
-    console.log("Runs");
     await migrationRegistry.approve(
       fromVault.address,
       toVault.address,
@@ -927,24 +926,6 @@ const setup = async () => {
               account0.address
             );
 
-          // TODO delete
-          {
-            console.log(
-              "DAI Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "DAI Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-          }
-
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
             [500]
@@ -965,19 +946,16 @@ const setup = async () => {
               encodedMigrationArgs
             );
 
-          // TODO delete
-          {
-            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
-              meToken.address
-            );
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
 
-            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
-              dai.address
-            );
-            expect(
-              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
-            ).to.equal(USDC);
-          }
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            dai.address
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(USDC);
         });
         it("Call to poke should NOT revert", async () => {
           await mineBlock(
@@ -991,62 +969,24 @@ const setup = async () => {
           ).to.be.lt(block.timestamp);
 
           await migration.poke(meToken.address);
-
-          // TODO delete
-          {
-            console.log(
-              "USDC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "USDC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                6
-              )
-            );
-          }
         });
-        // after(async () => {
-        //   // TODO will need to update this when the above tests pass
-        //   await meTokenRegistry
-        //     .connect(account0)
-        //     .cancelResubscribe(meToken.address);
-        //   await mineBlock(
-        //     (
-        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
-        //     ).endCooldown.toNumber() + 1
-        //   );
-        //   // Burn all collateral
-        //   await foundry.burn(
-        //     meToken.address,
-        //     await meToken.balanceOf(account0.address),
-        //     account0.address
-        //   );
-        // });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
       });
       describe("USDC -> DAI resubscribe passes when slippage < 5%", () => {
         before(async () => {
-          // TODO delete
-          {
-            await mineBlock(
-              (
-                await meTokenRegistry.getMeTokenInfo(meToken.address)
-              ).endCooldown.toNumber() + 1
-            );
-
-            // Burn all collateral
-            await foundry.burn(
-              meToken.address,
-              await meToken.balanceOf(account0.address),
-              account0.address
-            );
-          }
-
           const usdc = await getContractAt<ERC20>("ERC20", USDC);
           const usdcHolder = await impersonate(USDCWhale);
 
@@ -1066,25 +1006,6 @@ const setup = async () => {
               ethers.utils.parseUnits(String(1e6), 6),
               account0.address
             );
-
-          // TODO delete
-          {
-            console.log(
-              "USDC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "USDC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                6
-              )
-            );
-          }
 
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
@@ -1106,19 +1027,16 @@ const setup = async () => {
               encodedMigrationArgs
             );
 
-          // TODO delete
-          {
-            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
-              meToken.address
-            );
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
 
-            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
-              USDC
-            );
-            expect(
-              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
-            ).to.equal(DAI);
-          }
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            USDC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(DAI);
         });
         it("Call to poke should NOT revert", async () => {
           await mineBlock(
@@ -1131,64 +1049,25 @@ const setup = async () => {
             (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
           ).to.be.lt(block.timestamp);
 
-          await expect(migration.poke(meToken.address)).to.not.be.revertedWith(
-            "Too little received"
+          await migration.poke(meToken.address);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
           );
 
-          // TODO delete
-          {
-            console.log(
-              "DAI Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "DAI Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-          }
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
         });
-        // after(async () => {
-        //   // TODO will need to update this when the above tests pass
-        //   await meTokenRegistry
-        //     .connect(account0)
-        //     .cancelResubscribe(meToken.address);
-        //   await mineBlock(
-        //     (
-        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
-        //     ).endCooldown.toNumber() + 1
-        //   );
-        //   // Burn all collateral
-        //   await foundry.burn(
-        //     meToken.address,
-        //     await meToken.balanceOf(account0.address),
-        //     account0.address
-        //   );
-        // });
       });
       describe("WBTC -> USDC resubscribe passes when slippage < 5%", () => {
         before(async () => {
-          // TODO delete
-          {
-            await mineBlock(
-              (
-                await meTokenRegistry.getMeTokenInfo(meToken.address)
-              ).endCooldown.toNumber() + 1
-            );
-
-            // Burn all collateral
-            await foundry.burn(
-              meToken.address,
-              await meToken.balanceOf(account0.address),
-              account0.address
-            );
-          }
-
           await resubscribe(
             meToken,
             account0,
@@ -1221,25 +1100,6 @@ const setup = async () => {
               account0.address
             );
 
-          // TODO delete
-          {
-            console.log(
-              "WBTC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "WBTC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                8
-              )
-            );
-          }
-
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
             [fees]
@@ -1260,19 +1120,16 @@ const setup = async () => {
               encodedMigrationArgs
             );
 
-          // TODO delete
-          {
-            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
-              meToken.address
-            );
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
 
-            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
-              WBTC
-            );
-            expect(
-              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
-            ).to.equal(USDC);
-          }
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WBTC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(USDC);
         });
         it("Call to poke should NOT revert", async () => {
           await mineBlock(
@@ -1285,65 +1142,25 @@ const setup = async () => {
             (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
           ).to.be.lt(block.timestamp);
 
-          await expect(migration.poke(meToken.address)).to.not.be.revertedWith(
-            "Too little received"
+          await migration.poke(meToken.address);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
           );
 
-          // TODO delete
-          {
-            console.log(
-              "USDC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "USDC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                6
-              )
-            );
-          }
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
         });
-        // after(async () => {
-        //   // TODO will need to update this when the above tests pass
-        //   await meTokenRegistry
-        //     .connect(account0)
-        //     .cancelResubscribe(meToken.address);
-        //   await mineBlock(
-        //     (
-        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
-        //     ).endCooldown.toNumber() + 1
-        //   );
-        //   // Burn all collateral
-        //   await foundry.burn(
-        //     meToken.address,
-        //     await meToken.balanceOf(account0.address),
-        //     account0.address
-        //   );
-        // });
       });
       describe("USDC -> WBTC resubscribe passes when slippage < 5%", () => {
         before(async () => {
-          // TODO delete
-          {
-            await mineBlock(
-              (
-                await meTokenRegistry.getMeTokenInfo(meToken.address)
-              ).endCooldown.toNumber() + 1
-            );
-
-            // Burn all collateral
-            await foundry.burn(
-              meToken.address,
-              await meToken.balanceOf(account0.address),
-              account0.address
-            );
-          }
-
           const usdc = await getContractAt<ERC20>("ERC20", USDC);
           const usdcWhale = await impersonate(USDCWhale);
           await usdc
@@ -1362,25 +1179,6 @@ const setup = async () => {
               ethers.utils.parseUnits(String(1e6), 6),
               account0.address
             );
-
-          // TODO delete
-          {
-            console.log(
-              "USDC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "USDC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                6
-              )
-            );
-          }
 
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
@@ -1402,19 +1200,16 @@ const setup = async () => {
               encodedMigrationArgs
             );
 
-          // TODO delete
-          {
-            const metokenInfo = await meTokenRegistry.getMeTokenInfo(
-              meToken.address
-            );
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
 
-            expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
-              USDC
-            );
-            expect(
-              (await hub.getHubInfo(metokenInfo.targetHubId)).asset
-            ).to.equal(WBTC);
-          }
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            USDC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WBTC);
         });
         it("Call to poke should NOT revert", async () => {
           await mineBlock(
@@ -1427,46 +1222,8 @@ const setup = async () => {
             (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
           ).to.be.lt(block.timestamp);
 
-          await expect(migration.poke(meToken.address)).to.not.be.revertedWith(
-            "Too little received"
-          );
-
-          // TODO delete
-          {
-            console.log(
-              "WBTC Balance Pooled (wei):\t\t",
-              String(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled
-              )
-            );
-            console.log(
-              "WBTC Balance Pooled (tokens):\t\t",
-              ethers.utils.formatUnits(
-                (await meTokenRegistry.getMeTokenInfo(meToken.address))
-                  .balancePooled,
-                8
-              )
-            );
-          }
+          await migration.poke(meToken.address);
         });
-        // after(async () => {
-        //   // TODO will need to update this when the above tests pass
-        //   await meTokenRegistry
-        //     .connect(account0)
-        //     .cancelResubscribe(meToken.address);
-        //   await mineBlock(
-        //     (
-        //       await meTokenRegistry.getMeTokenInfo(meToken.address)
-        //     ).endCooldown.toNumber() + 1
-        //   );
-        //   // Burn all collateral
-        //   await foundry.burn(
-        //     meToken.address,
-        //     await meToken.balanceOf(account0.address),
-        //     account0.address
-        //   );
-        // });
       });
     });
     after(async () => {
