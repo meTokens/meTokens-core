@@ -50,17 +50,27 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
     uint256 public constant MIN_PCT_OUT = 95 * 1e16; // 95% returned - 5% slippage
 
-    address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address internal constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
-    address internal constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
-    address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-    address internal constant USD = 0x0000000000000000000000000000000000000348;
+    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address public constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
+    address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant USD = 0x0000000000000000000000000000000000000348;
     mapping(address => bool) private _stable;
+
+    event AddStable(address token);
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {
         _stable[DAI] = true;
-        // TODO add usd?
+        _stable[USDC] = true;
+    }
+
+    function addStable(address token) external {
+        require(msg.sender == dao, "!dao");
+        require(!_stable[token], "Already added");
+        _stable[token] = true;
+        emit AddStable(token);
     }
 
     /// @inheritdoc IMigration
@@ -191,6 +201,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             amountIn
         );
 
+        console.log(
+            "amountOutMinimum:\t\t\t",
+            (expectedAmountOutNoSlippage * MIN_PCT_OUT) / PRECISION
+        );
+
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
@@ -209,6 +224,8 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
+        console.log("fee:\t\t\t\t\t", usts.fee);
+
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }
@@ -237,22 +254,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             // NOTE: && condition handles for failed USD / ETH price as feed does not exist
             uint256 decimalsQuote = _feedRegistry.decimals(base, quote);
             price = uint256(_feedRegistry.latestAnswer(base, quote));
-            amountOut =
-                (convertedAmountIn * decimalsIn * price) /
-                10**decimalsQuote /
-                decimalsOut;
+            amountOut = (convertedAmountIn * price) / 10**decimalsQuote;
         } else if (base == USD || base == ETH) {
             uint256 decimalsQuote = _feedRegistry.decimals(quote, base);
             price = uint256(_feedRegistry.latestAnswer(quote, base));
             // need to multiply by price since we switch the order of base/quote in the feedRegistry query
-            amountOut =
-                (convertedAmountIn * decimalsIn * 10**decimalsQuote) /
-                price /
-                decimalsOut;
+            amountOut = (convertedAmountIn * 10**decimalsQuote) / price;
         } else {
             // Chainlink doesn't return a price for the pair, so we can't protect from slippage
             amountOut = 0;
         }
+        amountOut = (amountOut * 10**decimalsOut) / 10**decimalsIn;
     }
 
     function _convert(
