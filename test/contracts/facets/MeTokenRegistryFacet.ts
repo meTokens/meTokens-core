@@ -620,6 +620,7 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
         expect(meTokenRegistryDetails.endTime).to.be.equal(0);
+        expect(meTokenRegistryDetails.endCooldown).to.be.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
         expect(meTokenRegistryDetails.migration).to.be.equal(
           ethers.constants.AddressZero
@@ -638,13 +639,6 @@ const setup = async () => {
         expect(
           (await hub.getHubInfo(meTokenRegistryDetails.hubId)).active
         ).to.equal(false);
-        const oldMeTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
-          meTokenAddr0
-        );
-        // forward time after start time
-        await mineBlock(oldMeTokenRegistryDetails.endCooldown.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
           ["uint24"],

@@ -37,27 +37,6 @@ contract FeesFacet is IFeesFacet, Modifiers {
         emit SetBurnOwnerFee(rate);
     }
 
-    // /// @inheritdoc IFeesFacet
-    // function setTransferFee(uint256 rate) external override onlyFeesController {
-    //     require(rate != s.transferFee && rate < s.MAX_FEE, "out of range");
-    //     s.transferFee = rate;
-    //     emit SetTransferFee(rate);
-    // }
-
-    // /// @inheritdoc IFeesFacet
-    // function setInterestFee(uint256 rate) external override onlyFeesController {
-    //     require(rate != s.interestFee && rate < s.MAX_FEE, "out of range");
-    //     s.interestFee = rate;
-    //     emit SetInterestFee(rate);
-    // }
-
-    // /// @inheritdoc IFeesFacet
-    // function setYieldFee(uint256 rate) external override onlyFeesController {
-    //     require(rate != s.yieldFee && rate < s.MAX_FEE, "out of range");
-    //     s.yieldFee = rate;
-    //     emit SetYieldFee(rate);
-    // }
-
     /// @inheritdoc IFeesFacet
     function mintFee() external view override returns (uint256) {
         return s.mintFee;
@@ -72,19 +51,4 @@ contract FeesFacet is IFeesFacet, Modifiers {
     function burnOwnerFee() external view override returns (uint256) {
         return s.burnOwnerFee;
     }
-
-    // /// @inheritdoc IFeesFacet
-    // function transferFee() external view override returns (uint256) {
-    //     return s.transferFee;
-    // }
-
-    // /// @inheritdoc IFeesFacet
-    // function interestFee() external view override returns (uint256) {
-    //     return s.interestFee;
-    // }
-
-    // /// @inheritdoc IFeesFacet
-    // function yieldFee() external view override returns (uint256) {
-    //     return s.yieldFee;
-    // }
 }

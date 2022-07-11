@@ -12,7 +12,7 @@ import {
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
-import { mineBlock } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import { hubSetup } from "../../utils/hubSetup";
 import {
   HubFacet,
@@ -75,6 +75,7 @@ const setup = async () => {
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
+    const max = ethers.constants.MaxUint256;
 
     // for 1 DAI we get 1000 metokens
     // const baseY = ethers.utils.parseEther("1").mul(1000).toString();
@@ -116,7 +117,6 @@ const setup = async () => {
       await weth.connect(whale).transfer(account0.address, amount1.mul(10));
       await dai.connect(whale).transfer(account1.address, amount1.mul(10));
       await dai.connect(whale).transfer(account2.address, amount1.mul(10));
-      const max = ethers.constants.MaxUint256;
       await dai.connect(account0).approve(singleAssetVault.address, max);
       await weth.connect(account0).approve(singleAssetVault.address, max);
       await dai.connect(account1).approve(singleAssetVault.address, max);
@@ -436,214 +436,214 @@ const setup = async () => {
       });
     });
 
-    // describe("multiple burn and mint", () => {
-    //   before(async () => {
-    //     // mint some to owner and burn. To make balance pool and locked 0
-    //     await foundry.mint(meToken.address, 1, account0.address);
-    //     await foundry.burn(
-    //       meToken.address,
-    //       await meToken.balanceOf(account0.address),
-    //       account0.address
-    //     );
-    //     const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
-    //       meToken.address
-    //     );
-    //     expect(await meToken.totalSupply()).to.equal(0);
-    //     expect(meTokenInfo.balanceLocked).to.equal(0);
-    //     expect(meTokenInfo.balancePooled).to.equal(0);
-    //   });
-    //   it("multiple mints by owner", async () => {
-    //     const numberOfMints = 50;
-    //     const ownerBalanceBefore = await token.balanceOf(account0.address);
-    //     const vaultBalanceBefore = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
-    //     let targetTokenReturn = 0;
-    //     for (let i = 0; i < numberOfMints; i++) {
-    //       if (i === 0) {
-    //         targetTokenReturn = calculateTokenReturnedFromZero(
-    //           toETHNumber(PRECISION),
-    //           toETHNumber(baseY),
-    //           reserveWeight / MAX_WEIGHT
-    //         );
-    //       } else {
-    //         const meTokenTotalSupply = await meToken.totalSupply();
-    //         const balancePooled = (
-    //           await meTokenRegistry.getMeTokenInfo(meToken.address)
-    //         ).balancePooled;
+    describe("multiple burn and mint", () => {
+      before(async () => {
+        // mint some to owner and burn. To make balance pool and locked 0
+        await foundry.mint(meToken.address, 1, account0.address);
+        await foundry.burn(
+          meToken.address,
+          await meToken.balanceOf(account0.address),
+          account0.address
+        );
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        expect(await meToken.totalSupply()).to.equal(0);
+        expect(meTokenInfo.balanceLocked).to.equal(0);
+        expect(meTokenInfo.balancePooled).to.equal(0);
+      });
+      it("multiple mints by owner", async () => {
+        const numberOfMints = 50;
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetTokenReturn = 0;
+        for (let i = 0; i < numberOfMints; i++) {
+          if (i === 0) {
+            targetTokenReturn = calculateTokenReturnedFromZero(
+              toETHNumber(PRECISION),
+              toETHNumber(baseY),
+              reserveWeight / MAX_WEIGHT
+            );
+          } else {
+            const meTokenTotalSupply = await meToken.totalSupply();
+            const balancePooled = (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).balancePooled;
 
-    //         targetTokenReturn += calculateTokenReturned(
-    //           toETHNumber(PRECISION),
-    //           toETHNumber(meTokenTotalSupply),
-    //           toETHNumber(balancePooled),
-    //           reserveWeight / MAX_WEIGHT
-    //         );
-    //       }
-    //       await foundry.mint(meToken.address, PRECISION, account0.address);
-    //     }
-    //     const ownerBalanceAfter = await token.balanceOf(account0.address);
-    //     const vaultBalanceAfter = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
+            targetTokenReturn += calculateTokenReturned(
+              toETHNumber(PRECISION),
+              toETHNumber(meTokenTotalSupply),
+              toETHNumber(balancePooled),
+              reserveWeight / MAX_WEIGHT
+            );
+          }
+          await foundry.mint(meToken.address, PRECISION, account0.address);
+        }
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
 
-    //     expect(ownerBalanceBefore.sub(ownerBalanceAfter)).to.equal(
-    //       PRECISION.mul(numberOfMints)
-    //     );
-    //     expect(targetTokenReturn).to.be.approximately(
-    //       toETHNumber(await meToken.totalSupply()),
-    //       1e-12
-    //     );
-    //     expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
-    //       50
-    //     );
-    //   });
-    //   it("multiple burns by owner", async () => {
-    //     const numberOfBurns = 50;
-    //     const ownerBalanceBefore = await token.balanceOf(account0.address);
-    //     let singleBurnAmount = (await meToken.balanceOf(account0.address)).div(
-    //       50
-    //     );
-    //     let targetCollateralReturn = 0;
-    //     for (let i = 0; i < numberOfBurns; i++) {
-    //       if (i === numberOfBurns - 1) {
-    //         singleBurnAmount = await meToken.balanceOf(account0.address);
-    //       }
-    //       const meTokenTotalSupply = await meToken.totalSupply();
-    //       const balancePooled = (
-    //         await meTokenRegistry.getMeTokenInfo(meToken.address)
-    //       ).balancePooled;
-    //       targetCollateralReturn += calculateCollateralReturned(
-    //         toETHNumber(singleBurnAmount),
-    //         toETHNumber(meTokenTotalSupply),
-    //         toETHNumber(balancePooled),
-    //         reserveWeight / MAX_WEIGHT
-    //       );
-    //       await foundry.burn(
-    //         meToken.address,
-    //         singleBurnAmount,
-    //         account0.address
-    //       );
-    //     }
-    //     const ownerBalanceAfter = await token.balanceOf(account0.address);
-    //     expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(
-    //       PRECISION.mul(numberOfBurns)
-    //     );
-    //     expect(
-    //       toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
-    //     ).to.be.approximately(targetCollateralReturn, 1e-14);
-    //   });
+        expect(ownerBalanceBefore.sub(ownerBalanceAfter)).to.equal(
+          PRECISION.mul(numberOfMints)
+        );
+        expect(targetTokenReturn).to.be.approximately(
+          toETHNumber(await meToken.totalSupply()),
+          1e-12
+        );
+        expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
+          50
+        );
+      });
+      it("multiple burns by owner", async () => {
+        const numberOfBurns = 50;
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        let singleBurnAmount = (await meToken.balanceOf(account0.address)).div(
+          50
+        );
+        let targetCollateralReturn = 0;
+        for (let i = 0; i < numberOfBurns; i++) {
+          if (i === numberOfBurns - 1) {
+            singleBurnAmount = await meToken.balanceOf(account0.address);
+          }
+          const meTokenTotalSupply = await meToken.totalSupply();
+          const balancePooled = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+          targetCollateralReturn += calculateCollateralReturned(
+            toETHNumber(singleBurnAmount),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(balancePooled),
+            reserveWeight / MAX_WEIGHT
+          );
+          await foundry.burn(
+            meToken.address,
+            singleBurnAmount,
+            account0.address
+          );
+        }
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
+        expect(ownerBalanceAfter.sub(ownerBalanceBefore)).to.equal(
+          PRECISION.mul(numberOfBurns)
+        );
+        expect(
+          toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
+        ).to.be.approximately(targetCollateralReturn, 1e-14);
+      });
 
-    //   it("multiple mints by buyer", async () => {
-    //     const numberOfMints = 50;
-    //     const buyerBalanceBefore = await token.balanceOf(account1.address);
-    //     const vaultBalanceBefore = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
-    //     let targetTokenReturn = 0;
-    //     for (let i = 0; i < numberOfMints; i++) {
-    //       if (i === 0) {
-    //         targetTokenReturn = calculateTokenReturnedFromZero(
-    //           toETHNumber(PRECISION),
-    //           toETHNumber(baseY),
-    //           reserveWeight / MAX_WEIGHT
-    //         );
-    //       } else {
-    //         const meTokenTotalSupply = await meToken.totalSupply();
-    //         const balancePooled = (
-    //           await meTokenRegistry.getMeTokenInfo(meToken.address)
-    //         ).balancePooled;
+      it("multiple mints by buyer", async () => {
+        const numberOfMints = 50;
+        const buyerBalanceBefore = await token.balanceOf(account1.address);
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetTokenReturn = 0;
+        for (let i = 0; i < numberOfMints; i++) {
+          if (i === 0) {
+            targetTokenReturn = calculateTokenReturnedFromZero(
+              toETHNumber(PRECISION),
+              toETHNumber(baseY),
+              reserveWeight / MAX_WEIGHT
+            );
+          } else {
+            const meTokenTotalSupply = await meToken.totalSupply();
+            const balancePooled = (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).balancePooled;
 
-    //         targetTokenReturn += calculateTokenReturned(
-    //           toETHNumber(PRECISION),
-    //           toETHNumber(meTokenTotalSupply),
-    //           toETHNumber(balancePooled),
-    //           reserveWeight / MAX_WEIGHT
-    //         );
-    //       }
-    //       await foundry
-    //         .connect(account1)
-    //         .mint(meToken.address, PRECISION, account1.address);
-    //     }
-    //     const buyerBalanceAfter = await token.balanceOf(account1.address);
-    //     const vaultBalanceAfter = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
+            targetTokenReturn += calculateTokenReturned(
+              toETHNumber(PRECISION),
+              toETHNumber(meTokenTotalSupply),
+              toETHNumber(balancePooled),
+              reserveWeight / MAX_WEIGHT
+            );
+          }
+          await foundry
+            .connect(account1)
+            .mint(meToken.address, PRECISION, account1.address);
+        }
+        const buyerBalanceAfter = await token.balanceOf(account1.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
 
-    //     expect(buyerBalanceBefore.sub(buyerBalanceAfter)).to.equal(
-    //       PRECISION.mul(numberOfMints)
-    //     );
-    //     expect(targetTokenReturn).to.be.approximately(
-    //       toETHNumber(await meToken.totalSupply()),
-    //       1e-12
-    //     );
-    //     expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
-    //       50
-    //     );
-    //   });
-    //   let assetsReturned = 0;
-    //   it("multiple burns by buyer", async () => {
-    //     const numberOfBurns = 50;
-    //     const buyerBalanceBefore = await token.balanceOf(account1.address);
-    //     let singleBurnAmount = (await meToken.balanceOf(account1.address)).div(
-    //       50
-    //     );
-    //     const vaultBalanceBefore = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
-    //     let targetCollateralReturn = 0;
-    //     for (let i = 0; i < numberOfBurns; i++) {
-    //       if (i === numberOfBurns - 1) {
-    //         singleBurnAmount = await meToken.balanceOf(account1.address);
-    //       }
-    //       const meTokenTotalSupply = await meToken.totalSupply();
-    //       const balancePooled = (
-    //         await meTokenRegistry.getMeTokenInfo(meToken.address)
-    //       ).balancePooled;
-    //       targetCollateralReturn += calculateCollateralReturned(
-    //         toETHNumber(singleBurnAmount),
-    //         toETHNumber(meTokenTotalSupply),
-    //         toETHNumber(balancePooled),
-    //         reserveWeight / MAX_WEIGHT
-    //       );
-    //       await foundry
-    //         .connect(account1)
-    //         .burn(meToken.address, singleBurnAmount, account1.address);
-    //     }
-    //     assetsReturned =
-    //       (targetCollateralReturn * initRefundRatio) / MAX_WEIGHT;
+        expect(buyerBalanceBefore.sub(buyerBalanceAfter)).to.equal(
+          PRECISION.mul(numberOfMints)
+        );
+        expect(targetTokenReturn).to.be.approximately(
+          toETHNumber(await meToken.totalSupply()),
+          1e-12
+        );
+        expect(toETHNumber(vaultBalanceAfter.sub(vaultBalanceBefore))).to.equal(
+          50
+        );
+      });
+      let assetsReturned = 0;
+      it("multiple burns by buyer", async () => {
+        const numberOfBurns = 50;
+        const buyerBalanceBefore = await token.balanceOf(account1.address);
+        let singleBurnAmount = (await meToken.balanceOf(account1.address)).div(
+          50
+        );
+        const vaultBalanceBefore = await token.balanceOf(
+          singleAssetVault.address
+        );
+        let targetCollateralReturn = 0;
+        for (let i = 0; i < numberOfBurns; i++) {
+          if (i === numberOfBurns - 1) {
+            singleBurnAmount = await meToken.balanceOf(account1.address);
+          }
+          const meTokenTotalSupply = await meToken.totalSupply();
+          const balancePooled = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+          targetCollateralReturn += calculateCollateralReturned(
+            toETHNumber(singleBurnAmount),
+            toETHNumber(meTokenTotalSupply),
+            toETHNumber(balancePooled),
+            reserveWeight / MAX_WEIGHT
+          );
+          await foundry
+            .connect(account1)
+            .burn(meToken.address, singleBurnAmount, account1.address);
+        }
+        assetsReturned =
+          (targetCollateralReturn * initRefundRatio) / MAX_WEIGHT;
 
-    //     const buyerBalanceAfter = await token.balanceOf(account1.address);
-    //     const vaultBalanceAfter = await token.balanceOf(
-    //       singleAssetVault.address
-    //     );
+        const buyerBalanceAfter = await token.balanceOf(account1.address);
+        const vaultBalanceAfter = await token.balanceOf(
+          singleAssetVault.address
+        );
 
-    //     expect(
-    //       toETHNumber(vaultBalanceBefore.sub(vaultBalanceAfter))
-    //     ).to.be.approximately(assetsReturned, 1e-15);
-    //     expect(
-    //       toETHNumber(buyerBalanceAfter.sub(buyerBalanceBefore))
-    //     ).to.be.approximately(assetsReturned, 1e-15);
-    //   });
+        expect(
+          toETHNumber(vaultBalanceBefore.sub(vaultBalanceAfter))
+        ).to.be.approximately(assetsReturned, 1e-15);
+        expect(
+          toETHNumber(buyerBalanceAfter.sub(buyerBalanceBefore))
+        ).to.be.approximately(assetsReturned, 1e-15);
+      });
 
-    //   it("owner can claim the remaining balanceLocked", async () => {
-    //     // mint some to owner
-    //     await foundry.mint(meToken.address, 1, account0.address);
+      it("owner can claim the remaining balanceLocked", async () => {
+        // mint some to owner
+        await foundry.mint(meToken.address, 1, account0.address);
 
-    //     const ownerBalanceBefore = await token.balanceOf(account0.address);
-    //     await foundry.burn(
-    //       meToken.address,
-    //       await meToken.balanceOf(account0.address),
-    //       account0.address
-    //     );
-    //     const ownerBalanceAfter = await token.balanceOf(account0.address);
+        const ownerBalanceBefore = await token.balanceOf(account0.address);
+        await foundry.burn(
+          meToken.address,
+          await meToken.balanceOf(account0.address),
+          account0.address
+        );
+        const ownerBalanceAfter = await token.balanceOf(account0.address);
 
-    //     expect(
-    //       toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
-    //     ).to.be.approximately(50 - assetsReturned, 1e-15);
-    //     expect(await meToken.totalSupply()).to.equal(0);
-    //     expect(await token.balanceOf(singleAssetVault.address)).to.equal(0);
-    //   });
-    // });
+        expect(
+          toETHNumber(ownerBalanceAfter.sub(ownerBalanceBefore))
+        ).to.be.approximately(50 - assetsReturned, 1e-15);
+        expect(await meToken.totalSupply()).to.equal(0);
+        expect(await token.balanceOf(singleAssetVault.address)).to.equal(0);
+      });
+    });
 
     describe("mint()", () => {
       it("balanceLocked = 0, balancePooled = 0, mint on meToken creation", async () => {
@@ -970,13 +970,6 @@ const setup = async () => {
         //  const baseY = PRECISION.toString();
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
-
-        await deploy<UniswapSingleTransferMigration>(
-          "UniswapSingleTransferMigration",
-          undefined, //no libs
-          account1.address, // DAO
-          foundry.address // diamond
-        );
 
         // 10 hour
         await hub.setHubDuration(600 * 60);
@@ -1736,6 +1729,120 @@ const setup = async () => {
         expect(balAfter).equal(0);
         expect(await meToken.totalSupply()).to.equal(0);
         expect(balEthAfter).to.be.gt(balEthBefore);
+      });
+    });
+    describe("Resubscribe and hub updating at same time", () => {
+      let hubToMigrate = hubIdDAI;
+      let migration: UniswapSingleTransferMigration;
+      let newRefundRatio: BigNumber;
+      let newReserveWeight: BigNumber;
+
+      beforeEach(async () => {
+        // Finish endCoolDown of last hub update
+        await mineBlock(
+          Number((await hub.getHubInfo(hubIdDAI)).endCooldown.add(1))
+        );
+
+        migration = await deploy<UniswapSingleTransferMigration>(
+          "UniswapSingleTransferMigration",
+          undefined,
+          account0.address, // DAO
+          foundry.address // diamond
+        );
+        await migrationRegistry.approve(
+          singleAssetVault.address,
+          singleAssetVault.address,
+          migration.address
+        );
+        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fee]
+        );
+
+        await meTokenRegistry
+          .connect(account2)
+          .initResubscribe(
+            meToken.address,
+            hubToMigrate,
+            migration.address,
+            encodedMigrationArgs
+          );
+
+        // update hub curve details
+        newRefundRatio = BigNumber.from(20001);
+        newReserveWeight = BigNumber.from(MAX_WEIGHT).div(hubToMigrate * 2);
+        await hub.initUpdate(hubToMigrate, newRefundRatio, newReserveWeight);
+      });
+
+      it("Mint: Poke or finishResubscribe should be called first and then finishUpdate", async () => {
+        await mineBlock(
+          Number((await hub.getHubInfo(hubToMigrate)).endTime.add(1))
+        );
+
+        let wethWhale: string;
+        ({ WETHWhale: wethWhale } = await getNamedAccounts());
+        const whale = await impersonate(wethWhale);
+        await weth.connect(whale).transfer(account2.address, amount);
+        await weth.connect(account2).approve(singleAssetVault.address, max);
+
+        const tx = await foundry
+          .connect(account2)
+          .mint(meToken.address, amount, account2.address);
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .withArgs(meToken.address);
+
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubToMigrate);
+
+        hubToMigrate = hubIdWETH;
+      });
+
+      it("Burn: Poke or finish resubscribe should be called first and then finishUpdate", async () => {
+        await mineBlock(
+          Number((await hub.getHubInfo(hubToMigrate)).endTime.add(1))
+        );
+
+        const ownerMeToken = await meToken.balanceOf(account2.address);
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        const rawAssetsReturned = calculateCollateralReturned(
+          toETHNumber(ownerMeToken),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(meTokenInfo.balancePooled),
+          Number(newReserveWeight) / MAX_WEIGHT
+        );
+        const assetsReturned =
+          rawAssetsReturned +
+          (toETHNumber(ownerMeToken) / toETHNumber(meTokenTotalSupply)) *
+            toETHNumber(meTokenInfo.balanceLocked);
+        const lockedAmount = assetsReturned - rawAssetsReturned;
+
+        const tx = await foundry
+          .connect(account2)
+          .burn(meToken.address, ownerMeToken, account2.address);
+
+        await expect(tx)
+          .to.emit(meTokenRegistry, "FinishResubscribe")
+          .withArgs(meToken.address);
+        await expect(tx).to.emit(hub, "FinishUpdate").withArgs(hubToMigrate);
+
+        const newMeTokenInfo = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+
+        expect(
+          toETHNumber(
+            meTokenInfo.balancePooled.sub(newMeTokenInfo.balancePooled)
+          )
+        ).to.be.approximately(rawAssetsReturned, 1e-15);
+        expect(
+          toETHNumber(
+            meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
+          )
+        ).to.be.approximately(lockedAmount, 1e-13);
       });
     });
     after(async () => {

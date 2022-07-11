@@ -27,7 +27,7 @@ const SUPPORTED_NETWORK = [1, 4, 100, 31337];
 const REFUND_RATIO = 50000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
-const feeInitialization = [0, 0, 0 /* 0, 0, 0 */];
+const feeInitialization = [0, 0, 0];
 
 async function main() {
   let [deployer, DAO] = await ethers.getSigners();
@@ -177,9 +177,6 @@ async function main() {
       mintFee: feeInitialization[0],
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
-      // transferFee: feeInitialization[3],
-      // interestFee: feeInitialization[4],
-      // yieldFee: feeInitialization[5],
       diamond: diamond.address,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,

@@ -21,9 +21,6 @@ contract DiamondInit {
         uint256 mintFee;
         uint256 burnBuyerFee;
         uint256 burnOwnerFee;
-        // uint256 transferFee;
-        // uint256 interestFee;
-        // uint256 yieldFee;
         address diamond;
         IVaultRegistry vaultRegistry;
         IMigrationRegistry migrationRegistry;
@@ -48,9 +45,6 @@ contract DiamondInit {
         s.mintFee = _args.mintFee;
         s.burnBuyerFee = _args.burnBuyerFee;
         s.burnOwnerFee = _args.burnOwnerFee;
-        // s.transferFee = _args.transferFee;
-        // s.interestFee = _args.interestFee;
-        // s.yieldFee = _args.yieldFee;
 
         s.MAX_REFUND_RATIO = 1e6;
         s.PRECISION = 1e18;
