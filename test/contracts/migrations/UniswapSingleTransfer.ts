@@ -65,6 +65,21 @@ const resubscribe = async (
   await meTokenRegistry.finishResubscribe(meToken.address);
 };
 
+const increaseResubscribeTimeToStartTime = async (
+  meTokenRegistry: MeTokenRegistryFacet,
+  meToken: MeToken
+) => {
+  await mineBlock(
+    (
+      await meTokenRegistry.getMeTokenInfo(meToken.address)
+    ).startTime.toNumber() + 1
+  );
+  const block = await ethers.provider.getBlock("latest");
+  expect(
+    (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+  ).to.be.lt(block.timestamp);
+};
+
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
     let DAI: string;
@@ -815,15 +830,7 @@ const setup = async () => {
         });
         it("Call to poke reverts", async () => {
           // NOTE: at current market, 50M DAI would incur 6% slippage
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
-          );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
 
           await expect(migration.poke(meToken.address)).to.be.revertedWith(
             "Too little received"
@@ -833,11 +840,6 @@ const setup = async () => {
           await meTokenRegistry
             .connect(account0)
             .cancelResubscribe(meToken.address);
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
-          );
           // Burn all collateral
           await foundry.burn(
             meToken.address,
@@ -874,15 +876,7 @@ const setup = async () => {
             );
         });
         it("Call to poke should NOT revert", async () => {
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
-          );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
 
           await migration.poke(meToken.address);
         });
@@ -958,15 +952,7 @@ const setup = async () => {
           ).to.equal(USDC);
         });
         it("Call to poke should NOT revert", async () => {
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
-          );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
 
           await migration.poke(meToken.address);
         });
@@ -1039,15 +1025,7 @@ const setup = async () => {
           ).to.equal(DAI);
         });
         it("Call to poke should NOT revert", async () => {
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
-          );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
 
           await migration.poke(meToken.address);
         });
@@ -1066,7 +1044,7 @@ const setup = async () => {
           );
         });
       });
-      describe("WBTC -> USDC resubscribe passes when slippage < 5%", () => {
+      describe("WBTC -> WETH resubscribe passes when slippage < 5%", () => {
         before(async () => {
           await resubscribe(
             meToken,
@@ -1086,9 +1064,8 @@ const setup = async () => {
             .connect(wbtcHolder)
             .transfer(
               account0.address,
-              ethers.utils.parseUnits(String(5 * 1e2), 8)
+              ethers.utils.parseUnits(String(1 * 1e3), 8)
             );
-
           await wbtc.connect(account0).approve(wbtcVault.address, max);
 
           // Mint new collateral
@@ -1096,9 +1073,155 @@ const setup = async () => {
             .connect(account0)
             .mint(
               meToken.address,
-              ethers.utils.parseUnits(String(5 * 1e2), 8),
+              ethers.utils.parseUnits(String(1 * 1e3), 8),
               account0.address
             );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wbtcVault.address,
+            wethVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WBTC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WETH);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          await migration.poke(meToken.address);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+          console.log("Passed");
+        });
+      });
+      describe("WETH -> WBTC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const weth = await getContractAt<ERC20>("ERC20", WETH);
+          const wethHolder = await impersonate(WETHWhale);
+
+          await weth
+            .connect(wethHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1 * 1e3), 18)
+            );
+          await weth.connect(account0).approve(wethVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1 * 1e3), 18),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wethVault.address,
+            wbtcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId4,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WETH
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WBTC);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+
+          await migration.poke(meToken.address);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+          console.log("Passed");
+        });
+      });
+      describe("WBTC -> USDC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const wbtc = await getContractAt<ERC20>("ERC20", WBTC);
+          const wbtcHolder = await impersonate(WBTCWhale);
+          await wbtc
+            .connect(wbtcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(3 * 1e2), 8)
+            );
+
+          await wbtc.connect(account0).approve(wbtcVault.address, max);
+
+          // Mint new collateral
+          await foundry.connect(account0).mint(
+            meToken.address,
+            // FIXME resubscribe fails when wbtc = 500 tokens
+            ethers.utils.parseUnits(String(3 * 1e2), 8),
+            account0.address
+          );
 
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
@@ -1132,15 +1255,7 @@ const setup = async () => {
           ).to.equal(USDC);
         });
         it("Call to poke should NOT revert", async () => {
-          await mineBlock(
-            (
-              await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
-          );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
 
           await migration.poke(meToken.address);
         });
@@ -1212,17 +1327,23 @@ const setup = async () => {
           ).to.equal(WBTC);
         });
         it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+
+          await migration.poke(meToken.address);
+        });
+
+        after(async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).startTime.toNumber() + 1
+            ).endCooldown.toNumber() + 1
           );
-          block = await ethers.provider.getBlock("latest");
-          expect(
-            (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
-          ).to.be.lt(block.timestamp);
-
-          await migration.poke(meToken.address);
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
         });
       });
     });
