@@ -15,8 +15,6 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
-// TODO remove
-import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -201,11 +199,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             amountIn
         );
 
-        console.log(
-            "amountOutMinimum:\t\t\t",
-            (expectedAmountOutNoSlippage * MIN_PCT_OUT) / PRECISION
-        );
-
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
@@ -224,7 +217,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
-        console.log("fee:\t\t\t\t\t", usts.fee);
 
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
@@ -314,7 +306,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 1e8;
         } else if (tokenOut == WETH) {
             quote = ETH;
-        } else if (tokenIn == WBTC) {
+        } else if (tokenOut == WBTC) {
             quote = BTC;
             // wbtc depeg migration protection
             amountIn =
