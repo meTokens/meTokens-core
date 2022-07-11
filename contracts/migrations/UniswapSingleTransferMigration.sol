@@ -57,18 +57,9 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     address public constant USD = 0x0000000000000000000000000000000000000348;
     mapping(address => bool) private _stable;
 
-    event AddStable(address token);
-
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {
         _stable[DAI] = true;
         _stable[USDC] = true;
-    }
-
-    function addStable(address token) external {
-        require(msg.sender == dao, "!dao");
-        require(!_stable[token], "Already added");
-        _stable[token] = true;
-        emit AddStable(token);
     }
 
     /// @inheritdoc IMigration
