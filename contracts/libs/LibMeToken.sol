@@ -5,6 +5,7 @@ import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 
 struct MeTokenInfo {
+    address owner;
     uint256 hubId;
     uint256 balancePooled;
     uint256 balanceLocked;
@@ -12,7 +13,6 @@ struct MeTokenInfo {
     uint256 endTime;
     uint256 endCooldown;
     uint256 targetHubId;
-    address owner;
     address migration;
 }
 
