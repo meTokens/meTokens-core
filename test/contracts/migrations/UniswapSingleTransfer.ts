@@ -1125,7 +1125,6 @@ const setup = async () => {
             await meToken.balanceOf(account0.address),
             account0.address
           );
-          console.log("Passed");
         });
       });
       describe("WETH -> WBTC resubscribe passes when slippage < 5%", () => {
@@ -1199,7 +1198,6 @@ const setup = async () => {
             await meToken.balanceOf(account0.address),
             account0.address
           );
-          console.log("Passed");
         });
       });
       describe("WBTC -> USDC resubscribe passes when slippage < 5%", () => {
