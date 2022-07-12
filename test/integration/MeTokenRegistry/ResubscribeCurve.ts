@@ -13,7 +13,7 @@ import {
   calculateTokenReturnedFromZero,
   fromETHNumber,
 } from "../../utils/helpers";
-import { mineBlock, setAutomine } from "../../utils/hardhatNode";
+import { impersonate, mineBlock, setAutomine } from "../../utils/hardhatNode";
 import {
   FoundryFacet,
   HubFacet,
@@ -35,11 +35,10 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
-    let whale: Signer;
     let dai: ERC20;
     let weth: ERC20;
-    let UNIV3Factory: string;
     let daiWhale: Signer;
+    let wethWhale: Signer;
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
@@ -68,9 +67,13 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      let token: ERC20;
-      let DAI, WETH;
-      ({ DAI, WETH, UNIV3Factory } = await getNamedAccounts());
+
+      let DAI, WETH, DAIWhale, WETHWhale;
+      ({ DAI, WETH, DAIWhale, WETHWhale } = await getNamedAccounts());
+      dai = await getContractAt<ERC20>("ERC20", DAI);
+      weth = await getContractAt<ERC20>("ERC20", WETH);
+      daiWhale = await impersonate(DAIWhale);
+      wethWhale = await impersonate(WETHWhale);
 
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -84,8 +87,6 @@ const setup = async () => {
 
       // Register first and second hub
       ({
-        token,
-        whale,
         migrationRegistry,
         singleAssetVault,
         account0,
@@ -95,10 +96,6 @@ const setup = async () => {
         foundry,
         hub,
       } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
-
-      dai = token;
-      weth = await getContractAt<ERC20>("ERC20", WETH);
-      daiWhale = whale;
 
       await hub.register(
         account0.address,
@@ -137,7 +134,7 @@ const setup = async () => {
         .transfer(account1.address, ethers.utils.parseEther("10"));
 
       await weth
-        .connect(whale)
+        .connect(wethWhale)
         .transfer(account1.address, ethers.utils.parseEther("10"));
 
       // Create meToken and subscribe to Hub1

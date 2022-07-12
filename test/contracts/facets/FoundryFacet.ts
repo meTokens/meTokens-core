@@ -40,6 +40,7 @@ const setup = async () => {
     let usdcPermit: IERC20Permit;
     let USDC: string;
     let USDCWhale: string;
+    let WETHWhale: string;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -84,12 +85,11 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      ({ DAI, WETH } = await getNamedAccounts());
+      ({ DAI, WETH, WETHWhale } = await getNamedAccounts());
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
       );
-
       ({
         token,
         whale,
@@ -114,7 +114,8 @@ const setup = async () => {
       weth = await getContractAt<ERC20>("ERC20", WETH);
 
       await dai.connect(whale).transfer(account0.address, amount1.mul(10));
-      await weth.connect(whale).transfer(account0.address, amount1.mul(10));
+      const wethWhale = await impersonate(WETHWhale);
+      await weth.connect(wethWhale).transfer(account0.address, amount1.mul(10));
       await dai.connect(whale).transfer(account1.address, amount1.mul(10));
       await dai.connect(whale).transfer(account2.address, amount1.mul(10));
       await dai.connect(account0).approve(singleAssetVault.address, max);

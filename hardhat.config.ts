@@ -105,13 +105,15 @@ const config: HardhatUserConfig = {
     USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     YDAIWhale: "0x863e730904cb7dcdd5205de6b502f42c3f6d9372",
     YDAI: "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
+    WBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    WBTCWhale: "0x2faf487a4414fe77e2327f0bf4ae2a264a776ad2",
   },
   networks: {
     hardhat: {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
         accounts,
-        blockNumber: 14448329,
+        blockNumber: 14800000,
       },
       gas: "auto",
       timeout: 1800000,

@@ -15,7 +15,6 @@ import {IQuoter} from "@uniswap/v3-periphery/contracts/interfaces/IQuoter.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Vault} from "../vaults/Vault.sol";
-import "hardhat/console.sol";
 
 /// @title Vault migrator from erc20 to erc20 (non-lp)
 /// @author Carter Carlson (@cartercarlson), Chris Robison (@cbobrobison), Parv Garg (@parv3213)
@@ -39,8 +38,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     // github.com/Uniswap/uniswap-v3-periphery/blob/main/contracts/interfaces/ISwapRouter.sol
     IV3SwapRouter private immutable _router =
         IV3SwapRouter(0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45);
-    IQuoter private immutable _quoter =
-        IQuoter(0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6);
     IChainlinkFeedRegistry private immutable _feedRegistry =
         IChainlinkFeedRegistry(0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf);
 
@@ -56,11 +53,13 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address public constant BTC = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
     address public constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public constant USD = 0x0000000000000000000000000000000000000348;
     mapping(address => bool) private _stable;
 
     constructor(address _dao, address _diamond) Vault(_dao, _diamond) {
         _stable[DAI] = true;
+        _stable[USDC] = true;
     }
 
     /// @inheritdoc IMigration
@@ -162,6 +161,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
+    function expectedAmountOutMinimum(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) public view returns (uint256) {
+        return
+            (_calculateAmountOutWithChainlink(tokenIn, tokenOut, amountIn) *
+                MIN_PCT_OUT) / PRECISION;
+    }
+
     /// @dev parent call must have reentrancy check
     function _swap(address meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
@@ -184,13 +193,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             return 0;
         }
 
-        // Get expected amount from chainlink
-        uint256 expectedAmountOutNoSlippage = _calculateAmountOutWithChainlink(
-            hubInfo.asset,
-            targetHubInfo.asset,
-            amountIn
-        );
-
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
@@ -202,13 +204,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 fee: usts.fee,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: (expectedAmountOutNoSlippage * MIN_PCT_OUT) /
-                    PRECISION,
+                amountOutMinimum: expectedAmountOutMinimum(
+                    hubInfo.asset,
+                    targetHubInfo.asset,
+                    amountIn
+                ),
                 sqrtPriceLimitX96: 0
             });
 
         // The call to `exactInputSingle` executes the swap
         amountOut = _router.exactInputSingle(params);
+
         // Based on amountIn and amountOut, update balancePooled and balanceLocked
         IMeTokenRegistryFacet(diamond).updateBalances(meToken, amountOut);
     }
@@ -237,22 +243,17 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             // NOTE: && condition handles for failed USD / ETH price as feed does not exist
             uint256 decimalsQuote = _feedRegistry.decimals(base, quote);
             price = uint256(_feedRegistry.latestAnswer(base, quote));
-            amountOut =
-                (convertedAmountIn * decimalsIn * price) /
-                10**decimalsQuote /
-                decimalsOut;
+            amountOut = (convertedAmountIn * price) / 10**decimalsQuote;
         } else if (base == USD || base == ETH) {
             uint256 decimalsQuote = _feedRegistry.decimals(quote, base);
             price = uint256(_feedRegistry.latestAnswer(quote, base));
             // need to multiply by price since we switch the order of base/quote in the feedRegistry query
-            amountOut =
-                (convertedAmountIn * decimalsIn * 10**decimalsQuote) /
-                price /
-                decimalsOut;
+            amountOut = (convertedAmountIn * 10**decimalsQuote) / price;
         } else {
             // Chainlink doesn't return a price for the pair, so we can't protect from slippage
             amountOut = 0;
         }
+        amountOut = (amountOut * 10**decimalsOut) / 10**decimalsIn;
     }
 
     function _convert(
@@ -302,7 +303,7 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 1e8;
         } else if (tokenOut == WETH) {
             quote = ETH;
-        } else if (tokenIn == WBTC) {
+        } else if (tokenOut == WBTC) {
             quote = BTC;
             // wbtc depeg migration protection
             amountIn =
