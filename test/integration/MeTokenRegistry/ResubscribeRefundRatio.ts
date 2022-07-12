@@ -9,7 +9,7 @@ import {
   toETHNumber,
 } from "../../utils/helpers";
 import { hubSetup } from "../../utils/hubSetup";
-import { mineBlock } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import {
   FoundryFacet,
   HubFacet,
@@ -31,7 +31,8 @@ const setup = async () => {
     let dai: ERC20;
     let weth: ERC20;
     let meToken: MeToken;
-    let whale: Signer;
+    let daiWhale: Signer;
+    let wethWhale: Signer;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
@@ -52,19 +53,22 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
+
       baseY = one.mul(1000);
       const reserveWeight = MAX_WEIGHT / 2;
-      let DAI;
-      let WETH;
-      ({ DAI, WETH, UNIV3Factory } = await getNamedAccounts());
+      let DAI, WETH, DAIWhale, WETHWhale;
+      ({ DAI, WETH, DAIWhale, WETHWhale, UNIV3Factory } =
+        await getNamedAccounts());
+      dai = await getContractAt<ERC20>("ERC20", DAI);
+      weth = await getContractAt<ERC20>("ERC20", WETH);
+      daiWhale = await impersonate(DAIWhale);
+      wethWhale = await impersonate(WETHWhale);
 
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
       );
       ({
-        token: dai,
-        whale,
         hub,
         foundry,
         migrationRegistry,
@@ -92,14 +96,13 @@ const setup = async () => {
         migration.address
       );
 
-      weth = await getContractAt<ERC20>("ERC20", WETH);
       // Pre-load owner and buyer w/ DAI
       await dai
-        .connect(whale)
+        .connect(daiWhale)
         .transfer(account2.address, ethers.utils.parseEther("50000"));
 
       await weth
-        .connect(whale)
+        .connect(wethWhale)
         .transfer(account2.address, ethers.utils.parseEther("500"));
 
       // Create meToken and subscribe to Hub1
