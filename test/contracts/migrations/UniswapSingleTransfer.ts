@@ -856,7 +856,7 @@ const setup = async () => {
             .connect(account0)
             .mint(
               meToken.address,
-              ethers.utils.parseEther(String(1 * 1e6)),
+              ethers.utils.parseEther(String(1e6)),
               account0.address
             );
 
@@ -896,16 +896,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1000,16 +999,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1101,16 +1099,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1147,7 +1144,7 @@ const setup = async () => {
             .connect(wbtcHolder)
             .transfer(
               account0.address,
-              ethers.utils.parseUnits(String(1 * 1e3), 8)
+              ethers.utils.parseUnits(String(1000), 8)
             );
           await wbtc.connect(account0).approve(wbtcVault.address, max);
 
@@ -1156,7 +1153,7 @@ const setup = async () => {
             .connect(account0)
             .mint(
               meToken.address,
-              ethers.utils.parseUnits(String(1 * 1e3), 8),
+              ethers.utils.parseUnits(String(1000), 8),
               account0.address
             );
 
@@ -1213,16 +1210,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1248,7 +1244,7 @@ const setup = async () => {
             .connect(wethHolder)
             .transfer(
               account0.address,
-              ethers.utils.parseUnits(String(1 * 1e3), 18)
+              ethers.utils.parseUnits(String(1000), 18)
             );
           await weth.connect(account0).approve(wethVault.address, max);
 
@@ -1257,7 +1253,7 @@ const setup = async () => {
             .connect(account0)
             .mint(
               meToken.address,
-              ethers.utils.parseUnits(String(1 * 1e3), 18),
+              ethers.utils.parseUnits(String(1000), 18),
               account0.address
             );
 
@@ -1314,16 +1310,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1348,18 +1343,19 @@ const setup = async () => {
             .connect(wbtcHolder)
             .transfer(
               account0.address,
-              ethers.utils.parseUnits(String(1 * 1e2), 8)
+              ethers.utils.parseUnits(String(100), 8)
             );
 
           await wbtc.connect(account0).approve(wbtcVault.address, max);
 
           // Mint new collateral
-          await foundry.connect(account0).mint(
-            meToken.address,
-            // FIXME resubscribe fails when wbtc = 500 tokens
-            ethers.utils.parseUnits(String(1 * 1e2), 8),
-            account0.address
-          );
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(100), 8),
+              account0.address
+            );
 
           encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
             ["uint24"],
@@ -1414,16 +1410,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
         after(async () => {
           await mineBlock(
@@ -1514,16 +1509,15 @@ const setup = async () => {
             await meTokenRegistry.getMeTokenInfo(meToken.address)
           ).balancePooled;
 
-          console.log(String(expectedAmountOutMinimum));
-          console.log(String(receivedAmountOut));
-          const difference = receivedAmountOut
-            .sub(expectedAmountOutMinimum)
-            .mul(ethers.utils.parseEther("1"))
-            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
             .mul(100)
-            .div(ethers.utils.parseEther("1"));
-          console.log(String(difference));
-          await expect(difference).lte(5);
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
         });
 
         after(async () => {
