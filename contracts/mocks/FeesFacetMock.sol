@@ -4,9 +4,8 @@ pragma solidity 0.8.9;
 import {ModifiersMock} from "./LibAppStorageMock.sol";
 
 contract FeesFacetMock is ModifiersMock {
-    function setInterestFee(uint256 rate) external onlyFeesController {
-        require(rate != s.interestFee && rate < s.PRECISION, "out of range");
-        s.interestFee = rate + 42;
+    function setMintFee(uint256 rate) external onlyFeesController {
+        s.mintFee = rate + 42;
     }
 
     function setTotallyNewAddress(address totallyNewAddr)
@@ -20,8 +19,8 @@ contract FeesFacetMock is ModifiersMock {
         return s.totallyNewAddress;
     }
 
-    function interestPlusYieldFee() external view returns (uint256) {
-        return s.interestFee + s.yieldFee;
+    function mintPlusBurnBuyerFee() external view returns (uint256) {
+        return s.mintFee + s.burnBuyerFee;
     }
 
     function add(uint256 x, uint256 y) external pure returns (uint256) {

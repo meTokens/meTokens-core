@@ -11,18 +11,12 @@ const setup = async () => {
     const mintFee = 10000000;
     const burnBuyerFee = 10000000;
     const burnOwnerFee = 10000000;
-    const transferFee = 10000000;
-    const interestFee = 10000000;
-    const yieldFee = 10000000;
     let account1: SignerWithAddress;
     before(async () => {
       ({ fee: fees, account1 } = await hubSetupWithoutRegister([
         mintFee,
         burnBuyerFee,
         burnOwnerFee,
-        transferFee,
-        interestFee,
-        yieldFee,
       ]));
     });
 
@@ -103,87 +97,6 @@ const setup = async () => {
         expect(tx).to.emit(fees, "SetBurnOwnerFee").withArgs(90000);
         const curBurnOwnerFee = await fees.burnBuyerFee();
         expect(curBurnOwnerFee).to.equal(90000);
-      });
-    });
-    describe("setTransferFee()", () => {
-      it("Returns correct value of fee", async () => {
-        const curTransferFee = await fees.transferFee();
-        expect(curTransferFee).to.equal(transferFee);
-      });
-      it("Non-owner cannot set fee", async () => {
-        await expect(fees.connect(account1).setTransferFee(1)).to.revertedWith(
-          "!feesController"
-        );
-      });
-      it("Cannot set fee to the same fee", async () => {
-        await expect(fees.setTransferFee(transferFee)).to.revertedWith(
-          "out of range"
-        );
-      });
-      it("Cannot set fee above the fee max", async () => {
-        await expect(
-          fees.setTransferFee(ethers.utils.parseEther("100"))
-        ).to.revertedWith("out of range");
-      });
-      it("Sets fee to the new value", async () => {
-        const tx = await fees.setTransferFee(90000);
-        expect(tx).to.emit(fees, "SetTransferFee").withArgs(90000);
-        const curTransferFee = await fees.transferFee();
-        expect(curTransferFee).to.equal(90000);
-      });
-    });
-    describe("setInterestFee()", () => {
-      it("Returns correct value of fee", async () => {
-        const curInterestFee = await fees.interestFee();
-        expect(curInterestFee).to.equal(interestFee);
-      });
-      it("Non-owner cannot set fee", async () => {
-        await expect(fees.connect(account1).setInterestFee(1)).to.revertedWith(
-          "!feesController"
-        );
-      });
-      it("Cannot set fee to the same fee", async () => {
-        await expect(fees.setInterestFee(interestFee)).to.revertedWith(
-          "out of range"
-        );
-      });
-      it("Cannot set fee above the fee max", async () => {
-        await expect(
-          fees.setInterestFee(ethers.utils.parseEther("100"))
-        ).to.revertedWith("out of range");
-      });
-      it("Sets fee to the new value", async () => {
-        const tx = await fees.setInterestFee(90000);
-        expect(tx).to.emit(fees, "SetInterestFee").withArgs(90000);
-        const curInterestFee = await fees.interestFee();
-        expect(curInterestFee).to.equal(90000);
-      });
-    });
-    describe("setYieldFee()", () => {
-      it("Returns correct value of fee", async () => {
-        const curYieldFee = await fees.yieldFee();
-        expect(curYieldFee).to.equal(yieldFee);
-      });
-      it("Non-owner cannot set fee", async () => {
-        await expect(fees.connect(account1).setYieldFee(1)).to.revertedWith(
-          "!feesController"
-        );
-      });
-      it("Cannot set fee to the same fee", async () => {
-        await expect(fees.setYieldFee(yieldFee)).to.revertedWith(
-          "out of range"
-        );
-      });
-      it("Cannot set fee above the fee max", async () => {
-        await expect(
-          fees.setYieldFee(ethers.utils.parseEther("100"))
-        ).to.revertedWith("out of range");
-      });
-      it("Sets fee to the new value", async () => {
-        const tx = await fees.setYieldFee(90000);
-        expect(tx).to.emit(fees, "SetYieldFee").withArgs(90000);
-        const curYieldFee = await fees.interestFee();
-        expect(curYieldFee).to.equal(90000);
       });
     });
   });

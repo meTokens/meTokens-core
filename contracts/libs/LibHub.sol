@@ -10,9 +10,6 @@ struct HubInfo {
     uint256 endCooldown;
     uint256 refundRatio;
     uint256 targetRefundRatio;
-    uint256 warmup;
-    uint256 duration;
-    uint256 cooldown;
     address owner;
     address vault;
     address asset;

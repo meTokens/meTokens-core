@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { BigNumber, Signer } from "ethers";
-import { ethers, getNamedAccounts, network } from "hardhat";
+import { ethers, getNamedAccounts } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { hubSetup } from "../../utils/hubSetup";
 import { deploy, getContractAt } from "../../utils/helpers";
@@ -39,9 +39,7 @@ const setup = async () => {
     const firstHubId = 1;
     const refundRatio = 5000;
     const MAX_WEIGHT = 1000000;
-    let snapshotId: any;
     before(async () => {
-      snapshotId = await network.provider.send("evm_snapshot");
       baseYNum = 1000;
       baseY = one.mul(baseYNum);
       reserveWeight = MAX_WEIGHT / 2;
@@ -99,14 +97,14 @@ const setup = async () => {
       it("twice init should fail", async () => {
         updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
         const diamondInit = await deploy<DiamondInit>("DiamondInit");
-        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
         );
         const cut = [
           {
             facetAddress: updatedFeesFacet.address,
             action: FacetCutAction.Add,
-            functionSelectors: [interestPlusYieldFee],
+            functionSelectors: [mintPlusBurnBuyerFee],
           },
         ];
 
@@ -115,11 +113,8 @@ const setup = async () => {
             mintFee: 1,
             burnBuyerFee: 2,
             burnOwnerFee: 3,
-            transferFee: 4,
-            interestFee: 24568974545,
-            yieldFee: 89746654654,
             diamond: diamond.address,
-            me: ethers.constants.AddressZero,
+            //  me: ethers.constants.AddressZero,
             vaultRegistry: diamond.address,
             migrationRegistry: diamond.address,
             meTokenFactory: diamond.address,
@@ -180,10 +175,10 @@ const setup = async () => {
 
         // Ensure a new func that wasn't added to cut won't be recognized by
         // the diamond, even though the func exists on the facet
-        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
         );
-        expect(funcs).to.be.an("array").to.not.contain(interestPlusYieldFee);
+        expect(funcs).to.be.an("array").to.not.contain(mintPlusBurnBuyerFee);
 
         // call to new facet works
         const updatedFees = await getContractAt<FeesFacetMock>(
@@ -204,15 +199,15 @@ const setup = async () => {
       });
 
       it("add only a function should work", async () => {
-        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
         );
 
         const cut = [
           {
             facetAddress: updatedFeesFacet.address,
             action: FacetCutAction.Add,
-            functionSelectors: [interestPlusYieldFee],
+            functionSelectors: [mintPlusBurnBuyerFee],
           },
         ];
 
@@ -233,37 +228,41 @@ const setup = async () => {
         const funcs = await loupe.facetFunctionSelectors(
           updatedFeesFacet.address
         );
-        expect(funcs).to.be.an("array").to.contain(interestPlusYieldFee);
+        expect(funcs).to.be.an("array").to.contain(mintPlusBurnBuyerFee);
         //call to other facet also works
         const feesFacet = await getContractAt<FeesFacet>(
           "FeesFacet",
           diamond.address
         );
-        await feesFacet.setInterestFee(30);
-        const interestFee = await feesFacet.interestFee();
-        expect(interestFee).to.equal(30);
-        await feesFacet.setYieldFee(12);
-        const yieldFee = await feesFacet.yieldFee();
-        expect(yieldFee).to.equal(12);
+        // current value
+        let mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(0);
+        // resetting
+        await feesFacet.setMintFee(2);
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(2);
+        await feesFacet.setBurnBuyerFee(5);
+        let burnBuyerFee = await feesFacet.burnBuyerFee();
+        expect(burnBuyerFee).to.equal(5);
         // call to new facet works
         const updatedFees = await getContractAt<FeesFacetMock>(
           "FeesFacetMock",
           diamond.address
         );
 
-        const intPlusYieldFee = await updatedFees.interestPlusYieldFee();
-        expect(intPlusYieldFee).to.equal(42);
+        const intPlusYieldFee = await updatedFees.mintPlusBurnBuyerFee();
+        expect(intPlusYieldFee).to.equal(7); // 5+ 2
       });
 
       it("remove only a function should work", async () => {
-        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
         );
         const cut = [
           {
             facetAddress: ethers.constants.AddressZero,
             action: FacetCutAction.Remove,
-            functionSelectors: [interestPlusYieldFee],
+            functionSelectors: [mintPlusBurnBuyerFee],
           },
         ];
         const tx = await diamondCut.diamondCut(
@@ -282,37 +281,38 @@ const setup = async () => {
         const funcs = await loupe.facetFunctionSelectors(
           updatedFeesFacet.address
         );
-        expect(funcs).to.be.an("array").to.not.contain(interestPlusYieldFee);
+        expect(funcs).to.be.an("array").to.not.contain(mintPlusBurnBuyerFee);
         //call to other facet also works
         const feesFacet = await getContractAt<FeesFacet>(
           "FeesFacet",
           diamond.address
         );
-        await feesFacet.setInterestFee(28);
-        const interestFee = await feesFacet.interestFee();
-        expect(interestFee).to.equal(28);
-        await feesFacet.setYieldFee(14);
-        const yieldFee = await feesFacet.yieldFee();
-        expect(yieldFee).to.equal(14);
+        // current value
+        let mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(2);
+        // resetting
+        await feesFacet.setMintFee(10);
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(10);
         // call to new facet works
         const updatedFees = await getContractAt<FeesFacetMock>(
           "FeesFacetMock",
           diamond.address
         );
-        await expect(updatedFees.interestPlusYieldFee()).to.revertedWith(
+        await expect(updatedFees.mintPlusBurnBuyerFee()).to.revertedWith(
           "Diamond: Function does not exist"
         );
       });
 
       it("update a function should work", async () => {
-        const setInterestFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["setInterestFee(uint256)"]
+        const setMintFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["setMintFee(uint256)"]
         );
         const cut = [
           {
             facetAddress: updatedFeesFacet.address,
             action: FacetCutAction.Replace,
-            functionSelectors: [setInterestFee],
+            functionSelectors: [setMintFee],
           },
         ];
         const tx = await diamondCut.diamondCut(
@@ -331,17 +331,19 @@ const setup = async () => {
         const funcs = await loupe.facetFunctionSelectors(
           updatedFeesFacet.address
         );
-        expect(funcs).to.be.an("array").to.contain(setInterestFee);
+        expect(funcs).to.be.an("array").to.contain(setMintFee);
         //call to other facet also works
         const feesFacet = await getContractAt<FeesFacet>(
           "FeesFacet",
           diamond.address
         );
-        let interestFee = await feesFacet.interestFee();
-        expect(interestFee).to.equal(28);
-        await feesFacet.setInterestFee(1);
-        interestFee = await feesFacet.interestFee();
-        expect(interestFee).to.equal(43);
+        // current value
+        let mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(10);
+        // resetting
+        await feesFacet.setMintFee(20);
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(20 + 42);
       });
 
       it("add same a function should revert", async () => {
@@ -395,14 +397,14 @@ const setup = async () => {
       it("add a new one with init data should work", async () => {
         updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
         const diamondInit = await deploy<DiamondInitMock>("DiamondInitMock");
-        const interestPlusYieldFee = updatedFeesFacet.interface.getSighash(
-          updatedFeesFacet.interface.functions["interestPlusYieldFee()"]
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
         );
         const cut = [
           {
             facetAddress: updatedFeesFacet.address,
             action: FacetCutAction.Add,
-            functionSelectors: [interestPlusYieldFee],
+            functionSelectors: [mintPlusBurnBuyerFee],
           },
         ];
         const feesFacet = await getContractAt<FeesFacet>(
@@ -410,10 +412,13 @@ const setup = async () => {
           diamond.address
         );
 
-        const interestFeeBefore = await feesFacet.interestFee();
-        expect(interestFeeBefore).to.equal(43);
-        const yieldFeeBefore = await feesFacet.yieldFee();
-        expect(yieldFeeBefore).to.equal(14);
+        // current value
+        let mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(20 + 42);
+        // resetting
+        await feesFacet.setMintFee(1);
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(1 + 42);
 
         let functionCall = diamondInit.interface.encodeFunctionData("init", [
           "24568974545",
@@ -427,10 +432,13 @@ const setup = async () => {
         if (!receipt.status) {
           throw Error(`Diamond upgrade failed: ${tx.hash}`);
         }
-        const interestFeeAfter = await feesFacet.interestFee();
-        expect(interestFeeAfter).to.equal(24568974545);
-        const yieldFeeAfter = await feesFacet.yieldFee();
-        expect(yieldFeeAfter).to.equal(14);
+        // current value
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(24568974545);
+        // resetting
+        await feesFacet.setMintFee(1);
+        mintFee = await feesFacet.mintFee();
+        expect(mintFee).to.equal(1 + 42);
         const loupe = await getContractAt<DiamondLoupeFacet>(
           "DiamondLoupeFacet",
           diamond.address
@@ -438,15 +446,19 @@ const setup = async () => {
         const funcs = await loupe.facetFunctionSelectors(
           updatedFeesFacet.address
         );
-        expect(funcs).to.be.an("array").to.contain(interestPlusYieldFee);
+        expect(funcs).to.be.an("array").to.contain(mintPlusBurnBuyerFee);
         // call to new facet works
         const updatedFees = await getContractAt<FeesFacetMock>(
           "FeesFacetMock",
           diamond.address
         );
 
-        const newAdr = await updatedFees.interestPlusYieldFee();
-        expect(newAdr).to.equal(24568974545 + 14);
+        const newAdr = await updatedFees.mintPlusBurnBuyerFee();
+        expect(newAdr)
+          .to.equal(1 + 42 + 5)
+          .to.equal(
+            (await feesFacet.mintFee()).add(await feesFacet.burnBuyerFee())
+          );
         //call to other facet also works
         const ownFacet = await getContractAt<OwnershipFacet>(
           "OwnershipFacet",
@@ -458,9 +470,6 @@ const setup = async () => {
         const newOwner = await ownFacet.deactivateController();
         expect(newOwner).to.equal(account2.address);
       });
-    });
-    after(async () => {
-      await network.provider.send("evm_revert", [snapshotId]);
     });
   });
 };

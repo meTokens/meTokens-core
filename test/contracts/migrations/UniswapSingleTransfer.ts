@@ -18,12 +18,78 @@ import {
 } from "../../../artifacts/types";
 import { getQuote } from "../../utils/uniswap";
 
+const resubscribe = async (
+  meToken: MeToken,
+  owner: SignerWithAddress,
+  toHub: number | string | BigNumber,
+  meTokenRegistry: MeTokenRegistryFacet,
+  migrationRegistry: MigrationRegistry,
+  fromVault: SingleAssetVault,
+  toVault: SingleAssetVault,
+  migration: any,
+  fee: any,
+  needVaultApproval?: boolean
+): Promise<any> => {
+  const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+    ["uint24"],
+    [fee]
+  );
+
+  if (needVaultApproval !== false) {
+    await migrationRegistry.approve(
+      fromVault.address,
+      toVault.address,
+      migration.address
+    );
+  }
+
+  await meTokenRegistry
+    .connect(owner)
+    .initResubscribe(
+      meToken.address,
+      toHub,
+      migration.address,
+      encodedMigrationArgs
+    );
+
+  await mineBlock(
+    (
+      await meTokenRegistry.getMeTokenInfo(meToken.address)
+    ).endCooldown.toNumber() + 1
+  );
+  const block = await ethers.provider.getBlock("latest");
+  expect(
+    (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+  ).to.be.lt(block.timestamp);
+
+  await meTokenRegistry.finishResubscribe(meToken.address);
+};
+
+const increaseResubscribeTimeToStartTime = async (
+  meTokenRegistry: MeTokenRegistryFacet,
+  meToken: MeToken
+) => {
+  await mineBlock(
+    (
+      await meTokenRegistry.getMeTokenInfo(meToken.address)
+    ).startTime.toNumber() + 1
+  );
+  const block = await ethers.provider.getBlock("latest");
+  expect(
+    (await meTokenRegistry.getMeTokenInfo(meToken.address)).startTime
+  ).to.be.lt(block.timestamp);
+};
+
 const setup = async () => {
   describe("UniswapSingleTransferMigration.sol", () => {
     let DAI: string;
     let WETH: string;
-    let DAIWhale: string;
+    let USDC: string;
+    let WBTC: string;
     let WETHWhale: string;
+    let USDCWhale: string;
+    let DAIWhale: string;
+    let WBTCWhale: string;
     let daiHolder: Signer;
     let wethHolder: Signer;
     let UNIV3Factory: string;
@@ -36,15 +102,19 @@ const setup = async () => {
     let migrationRegistry: MigrationRegistry;
     let migration: UniswapSingleTransferMigration;
     let meTokenRegistry: MeTokenRegistryFacet;
-    let initialVault: SingleAssetVault;
-    let targetVault: SingleAssetVault;
+    let daiVault: SingleAssetVault;
+    let wethVault: SingleAssetVault;
+    let usdcVault: SingleAssetVault;
+    let wbtcVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let meToken: MeToken;
     let hub: HubFacet;
     let vaultRegistry: VaultRegistry;
 
-    const hubId1 = 1;
-    const hubId2 = 2;
+    const hubId1 = 1; // DAI Hub
+    const hubId2 = 2; // WETH Hub
+    const hubId3 = 3; // USDC Hub
+    const hubId4 = 4; // WBTC Hub
     const name = "Carl meToken";
     const symbol = "CARL";
     const amount = ethers.utils.parseEther("100");
@@ -70,10 +140,21 @@ const setup = async () => {
     };
 
     let snapshotId: any;
+    let max = ethers.constants.MaxUint256;
+
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      ({ DAI, DAIWhale, WETH, WETHWhale, UNIV3Factory } =
-        await getNamedAccounts());
+      ({
+        DAI,
+        DAIWhale,
+        WETH,
+        WETHWhale,
+        UNIV3Factory,
+        USDC,
+        USDCWhale,
+        WBTC,
+        WBTCWhale,
+      } = await getNamedAccounts());
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -93,7 +174,7 @@ const setup = async () => {
         hub,
         foundry,
         migrationRegistry,
-        singleAssetVault: initialVault,
+        singleAssetVault: daiVault,
         vaultRegistry,
         meTokenRegistry,
         account0,
@@ -107,24 +188,61 @@ const setup = async () => {
         refundRatio
       ));
 
-      targetVault = await deploy<SingleAssetVault>(
+      wethVault = await deploy<SingleAssetVault>(
         "SingleAssetVault",
         undefined, //no libs
         account0.address, // DAO
         hub.address // diamond
       );
-      await vaultRegistry.approve(targetVault.address);
+      await vaultRegistry.approve(wethVault.address);
+
+      usdcVault = await deploy<SingleAssetVault>(
+        "SingleAssetVault",
+        undefined, //no libs
+        account0.address, // DAO
+        hub.address // diamond
+      );
+      await vaultRegistry.approve(usdcVault.address);
+
+      wbtcVault = await deploy<SingleAssetVault>(
+        "SingleAssetVault",
+        undefined, //no libs
+        account0.address, // DAO
+        hub.address // diamond
+      );
+      await vaultRegistry.approve(wbtcVault.address);
 
       // Register 2nd hub to which we'll migrate to
       await hub.register(
         account0.address,
         WETH,
-        targetVault.address,
+        wethVault.address,
         refundRatio,
         baseY,
         reserveWeight,
         encodedVaultWETHArgs
       );
+      // Register 3rd hub to which we'll migrate to
+      await hub.register(
+        account0.address,
+        USDC,
+        usdcVault.address,
+        refundRatio,
+        baseY,
+        reserveWeight,
+        encodedVaultWETHArgs
+      );
+      // Register 4th hub to which we'll migrate to
+      await hub.register(
+        account0.address,
+        WBTC,
+        wbtcVault.address,
+        refundRatio,
+        baseY,
+        reserveWeight,
+        encodedVaultWETHArgs
+      );
+
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
@@ -133,8 +251,8 @@ const setup = async () => {
         hub.address // diamond
       );
       await migrationRegistry.approve(
-        initialVault.address,
-        targetVault.address,
+        daiVault.address,
+        wethVault.address,
         migration.address
       );
       // Pre fund owner & buyer w/ DAI & WETH
@@ -144,7 +262,7 @@ const setup = async () => {
       wethHolder = await impersonate(WETHWhale);
       dai
         .connect(daiHolder)
-        .transfer(account0.address, ethers.utils.parseEther("100"));
+        .transfer(account0.address, ethers.utils.parseEther("50000000"));
       dai
         .connect(daiHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
@@ -154,11 +272,12 @@ const setup = async () => {
       weth
         .connect(wethHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
-      let max = ethers.constants.MaxUint256;
+      await dai.connect(account0).approve(meTokenRegistry.address, max);
+      await dai.connect(account0).approve(daiVault.address, max);
       await dai.connect(account1).approve(meTokenRegistry.address, max);
-      await dai.connect(account2).approve(initialVault.address, max);
+      await dai.connect(account2).approve(daiVault.address, max);
       await weth.connect(account2).approve(migration.address, max);
-      await weth.connect(account2).approve(targetVault.address, max);
+      await weth.connect(account2).approve(wethVault.address, max);
 
       // Create meToken
       await meTokenRegistry
@@ -225,7 +344,7 @@ const setup = async () => {
         await hub.register(
           account0.address,
           DAI,
-          initialVault.address,
+          daiVault.address,
           refundRatio,
           baseY,
           reserveWeight,
@@ -233,8 +352,8 @@ const setup = async () => {
         );
 
         await migrationRegistry.approve(
-          initialVault.address,
-          initialVault.address,
+          daiVault.address,
+          daiVault.address,
           migration.address
         );
 
@@ -243,7 +362,7 @@ const setup = async () => {
             .connect(account1)
             .initResubscribe(
               meToken.address,
-              3,
+              5,
               migration.address,
               encodedMigrationArgs
             )
@@ -268,7 +387,7 @@ const setup = async () => {
         const tx = await migration.poke(account0.address);
         await tx.wait();
 
-        await expect(tx).to.not.emit(initialVault, "StartMigration");
+        await expect(tx).to.not.emit(daiVault, "StartMigration");
       });
       it("should be able to call before startTime, but wont run startMigration()", async () => {
         block = await ethers.provider.getBlock("latest");
@@ -279,7 +398,7 @@ const setup = async () => {
         const tx = await migration.poke(meToken.address);
         await tx.wait();
 
-        await expect(tx).to.not.emit(initialVault, "StartMigration");
+        await expect(tx).to.not.emit(daiVault, "StartMigration");
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(false);
       });
@@ -313,7 +432,7 @@ const setup = async () => {
         );
 
         await expect(tx)
-          .to.emit(initialVault, "StartMigration")
+          .to.emit(daiVault, "StartMigration")
           .withArgs(meToken.address);
         await expect(tx)
           .to.emit(meTokenRegistry, "UpdateBalances")
@@ -330,7 +449,7 @@ const setup = async () => {
         const tx = await migration.poke(meToken.address);
         await tx.wait();
 
-        await expect(tx).to.not.emit(initialVault, "StartMigration");
+        await expect(tx).to.not.emit(daiVault, "StartMigration");
       });
     });
     describe("finishMigration()", () => {
@@ -357,12 +476,12 @@ const setup = async () => {
           .to.emit(weth, "Transfer")
           .withArgs(
             migration.address,
-            targetVault.address,
+            wethVault.address,
             meTokenRegistryDetails.balancePooled.add(
               meTokenRegistryDetails.balanceLocked
             )
           );
-        await expect(tx).to.not.emit(initialVault, "StartMigration");
+        await expect(tx).to.not.emit(daiVault, "StartMigration");
 
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.fee).to.equal(0);
@@ -377,8 +496,8 @@ const setup = async () => {
         expect(meTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         await migrationRegistry.approve(
-          targetVault.address,
-          initialVault.address,
+          wethVault.address,
+          daiVault.address,
           migration.address
         );
 
@@ -434,13 +553,13 @@ const setup = async () => {
 
         await expect(tx).to.emit(meTokenRegistry, "FinishResubscribe");
         await expect(tx)
-          .to.emit(targetVault, "StartMigration")
+          .to.emit(wethVault, "StartMigration")
           .withArgs(meToken.address);
         await expect(tx)
           .to.emit(dai, "Transfer")
           .withArgs(
             migration.address,
-            initialVault.address,
+            daiVault.address,
             meTokenRegistryDetailsAfter.balancePooled.add(
               meTokenRegistryDetailsAfter.balanceLocked
             )
@@ -514,9 +633,7 @@ const setup = async () => {
       });
 
       it("From warmup => startTime: assets transferred to/from initial vault", async () => {
-        const initialVaultBalanceBefore = await dai.balanceOf(
-          initialVault.address
-        );
+        const initialVaultBalanceBefore = await dai.balanceOf(daiVault.address);
 
         const tx = await foundry
           .connect(account2)
@@ -525,9 +642,7 @@ const setup = async () => {
 
         await expect(tx).to.be.emit(dai, "Transfer");
 
-        const initialVaultBalanceAfter = await dai.balanceOf(
-          initialVault.address
-        );
+        const initialVaultBalanceAfter = await dai.balanceOf(daiVault.address);
 
         expect(
           initialVaultBalanceAfter.sub(initialVaultBalanceBefore)
@@ -542,10 +657,8 @@ const setup = async () => {
         block = await ethers.provider.getBlock("latest");
         expect(meTokenInfo.startTime).to.be.lt(block.timestamp);
 
-        const initialVaultDAIBefore = await dai.balanceOf(initialVault.address);
-        const initialVaultWETHBefore = await weth.balanceOf(
-          initialVault.address
-        );
+        const initialVaultDAIBefore = await dai.balanceOf(daiVault.address);
+        const initialVaultWETHBefore = await weth.balanceOf(daiVault.address);
         const migrationDAIBefore = await dai.balanceOf(migration.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
         expect(migrationWETHBefore).to.be.equal(0);
@@ -565,10 +678,8 @@ const setup = async () => {
         await expect(tx).to.be.emit(dai, "Transfer");
         const DAIBalanceAfter = await dai.balanceOf(account2.address);
         expect(DAIBalanceBefore.sub(DAIBalanceAfter)).to.equal(amount);
-        const initialVaultDAIAfter = await dai.balanceOf(initialVault.address);
-        const initialVaultWETHAfter = await weth.balanceOf(
-          initialVault.address
-        );
+        const initialVaultDAIAfter = await dai.balanceOf(daiVault.address);
+        const initialVaultWETHAfter = await weth.balanceOf(daiVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
         // initial vault weth balance has no change
@@ -595,14 +706,12 @@ const setup = async () => {
         block = await ethers.provider.getBlock("latest");
         expect(meTokenInfo.endTime).to.be.lt(block.timestamp);
 
-        const initialVaultDAIBefore = await dai.balanceOf(initialVault.address);
-        const initialVaultWETHBefore = await weth.balanceOf(
-          initialVault.address
-        );
+        const initialVaultDAIBefore = await dai.balanceOf(daiVault.address);
+        const initialVaultWETHBefore = await weth.balanceOf(daiVault.address);
         const migrationDAIBefore = await dai.balanceOf(migration.address);
         const migrationWETHBefore = await weth.balanceOf(migration.address);
-        const targetVaultDAIBefore = await dai.balanceOf(targetVault.address);
-        const targetVaultWETHBefore = await weth.balanceOf(targetVault.address);
+        const targetVaultDAIBefore = await dai.balanceOf(wethVault.address);
+        const targetVaultWETHBefore = await weth.balanceOf(wethVault.address);
 
         const tx = await foundry
           .connect(account2)
@@ -611,14 +720,12 @@ const setup = async () => {
 
         await expect(tx).to.be.emit(weth, "Transfer");
 
-        const initialVaultDAIAfter = await dai.balanceOf(initialVault.address);
-        const initialVaultWETHAfter = await weth.balanceOf(
-          initialVault.address
-        );
+        const initialVaultDAIAfter = await dai.balanceOf(daiVault.address);
+        const initialVaultWETHAfter = await weth.balanceOf(daiVault.address);
         const migrationDAIAfter = await dai.balanceOf(migration.address);
         const migrationWETHAfter = await weth.balanceOf(migration.address);
-        const targetVaultDAIAfter = await dai.balanceOf(targetVault.address);
-        const targetVaultWETHAfter = await weth.balanceOf(targetVault.address);
+        const targetVaultDAIAfter = await dai.balanceOf(wethVault.address);
+        const targetVaultWETHAfter = await weth.balanceOf(wethVault.address);
 
         expect(initialVaultWETHBefore.sub(initialVaultWETHAfter)).to.be.equal(
           0
@@ -677,11 +784,755 @@ const setup = async () => {
         await tx.wait();
 
         await expect(tx)
-          .to.emit(initialVault, "StartMigration")
+          .to.emit(daiVault, "StartMigration")
           .withArgs(meToken.address);
         await expect(tx).to.not.emit(meTokenRegistry, "UpdateBalances");
         migrationDetails = await migration.getDetails(meToken.address);
         expect(migrationDetails.started).to.be.equal(true);
+      });
+    });
+
+    describe("Slippage Tests", () => {
+      before(async () => {
+        await meTokenRegistry
+          .connect(account0)
+          .subscribe(name, symbol, hubId1, 0);
+        const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+          account0.address
+        );
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      });
+
+      describe("DAI -> WETH resubscribe fails when slippage > 5%", () => {
+        before(async () => {
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseEther(String(50 * 1e6)),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+        });
+        it("Call to poke reverts", async () => {
+          // NOTE: at current market, 50M DAI would incur 6% slippage
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          await expect(migration.poke(meToken.address)).to.be.revertedWith(
+            "Too little received"
+          );
+        });
+        after(async () => {
+          await meTokenRegistry
+            .connect(account0)
+            .cancelResubscribe(meToken.address);
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+
+      describe("DAI -> WETH resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          await dai.connect(account0).approve(daiVault.address, max);
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseEther(String(1e6)),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+
+      describe("DAI -> USDC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          await resubscribe(
+            meToken,
+            account0,
+            hubId1,
+            meTokenRegistry,
+            migrationRegistry,
+            wethVault,
+            daiVault,
+            migration,
+            fees,
+            false
+          );
+
+          await dai.connect(account0).approve(daiVault.address, max);
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseEther("1000000"),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [500]
+          );
+
+          await migrationRegistry.approve(
+            daiVault.address,
+            usdcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId3,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            dai.address
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(USDC);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+      describe("USDC -> DAI resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const usdc = await getContractAt<ERC20>("ERC20", USDC);
+          const usdcHolder = await impersonate(USDCWhale);
+
+          await usdc
+            .connect(usdcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1e6), 6)
+            );
+
+          await usdc.connect(account0).approve(usdcVault.address, max);
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1e6), 6),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [500]
+          );
+
+          await migrationRegistry.approve(
+            usdcVault.address,
+            daiVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId1,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            USDC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(DAI);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+      describe("WBTC -> WETH resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          await resubscribe(
+            meToken,
+            account0,
+            hubId4,
+            meTokenRegistry,
+            migrationRegistry,
+            daiVault,
+            wbtcVault,
+            migration,
+            fees
+          );
+
+          const wbtc = await getContractAt<ERC20>("ERC20", WBTC);
+          const wbtcHolder = await impersonate(WBTCWhale);
+          await wbtc
+            .connect(wbtcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1000), 8)
+            );
+          await wbtc.connect(account0).approve(wbtcVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1000), 8),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wbtcVault.address,
+            wethVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId2,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WBTC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WETH);
+        });
+        it("Call to poke should NOT revert", async () => {
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+      describe("WETH -> WBTC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const weth = await getContractAt<ERC20>("ERC20", WETH);
+          const wethHolder = await impersonate(WETHWhale);
+
+          await weth
+            .connect(wethHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1000), 18)
+            );
+          await weth.connect(account0).approve(wethVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1000), 18),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wethVault.address,
+            wbtcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId4,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WETH
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WBTC);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+      describe("WBTC -> USDC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const wbtc = await getContractAt<ERC20>("ERC20", WBTC);
+          const wbtcHolder = await impersonate(WBTCWhale);
+          await wbtc
+            .connect(wbtcHolder)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(100), 8)
+            );
+
+          await wbtc.connect(account0).approve(wbtcVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(100), 8),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            wbtcVault.address,
+            usdcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId3,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            WBTC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(USDC);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
+      });
+      describe("USDC -> WBTC resubscribe passes when slippage < 5%", () => {
+        before(async () => {
+          const usdc = await getContractAt<ERC20>("ERC20", USDC);
+          const usdcWhale = await impersonate(USDCWhale);
+          await usdc
+            .connect(usdcWhale)
+            .transfer(
+              account0.address,
+              ethers.utils.parseUnits(String(1e6), 6)
+            );
+          await usdc.connect(account0).approve(usdcVault.address, max);
+
+          // Mint new collateral
+          await foundry
+            .connect(account0)
+            .mint(
+              meToken.address,
+              ethers.utils.parseUnits(String(1e6), 6),
+              account0.address
+            );
+
+          encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+            ["uint24"],
+            [fees]
+          );
+
+          await migrationRegistry.approve(
+            usdcVault.address,
+            wbtcVault.address,
+            migration.address
+          );
+
+          await meTokenRegistry
+            .connect(account0)
+            .initResubscribe(
+              meToken.address,
+              hubId4,
+              migration.address,
+              encodedMigrationArgs
+            );
+
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+
+          expect((await hub.getHubInfo(metokenInfo.hubId)).asset).to.equal(
+            USDC
+          );
+          expect(
+            (await hub.getHubInfo(metokenInfo.targetHubId)).asset
+          ).to.equal(WBTC);
+        });
+        it("Call to poke should NOT revert", async () => {
+          await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
+          await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          // expectedAmountOutMinimum is expectedAmountOutNoSlippage * 19/20 (aka 95%)
+          // so therefore expectedAmountOutMinimum * 20/19 is the baseline to compare slippage to
+          const expectedAmountOutNoSlippage = expectedAmountOutMinimum
+            .mul(20)
+            .div(19);
+          const pctOfOrderFilled = receivedAmountOut
+            .mul(100)
+            .div(expectedAmountOutNoSlippage);
+          expect(pctOfOrderFilled).gte(95);
+        });
+
+        after(async () => {
+          await mineBlock(
+            (
+              await meTokenRegistry.getMeTokenInfo(meToken.address)
+            ).endCooldown.toNumber() + 1
+          );
+          // Burn all collateral
+          await foundry.burn(
+            meToken.address,
+            await meToken.balanceOf(account0.address),
+            account0.address
+          );
+        });
       });
     });
     after(async () => {

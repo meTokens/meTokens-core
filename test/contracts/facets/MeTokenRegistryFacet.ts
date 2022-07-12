@@ -17,7 +17,7 @@ import {
   getContractAt,
   toETHNumber,
 } from "../../utils/helpers";
-import { mineBlock } from "../../utils/hardhatNode";
+import { impersonate, mineBlock } from "../../utils/hardhatNode";
 import {
   MeTokenRegistryFacet,
   HubFacet,
@@ -79,15 +79,15 @@ const setup = async () => {
     let singleAssetVault: SingleAssetVault;
     let foundry: FoundryFacet;
     let hub: HubFacet;
-    let token: ERC20;
     let fee: FeesFacet;
     let dai: ERC20;
     let weth: ERC20;
+    let daiWhale: Signer;
+    let wethWhale: Signer;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
-    let whale: Signer;
     let curve: ICurveFacet;
     let targetHubId: number;
     let migration: UniswapSingleTransferMigration;
@@ -114,7 +114,13 @@ const setup = async () => {
     );
     let block: any;
     before(async () => {
-      ({ DAI, WETH, USDT, UNIV3Factory } = await getNamedAccounts());
+      let DAIWhale, WETHWhale;
+      ({ DAI, WETH, DAIWhale, USDT, WETHWhale, UNIV3Factory } =
+        await getNamedAccounts());
+      dai = await getContractAt<ERC20>("ERC20", DAI);
+      weth = await getContractAt<ERC20>("ERC20", WETH);
+      daiWhale = await impersonate(DAIWhale);
+      wethWhale = await impersonate(WETHWhale);
       await checkUniswapPoolLiquidity(DAI, WETH, fees);
 
       const encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
@@ -123,20 +129,17 @@ const setup = async () => {
       );
 
       ({
-        tokenAddr: DAI,
         hub,
         foundry,
         meTokenRegistry,
         migrationRegistry,
         singleAssetVault,
-        token,
         fee,
         account0,
         curve,
         account1,
         account2,
         account3,
-        whale,
       } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
       await hub.register(
         account0.address,
@@ -169,8 +172,6 @@ const setup = async () => {
         foundry.address // diamond
       );
       await migration.deployed();
-      dai = await getContractAt<ERC20>("ERC20", DAI);
-      weth = await getContractAt<ERC20>("ERC20", WETH);
     });
 
     describe("subscribe()", () => {
@@ -266,19 +267,19 @@ const setup = async () => {
         const symbol = "CARL";
         const assetsInEth = "20";
         const assetsDeposited = ethers.utils.parseEther(assetsInEth);
-        const balBefore = await token.balanceOf(account1.address);
+        const balBefore = await dai.balanceOf(account1.address);
         // need an approve of metoken registry first
-        await token
+        await dai
           .connect(account1)
           .approve(meTokenRegistry.address, assetsDeposited);
         tx = await meTokenRegistry
           .connect(account1)
           .subscribe(name, symbol, hubId, assetsDeposited);
         tx.wait();
-        const balAfter = await token.balanceOf(account1.address);
+        const balAfter = await dai.balanceOf(account1.address);
         expect(balBefore.sub(balAfter)).equal(assetsDeposited);
         const hubDetail = await hub.getHubInfo(hubId);
-        const balVault = await token.balanceOf(hubDetail.vault);
+        const balVault = await dai.balanceOf(hubDetail.vault);
         expect(balVault).equal(assetsDeposited);
         // assert token infos
         meTokenAddr1 = await meTokenRegistry.getOwnerMeToken(account1.address);
@@ -349,7 +350,7 @@ const setup = async () => {
         const name = "Carl0 meToken";
         const symbol = "CARL";
         const assetsDeposited = ethers.utils.parseEther("20");
-        await token.connect(whale).transfer(account2.address, assetsDeposited);
+        await dai.connect(daiWhale).transfer(account2.address, assetsDeposited);
 
         const tx = meTokenRegistry
           .connect(account2)
@@ -620,6 +621,7 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
         expect(meTokenRegistryDetails.endTime).to.be.equal(0);
+        expect(meTokenRegistryDetails.endCooldown).to.be.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
         expect(meTokenRegistryDetails.migration).to.be.equal(
           ethers.constants.AddressZero
@@ -638,13 +640,6 @@ const setup = async () => {
         expect(
           (await hub.getHubInfo(meTokenRegistryDetails.hubId)).active
         ).to.equal(false);
-        const oldMeTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
-          meTokenAddr0
-        );
-        // forward time after start time
-        await mineBlock(oldMeTokenRegistryDetails.endCooldown.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(oldMeTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
           ["uint24"],
@@ -680,7 +675,7 @@ const setup = async () => {
           encodedMigrationArgs
         );
 
-        await dai.connect(whale).transfer(account0.address, tokenDeposited);
+        await dai.connect(daiWhale).transfer(account0.address, tokenDeposited);
         await dai.approve(
           singleAssetVault.address,
           ethers.constants.MaxUint256
@@ -996,7 +991,9 @@ const setup = async () => {
     });
     describe("updateBalance", () => {
       it("updateBalancePooled()", async () => {
-        await weth.connect(whale).transfer(account0.address, tokenDeposited);
+        await weth
+          .connect(wethWhale)
+          .transfer(account0.address, tokenDeposited);
         await weth.approve(
           singleAssetVault.address,
           ethers.constants.MaxUint256
@@ -1092,7 +1089,9 @@ const setup = async () => {
         ).to.be.equal(lockedAmount);
       });
       it("updateBalanceLocked() when owner burns", async () => {
-        await weth.connect(whale).transfer(account1.address, tokenDeposited);
+        await weth
+          .connect(wethWhale)
+          .transfer(account1.address, tokenDeposited);
         await weth
           .connect(account1)
           .approve(singleAssetVault.address, ethers.constants.MaxUint256);

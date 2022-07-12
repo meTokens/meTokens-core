@@ -94,7 +94,7 @@ const config: HardhatUserConfig = {
       4: "0xc7ad46e0b8a400bb3c915120d284aafba8fc4735", // but for rinkeby it will be a specific address
       goerli: "0x84b9514E013710b9dD0811c9Fe46b837a4A0d8E0", //it can also specify a specific netwotk name (specified in hardhat.config.js)
     },
-    DAIWhale: "0x0000006daea1723962647b7e189d311d757Fb793",
+    DAIWhale: "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503",
     WETH: {
       default: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
       1: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
@@ -105,13 +105,15 @@ const config: HardhatUserConfig = {
     USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
     YDAIWhale: "0x863e730904cb7dcdd5205de6b502f42c3f6d9372",
     YDAI: "0xdA816459F1AB5631232FE5e97a05BBBb94970c95",
+    WBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+    WBTCWhale: "0x2faf487a4414fe77e2327f0bf4ae2a264a776ad2",
   },
   networks: {
     hardhat: {
       forking: {
         url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
         accounts,
-        blockNumber: 14448329,
+        blockNumber: 14800000,
       },
       gas: "auto",
       timeout: 1800000,

@@ -154,6 +154,7 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
 
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
+        meTokenInfo.endCooldown = 0;
         meTokenInfo.targetHubId = 0;
         meTokenInfo.migration = address(0);
 

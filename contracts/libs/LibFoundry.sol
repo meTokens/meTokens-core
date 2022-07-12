@@ -110,16 +110,17 @@ library LibFoundry {
         LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
 
         // Handling changes
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
-                //hubInfo = s.hubs[meTokenInfo.targetHubId];
-                LibMeToken.finishResubscribe(meToken);
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
 
         return (asset, sender, amounts[0]);
@@ -136,7 +137,6 @@ library LibFoundry {
     ) internal {
         (
             address asset,
-            address sender,
             uint256[2] memory amounts // 0-meTokensMinted 1-assetsDepositedAfterFees
         ) = _handleMintWithPermit(
                 meToken,
@@ -153,7 +153,7 @@ library LibFoundry {
         emit Mint(
             meToken,
             asset,
-            sender,
+            LibMeta.msgSender(),
             recipient,
             assetsDeposited,
             amounts[0]
@@ -202,17 +202,17 @@ library LibFoundry {
         HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
 
         // Handling changes
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
                 hubInfo = s.hubs[meTokenInfo.targetHubId];
                 meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
-                meTokenInfo = s.meTokens[meToken];
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
         // Calculate how many tokens are returned
         uint256 rawAssetsReturned = calculateRawAssetsReturned(
@@ -324,22 +324,7 @@ library LibFoundry {
             meTokenInfo.balancePooled
         );
 
-        // Logic for if we're updating curveInfo
-        if (hubInfo.reconfigure) {
-            // Must mean we're updating curveInfo
-            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
-                meTokensBurned,
-                meTokenInfo.hubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            rawAssetsReturned = LibWeightedAverage.calculate(
-                rawAssetsReturned,
-                targetAssetsReturned,
-                hubInfo.startTime,
-                hubInfo.endTime
-            );
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
             // Calculate return assuming meToken is resubscribing
             uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
                 meTokensBurned,
@@ -352,6 +337,20 @@ library LibFoundry {
                 targetAssetsReturned,
                 meTokenInfo.startTime,
                 meTokenInfo.endTime
+            );
+        } else if (hubInfo.reconfigure) {
+            // Must mean we're updating curveInfo
+            uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
+                meTokensBurned,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            rawAssetsReturned = LibWeightedAverage.calculate(
+                rawAssetsReturned,
+                targetAssetsReturned,
+                hubInfo.startTime,
+                hubInfo.endTime
             );
         }
     }
@@ -385,18 +384,7 @@ library LibFoundry {
                     (rawAssetsReturned * hubInfo.refundRatio) /
                     s.MAX_REFUND_RATIO;
             } else {
-                if (hubInfo.targetRefundRatio > 0) {
-                    // Hub is updating
-                    actualAssetsReturned =
-                        (rawAssetsReturned *
-                            LibWeightedAverage.calculate(
-                                hubInfo.refundRatio,
-                                hubInfo.targetRefundRatio,
-                                hubInfo.startTime,
-                                hubInfo.endTime
-                            )) /
-                        s.MAX_REFUND_RATIO;
-                } else {
+                if (meTokenInfo.targetHubId != 0) {
                     // meToken is resubscribing
                     actualAssetsReturned =
                         (rawAssetsReturned *
@@ -405,6 +393,17 @@ library LibFoundry {
                                 s.hubs[meTokenInfo.targetHubId].refundRatio,
                                 meTokenInfo.startTime,
                                 meTokenInfo.endTime
+                            )) /
+                        s.MAX_REFUND_RATIO;
+                } else {
+                    // Hub is updating
+                    actualAssetsReturned =
+                        (rawAssetsReturned *
+                            LibWeightedAverage.calculate(
+                                hubInfo.refundRatio,
+                                hubInfo.targetRefundRatio,
+                                hubInfo.startTime,
+                                hubInfo.endTime
                             )) /
                         s.MAX_REFUND_RATIO;
                 }
@@ -419,14 +418,7 @@ library LibFoundry {
         uint8 vSig,
         bytes32 rSig,
         bytes32 sSig
-    )
-        private
-        returns (
-            address asset,
-            address sender,
-            uint256[2] memory amounts
-        )
-    {
+    ) private returns (address asset, uint256[2] memory amounts) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
 
@@ -450,7 +442,7 @@ library LibFoundry {
             rSig,
             sSig
         );
-        return (asset, sender, amounts);
+        return (asset, amounts);
     }
 
     function _handlingChangesWithPermit(
@@ -488,15 +480,19 @@ library LibFoundry {
             sSig
         );
         LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        } else if (meTokenInfo.targetHubId != 0) {
+
+        // Handling changes
+        if (meTokenInfo.targetHubId != 0) {
             if (block.timestamp > meTokenInfo.endTime) {
-                LibMeToken.finishResubscribe(meToken);
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
             } else if (block.timestamp > meTokenInfo.startTime) {
                 // Handle migration actions if needed
                 IMigration(meTokenInfo.migration).poke(meToken);
             }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
     }
 
