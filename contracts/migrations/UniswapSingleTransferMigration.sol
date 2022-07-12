@@ -161,6 +161,16 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
         return (fee == MINFEE || fee == MIDFEE || fee == MAXFEE);
     }
 
+    function expectedAmountOutMinimum(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn
+    ) public view returns (uint256) {
+        return
+            (_calculateAmountOutWithChainlink(tokenIn, tokenOut, amountIn) *
+                MIN_PCT_OUT) / PRECISION;
+    }
+
     /// @dev parent call must have reentrancy check
     function _swap(address meToken) private returns (uint256 amountOut) {
         UniswapSingleTransfer storage usts = _uniswapSingleTransfers[meToken];
@@ -183,13 +193,6 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
             return 0;
         }
 
-        // Get expected amount from chainlink
-        uint256 expectedAmountOutNoSlippage = _calculateAmountOutWithChainlink(
-            hubInfo.asset,
-            targetHubInfo.asset,
-            amountIn
-        );
-
         // Approve router to spend
         IERC20(hubInfo.asset).safeApprove(address(_router), amountIn);
 
@@ -201,8 +204,11 @@ contract UniswapSingleTransferMigration is ReentrancyGuard, Vault, IMigration {
                 fee: usts.fee,
                 recipient: address(this),
                 amountIn: amountIn,
-                amountOutMinimum: (expectedAmountOutNoSlippage * MIN_PCT_OUT) /
-                    PRECISION,
+                amountOutMinimum: expectedAmountOutMinimum(
+                    hubInfo.asset,
+                    targetHubInfo.asset,
+                    amountIn
+                ),
                 sqrtPriceLimitX96: 0
             });
 
