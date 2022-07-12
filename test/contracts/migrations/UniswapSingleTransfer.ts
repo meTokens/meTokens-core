@@ -831,7 +831,6 @@ const setup = async () => {
         it("Call to poke reverts", async () => {
           // NOTE: at current market, 50M DAI would incur 6% slippage
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
           await expect(migration.poke(meToken.address)).to.be.revertedWith(
             "Too little received"
           );
@@ -877,8 +876,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -953,8 +980,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -1026,8 +1081,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -1109,8 +1192,37 @@ const setup = async () => {
           ).to.equal(WETH);
         });
         it("Call to poke should NOT revert", async () => {
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -1182,8 +1294,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -1208,7 +1348,7 @@ const setup = async () => {
             .connect(wbtcHolder)
             .transfer(
               account0.address,
-              ethers.utils.parseUnits(String(3 * 1e2), 8)
+              ethers.utils.parseUnits(String(1 * 1e2), 8)
             );
 
           await wbtc.connect(account0).approve(wbtcVault.address, max);
@@ -1217,7 +1357,7 @@ const setup = async () => {
           await foundry.connect(account0).mint(
             meToken.address,
             // FIXME resubscribe fails when wbtc = 500 tokens
-            ethers.utils.parseUnits(String(3 * 1e2), 8),
+            ethers.utils.parseUnits(String(1 * 1e2), 8),
             account0.address
           );
 
@@ -1254,8 +1394,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
         after(async () => {
           await mineBlock(
@@ -1326,8 +1494,36 @@ const setup = async () => {
         });
         it("Call to poke should NOT revert", async () => {
           await increaseResubscribeTimeToStartTime(meTokenRegistry, meToken);
-
+          const metokenInfo = await meTokenRegistry.getMeTokenInfo(
+            meToken.address
+          );
+          const expectedAmountOutMinimum =
+            await migration.expectedAmountOutMinimum(
+              (
+                await hub.getHubInfo(metokenInfo.hubId)
+              ).asset,
+              (
+                await hub.getHubInfo(metokenInfo.targetHubId)
+              ).asset,
+              (
+                await meTokenRegistry.getMeTokenInfo(meToken.address)
+              ).balancePooled
+            );
           await migration.poke(meToken.address);
+          const receivedAmountOut = (
+            await meTokenRegistry.getMeTokenInfo(meToken.address)
+          ).balancePooled;
+
+          console.log(String(expectedAmountOutMinimum));
+          console.log(String(receivedAmountOut));
+          const difference = receivedAmountOut
+            .sub(expectedAmountOutMinimum)
+            .mul(ethers.utils.parseEther("1"))
+            .div(receivedAmountOut.add(expectedAmountOutMinimum).div(2))
+            .mul(100)
+            .div(ethers.utils.parseEther("1"));
+          console.log(String(difference));
+          await expect(difference).lte(5);
         });
 
         after(async () => {
