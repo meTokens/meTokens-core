@@ -30,6 +30,7 @@ const mnemonic = `${
 const INFURA_NETWORKS = [
   "mainnet",
   "rinkeby",
+  "kovan",
   "arbitrum-mainnet",
   "arbitrum-rinkeby",
 ];
@@ -43,7 +44,7 @@ const accounts = PRIVATE_KEY
       count: 10,
     };
 
-const networks = ["mainnet" /*"rinkeby" */];
+const networks = ["mainnet", "kovan" /*"rinkeby" */];
 
 /**
  * Given the name of a network build a Hardhat Network object
