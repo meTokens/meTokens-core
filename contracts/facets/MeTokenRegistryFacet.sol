@@ -31,7 +31,7 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
         string calldata symbol,
         uint256 hubId,
         uint256 assetsDeposited
-    ) external override nonReentrant {
+    ) external override {
         address sender = LibMeta.msgSender();
         require(!isOwner(sender), "msg.sender already owns a meToken");
         require(s.hubs[hubId].active, "Hub inactive");
@@ -51,6 +51,14 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
             address(this)
         );
 
+        // Register the address which created a meToken
+        s.meTokenOwners[sender] = meTokenAddr;
+
+        // Add meToken to registry
+        s.meTokens[meTokenAddr].owner = sender;
+        s.meTokens[meTokenAddr].hubId = hubId;
+        s.meTokens[meTokenAddr].balancePooled = assetsDeposited;
+
         // Mint meToken to user
         uint256 meTokensMinted;
         if (assetsDeposited > 0) {
@@ -62,14 +70,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
             );
             IMeToken(meTokenAddr).mint(sender, meTokensMinted);
         }
-
-        // Register the address which created a meToken
-        s.meTokenOwners[sender] = meTokenAddr;
-
-        // Add meToken to registry
-        s.meTokens[meTokenAddr].owner = sender;
-        s.meTokens[meTokenAddr].hubId = hubId;
-        s.meTokens[meTokenAddr].balancePooled = assetsDeposited;
 
         emit Subscribe(
             meTokenAddr,
