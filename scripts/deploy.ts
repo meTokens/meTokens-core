@@ -202,7 +202,7 @@ async function main() {
   await vaultRegistry.approve(singleAssetVault.address);
   console.log("curve and singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
-  let reserveWeight = 250000;
+  let reserveWeight = 500000;
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
