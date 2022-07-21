@@ -37,6 +37,15 @@ export async function mineBlock(timestamp: number): Promise<void> {
   });
 }
 
+export async function mineBlocks(amount: number): Promise<void> {
+  // example mine 1000 blocks with an interval of 1 minute
+  // await hre.network.provider.send("hardhat_mine", ["0x3e8", "0x3c"]);
+  await network.provider.request({
+    method: "hardhat_mine",
+    params: [ethers.utils.hexValue(amount), ethers.utils.hexValue(14)],
+  });
+}
+
 export async function setNextBlockTimestamp(timestamp: number): Promise<void> {
   await network.provider.request({
     method: "evm_setNextBlockTimestamp",
