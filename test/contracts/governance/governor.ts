@@ -380,7 +380,6 @@ const setup = async () => {
           BigNumber.from(99).mul(decimals)
         );
       });
-
       it("Should revert because already executed", async () => {
         const description = "Proposal #1 mint tokens to recepient";
         const calldata = gToken.interface.encodeFunctionData("mint", [
@@ -429,7 +428,6 @@ const setup = async () => {
           Governor.execute([gToken.address], [0], [calldata], descriptionHash)
         ).to.be.revertedWith("Governor: proposal not successful");
       });
-
       it("Should execute the register hub proposal", async () => {
         //setup diamond
         let DAI;
@@ -451,7 +449,7 @@ const setup = async () => {
         let singleAssetVault: SingleAssetVault;
 
         ({ hub, singleAssetVault, account0 } = await hubSetupWithoutRegister());
-        // register timelock as RegisterController
+        // register timelock as RegisterController to be able to register a hub
         const ownershipFacet = await getContractAt<OwnershipFacet>(
           "OwnershipFacet",
           hub.address
@@ -560,7 +558,6 @@ const setup = async () => {
         expect(info.reconfigure).to.be.equal(false);
         expect(info.targetRefundRatio).to.be.equal(0);
       });
-
       it("Should execute a facet update proposal", async () => {
         //setup diamond
         let account0: SignerWithAddress;
@@ -570,11 +567,12 @@ const setup = async () => {
 
         ({ hub, account0, account2, account3 } =
           await hubSetupWithoutRegister());
-        // register timelock as RegisterController
+
         const ownershipFacet = await getContractAt<OwnershipFacet>(
           "OwnershipFacet",
           hub.address
         );
+        // register timelock as DiamondController to be able to update the diamond facets
         await ownershipFacet.setDiamondController(Timelock.address);
         const controller = await ownershipFacet.diamondController();
         expect(controller).to.equal(Timelock.address);
@@ -699,7 +697,6 @@ const setup = async () => {
           "FeesFacetMock",
           diamondCut.address
         );
-        const feectrl = await ownershipFacet.feesController();
 
         await updatedFees
           .connect(account0)
