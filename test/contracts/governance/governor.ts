@@ -1,14 +1,27 @@
 import "@nomiclabs/hardhat-ethers";
-import { ethers } from "hardhat";
-import { BigNumber, utils, Contract } from "ethers";
+import { ethers, getNamedAccounts } from "hardhat";
+import { BigNumber, utils, Contract, Signer } from "ethers";
 import { expect } from "chai";
 import {
+  ERC20,
+  FoundryFacet,
   GovernanceTimeLock,
+  HubFacet,
   MEGovernor,
+  MeToken,
   METoken,
+  MeTokenRegistryFacet,
+  OwnershipFacet,
+  SingleAssetVault,
+  VaultRegistry,
 } from "../../../artifacts/types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { mineBlocks } from "../../utils/hardhatNode";
+import {
+  hubSetupWithoutRegister,
+  transferFromWhale,
+} from "../../utils/hubSetup";
+import { getContractAt } from "../../utils/helpers";
 
 const setup = async () => {
   describe("Test Governance and Timelock", () => {
@@ -420,6 +433,137 @@ const setup = async () => {
         await expect(
           Governor.execute([gToken.address], [0], [calldata], descriptionHash)
         ).to.be.revertedWith("Governor: proposal not successful");
+      });
+
+      it("Should execute the register hub proposal", async () => {
+        //setup diamond
+        let DAI;
+        const hubId = 1;
+        const PRECISION = ethers.utils.parseEther("1");
+        const MAX_WEIGHT = 1000000;
+        const reserveWeight = MAX_WEIGHT / 2;
+        const refundRatio = 250000;
+        const baseY = PRECISION.div(1000);
+        ({ DAI } = await getNamedAccounts());
+        const encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
+          ["address"],
+          [DAI]
+        );
+
+        let account0: SignerWithAddress;
+        let hub: HubFacet;
+
+        let singleAssetVault: SingleAssetVault;
+
+        ({ hub, singleAssetVault, account0 } = await hubSetupWithoutRegister());
+        // register timelock as RegisterController
+        const ownershipFacet = await getContractAt<OwnershipFacet>(
+          "OwnershipFacet",
+          hub.address
+        );
+        await ownershipFacet.setRegisterController(Timelock.address);
+        const controller = await ownershipFacet.registerController();
+        expect(controller).to.equal(Timelock.address);
+        // create proposal
+        const description = "Proposal #1 register a new hub";
+        const calldata = hub.interface.encodeFunctionData("register", [
+          account0.address,
+          DAI,
+          singleAssetVault.address,
+          BigNumber.from(refundRatio),
+          BigNumber.from(baseY),
+          BigNumber.from(reserveWeight),
+          encodedVaultDAIArgs,
+        ]);
+
+        // delegate before the proposal creation
+        await gToken.delegate(acc1.address);
+        const propose1 = await Governor.connect(acc1).propose(
+          [hub.address],
+          [0],
+          [calldata],
+          description
+        );
+
+        const proposeReceipt = await propose1.wait(1);
+        const proposalId = proposeReceipt.events![0].args!.proposalId;
+
+        await mineBlocks(VOTING_DELAY + 1);
+
+        await Governor.connect(acc1).castVote(proposalId, 1);
+        await Governor.connect(acc2).castVote(proposalId, 0);
+        await Governor.connect(acc3).castVote(proposalId, 0);
+
+        await mineBlocks(VOTING_PERIOD + 1);
+
+        const descriptionHash = ethers.utils.id(description);
+
+        const quorum = await Governor.quorum(proposeReceipt.blockNumber);
+
+        const votePower1 = await Governor.getVotes(
+          acc1.address,
+          proposeReceipt.blockNumber
+        );
+        const votePower2 = await Governor.getVotes(
+          acc2.address,
+          proposeReceipt.blockNumber
+        );
+        const votePower3 = await Governor.getVotes(
+          acc3.address,
+          proposeReceipt.blockNumber
+        );
+        expect(votePower2).to.be.gt(0);
+        // vote from acc1 is now enough to reach the quorum
+        expect(votePower1).to.be.gt(quorum);
+
+        const votes = await Governor.proposalVotes(proposalId);
+        expect(votes[0]).to.equal(votePower2.add(votePower3));
+        const queueProp = await Governor.queue(
+          [hub.address],
+          [0],
+          [calldata],
+          descriptionHash,
+          { gasLimit: 8000000 }
+        );
+        await queueProp.wait(1);
+        await mineBlocks(TIMELOCK_DELAY);
+
+        expect(await gToken.balanceOf(recepient.address)).to.be.equal(
+          BigNumber.from(0).mul(decimals)
+        );
+
+        const executeProp = Governor.execute(
+          [hub.address],
+          [0],
+          [calldata],
+          descriptionHash,
+          { gasLimit: 8000000 }
+        );
+        await expect(executeProp)
+          .to.emit(hub, "Register")
+          .withArgs(
+            hubId,
+            account0.address,
+            DAI,
+            singleAssetVault.address,
+            refundRatio,
+            baseY,
+            reserveWeight,
+            encodedVaultDAIArgs
+          );
+        expect(await hub.count()).to.be.equal(hubId);
+        const info = await hub.getHubInfo(hubId);
+        expect(info.active).to.be.equal(true);
+        expect(info.owner).to.be.equal(account0.address);
+        expect(info.vault).to.be.equal(singleAssetVault.address);
+        expect(info.asset).to.be.equal(DAI);
+        expect(info.refundRatio).to.be.equal(refundRatio);
+        expect(info.updating).to.be.equal(false);
+        expect(info.startTime).to.be.equal(0);
+        expect(info.endTime).to.be.equal(0);
+        expect(info.endCooldown).to.be.equal(0);
+        expect(info.reconfigure).to.be.equal(false);
+        expect(info.targetRefundRatio).to.be.equal(0);
       });
     });
   });
