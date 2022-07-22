@@ -2,7 +2,7 @@
 pragma solidity 0.8.9;
 
 import {LibDiamond} from "../libs/LibDiamond.sol";
-import {IDiamondLoupe} from "../interfaces/IDiamondLoupe.sol";
+import {IDiamondLoupeFacet} from "../interfaces/IDiamondLoupeFacet.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 contract DiamondLoupeFacet is IDiamondLoupeFacet, IERC165 {
