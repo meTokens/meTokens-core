@@ -17,10 +17,10 @@ contract MeToken is ERC20Burnable, ERC20Permit {
     }
 
     constructor(
-        string memory name,
-        string memory symbol,
+        string memory name_,
+        string memory symbol_,
         address diamondAdr
-    ) ERC20(name, symbol) ERC20Permit(name) {
+    ) ERC20(name_, symbol_) ERC20Permit(name_) {
         version = "0.2";
         diamond = diamondAdr;
     }
