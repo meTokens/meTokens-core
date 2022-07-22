@@ -33,6 +33,8 @@ struct AppStorageMock {
     uint256 hubCount;
     mapping(uint256 => HubInfo) hubs;
     // reentrancy guard
+    uint256 NOT_ENTERED;
+    uint256 ENTERED;
     uint256 reentrancyStatus;
     // Widely-used addresses/interfaces
     address diamond;

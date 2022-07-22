@@ -1,27 +1,22 @@
 import "@nomiclabs/hardhat-ethers";
 import { ethers, getNamedAccounts } from "hardhat";
-import { BigNumber, utils, Contract, Signer } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { expect } from "chai";
 import {
-  ERC20,
-  FoundryFacet,
+  DiamondLoupeFacet,
+  FeesFacetMock,
   GovernanceTimeLock,
   HubFacet,
+  IDiamondCut,
   MEGovernor,
-  MeToken,
   METoken,
-  MeTokenRegistryFacet,
   OwnershipFacet,
   SingleAssetVault,
-  VaultRegistry,
 } from "../../../artifacts/types";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { mineBlocks } from "../../utils/hardhatNode";
-import {
-  hubSetupWithoutRegister,
-  transferFromWhale,
-} from "../../utils/hubSetup";
-import { getContractAt } from "../../utils/helpers";
+import { hubSetupWithoutRegister } from "../../utils/hubSetup";
+import { deploy, getContractAt } from "../../utils/helpers";
 
 const setup = async () => {
   describe("Test Governance and Timelock", () => {
@@ -564,6 +559,163 @@ const setup = async () => {
         expect(info.endCooldown).to.be.equal(0);
         expect(info.reconfigure).to.be.equal(false);
         expect(info.targetRefundRatio).to.be.equal(0);
+      });
+
+      it("Should execute a facet update proposal", async () => {
+        //setup diamond
+        let account0: SignerWithAddress;
+        let account2: SignerWithAddress;
+        let account3: SignerWithAddress;
+        let hub: HubFacet;
+
+        ({ hub, account0, account2, account3 } =
+          await hubSetupWithoutRegister());
+        // register timelock as RegisterController
+        const ownershipFacet = await getContractAt<OwnershipFacet>(
+          "OwnershipFacet",
+          hub.address
+        );
+        await ownershipFacet.setDiamondController(Timelock.address);
+        const controller = await ownershipFacet.diamondController();
+        expect(controller).to.equal(Timelock.address);
+        // deploy a new facet
+        const updatedFeesFacet = await deploy<FeesFacetMock>("FeesFacetMock");
+        const setTotallyNewAddressSigHash =
+          updatedFeesFacet.interface.getSighash(
+            updatedFeesFacet.interface.functions[
+              "setTotallyNewAddress(address)"
+            ]
+          );
+        const totallyNewAddressSigHash = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["totallyNewAddress()"]
+        );
+        const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
+        const cut = [
+          {
+            facetAddress: updatedFeesFacet.address,
+            action: FacetCutAction.Add,
+            functionSelectors: [
+              setTotallyNewAddressSigHash,
+              totallyNewAddressSigHash,
+            ],
+          },
+        ];
+        // create proposal
+        const description = "Proposal #1 add a facet";
+        const diamondCut = await getContractAt<IDiamondCut>(
+          "IDiamondCut",
+          hub.address
+        );
+        const calldata = diamondCut.interface.encodeFunctionData("diamondCut", [
+          cut,
+          ethers.constants.AddressZero,
+          ethers.utils.toUtf8Bytes(""),
+        ]);
+
+        // delegate before the proposal creation
+        await gToken.delegate(acc1.address);
+        const propose1 = await Governor.connect(acc1).propose(
+          [diamondCut.address],
+          [0],
+          [calldata],
+          description
+        );
+        const proposeReceipt = await propose1.wait(1);
+        const proposalId = proposeReceipt.events![0].args!.proposalId;
+
+        await mineBlocks(VOTING_DELAY + 1);
+
+        await Governor.connect(acc1).castVote(proposalId, 1);
+        await Governor.connect(acc2).castVote(proposalId, 2);
+        await Governor.connect(acc3).castVote(proposalId, 2);
+
+        await mineBlocks(VOTING_PERIOD + 1);
+
+        const descriptionHash = ethers.utils.id(description);
+
+        const quorum = await Governor.quorum(proposeReceipt.blockNumber);
+
+        const votePower1 = await Governor.getVotes(
+          acc1.address,
+          proposeReceipt.blockNumber
+        );
+        const votePower2 = await Governor.getVotes(
+          acc2.address,
+          proposeReceipt.blockNumber
+        );
+        const votePower3 = await Governor.getVotes(
+          acc3.address,
+          proposeReceipt.blockNumber
+        );
+        expect(votePower2).to.be.gt(0);
+        // vote from acc1 is now enough to reach the quorum
+        expect(votePower1).to.be.gt(quorum);
+
+        const votes = await Governor.proposalVotes(proposalId);
+        expect(votes[2]).to.equal(votePower2.add(votePower3));
+        const queueProp = await Governor.queue(
+          [diamondCut.address],
+          [0],
+          [calldata],
+          descriptionHash,
+          { gasLimit: 8000000 }
+        );
+        await queueProp.wait(1);
+        await mineBlocks(TIMELOCK_DELAY);
+
+        expect(await gToken.balanceOf(recepient.address)).to.be.equal(
+          BigNumber.from(0).mul(decimals)
+        );
+
+        const executeProp = Governor.execute(
+          [diamondCut.address],
+          [0],
+          [calldata],
+          descriptionHash,
+          { gasLimit: 8000000 }
+        );
+
+        await expect(executeProp).to.emit(diamondCut, "DiamondCut");
+        const loupe = await getContractAt<DiamondLoupeFacet>(
+          "DiamondLoupeFacet",
+          diamondCut.address
+        );
+        const funcs = await loupe.facetFunctionSelectors(
+          updatedFeesFacet.address
+        );
+        expect(funcs)
+          .to.be.an("array")
+          .to.members([totallyNewAddressSigHash, setTotallyNewAddressSigHash]);
+
+        // Ensure a new func that wasn't added to cut won't be recognized by
+        // the diamond, even though the func exists on the facet
+        const mintPlusBurnBuyerFee = updatedFeesFacet.interface.getSighash(
+          updatedFeesFacet.interface.functions["mintPlusBurnBuyerFee()"]
+        );
+        expect(funcs).to.be.an("array").to.not.contain(mintPlusBurnBuyerFee);
+
+        // call to new facet works
+        const updatedFees = await getContractAt<FeesFacetMock>(
+          "FeesFacetMock",
+          diamondCut.address
+        );
+        const feectrl = await ownershipFacet.feesController();
+
+        await updatedFees
+          .connect(account0)
+          .setTotallyNewAddress(account2.address, {
+            gasLimit: 8000000,
+          });
+        const newAdr = await updatedFees.totallyNewAddress();
+        expect(newAdr).to.equal(account2.address);
+        //call to other facet also works
+        const ownFacet = await getContractAt<OwnershipFacet>(
+          "OwnershipFacet",
+          diamondCut.address
+        );
+        await ownFacet.setDeactivateController(account3.address);
+        const newOwner = await ownFacet.deactivateController();
+        expect(newOwner).to.equal(account3.address);
       });
     });
   });
