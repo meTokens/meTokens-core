@@ -115,7 +115,9 @@ const setup = async () => {
     });
 
     it("Reentrancy facet protection should work", async () => {
-      await attacker.attackMint();
+      await expect(attacker.attackMint()).to.be.revertedWith(
+        "ReentrancyGuard: reentrant call"
+      );
     });
   });
 };
