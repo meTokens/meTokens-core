@@ -6,3 +6,8 @@ import "./blockNumber";
 import "./chainId";
 import "./tx";
 import "./deployUpgrade";
+import "./addVault";
+import "./registerHub";
+import "./hubInfo";
+import "./subscribe";
+import "./mint";

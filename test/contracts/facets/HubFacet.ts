@@ -200,7 +200,7 @@ const setup = async () => {
           reserveWeight,
           encodedVaultDAIArgs
         );
-        await expect(tx).to.be.revertedWith("refundRatio > MAX");
+        await expect(tx).to.be.revertedWith("refundRatio >= MAX");
 
         // _refundRatio = 0
         tx = hub.register(

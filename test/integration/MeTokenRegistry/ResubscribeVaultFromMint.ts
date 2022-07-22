@@ -40,10 +40,10 @@ const setup = async () => {
     let targetVault: SingleAssetVault; // WETH
     let foundry: FoundryFacet;
     let hub: HubFacet;
-    let whale: Signer;
     let dai: ERC20;
     let weth: ERC20;
     let daiWhale: Signer;
+    let wethWhale: Signer;
     let meToken: MeToken;
     let account0: SignerWithAddress;
     let account1: SignerWithAddress; // meToken's owner
@@ -51,7 +51,6 @@ const setup = async () => {
     let encodedVaultDAIArgs: string;
     let encodedVaultWETHArgs: string;
     let fees: FeesFacet;
-    //let curve: ICurve;
     let vaultRegistry: VaultRegistry;
     let diamond: Diamond;
     let UNIV3Factory: string;
@@ -77,12 +76,14 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      let token: ERC20;
-      let DAI, WETH, DAIWhale;
-      ({ DAI, WETH, DAIWhale, UNIV3Factory } = await getNamedAccounts());
+
+      let DAI, WETH, DAIWhale, WETHWhale;
+      ({ DAI, WETH, DAIWhale, WETHWhale, UNIV3Factory } =
+        await getNamedAccounts());
       dai = await getContractAt<ERC20>("ERC20", DAI);
       weth = await getContractAt<ERC20>("ERC20", WETH);
       daiWhale = await impersonate(DAIWhale);
+      wethWhale = await impersonate(WETHWhale);
 
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
@@ -100,8 +101,6 @@ const setup = async () => {
 
       // Register first and second hub
       ({
-        token,
-        whale,
         migrationRegistry,
         singleAssetVault: initialVault,
         account0,
@@ -178,19 +177,19 @@ const setup = async () => {
         .transfer(account1.address, ethers.utils.parseEther("4000"));
 
       await weth
-        .connect(whale)
+        .connect(wethWhale)
         .transfer(account1.address, ethers.utils.parseEther("20"));
-      dai
+      await dai
         .connect(daiWhale)
         .transfer(account0.address, ethers.utils.parseEther("4000"));
-      dai
+      await dai
         .connect(daiWhale)
         .transfer(account2.address, ethers.utils.parseEther("4000"));
-      weth
-        .connect(whale)
+      await weth
+        .connect(wethWhale)
         .transfer(account0.address, ethers.utils.parseEther("20"));
-      weth
-        .connect(whale)
+      await weth
+        .connect(wethWhale)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
       // Create meToken and subscribe to Hub1
       const name = "Carl meToken";

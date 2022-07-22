@@ -3,7 +3,6 @@ pragma solidity 0.8.9;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
@@ -21,11 +20,7 @@ import {Modifiers} from "../libs/LibAppStorage.sol";
 /// @title meTokens Registry Facet
 /// @author @cbobrobison, @cartercarlson, @zgorizzo69, @parv3213
 /// @notice This contract tracks info about a meToken within meTokens protocol
-contract MeTokenRegistryFacet is
-    IMeTokenRegistryFacet,
-    Modifiers,
-    ReentrancyGuard
-{
+contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     using SafeERC20 for IERC20;
 
     constructor() {}
@@ -39,14 +34,13 @@ contract MeTokenRegistryFacet is
     ) external override nonReentrant {
         address sender = LibMeta.msgSender();
         require(!isOwner(sender), "msg.sender already owns a meToken");
-        HubInfo memory hubInfo = s.hubs[hubId];
-        require(hubInfo.active, "Hub inactive");
-        require(!hubInfo.updating, "Hub updating");
+        require(s.hubs[hubId].active, "Hub inactive");
+        require(!s.hubs[hubId].updating, "Hub updating");
 
         if (assetsDeposited > 0) {
-            IERC20(hubInfo.asset).safeTransferFrom(
+            IERC20(s.hubs[hubId].asset).safeTransferFrom(
                 sender,
-                hubInfo.vault,
+                s.hubs[hubId].vault,
                 assetsDeposited
             );
         }
@@ -81,7 +75,7 @@ contract MeTokenRegistryFacet is
             meTokenAddr,
             sender,
             meTokensMinted,
-            hubInfo.asset,
+            s.hubs[hubId].asset,
             assetsDeposited,
             name,
             symbol,
@@ -160,6 +154,7 @@ contract MeTokenRegistryFacet is
 
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
+        meTokenInfo.endCooldown = 0;
         meTokenInfo.targetHubId = 0;
         meTokenInfo.migration = address(0);
 

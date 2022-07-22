@@ -51,24 +51,6 @@
       ✓ Cannot set fee to the same fee
       ✓ Cannot set fee above the fee max
       ✓ Sets fee to the new value
-    setTransferFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
-    setInterestFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
-    setYieldFee()
-      ✓ Returns correct value of fee
-      ✓ Non-owner cannot set fee
-      ✓ Cannot set fee to the same fee
-      ✓ Cannot set fee above the fee max
-      ✓ Sets fee to the new value
 
   Foundry.sol
     mint()
@@ -140,4 +122,36 @@
 
   83 passing (7s)
 
+```
+
+## tasks
+
+- add a vault and approve it in the registry
+
+```
+yarn hardhat add-vault --diamond 0x901B94502aEEF2ABF6bD79e6c73f297B28B50E22 --registry 0x72aF3A5275A8eb915EC15A68272dCe9D06232186 --vault 0x88b43ea691d86604a3b0C0674792FCCa3cF47245  --network rinkeby
+```
+
+- register a hub
+
+```
+yarn hardhat register-hub --diamond 0x901B94502aEEF2ABF6bD79e6c73f297B28B50E22 --vault 0x88b43ea691d86604a3b0C0674792FCCa3cF47245 --asset 0xc7ad46e0b8a400bb3c915120d284aafba8fc4735 --base-y "224" --reserve-weight 32  --network rinkeby
+```
+
+- retrieve hub Info
+
+```
+yarn hardhat hub-info --diamond 0x901B94502aEEF2ABF6bD79e6c73f297B28B50E22 --id 2  --network rinkeby
+```
+
+- metoken susbcribe to a hub
+
+```
+yarn hardhat subscribe --diamond 0x901B94502aEEF2ABF6bD79e6c73f297B28B50E22 --id 2  --network rinkeby
+```
+
+- metoken mint
+
+```
+yarn hardhat mint --diamond 0x901B94502aEEF2ABF6bD79e6c73f297B28B50E22  --network rinkeby
 ```

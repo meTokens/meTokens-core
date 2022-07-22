@@ -23,11 +23,11 @@ import { verifyContract } from "./utils";
 
 const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
-const SUPPORTED_NETWORK = [1, 4, 100, 31337];
-const REFUND_RATIO = 50000;
+const SUPPORTED_NETWORK = [1, 4, 42, 100, 31337];
+const REFUND_RATIO = 800000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
-const feeInitialization = [0, 0, 0 /* 0, 0, 0 */];
+const feeInitialization = [0, 0, 0];
 
 async function main() {
   let [deployer, DAO] = await ethers.getSigners();
@@ -177,9 +177,6 @@ async function main() {
       mintFee: feeInitialization[0],
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
-      // transferFee: feeInitialization[3],
-      // interestFee: feeInitialization[4],
-      // yieldFee: feeInitialization[5],
       diamond: diamond.address,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
@@ -235,11 +232,14 @@ async function main() {
   const deploymentInfo = {
     network: network.name,
     "Diamond Cut Facet Contract Address:": diamondCutFacet.address,
+    "Diamond Loupe Facet Contract Address:": diamondLoupeFacet.address,
     "Diamond Contract Address:": diamond.address,
+    "Curve Facet": curveFacet.address,
     "Hub Facet Contract Address": hubFacet.address,
     "Fee Facet Contract Address": feesFacet.address,
     "Foundry Facet Contract Address": foundryFacet.address,
     "MeToken Registry Facet Contract Address": meTokenRegistryFacet.address,
+    "Ownership Facet Contract Address": ownershipFacet.address,
     "VaultRegistry Contract Address": vaultRegistry.address,
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
