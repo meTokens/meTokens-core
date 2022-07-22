@@ -8,8 +8,12 @@ import {ERC1820Implementer} from "@openzeppelin/contracts/utils/introspection/ER
 import {IFoundryFacet} from "../interfaces/IFoundryFacet.sol";
 
 contract Attacker is IERC777Sender, ERC1820Implementer {
-    IERC1820Registry private _erc1820 =
+    IERC1820Registry internal constant _ERC1820_REGISTRY =
         IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+    bytes32 private constant _TOKENS_SENDER_INTERFACE_HASH =
+        keccak256("ERC777TokensSender");
+    bytes32 private constant _TOKENS_RECIPIENT_INTERFACE_HASH =
+        keccak256("ERC777TokensRecipient");
 
     IFoundryFacet public foundry;
     IERC20 public token;
@@ -31,12 +35,20 @@ contract Attacker is IERC777Sender, ERC1820Implementer {
         amount = _amount;
 
         token.approve(vault, type(uint256).max);
-        _erc1820.setInterfaceImplementer(
+
+        _ERC1820_REGISTRY.setInterfaceImplementer(
             address(this),
-            keccak256("ERC777TokenSender"),
+            _TOKENS_RECIPIENT_INTERFACE_HASH,
+            address(this)
+        );
+        _ERC1820_REGISTRY.setInterfaceImplementer(
+            address(this),
+            _TOKENS_SENDER_INTERFACE_HASH,
             address(this)
         );
     }
+
+    fallback() external payable {}
 
     // ERC777 hook
     function tokensToSend(
