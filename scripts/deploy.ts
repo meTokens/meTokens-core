@@ -73,30 +73,32 @@ async function governance(
   //setup timelock
 
   // we can assign this role to the special zero address to allow anyone to execute
-  (
+  await (
     await timelock.grantRole(EXECUTOR_ROLE, ethers.constants.AddressZero)
   ).wait();
   // Proposer role is in charge of queueing operations this is the role the Governor instance should be granted
   // and it should likely be the only proposer in the system.
-  (await timelock.grantRole(PROPOSER_ROLE, governor.address)).wait();
-  (await timelock.grantRole(CANCELLER_ROLE, governor.address)).wait();
+  await (await timelock.grantRole(PROPOSER_ROLE, governor.address)).wait();
+  await (await timelock.grantRole(CANCELLER_ROLE, governor.address)).wait();
 
   // this is a very sensitive role that will be granted automatically to both deployer and timelock itself
   // should be renounced by the deployer after setup.
-  (await timelock.revokeRole(TIMELOCK_ADMIN_ROLE, deployer.address)).wait();
+  await (
+    await timelock.revokeRole(TIMELOCK_ADMIN_ROLE, deployer.address)
+  ).wait();
 
   //setup token
-  (
+  await (
     await gToken.mint(deployer.address, BigNumber.from(100000).mul(decimals))
   ).wait();
-  (
+  await (
     await gToken.mint(proposer.address, BigNumber.from(100000).mul(decimals))
   ).wait();
-  (await gToken.transferOwnership(timelock.address)).wait();
+  await (await gToken.transferOwnership(timelock.address)).wait();
 
   // need to self delegate as minting doesn't accrue voting power
-  (await gToken.connect(deployer).delegate(deployer.address)).wait();
-  (await gToken.connect(proposer).delegate(proposer.address)).wait();
+  await (await gToken.connect(deployer).delegate(deployer.address)).wait();
+  await (await gToken.connect(proposer).delegate(proposer.address)).wait();
   const contracts = [];
   contracts.push({
     name: "contracts/governance/METoken.sol:METoken",
@@ -342,14 +344,22 @@ async function main() {
   const meGovtoken = govCtrcts.find((c) => c.name?.includes("METoken"));
   const governor = govCtrcts.find((c) => c.name?.includes("MEGovernor"));
   if (governorTimeLock?.address) {
+    const ownershipFacet = (await ethers.getContractAt(
+      "OwnershipFacet",
+      diamond.address
+    )) as OwnershipFacet;
     console.log("give governorTimeLock RegisterController role");
-    await ownershipFacet
-      .connect(deployer)
-      .setRegisterController(governorTimeLock.address);
+    await (
+      await ownershipFacet
+        .connect(deployer)
+        .setRegisterController(governorTimeLock.address)
+    ).wait();
     console.log("give governorTimeLock DiamondController role");
-    await ownershipFacet
-      .connect(deployer)
-      .setDiamondController(governorTimeLock.address);
+    await (
+      await ownershipFacet
+        .connect(deployer)
+        .setDiamondController(governorTimeLock.address)
+    ).wait();
   }
 
   receipt = await deployer.provider.getTransactionReceipt(tx.hash);
