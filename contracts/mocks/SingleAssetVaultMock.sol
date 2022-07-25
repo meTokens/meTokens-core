@@ -30,7 +30,7 @@ contract SingleAssetVaultMock is SingleAssetVault, IERC777Recipient {
         );
     }
 
-    fallback() external payable {}
+    fallback() external {}
 
     function tokensReceived(
         address,

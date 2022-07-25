@@ -48,7 +48,7 @@ contract Attacker is IERC777Sender, ERC1820Implementer {
         );
     }
 
-    fallback() external payable {}
+    fallback() external {}
 
     // ERC777 hook
     function tokensToSend(
