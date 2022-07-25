@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
-import {IDiamondLoupe} from "./interfaces/IDiamondLoupe.sol";
+import {IDiamondLoupeFacet} from "./interfaces/IDiamondLoupeFacet.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IVaultRegistry} from "./interfaces/IVaultRegistry.sol";
 import {AppStorage} from "./libs/LibAppStorage.sol";
@@ -56,7 +56,7 @@ contract DiamondInit {
 
         // Adding erc165 data
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
-        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
+        ds.supportedInterfaces[type(IDiamondLoupeFacet).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
 
         LibCurve.CurveStorage storage cs = LibCurve.curveStorage();

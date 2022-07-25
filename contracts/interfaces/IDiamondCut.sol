@@ -22,12 +22,12 @@ interface IDiamondCut {
 
     /// @notice Add/replace/remove any number of functions and optionally execute
     ///         a function with delegatecall
-    /// @param diamondCut Contains the facet addresses and function selectors
+    /// @param cut Contains the facet addresses and function selectors
     /// @param init The address of the contract or facet to execute calldata
     /// @param data A function call, including function selector and arguments
     ///                  calldata is executed with delegatecall on init
     function diamondCut(
-        FacetCut[] calldata diamondCut,
+        FacetCut[] calldata cut,
         address init,
         bytes calldata data
     ) external;

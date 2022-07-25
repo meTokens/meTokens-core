@@ -25,7 +25,7 @@ contract HubFacet is IHubFacet, Modifiers {
         bytes memory encodedVaultArgs
     ) external override onlyRegisterController {
         require(s.vaultRegistry.isApproved(address(vault)), "vault !approved");
-        require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio > MAX");
+        require(refundRatio < s.MAX_REFUND_RATIO, "refundRatio >= MAX");
         require(refundRatio > 0, "refundRatio == 0");
         require(asset != address(0), "asset !valid");
 

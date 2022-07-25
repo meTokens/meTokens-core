@@ -36,7 +36,7 @@ contract SingleAssetVault is Vault, ISingleAssetVault {
     /// @inheritdoc Vault
     function isValid(
         bytes memory /*encodedArgs */
-    ) public pure override returns (bool) {
+    ) external pure override returns (bool) {
         return true;
     }
 }

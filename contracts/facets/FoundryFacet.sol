@@ -28,18 +28,18 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint256 assetsDeposited,
         address recipient,
         uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
     ) external override {
         LibFoundry.mintWithPermit(
             meToken,
             assetsDeposited,
             recipient,
             deadline,
-            v,
-            r,
-            s
+            vSig,
+            rSig,
+            sSig
         );
     }
 
