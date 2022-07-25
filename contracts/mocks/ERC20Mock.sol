@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract MockERC20 is ERC20 {
+contract ERC20Mock is ERC20 {
     constructor() ERC20("MOCK", "MOCK") {}
 
     // sets the balance of the address
