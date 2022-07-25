@@ -22,7 +22,7 @@ import {
   MigrationRegistry,
   SingleAssetVault,
   CurveFacet,
-  MockERC20,
+  ERC20Mock,
 } from "../../artifacts/types";
 
 export async function hubSetup(
@@ -54,7 +54,7 @@ export async function hubSetup(
   tokenAddr: string;
   whale: Signer;
   whaleAddr: string;
-  mockToken: MockERC20;
+  tokenMock: ERC20Mock;
 }> {
   const {
     foundry,
@@ -72,7 +72,7 @@ export async function hubSetup(
     account2,
     account3,
     account4,
-    mockToken,
+    tokenMock,
   } = await hubSetupWithoutRegister(fees);
 
   const { token, tokenAddr, whale, whaleAddr } = await transferFromWhale(
@@ -110,7 +110,7 @@ export async function hubSetup(
     tokenAddr,
     whale,
     whaleAddr,
-    mockToken,
+    tokenMock,
   };
 }
 
@@ -168,7 +168,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   account2: SignerWithAddress;
   account3: SignerWithAddress;
   account4: SignerWithAddress;
-  mockToken: MockERC20;
+  tokenMock: ERC20Mock;
 }> {
   let foundry: FoundryFacet;
   let hub: HubFacet;
@@ -228,7 +228,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
   );
   const ownershipFacet = await deploy<OwnershipFacet>("OwnershipFacet");
 
-  const mockToken = await deploy<MockERC20>("MockERC20");
+  const tokenMock = await deploy<ERC20Mock>("ERC20Mock");
 
   const facets = [
     hubFacet,
@@ -256,7 +256,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
       burnBuyerFee: feeInitialization[1],
       burnOwnerFee: feeInitialization[2],
       diamond: diamond.address,
-      // me: mockToken.address,
+      // me: tokenMock.address,
       vaultRegistry: vaultRegistry.address,
       migrationRegistry: migrationRegistry.address,
       meTokenFactory: meTokenFactory.address,
@@ -302,7 +302,7 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     account2,
     account3,
     account4,
-    mockToken,
+    tokenMock,
   };
 }
 export async function addHubSetup(
