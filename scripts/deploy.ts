@@ -14,12 +14,17 @@ import { OwnershipFacet } from "../artifacts/types/contracts/facets/OwnershipFac
 import { getSelectors } from "./libraries/helpers";
 import {
   CurveFacet,
+  GovernanceTimeLock,
+  MEGovernor,
+  METoken,
   MeTokenFactory,
   MigrationRegistry,
   SingleAssetVault,
   VaultRegistry,
 } from "../artifacts/types";
 import { verifyContract } from "./utils";
+import { BigNumber, utils } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
@@ -27,10 +32,89 @@ const SUPPORTED_NETWORK = [1, 4, 42, 100, 31337];
 const REFUND_RATIO = 800000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
+const decimals: BigNumber = ethers.utils.parseEther("1");
 const feeInitialization = [0, 0, 0];
+const VOTING_PERIOD = 45992; //blocks = 1 week
+const VOTING_DELAY = 1; //block
+const TIMELOCK_DELAY = 6575; //block = 1 day
+const TIMELOCK_ADMIN_ROLE = utils.solidityKeccak256(
+  ["string"],
+  ["TIMELOCK_ADMIN_ROLE"]
+);
+const PROPOSER_ROLE = utils.solidityKeccak256(["string"], ["PROPOSER_ROLE"]);
+const EXECUTOR_ROLE = utils.solidityKeccak256(["string"], ["EXECUTOR_ROLE"]);
+const CANCELLER_ROLE = utils.solidityKeccak256(["string"], ["CANCELLER_ROLE"]);
+
+async function governance(
+  deployer: SignerWithAddress,
+  proposer: SignerWithAddress
+): Promise<{ name?: string; address: string }[]> {
+  const tokenFactory = await ethers.getContractFactory("METoken");
+  const timeLockFactory = await ethers.getContractFactory("GovernanceTimeLock");
+  const govFactory = await ethers.getContractFactory("MEGovernor");
+
+  // MeToken
+  const gToken = (await tokenFactory.deploy()) as METoken;
+
+  // GovernanceTimeLock
+  // we don't add proposers or executors as they are already added in the constructor
+  const timelock = (await timeLockFactory.deploy(
+    TIMELOCK_DELAY,
+    [],
+    []
+  )) as GovernanceTimeLock;
+
+  // MeGovernor
+  const governor = (await govFactory.deploy(
+    gToken.address,
+    timelock.address
+  )) as MEGovernor;
+
+  //setup timelock
+
+  // we can assign this role to the special zero address to allow anyone to execute
+  await timelock.grantRole(EXECUTOR_ROLE, ethers.constants.AddressZero);
+  // Proposer role is in charge of queueing operations this is the role the Governor instance should be granted
+  // and it should likely be the only proposer in the system.
+  await timelock.grantRole(PROPOSER_ROLE, governor.address);
+  await timelock.grantRole(CANCELLER_ROLE, governor.address);
+
+  // this is a very sensitive role that will be granted automatically to both deployer and timelock itself
+  // should be renounced by the deployer after setup.
+  await timelock.revokeRole(TIMELOCK_ADMIN_ROLE, deployer.address);
+
+  /*  await Timelock.grantRole(PROPOSER_ROLE, governor.address);
+  await Timelock.grantRole(PROPOSER_ROLE, proposer.address);
+  await Timelock.grantRole(EXECUTOR_ROLE, governor.address);
+  await Timelock.grantRole(CANCELLER_ROLE, governor.address);
+  await Timelock.grantRole(CANCELLER_ROLE, owner.address); */
+
+  //setup token
+  await gToken.mint(deployer.address, BigNumber.from(100000).mul(decimals));
+  await gToken.mint(proposer.address, BigNumber.from(100000).mul(decimals));
+  await gToken.transferOwnership(timelock.address);
+
+  // need to self delegate as minting doesn't accrue voting power
+  await gToken.connect(deployer).delegate(deployer.address);
+  await gToken.connect(proposer).delegate(proposer.address);
+  const contracts = [];
+  contracts.push({
+    name: "contracts/governance/METoken.sol:METoken",
+    address: gToken.address,
+  });
+  contracts.push({
+    name: "contracts/governance/MEGovernor.sol:MEGovernor",
+    address: governor.address,
+  });
+  contracts.push({
+    name: "contracts/governance/GovernanceTimeLock.sol:GovernanceTimeLock",
+    address: timelock.address,
+  });
+  return contracts;
+}
 
 async function main() {
-  let [deployer, DAO] = await ethers.getSigners();
+  let [deployer, DAO, proposer] = await ethers.getSigners();
   const deployerAddr = await deployer.getAddress();
   // NOTE: this is done when PK is used over mnemonic
   DAO = deployer;
@@ -211,6 +295,10 @@ async function main() {
     ["address"],
     [DAI]
   );
+
+  // deploy governance contracts
+  const govCtrcts = await governance(deployer, proposer);
+  govCtrcts.forEach((c) => contracts.push(c));
 
   // Set facets to their proxies
   const hub = (await ethers.getContractAt(
