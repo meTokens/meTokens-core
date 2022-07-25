@@ -113,6 +113,10 @@ async function main() {
 
   const curveFacet = await deploy<CurveFacet>("CurveFacet");
   console.log("CurveFacet deployed at:", curveFacet.address);
+  contracts.push({
+    name: "contracts/facets/CurveFacet.sol:CurveFacet",
+    address: curveFacet.address,
+  });
 
   const feesFacet = await deploy<FeesFacet>("FeesFacet");
   console.log("FeesFacet deployed at:", feesFacet.address);
@@ -202,7 +206,7 @@ async function main() {
   await vaultRegistry.approve(singleAssetVault.address);
   console.log("curve and singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
-  let reserveWeight = 250000;
+  let reserveWeight = 500000;
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
     ["address"],
     [DAI]
@@ -265,9 +269,7 @@ async function main() {
     await tx.wait(5);
     console.log("Verifying Contracts...\n");
 
-    const TASK_VERIFY = "verify";
-
-    await verifyContract("singleAssetVault", singleAssetVault.address, [
+    await verifyContract("SingleAssetVault", singleAssetVault.address, [
       DAO.address,
       diamond.address,
     ]);
@@ -275,7 +277,6 @@ async function main() {
       deployer.address,
       diamondCutFacet.address,
     ]);
-    //  await verifyContract("BancorCurve", curve.address, [diamond.address]);
 
     for (let i = 0; i < contracts.length; ++i) {
       try {
