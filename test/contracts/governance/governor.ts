@@ -376,65 +376,6 @@ const setup = async () => {
           BigNumber.from(99).mul(decimals)
         );
       });
-      it("Should cancel a proposal", async () => {
-        const description = "Proposal #1 mint tokens to recepient";
-        const calldata = gToken.interface.encodeFunctionData("mint", [
-          recepient.address,
-          BigNumber.from(99).mul(decimals),
-        ]);
-        // delegate before the proposal creation
-        await gToken.delegate(acc1.address);
-        const propose1 = await governor
-          .connect(acc1)
-          .propose([gToken.address], [0], [calldata], description);
-        const proposeReceipt = await propose1.wait(1);
-        const proposalId = proposeReceipt.events![0].args!.proposalId;
-
-        await mineBlocks(VOTING_DELAY + 1);
-
-        await governor.connect(acc1).castVote(proposalId, 1);
-        await governor.connect(acc2).castVote(proposalId, 1);
-        await governor.connect(acc3).castVote(proposalId, 1);
-
-        await mineBlocks(VOTING_PERIOD + 1);
-
-        const descriptionHash = ethers.utils.id(description);
-        const propState = await governor.state(proposalId);
-        const quorum = await governor.quorum(proposeReceipt.blockNumber);
-
-        const votePower1 = await governor.getVotes(
-          acc1.address,
-          proposeReceipt.blockNumber
-        );
-        // vote from acc1 is now enough to reach the quorum
-        expect(votePower1).to.be.gt(quorum);
-
-        const votes = await governor.proposalVotes(proposalId);
-
-        const queueProp = await governor.queue(
-          [gToken.address],
-          [0],
-          [calldata],
-          descriptionHash
-        );
-        await queueProp.wait(1);
-        await mineBlocks(TIMELOCK_DELAY);
-
-        expect(await gToken.balanceOf(recepient.address)).to.be.equal(
-          BigNumber.from(0).mul(decimals)
-        );
-
-        const executeProp = await governor.execute(
-          [gToken.address],
-          [0],
-          [calldata],
-          descriptionHash
-        );
-        await executeProp.wait(1);
-        expect(await gToken.balanceOf(recepient.address)).to.be.equal(
-          BigNumber.from(99).mul(decimals)
-        );
-      });
       it("Should revert because already executed", async () => {
         const description = "Proposal #1 mint tokens to recepient";
         const calldata = gToken.interface.encodeFunctionData("mint", [

@@ -30,7 +30,7 @@ const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
 const SUPPORTED_NETWORK = [1, 4, 42, 100, 31337];
 const REFUND_RATIO = 800000;
-const contracts: { name?: string; address: string }[] = [];
+const contracts: { name?: string; address: string; args?: any[] }[] = [];
 const deployDir = "deployment";
 const decimals: BigNumber = ethers.utils.parseEther("1");
 const feeInitialization = [0, 0, 0];
@@ -48,7 +48,7 @@ const CANCELLER_ROLE = utils.solidityKeccak256(["string"], ["CANCELLER_ROLE"]);
 async function governance(
   deployer: SignerWithAddress,
   proposer: SignerWithAddress
-): Promise<{ name?: string; address: string }[]> {
+): Promise<{ name?: string; address: string; args?: any[] }[]> {
   const tokenFactory = await ethers.getContractFactory("METoken");
   const timeLockFactory = await ethers.getContractFactory("GovernanceTimeLock");
   const govFactory = await ethers.getContractFactory("MEGovernor");
@@ -73,42 +73,45 @@ async function governance(
   //setup timelock
 
   // we can assign this role to the special zero address to allow anyone to execute
-  await timelock.grantRole(EXECUTOR_ROLE, ethers.constants.AddressZero);
+  (
+    await timelock.grantRole(EXECUTOR_ROLE, ethers.constants.AddressZero)
+  ).wait();
   // Proposer role is in charge of queueing operations this is the role the Governor instance should be granted
   // and it should likely be the only proposer in the system.
-  await timelock.grantRole(PROPOSER_ROLE, governor.address);
-  await timelock.grantRole(CANCELLER_ROLE, governor.address);
+  (await timelock.grantRole(PROPOSER_ROLE, governor.address)).wait();
+  (await timelock.grantRole(CANCELLER_ROLE, governor.address)).wait();
 
   // this is a very sensitive role that will be granted automatically to both deployer and timelock itself
   // should be renounced by the deployer after setup.
-  await timelock.revokeRole(TIMELOCK_ADMIN_ROLE, deployer.address);
-
-  /*  await Timelock.grantRole(PROPOSER_ROLE, governor.address);
-  await Timelock.grantRole(PROPOSER_ROLE, proposer.address);
-  await Timelock.grantRole(EXECUTOR_ROLE, governor.address);
-  await Timelock.grantRole(CANCELLER_ROLE, governor.address);
-  await Timelock.grantRole(CANCELLER_ROLE, owner.address); */
+  (await timelock.revokeRole(TIMELOCK_ADMIN_ROLE, deployer.address)).wait();
 
   //setup token
-  await gToken.mint(deployer.address, BigNumber.from(100000).mul(decimals));
-  await gToken.mint(proposer.address, BigNumber.from(100000).mul(decimals));
-  await gToken.transferOwnership(timelock.address);
+  (
+    await gToken.mint(deployer.address, BigNumber.from(100000).mul(decimals))
+  ).wait();
+  (
+    await gToken.mint(proposer.address, BigNumber.from(100000).mul(decimals))
+  ).wait();
+  (await gToken.transferOwnership(timelock.address)).wait();
 
   // need to self delegate as minting doesn't accrue voting power
-  await gToken.connect(deployer).delegate(deployer.address);
-  await gToken.connect(proposer).delegate(proposer.address);
+  (await gToken.connect(deployer).delegate(deployer.address)).wait();
+  (await gToken.connect(proposer).delegate(proposer.address)).wait();
   const contracts = [];
   contracts.push({
     name: "contracts/governance/METoken.sol:METoken",
     address: gToken.address,
+    args: [],
   });
   contracts.push({
     name: "contracts/governance/MEGovernor.sol:MEGovernor",
     address: governor.address,
+    args: [gToken.address, timelock.address],
   });
   contracts.push({
     name: "contracts/governance/GovernanceTimeLock.sol:GovernanceTimeLock",
     address: timelock.address,
+    args: [TIMELOCK_DELAY, [], []],
   });
   return contracts;
 }
@@ -161,6 +164,11 @@ async function main() {
     deployerAddr,
     diamondCutFacet.address
   );
+  contracts.push({
+    name: "contracts/Diamond.sol:Diamond",
+    address: diamond.address,
+    args: [deployerAddr, diamondCutFacet.address],
+  });
   console.log("Diamond deployed at:", diamond.address);
 
   const singleAssetVault = await deploy<SingleAssetVault>(
@@ -169,6 +177,11 @@ async function main() {
     DAO.address, // DAO
     diamond.address
   );
+  contracts.push({
+    name: "contracts/vaults/SingleAssetVault.sol:SingleAssetVault",
+    address: singleAssetVault.address,
+    args: [DAO.address, diamond.address],
+  });
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
 
   const meTokenFactory = await deploy<MeTokenFactory>("MeTokenFactory");
@@ -196,6 +209,10 @@ async function main() {
   });
 
   const curveFacet = await deploy<CurveFacet>("CurveFacet");
+  contracts.push({
+    name: "contracts/facets/CurveFacet.sol:CurveFacet",
+    address: curveFacet.address,
+  });
   console.log("CurveFacet deployed at:", curveFacet.address);
   contracts.push({
     name: "contracts/facets/CurveFacet.sol:CurveFacet",
@@ -296,10 +313,6 @@ async function main() {
     [DAI]
   );
 
-  // deploy governance contracts
-  const govCtrcts = await governance(deployer, proposer);
-  govCtrcts.forEach((c) => contracts.push(c));
-
   // Set facets to their proxies
   const hub = (await ethers.getContractAt(
     "HubFacet",
@@ -318,6 +331,27 @@ async function main() {
   );
   await tx.wait();
   console.log("hub registered");
+
+  // deploy governance contracts
+  const govCtrcts = await governance(deployer, proposer);
+
+  const governorTimeLock = govCtrcts.find((c) =>
+    c.name?.includes("GovernanceTimeLock")
+  );
+  govCtrcts.forEach((c) => contracts.push(c));
+  const meGovtoken = govCtrcts.find((c) => c.name?.includes("METoken"));
+  const governor = govCtrcts.find((c) => c.name?.includes("MEGovernor"));
+  if (governorTimeLock?.address) {
+    console.log("give governorTimeLock RegisterController role");
+    await ownershipFacet
+      .connect(deployer)
+      .setRegisterController(governorTimeLock.address);
+    console.log("give governorTimeLock DiamondController role");
+    await ownershipFacet
+      .connect(deployer)
+      .setDiamondController(governorTimeLock.address);
+  }
+
   receipt = await deployer.provider.getTransactionReceipt(tx.hash);
 
   // Verify contracts on etherscan
@@ -336,6 +370,9 @@ async function main() {
     "Migration Registry Contract Address": migrationRegistry.address,
     "SingleAsset Vault Contract Address": singleAssetVault.address,
     "MeToken Factory Contract Address": meTokenFactory.address,
+    "Me Token Contract Address": meGovtoken?.address,
+    "Governor Contract Address": governor?.address,
+    "GovernorTimelock Contract Address": governorTimeLock?.address,
     "Block Number": receipt.blockNumber.toString(),
   };
 
@@ -357,22 +394,16 @@ async function main() {
     await tx.wait(5);
     console.log("Verifying Contracts...\n");
 
-    await verifyContract("SingleAssetVault", singleAssetVault.address, [
-      DAO.address,
-      diamond.address,
-    ]);
-    await verifyContract("Diamond", diamond.address, [
-      deployer.address,
-      diamondCutFacet.address,
-    ]);
-
     for (let i = 0; i < contracts.length; ++i) {
       try {
-        await run("verify", {
-          contract: contracts[i].name || undefined,
-          address: contracts[i].address,
-          constructorArguments: [],
-        });
+        const name = contracts[i].name;
+        if (name) {
+          await verifyContract(
+            name,
+            contracts[i].address,
+            contracts[i].args ?? []
+          );
+        }
       } catch (error) {
         console.error(`Error verifying ${contracts[i].address}: `, error);
       }

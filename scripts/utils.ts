@@ -12,6 +12,7 @@ export const verifyContract = async (
       }`
     );
     await run("verify:verify", {
+      contract: contractName,
       address: contractAddress,
       constructorArguments: args,
     });
