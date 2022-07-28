@@ -197,7 +197,6 @@ const setup = async () => {
       // const amount = ethers.utils.parseEther("100");
 
       const max = ethers.constants.MaxUint256;
-      await dai.connect(account1).approve(meTokenRegistry.address, max);
       await dai.connect(account1).approve(initialVault.address, max);
       await weth.connect(account1).approve(migration.address, max);
       await dai.connect(account2).approve(initialVault.address, max);

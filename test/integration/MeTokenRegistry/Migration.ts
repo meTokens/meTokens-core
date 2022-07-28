@@ -144,7 +144,7 @@ const setup = async () => {
       await dai.connect(whale).transfer(account4.address, tokenDeposited);
       await dai
         .connect(account4)
-        .approve(meTokenRegistry.address, ethers.constants.MaxUint256);
+        .approve(singleAssetVault.address, ethers.constants.MaxUint256);
       const name = "X03 meToken";
       const symbol = "XO3";
       tx = await meTokenRegistry

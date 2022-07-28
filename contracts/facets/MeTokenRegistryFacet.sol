@@ -38,10 +38,11 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
         require(!s.hubs[hubId].updating, "Hub updating");
 
         if (assetsDeposited > 0) {
-            IERC20(s.hubs[hubId].asset).safeTransferFrom(
+            IVault(s.hubs[hubId].vault).handleDeposit(
                 sender,
-                s.hubs[hubId].vault,
-                assetsDeposited
+                s.hubs[hubId].asset,
+                assetsDeposited,
+                0
             );
         }
         // Create meToken erc20 contract

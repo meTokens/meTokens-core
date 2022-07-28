@@ -123,7 +123,6 @@ const setup = async () => {
       await dai.connect(account1).approve(singleAssetVault.address, max);
       await dai.connect(account2).approve(singleAssetVault.address, max);
 
-      await dai.connect(account1).approve(meTokenRegistry.address, max);
       // account0 is registering a metoken
       await meTokenRegistry
         .connect(account0)

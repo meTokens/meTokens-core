@@ -272,9 +272,8 @@ const setup = async () => {
       weth
         .connect(wethHolder)
         .transfer(account2.address, ethers.utils.parseEther("1000"));
-      await dai.connect(account0).approve(meTokenRegistry.address, max);
       await dai.connect(account0).approve(daiVault.address, max);
-      await dai.connect(account1).approve(meTokenRegistry.address, max);
+      await dai.connect(account1).approve(daiVault.address, max);
       await dai.connect(account2).approve(daiVault.address, max);
       await weth.connect(account2).approve(migration.address, max);
       await weth.connect(account2).approve(wethVault.address, max);

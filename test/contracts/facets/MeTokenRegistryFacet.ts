@@ -271,7 +271,7 @@ const setup = async () => {
         // need an approve of metoken registry first
         await dai
           .connect(account1)
-          .approve(meTokenRegistry.address, assetsDeposited);
+          .approve(singleAssetVault.address, assetsDeposited);
         tx = await meTokenRegistry
           .connect(account1)
           .subscribe(name, symbol, hubId, assetsDeposited);

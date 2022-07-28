@@ -123,7 +123,7 @@ const setup = async () => {
         .transfer(account2.address, ethers.utils.parseEther("1000"));
 
       let max = ethers.constants.MaxUint256;
-      await dai.connect(account1).approve(meTokenRegistry.address, max);
+      await dai.connect(account1).approve(initialVault.address, max);
       await dai.connect(account2).approve(initialVault.address, max);
       await dai.connect(account2).approve(migration.address, max);
 
