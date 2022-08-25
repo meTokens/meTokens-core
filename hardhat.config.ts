@@ -1,3 +1,4 @@
+import "hardhat-diamond-abi";
 import "@nomiclabs/hardhat-waffle";
 import * as dotenv from "dotenv";
 import "hardhat-deploy";
@@ -80,6 +81,10 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  diamondAbi: {
+    name: "MeTokensDiamond",
+    include: ["facets/"],
   },
   mocha: {
     delay: true,
