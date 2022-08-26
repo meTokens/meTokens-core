@@ -3,14 +3,11 @@ pragma solidity 0.8.9;
 
 import {LibCurve} from "../libs/LibCurve.sol";
 
-/// @title Generic Curve interface
-/// @author Carter Carlson (@cartercarlson), @zgorizzo69
-/// @dev Required for all Curves
+/// @title Curve Facet interface
 interface ICurveFacet {
-    /// @notice Event when curveInfo is updated from target values to actual values
-    event Updated(uint256 indexed hubId);
-
     /// @notice Get curveInfo for a hub
+    /// @param hubId Unique hub identifier
+    /// @return CurveInfo of hub
     function getCurveInfo(uint256 hubId)
         external
         view
