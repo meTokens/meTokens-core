@@ -55,7 +55,8 @@ library LibFoundry {
         address meToken,
         uint256 assetsDeposited,
         address recipient
-    ) internal {
+    ) internal returns (uint256) {
+        require(assetsDeposited > 0, "assetsDeposited==0");
         (address asset, address sender, uint256 meTokensMinted) = handleMint(
             meToken,
             assetsDeposited
@@ -71,6 +72,7 @@ library LibFoundry {
             assetsDeposited,
             meTokensMinted
         );
+        return meTokensMinted;
     }
 
     function handleMint(address meToken, uint256 assetsDeposited)
@@ -134,7 +136,8 @@ library LibFoundry {
         uint8 vSig,
         bytes32 rSig,
         bytes32 sSig
-    ) internal {
+    ) internal returns (uint256) {
+        require(assetsDeposited > 0, "assetsDeposited==0");
         (
             address asset,
             uint256[2] memory amounts // 0-meTokensMinted 1-assetsDepositedAfterFees
@@ -158,6 +161,7 @@ library LibFoundry {
             assetsDeposited,
             amounts[0]
         );
+        return amounts[0];
     }
 
     // BURN FLOW CHART
@@ -195,7 +199,8 @@ library LibFoundry {
         address meToken,
         uint256 meTokensBurned,
         address recipient
-    ) internal {
+    ) internal returns (uint256) {
+        require(meTokensBurned > 0, "meTokensBurned==0");
         AppStorage storage s = LibAppStorage.diamondStorage();
         address sender = LibMeta.msgSender();
         MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
@@ -255,6 +260,7 @@ library LibFoundry {
             meTokensBurned,
             assetsReturned
         );
+        return assetsReturned;
     }
 
     function calculateMeTokensMinted(address meToken, uint256 assetsDeposited)
@@ -275,21 +281,8 @@ library LibFoundry {
             meTokenInfo.balancePooled
         );
 
-        // Logic for if we're switching to a new curve type // reconfiguring
-        if (hubInfo.reconfigure) {
-            uint256 targetMeTokensMinted = LibCurve.viewTargetMeTokensMinted(
-                assetsDeposited,
-                meTokenInfo.hubId,
-                totalSupply,
-                meTokenInfo.balancePooled
-            );
-            meTokensMinted = LibWeightedAverage.calculate(
-                meTokensMinted,
-                targetMeTokensMinted,
-                hubInfo.startTime,
-                hubInfo.endTime
-            );
-        } else if (meTokenInfo.targetHubId != 0) {
+        if (meTokenInfo.targetHubId != 0) {
+            // Calculate return for a resubscribing meToken
             uint256 targetMeTokensMinted = LibCurve.viewMeTokensMinted(
                 assetsDeposited,
                 meTokenInfo.targetHubId,
@@ -301,6 +294,20 @@ library LibFoundry {
                 targetMeTokensMinted,
                 meTokenInfo.startTime,
                 meTokenInfo.endTime
+            );
+        } else if (hubInfo.reconfigure) {
+            // Calculate return for a hub which is updating its' curveInfo
+            uint256 targetMeTokensMinted = LibCurve.viewTargetMeTokensMinted(
+                assetsDeposited,
+                meTokenInfo.hubId,
+                totalSupply,
+                meTokenInfo.balancePooled
+            );
+            meTokensMinted = LibWeightedAverage.calculate(
+                meTokensMinted,
+                targetMeTokensMinted,
+                hubInfo.startTime,
+                hubInfo.endTime
             );
         }
     }
@@ -325,7 +332,7 @@ library LibFoundry {
         );
 
         if (meTokenInfo.targetHubId != 0) {
-            // Calculate return assuming meToken is resubscribing
+            // Calculate return for a resubscribing meToken
             uint256 targetAssetsReturned = LibCurve.viewAssetsReturned(
                 meTokensBurned,
                 meTokenInfo.targetHubId,
@@ -339,7 +346,7 @@ library LibFoundry {
                 meTokenInfo.endTime
             );
         } else if (hubInfo.reconfigure) {
-            // Must mean we're updating curveInfo
+            // Calculate return for a hub which is updating its' curveInfo
             uint256 targetAssetsReturned = LibCurve.viewTargetAssetsReturned(
                 meTokensBurned,
                 meTokenInfo.hubId,

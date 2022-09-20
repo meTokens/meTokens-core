@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-/// @title MeToken erc20 interface
+/// @title MeToken ERC20 interface
 /// @author Carter Carlson (@cartercarlson)
 /// @dev Required for all meTokens
 interface IMeToken {

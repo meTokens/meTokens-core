@@ -73,7 +73,6 @@ library LibMeToken {
             block.timestamp > meTokenInfo.endTime,
             "block.timestamp < endTime"
         );
-        // Update balancePooled / balanceLocked
 
         IMigration(meTokenInfo.migration).finishMigration(meToken);
 

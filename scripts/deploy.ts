@@ -173,7 +173,10 @@ async function main() {
 
   // Upgrade diamond w/ facets
   console.log("\nDiamond Cut successful");
-  const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
+  const diamondCut = await ethers.getContractAt(
+    "IDiamondCutFacet",
+    diamond.address
+  );
   let tx;
   let receipt;
   let args: any = [

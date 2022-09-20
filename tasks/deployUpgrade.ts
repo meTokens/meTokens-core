@@ -8,7 +8,7 @@ import {
 } from "@ethersproject/contracts";
 import { Signer } from "@ethersproject/abstract-signer";
 
-import { OwnershipFacet, IDiamondCut } from "../artifacts/types";
+import { OwnershipFacet, IDiamondCutFacet } from "../artifacts/types";
 import { getSelectors, getSighashes } from "../scripts/libraries/helpers";
 
 import { HardhatRuntimeEnvironment } from "hardhat/types";
@@ -220,10 +220,10 @@ task(
 
       //Execute the Cut
       const diamondCut = (await hre.ethers.getContractAt(
-        "IDiamondCut",
+        "IDiamondCutFacet",
         diamondAddress,
         signer
-      )) as IDiamondCut;
+      )) as IDiamondCutFacet;
 
       if (testing) {
         console.log("Diamond cut");

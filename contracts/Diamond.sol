@@ -1,28 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-/******************************************************************************\
-* Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
-* EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
-*
-* Implementation of a diamond.
-/******************************************************************************/
-
-import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import {IDiamondCutFacet} from "./interfaces/IDiamondCutFacet.sol";
 import {LibAppStorage} from "./libs/LibAppStorage.sol";
 import {LibDiamond} from "./libs/LibDiamond.sol";
 
+/// @title MeTokens protocol Diamond
+/// @author Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
+/// @notice The meTokens protocol core proxy contract.
 contract Diamond {
     constructor(address firstController, address diamondCutFacet) payable {
         LibAppStorage.initControllers(firstController);
 
         // Add the diamondCut external function from the diamondCutFacet
-        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
+        IDiamondCutFacet.FacetCut[]
+            memory cut = new IDiamondCutFacet.FacetCut[](1);
         bytes4[] memory functionSelectors = new bytes4[](1);
-        functionSelectors[0] = IDiamondCut.diamondCut.selector;
-        cut[0] = IDiamondCut.FacetCut({
+        functionSelectors[0] = IDiamondCutFacet.diamondCut.selector;
+        cut[0] = IDiamondCutFacet.FacetCut({
             facetAddress: diamondCutFacet,
-            action: IDiamondCut.FacetCutAction.Add,
+            action: IDiamondCutFacet.FacetCutAction.Add,
             functionSelectors: functionSelectors
         });
         LibDiamond.diamondCut(cut, address(0), "");

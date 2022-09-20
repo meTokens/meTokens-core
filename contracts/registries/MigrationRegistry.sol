@@ -4,15 +4,16 @@ pragma solidity 0.8.9;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 
-/// @title Migration Registry
+/// @title meTokens Protocol Migration Registry
 /// @author Carter Carlson (@cartercarlson)
 /// @notice Contract which manages all migration routes for when a meToken
-///         changes its' base asset
+///         changes its' base asset.
 contract MigrationRegistry is Ownable, IMigrationRegistry {
-    // Initial vault, target vault, migration vault, approved status
+    // Initial vault => target vault => migration vault => approved status
     mapping(address => mapping(address => mapping(address => bool)))
         private _migrations;
 
+    /// @inheritdoc IMigrationRegistry
     function approve(
         address initialVault,
         address targetVault,
@@ -26,6 +27,7 @@ contract MigrationRegistry is Ownable, IMigrationRegistry {
         emit Approve(initialVault, targetVault, migration);
     }
 
+    /// @inheritdoc IMigrationRegistry
     function unapprove(
         address initialVault,
         address targetVault,
@@ -39,6 +41,7 @@ contract MigrationRegistry is Ownable, IMigrationRegistry {
         emit Unapprove(initialVault, targetVault, migration);
     }
 
+    /// @inheritdoc IMigrationRegistry
     function isApproved(
         address initialVault,
         address targetVault,

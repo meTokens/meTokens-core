@@ -1037,7 +1037,7 @@ const setup = async () => {
             .connect(account2)
             .burn(
               meToken.address,
-              await meToken.balanceOf(account1.address),
+              await meToken.balanceOf(account2.address),
               account2.address
             );
         });

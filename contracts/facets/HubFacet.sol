@@ -12,7 +12,7 @@ import {Modifiers} from "../libs/LibAppStorage.sol";
 
 /// @title meTokens Hub Facet
 /// @author @cartercarlson, @zgorizzo69, @parv3213
-/// @notice This contract manages all hub configurations for meTokens protocol
+/// @notice This contract manages all hub configurations for meTokens Protocol
 contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function register(
@@ -196,6 +196,29 @@ contract HubFacet is IHubFacet, Modifiers {
     {
         require(cooldown != s.hubCooldown, "same cooldown");
         s.hubCooldown = cooldown;
+    }
+
+    /// @inheritdoc IHubFacet
+    function getBasicHubInfo(uint256 id)
+        external
+        view
+        override
+        returns (
+            uint256 refundRatio,
+            address owner,
+            address vault,
+            address asset,
+            bool updating,
+            bool active
+        )
+    {
+        HubInfo storage hubInfo = s.hubs[id];
+        refundRatio = hubInfo.refundRatio;
+        owner = hubInfo.owner;
+        vault = hubInfo.vault;
+        asset = hubInfo.asset;
+        updating = hubInfo.updating;
+        active = hubInfo.active;
     }
 
     /// @inheritdoc IHubFacet

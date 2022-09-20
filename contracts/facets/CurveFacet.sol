@@ -8,6 +8,7 @@ import {ICurveFacet} from "../interfaces/ICurveFacet.sol";
 
 /// @title MeTokens Curve Facet
 /// @author @cartercarlson, @zgorizzo69, @cbobrobison, @parv3213
+/// @notice This contract provides direct    views to the meTokens Protocol curve.
 contract CurveFacet is Modifiers, ICurveFacet {
     /// @inheritdoc ICurveFacet
     function viewMeTokensMinted(

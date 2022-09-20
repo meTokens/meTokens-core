@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 import {MeTokenInfo} from "../libs/LibMeToken.sol";
 
-/// @title MeToken registry interface
+/// @title meTokens Protocol MeToken Registry interface
 /// @author Carter Carlson (@cartercarlson)
 interface IMeTokenRegistryFacet {
     /// @notice Event of subscribing (creating) a new meToken
@@ -93,6 +93,7 @@ interface IMeTokenRegistryFacet {
     ) external;
 
     /// @notice Initialize a meToken resubscription to a new hub
+    /// @dev Only callable by meToken owner
     /// @param meToken                 Address of meToken
     /// @param targetHubId             Hub which meToken is resubscribing to
     /// @param migration               Address of migration vault
@@ -106,10 +107,12 @@ interface IMeTokenRegistryFacet {
 
     /// @notice Cancel a meToken resubscription
     /// @dev Can only be done during the warmup period
+    /// @dev Only callable by meToken owner
     /// @param meToken Address of meToken
     function cancelResubscribe(address meToken) external;
 
     /// @notice Finish a meToken's resubscription to a new hub
+    /// @dev Callable by anyone
     /// @param meToken  Address of meToken
     /// @return         Details of meToken
     function finishResubscribe(address meToken)
@@ -117,35 +120,63 @@ interface IMeTokenRegistryFacet {
         returns (MeTokenInfo memory);
 
     /// @notice Update a meToken's balanceLocked and balancePooled
+    /// @dev Only callable by migration contract
     /// @param meToken     Address of meToken
-    /// @param newBalance  Rate to multiply balances by
+    /// @param newBalance  Resulting balance from migration vault
     function updateBalances(address meToken, uint256 newBalance) external;
 
     /// @notice Transfer meToken ownership to a new owner
+    /// @dev Only callable by meToken owner
     /// @param newOwner Address to claim meToken ownership of msg.sender
     function transferMeTokenOwnership(address newOwner) external;
 
     /// @notice Cancel the transfer of meToken ownership
+    /// @dev Only callable by meToken owner
     function cancelTransferMeTokenOwnership() external;
 
     /// @notice Claim the transfer of meToken ownership
+    /// @dev Only callable by recipient
     /// @param from Address of current meToken owner
     function claimMeTokenOwnership(address from) external;
 
-    /// @notice Get the time period for a meToken to warmup, which is the time
+    /// @notice Set the time period for a meToken to warmup, which is the time
     ///     difference between when initResubscribe() is called and when the
     ///     resubscription is live
-    function setMeTokenWarmup(uint256 amount) external;
+    /// @dev Only callable by DurationsController
+    /// @param period Period of the meToken resubscribe warmup, in seconds
+    function setMeTokenWarmup(uint256 period) external;
 
-    /// @notice Get the time period for a meToken to resubscribe, which is the time
+    /// @notice Set the time period for a meToken to resubscribe, which is the time
     ///     difference between when the resubscription is live and when
     ///     finishResubscription() can be called
-    function setMeTokenDuration(uint256 amount) external;
+    /// @dev Only callable by DurationsController
+    /// @param period Period of the meToken resubscribe duration, in seconds
+    function setMeTokenDuration(uint256 period) external;
 
-    /// @notice Get the time period for a meToken to cooldown, which is the time
+    /// @notice Set the time period for a meToken to cooldown, which is the time
     ///     difference between when finishResubscription can be called and when
     ///     initResubscribe() can be called again
-    function setMeTokenCooldown(uint256 amount) external;
+    /// @dev Only callable by DurationsController
+    /// @param period Period of the meToken resubscribe cooldown, in seconds
+    function setMeTokenCooldown(uint256 period) external;
+
+    /// @notice View to get basic information for a meToken - reducing gas if called on-chain
+    /// @param meToken          Address of meToken queried
+    /// @return owner           Address of meToken owner
+    /// @return hubId           Unique hub identifier
+    /// @return balancePooled   Amount of balance pooled
+    /// @return balanceLocked   Amount of balance locked
+    /// @return migration       Address of migration vault
+    function getBasicMeTokenInfo(address meToken)
+        external
+        view
+        returns (
+            address owner,
+            uint256 hubId,
+            uint256 balancePooled,
+            uint256 balanceLocked,
+            address migration
+        );
 
     /// @notice View to get information for a meToken
     /// @param meToken      Address of meToken queried
@@ -166,7 +197,7 @@ interface IMeTokenRegistryFacet {
     function getPendingOwner(address from) external view returns (address);
 
     /// @notice Get the meToken resubscribe warmup period
-    /// @return Period of meToken warmup, in seconds
+    /// @return Period of meToken resubscribe warmup, in seconds
     function meTokenWarmup() external view returns (uint256);
 
     /// @notice Get the meToken resubscribe duration period
