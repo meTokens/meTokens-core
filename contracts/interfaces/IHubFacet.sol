@@ -119,22 +119,22 @@ interface IHubFacet {
     ///     difference between initUpdate() is called and when the update
     ///     is live
     /// @dev Only callable by DurationsController
-    /// @param amount   Amount of time, in seconds
-    function setHubWarmup(uint256 amount) external;
+    /// @param period   Period of time, in seconds
+    function setHubWarmup(uint256 period) external;
 
     /// @notice Set the time period for a hub to update, which is the time
     ///     difference between when the update is live and when finishUpdate()
     ///     can be called
     /// @dev Only callable by DurationsController
-    /// @param amount   Amount of time, in seconds
-    function setHubDuration(uint256 amount) external;
+    /// @param period   Period of time, in seconds
+    function setHubDuration(uint256 period) external;
 
     /// @notice Set the time period for a hub to cooldown, which is the time
     ///     difference between when finishUpdate() can be called and when initUpdate()
     ///     can be called again
     /// @dev Only callable by DurationsController
-    /// @param amount   Amount of time, in seconds
-    function setHubCooldown(uint256 amount) external;
+    /// @param period   Period of time, in seconds
+    function setHubCooldown(uint256 period) external;
 
     /// @notice View to get basic information for a hub - reducing gas if called on-chain
     /// @param id           Unique hub identifier
