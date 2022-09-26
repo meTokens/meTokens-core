@@ -50,7 +50,6 @@ const setup = async () => {
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
 
     let encodedCurveInfo: string;
     let encodedMigrationArgs: string;
@@ -139,7 +138,6 @@ const setup = async () => {
       await hub.setHubWarmup(hubWarmup);
       await meTokenRegistry.setMeTokenWarmup(warmup);
       await meTokenRegistry.setMeTokenDuration(duration);
-      await meTokenRegistry.setMeTokenCooldown(coolDown);
     });
 
     describe("isValid()", () => {
@@ -290,10 +288,6 @@ const setup = async () => {
         let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-
-        await mineBlock(meTokenRegistryDetails.endCooldown.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(meTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         encodedMigrationArgs = "0x";
 

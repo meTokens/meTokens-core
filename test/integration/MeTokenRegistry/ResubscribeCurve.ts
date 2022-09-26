@@ -111,7 +111,6 @@ const setup = async () => {
       await hub.setHubWarmup(hubWarmup);
       await meTokenRegistry.setMeTokenWarmup(warmup);
       await meTokenRegistry.setMeTokenDuration(duration);
-      await meTokenRegistry.setMeTokenCooldown(coolDown);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 
@@ -503,7 +502,7 @@ const setup = async () => {
       });
     });
 
-    describe("Cooldown", () => {
+    describe("After Duration", () => {
       before(async () => {
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
           meToken.address

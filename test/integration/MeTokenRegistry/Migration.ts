@@ -79,7 +79,6 @@ const setup = async () => {
     const hubWarmup = 7 * 60 * 24 * 24; // 1 week
     const warmup = 2 * 60 * 24 * 24; // 2 days
     const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
     const fees = 3000;
     const tokenDepositedInETH = 100;
     const tokenDeposited = ethers.utils.parseEther(
@@ -128,7 +127,6 @@ const setup = async () => {
 
       await hub.setHubWarmup(hubWarmup);
       await meTokenRegistry.setMeTokenWarmup(warmup - 1);
-      await meTokenRegistry.setMeTokenCooldown(coolDown + 1);
       await meTokenRegistry.setMeTokenDuration(duration - 1);
 
       // Deploy uniswap migration and approve it to the registry
@@ -160,10 +158,6 @@ const setup = async () => {
       tx = await meTokenRegistry.setMeTokenDuration(duration);
       await tx.wait();
       expect(await meTokenRegistry.meTokenDuration()).to.be.equal(duration);
-      // setMeTokenCooldown
-      tx = await meTokenRegistry.setMeTokenCooldown(coolDown);
-      await tx.wait();
-      expect(await meTokenRegistry.meTokenCooldown()).to.be.equal(coolDown);
 
       await migrationRegistry.approve(
         singleAssetVault.address,

@@ -153,13 +153,6 @@ interface IMeTokenRegistryFacet {
     /// @param period Period of the meToken resubscribe duration, in seconds
     function setMeTokenDuration(uint256 period) external;
 
-    /// @notice Set the time period for a meToken to cooldown, which is the time
-    ///     difference between when finishResubscription can be called and when
-    ///     initResubscribe() can be called again
-    /// @dev Only callable by DurationsController
-    /// @param period Period of the meToken resubscribe cooldown, in seconds
-    function setMeTokenCooldown(uint256 period) external;
-
     /// @notice View to get basic information for a meToken - reducing gas if called on-chain
     /// @param meToken          Address of meToken queried
     /// @return owner           Address of meToken owner
@@ -203,10 +196,6 @@ interface IMeTokenRegistryFacet {
     /// @notice Get the meToken resubscribe duration period
     /// @return Period of the meToken resubscribe duration, in seconds
     function meTokenDuration() external view returns (uint256);
-
-    /// @notice Get the meToken resubcribe cooldown period
-    /// @return Period of the meToken resubscribe cooldown, in seconds
-    function meTokenCooldown() external view returns (uint256);
 
     /// @notice View to return if an address owns a meToken or not
     /// @param owner    Address to query

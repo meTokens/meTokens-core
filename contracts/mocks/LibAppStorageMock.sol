@@ -22,7 +22,6 @@ struct AppStorageMock {
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
     uint256 meTokenDuration;
-    uint256 meTokenCooldown;
     mapping(address => MeTokenInfo) meTokens;
     mapping(address => address) meTokenOwners;
     mapping(address => address) pendingMeTokenOwners;

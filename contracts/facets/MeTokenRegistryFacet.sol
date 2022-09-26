@@ -94,8 +94,8 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
 
         require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(
-            block.timestamp >= meTokenInfo.endCooldown,
-            "Cooldown not complete"
+            block.timestamp >= meTokenInfo.endTime,
+            "meToken still resubscribing"
         );
         require(meTokenInfo.hubId != targetHubId, "same hub");
         require(targetHubInfo.active, "targetHub inactive");
@@ -122,11 +122,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
             block.timestamp +
             s.meTokenWarmup +
             s.meTokenDuration;
-        meTokenInfo.endCooldown =
-            block.timestamp +
-            s.meTokenWarmup +
-            s.meTokenDuration +
-            s.meTokenCooldown;
         meTokenInfo.targetHubId = targetHubId;
         meTokenInfo.migration = migration;
 
@@ -152,7 +147,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
 
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
-        meTokenInfo.endCooldown = 0;
         meTokenInfo.targetHubId = 0;
         meTokenInfo.migration = address(0);
 
@@ -257,15 +251,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function setMeTokenCooldown(uint256 period)
-        external
-        onlyDurationsController
-    {
-        require(period != s.meTokenCooldown, "same cooldown");
-        s.meTokenCooldown = period;
-    }
-
-    /// @inheritdoc IMeTokenRegistryFacet
     function getBasicMeTokenInfo(address meToken)
         external
         view
@@ -324,11 +309,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     /// @inheritdoc IMeTokenRegistryFacet
     function meTokenDuration() external view returns (uint256) {
         return LibMeToken.duration();
-    }
-
-    /// @inheritdoc IMeTokenRegistryFacet
-    function meTokenCooldown() external view returns (uint256) {
-        return LibMeToken.cooldown();
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
