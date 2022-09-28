@@ -1040,7 +1040,7 @@ const setup = async () => {
       it("mint() Should work after some time during the migration ", async () => {
         // metoken should be registered
         let block = await ethers.provider.getBlock("latest");
-        await mineBlock(block.timestamp + 60 * 60);
+        await mineBlock(block.timestamp + 25 * 60 * 60);
 
         const hubDetail = await hub.getHubInfo(hubIdDAI);
         block = await ethers.provider.getBlock("latest");
@@ -1591,7 +1591,7 @@ const setup = async () => {
       it("mint() Should work after some time during the migration ", async () => {
         // metoken should be registered
         let block = await ethers.provider.getBlock("latest");
-        await mineBlock(block.timestamp + 60 * 60);
+        await mineBlock(block.timestamp + 25 * 60 * 60);
 
         const hubDetail = await hub.getHubInfo(hubIdDAI);
         block = await ethers.provider.getBlock("latest");

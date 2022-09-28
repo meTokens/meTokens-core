@@ -52,6 +52,11 @@ contract DiamondInit {
         s.NOT_ENTERED = 1;
         s.ENTERED = 2;
 
+        s.hubWarmup = 3 days;
+        s.hubDuration = 1 days;
+        s.meTokenWarmup = 1 days;
+        s.meTokenDuration = 1 days;
+
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         // Adding erc165 data

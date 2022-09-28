@@ -97,13 +97,13 @@ const setup = async () => {
         .mint(meTokenAddr, tokenDeposited, account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
-      //setWarmup for 2 days
+      //setWarmup for 2 days (3 days after buffer)
       let warmup = await hub.hubWarmup();
       expect(warmup).to.equal(0);
       await hub.setHubWarmup(172800);
 
       warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(172800);
+      expect(warmup).to.equal(172800 + 24 * 60 * 60);
       let cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(0);
       //setCooldown for 1 day
@@ -216,8 +216,8 @@ const setup = async () => {
       });
 
       it("Assets received for owner should not apply refund ratio", async () => {
-        //move forward  2 Days
-        await passDays(2);
+        //move forward 3 Days
+        await passDays(3);
         const tokenDepositedInETH = 100;
         const tokenDeposited = ethers.utils.parseEther(
           tokenDepositedInETH.toString()
@@ -503,14 +503,14 @@ const setup = async () => {
         const hubId = (await hub.count()).toNumber();
         expect(hubId).to.be.equal(firstHubId + 1);
         await hub.setHubWarmup(0);
-        await hub.setHubCooldown(0);
+        await hub.setHubCooldown(5);
         await hub.setHubDuration(0);
 
         let warmup = await hub.hubWarmup();
-        expect(warmup).to.equal(0);
+        expect(warmup).to.equal(24 * 60 * 60);
 
         let cooldown = await hub.hubCooldown();
-        expect(cooldown).to.equal(0);
+        expect(cooldown).to.equal(5);
 
         let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
@@ -527,6 +527,9 @@ const setup = async () => {
         expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio / 2);
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
 
+        const block = await ethers.provider.getBlock("latest");
+        const { endTime } = await hub.getHubInfo(1);
+        await mineBlock(endTime.toNumber() + 1);
         await hub.finishUpdate(hubId);
         const detAfterUpdate = await hub.getHubInfo(hubId);
 
@@ -557,7 +560,8 @@ const setup = async () => {
         expect(block.timestamp).to.be.gt(endTime);
         expect(block.timestamp).to.be.lt(endCooldown);
 
-        await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
+        // await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
+        await mineBlock(endCooldown.toNumber() + 1);
         await hub.initUpdate(1, 1000, 0);
 
         const detAfterInit = await hub.getHubInfo(1);
@@ -581,10 +585,10 @@ const setup = async () => {
         expect(hubId).to.be.equal(firstHubId + 2);
 
         let warmup = await hub.hubWarmup();
-        expect(warmup).to.equal(0);
+        expect(warmup).to.equal(24 * 60 * 60);
 
         let cooldown = await hub.hubCooldown();
-        expect(cooldown).to.equal(0);
+        expect(cooldown).to.equal(5);
 
         let duration = await hub.hubDuration();
         expect(duration).to.equal(0);
@@ -601,7 +605,12 @@ const setup = async () => {
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
 
         const block = await ethers.provider.getBlock("latest");
-        expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(0);
+        expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(
+          24 * 60 * 60 + 5
+        );
+
+        // fast fwd to update again
+        await mineBlock(detAfterInit.endCooldown.toNumber() + 1);
         await hub.initUpdate(hubId, 1000, 0);
 
         const detAfterUpdate = await hub.getHubInfo(hubId);
@@ -610,8 +619,6 @@ const setup = async () => {
         expect(detAfterUpdate.refundRatio).to.equal(targetedRefundRatio);
         expect(detAfterUpdate.targetRefundRatio).to.equal(1000);
       });
-
-      it("If no burns during cooldown, initUpdate() args are compared to new values set from on finishUpdate()", async () => {});
     });
   });
 };

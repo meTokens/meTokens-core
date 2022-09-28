@@ -112,7 +112,7 @@ const setup = async () => {
       await hub.setHubWarmup(172800);
 
       warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(172800);
+      expect(warmup).to.equal(172800 + 24 * 60 * 60);
       let cooldown = await hub.hubCooldown();
       expect(cooldown).to.equal(0);
       //setCooldown for 1 day

@@ -99,7 +99,12 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
         );
         require(meTokenInfo.hubId != targetHubId, "same hub");
         require(targetHubInfo.active, "targetHub inactive");
-        require(!hubInfo.updating, "hub updating");
+        // NOTE: This next statement allows a meToken to resubscribe from a hub
+        // if the hub is updating but still in the warmup period
+        require(
+            !hubInfo.updating || block.timestamp < hubInfo.startTime,
+            "hub updating"
+        );
         require(!targetHubInfo.updating, "targetHub updating");
 
         require(migration != address(0), "migration address(0)");
@@ -236,7 +241,15 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     /// @inheritdoc IMeTokenRegistryFacet
     function setMeTokenWarmup(uint256 period) external onlyDurationsController {
         require(period != s.meTokenWarmup, "same warmup");
-        require(period + s.meTokenDuration < s.hubWarmup, "too long");
+        // NOTE: 1 day buffer so that a resubscribing meToken has time to
+        // resubscribe again if the target hub starts an update immediately
+        // after the meToken triggers the resubscribe
+        require(
+            period + s.meTokenDuration + 1 days <= s.hubWarmup,
+            "> hubWarmup"
+        );
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
         s.meTokenWarmup = period;
     }
 
@@ -246,7 +259,12 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
         onlyDurationsController
     {
         require(period != s.meTokenDuration, "same duration");
-        require(s.meTokenWarmup + period < s.hubWarmup, "too long");
+        require(
+            s.meTokenWarmup + period + 1 days <= s.hubWarmup,
+            "> hubWarmup"
+        );
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
         s.meTokenDuration = period;
     }
 

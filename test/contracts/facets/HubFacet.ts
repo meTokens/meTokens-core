@@ -288,7 +288,7 @@ const setup = async () => {
       it("should be able to call setHubWarmup", async () => {
         const tx = await hub.setHubWarmup(duration);
         await tx.wait();
-        expect(await hub.hubWarmup()).to.be.equal(duration);
+        expect(await hub.hubWarmup()).to.be.equal(duration + 24 * 60 * 60);
       });
       it("should revert if period < meTokenWarmup + meTokenDuration", async () => {
         await meTokenRegistry.setMeTokenWarmup(duration - 1);
@@ -367,10 +367,11 @@ const setup = async () => {
         const tx = await hub.initUpdate(hubId, refundRatio2, 0);
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const DAY = 24 * 60 * 60;
+        const expectedStartTime = block.timestamp + duration + DAY;
+        const expectedEndTime = block.timestamp + duration + DAY + duration;
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp + duration + DAY + duration + duration;
 
         await expect(tx)
           .to.emit(hub, "InitUpdate")
@@ -468,10 +469,11 @@ const setup = async () => {
         expect(info.endCooldown).to.be.lte(block.timestamp);
 
         block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const DAY = 24 * 60 * 60;
+        const expectedStartTime = block.timestamp + duration + DAY;
+        const expectedEndTime = block.timestamp + duration + DAY + duration;
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp + duration + DAY + duration + duration;
 
         await expect(txAfterEndCooldown)
           .to.emit(hub, "FinishUpdate")
@@ -537,10 +539,11 @@ const setup = async () => {
         const receipt = await tx.wait();
 
         let block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const DAY = 24 * 60 * 60;
+        const expectedStartTime = block.timestamp + duration + DAY;
+        const expectedEndTime = block.timestamp + duration + DAY + duration;
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp + duration + DAY + duration + duration;
 
         await expect(tx)
           .to.emit(hub, "InitUpdate")

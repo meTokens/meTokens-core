@@ -163,39 +163,47 @@ contract HubFacet is IHubFacet, Modifiers {
     }
 
     /// @inheritdoc IHubFacet
-    function setHubWarmup(uint256 warmup)
+    function setHubWarmup(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(warmup != s.hubWarmup, "same warmup");
+        require(period != s.hubWarmup, "same warmup");
+        require(period <= 60 days, "too long");
+        require(period >= 2 days, "too short");
         // NOTE: this check is done to ensure a meToken is not still resubscribing
         //  when the hub it points to has its' update live
         require(
-            warmup >= s.meTokenWarmup + s.meTokenDuration,
+            period >= s.meTokenWarmup + s.meTokenDuration,
             "warmup < meTokenWarmup + meTokenDuration"
         );
-        s.hubWarmup = warmup;
+        // Add one day to the warmup so that a resubscribing meToken has time to
+        // resubscribe again if the target hub starts an update immediately after
+        // the meToken triggers the resubscribe
+        s.hubWarmup = period + 1 days;
     }
 
     /// @inheritdoc IHubFacet
-    function setHubDuration(uint256 duration)
+    function setHubDuration(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(duration != s.hubDuration, "same duration");
-        s.hubDuration = duration;
+        require(period != s.hubDuration, "same duration");
+        require(period <= 30 days, "too long");
+        require(period >= 1 days, "too short");
+        s.hubDuration = period;
     }
 
     /// @inheritdoc IHubFacet
-    function setHubCooldown(uint256 cooldown)
+    function setHubCooldown(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(cooldown != s.hubCooldown, "same cooldown");
-        s.hubCooldown = cooldown;
+        require(period != s.hubCooldown, "same cooldown");
+        require(period <= 365 days, "too long");
+        s.hubCooldown = period;
     }
 
     /// @inheritdoc IHubFacet

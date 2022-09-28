@@ -119,6 +119,7 @@ interface IHubFacet {
     ///     difference between initUpdate() is called and when the update
     ///     is live
     /// @dev Only callable by DurationsController
+    /// @dev Is greater than meToken warmup + duration + 1 day
     /// @param period   Period of time, in seconds
     function setHubWarmup(uint256 period) external;
 
