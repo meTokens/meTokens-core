@@ -46,10 +46,6 @@ const setup = async () => {
 
     const hubId1 = 1;
     const hubId2 = 2;
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
     const MAX_WEIGHT = 1000000;
     const PRECISION = BigNumber.from(10).pow(18);
     const baseY = PRECISION.div(1000);
@@ -108,9 +104,6 @@ const setup = async () => {
       );
 
       // set update/resubscribe times
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup);
-      await meTokenRegistry.setMeTokenDuration(duration);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 

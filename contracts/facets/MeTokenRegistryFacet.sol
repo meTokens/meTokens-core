@@ -241,6 +241,8 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     /// @inheritdoc IMeTokenRegistryFacet
     function setMeTokenWarmup(uint256 period) external onlyDurationsController {
         require(period != s.meTokenWarmup, "same warmup");
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
         // NOTE: 1 day buffer so that a resubscribing meToken has time to
         // resubscribe again if the target hub starts an update immediately
         // after the meToken triggers the resubscribe
@@ -248,8 +250,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
             period + s.meTokenDuration + 1 days <= s.hubWarmup,
             "> hubWarmup"
         );
-        require(period >= 1 days, "too short");
-        require(period <= 30 days, "too long");
         s.meTokenWarmup = period;
     }
 
@@ -259,12 +259,12 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
         onlyDurationsController
     {
         require(period != s.meTokenDuration, "same duration");
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
         require(
             s.meTokenWarmup + period + 1 days <= s.hubWarmup,
             "> hubWarmup"
         );
-        require(period >= 1 days, "too short");
-        require(period <= 30 days, "too long");
         s.meTokenDuration = period;
     }
 

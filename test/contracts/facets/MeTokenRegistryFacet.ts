@@ -103,9 +103,9 @@ const setup = async () => {
     const PRECISION = BigNumber.from(10).pow(18);
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
+    const hubWarmup = 7 * 24 * 60 * 60; // 1 week
+    const warmup = 2 * 24 * 60 * 60; // 2 days
+    const duration = 4 * 24 * 60 * 60; // 4 days
     const fees = 3000;
     const tokenDepositedInETH = 100;
     const tokenDeposited = ethers.utils.parseEther(
@@ -158,9 +158,6 @@ const setup = async () => {
         reserveWeight,
         encodedVaultArgs
       );
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup - 1);
-      await meTokenRegistry.setMeTokenDuration(duration - 1);
 
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
@@ -365,9 +362,16 @@ const setup = async () => {
         const tx = meTokenRegistry.setMeTokenWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("same warmup");
       });
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenWarmup(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(30 * 24 * 60 * 60);
+      });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setMeTokenWarmup(hubWarmup);
-        await expect(tx).to.be.revertedWith("too long");
+        await expect(tx).to.be.revertedWith("> hubWarmup");
       });
       it("should be able to setMeTokenWarmup", async () => {
         tx = await meTokenRegistry.setMeTokenWarmup(warmup);
@@ -390,7 +394,7 @@ const setup = async () => {
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setMeTokenDuration(hubWarmup);
-        await expect(tx).to.be.revertedWith("too long");
+        await expect(tx).to.be.revertedWith("> hubWarmup");
       });
       it("should be able to setMeTokenDuration", async () => {
         tx = await meTokenRegistry.setMeTokenDuration(duration);
@@ -447,8 +451,11 @@ const setup = async () => {
         );
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
-      it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, refundRatio / 2, 0);
+      it("Fails if current hub update has passed the hub warmup", async () => {
+        await hub.initUpdate(hubId, refundRatio / 4, 0);
+
+        const { startTime, endTime } = await hub.getHubInfo(hubId);
+        await mineBlock(startTime.toNumber() + 1);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -456,8 +463,10 @@ const setup = async () => {
           ethers.constants.AddressZero,
           "0x"
         );
+
         await expect(tx).to.be.revertedWith("hub updating");
-        await hub.cancelUpdate(hubId);
+        await mineBlock(endTime.toNumber() + 1);
+        await hub.finishUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
         await hub.initUpdate(hubId2, refundRatio / 2, 0);
@@ -755,7 +764,7 @@ const setup = async () => {
 
       it("revert when sender is not migration", async () => {
         await expect(
-          meTokenRegistry.updateBalances(meTokenAddr0, 5)
+          meTokenRegistry.updateBalances(meTokenAddr1, 5)
         ).to.be.revertedWith("!migration");
       });
 
@@ -1142,6 +1151,74 @@ const setup = async () => {
             meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
           )
         ).to.be.approximately(lockedAmount, 1e-13);
+      });
+    });
+
+    describe("setMeTokenWarmup()", () => {
+      it("should revert if not durationsController", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenWarmup(warmup - 1);
+        await expect(tx).to.be.revertedWith("!durationsController");
+      });
+      it("should revert if same as before", async () => {
+        const oldWarmup = await meTokenRegistry.meTokenWarmup();
+        const tx = meTokenRegistry.setMeTokenWarmup(oldWarmup);
+        await expect(tx).to.be.revertedWith("same warmup");
+      });
+      it("should revert if less than 1 day buffer to hub warmup", async () => {
+        // 6 days 1 second
+        const tx = meTokenRegistry.setMeTokenWarmup(6 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("> hubWarmup");
+      });
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenWarmup(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        // 30 days 1 second
+        const tx = meTokenRegistry.setMeTokenWarmup(30 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("too long");
+      });
+      it("should be able to call setMeTokenWarmup", async () => {
+        const tx = await meTokenRegistry.setMeTokenWarmup(warmup - 1);
+        await tx.wait();
+        expect(await meTokenRegistry.meTokenWarmup()).to.be.equal(warmup - 1);
+      });
+    });
+
+    describe("setMeTokenDuration()", () => {
+      it("should revert if not durationsController", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenDuration(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
+      });
+      it("should revert if same as before", async () => {
+        const oldDuration = await meTokenRegistry.meTokenDuration();
+        const tx = meTokenRegistry.setMeTokenDuration(oldDuration);
+        await expect(tx).to.be.revertedWith("same duration");
+      });
+
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(30 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("too long");
+      });
+      it("should revert if less than 1 day buffer to hub warmup", async () => {
+        // 6 days 1 second
+        const tx = meTokenRegistry.setMeTokenDuration(6 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("> hubWarmup");
+      });
+      it("should be able to call setMeTokenDuration", async () => {
+        const tx = await meTokenRegistry.setMeTokenDuration(duration - 1);
+        await tx.wait();
+        expect(await meTokenRegistry.meTokenDuration()).to.be.equal(
+          duration - 1
+        );
       });
     });
   });

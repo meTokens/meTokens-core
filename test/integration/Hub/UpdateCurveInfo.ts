@@ -43,16 +43,12 @@ const setup = async () => {
     const one = ethers.utils.parseEther("1");
     let baseY: BigNumber;
     let baseYNum: number;
-    let updatedBaseYNum: number;
-    let updatedBaseY: BigNumber;
     let reserveWeight: number;
     let updatedReserveWeight: number;
     const MAX_WEIGHT = 1000000;
     const firstHubId = 1;
     const refundRatio = 5000;
     before(async () => {
-      updatedBaseYNum = 10000;
-      updatedBaseY = one.mul(updatedBaseYNum);
       updatedReserveWeight = MAX_WEIGHT / 10;
       baseYNum = 1000;
       baseY = one.mul(baseYNum);
@@ -106,26 +102,7 @@ const setup = async () => {
         .mint(meTokenAddr, tokenDeposited, account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
-      //setHubWarmup for 2 days
-      let warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(0);
-      await hub.setHubWarmup(172800);
-
-      warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(172800 + 24 * 60 * 60);
-      let cooldown = await hub.hubCooldown();
-      expect(cooldown).to.equal(0);
-      //setCooldown for 1 day
-      await hub.setHubCooldown(86400);
-      cooldown = await hub.hubCooldown();
-      expect(cooldown).to.equal(86400);
-
-      let duration = await hub.hubDuration();
-      expect(duration).to.equal(0);
-      //setDuration for 1 week
       await hub.setHubDuration(604800);
-      duration = await hub.hubDuration();
-      expect(duration).to.equal(604800);
     });
 
     describe("Warmup", () => {
@@ -1037,9 +1014,7 @@ const setup = async () => {
           const tokenDeposited = ethers.utils.parseEther(
             tokenDepositedInETH.toString()
           );
-          await token
-            .connect(account1)
-            .transfer(account0.address, ethers.utils.parseEther("100"));
+          await token.connect(whale).transfer(account0.address, tokenDeposited);
           const vaultBalBefore = await token.balanceOf(
             singleAssetVault.address
           );
@@ -1108,7 +1083,6 @@ const setup = async () => {
               toETHNumber(meTokenInfoBeforeBurn.balanceLocked);
 
           // we get the calcWAvgRes percentage of the tokens returned by the Metokens burn
-          // expect(balDaiAfterBurn.sub(balDaiAfterMint)).to.equal(calculatedReturn);
           expect(
             toETHNumber(balDaiAfterBurn.sub(balDaiAfterMint))
           ).to.be.approximately(assetsReturned, 0.00000000001);

@@ -41,17 +41,12 @@ const setup = async () => {
     const name = "Carl meToken";
     const symbol = "CARL";
     const amount = ethers.utils.parseEther("100");
-    const fees = 3000;
     const refundRatio = 500000;
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
     const baseY = PRECISION.div(1000);
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
 
-    let encodedCurveInfo: string;
     let encodedMigrationArgs: string;
     let encodedVaultDAIArgs: string;
     let block;
@@ -134,10 +129,6 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup);
-      await meTokenRegistry.setMeTokenDuration(duration);
     });
 
     describe("isValid()", () => {

@@ -52,8 +52,9 @@ contract DiamondInit {
         s.NOT_ENTERED = 1;
         s.ENTERED = 2;
 
-        s.hubWarmup = 3 days;
+        s.hubWarmup = 7 days;
         s.hubDuration = 1 days;
+        s.hubCooldown = 1 days;
         s.meTokenWarmup = 1 days;
         s.meTokenDuration = 1 days;
 

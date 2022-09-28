@@ -47,6 +47,7 @@ export const checkUniswapPoolLiquidity = async (
   const uniswapV3Pool = await ethers.getContractAt(UniswapV3PoolABI, pool);
   expect(await uniswapV3Pool.liquidity()).to.be.gt(0);
 };
+
 const setup = async () => {
   describe("Migration", () => {
     let tx: ContractTransaction;
@@ -76,9 +77,6 @@ const setup = async () => {
     const PRECISION = BigNumber.from(10).pow(18);
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
     const fees = 3000;
     const tokenDepositedInETH = 100;
     const tokenDeposited = ethers.utils.parseEther(
@@ -125,10 +123,6 @@ const setup = async () => {
         encodedVaultArgs
       );
 
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup - 1);
-      await meTokenRegistry.setMeTokenDuration(duration - 1);
-
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
         "UniswapSingleTransferMigration",
@@ -150,14 +144,6 @@ const setup = async () => {
         .subscribe(name, symbol, 1, 0);
       await tx.wait();
       meTokenAddr4 = await meTokenRegistry.getOwnerMeToken(account4.address);
-      // setMeTokenWarmup
-      tx = await meTokenRegistry.setMeTokenWarmup(warmup);
-      await tx.wait();
-      expect(await meTokenRegistry.meTokenWarmup()).to.be.equal(warmup);
-      // setMeTokenDuration
-      tx = await meTokenRegistry.setMeTokenDuration(duration);
-      await tx.wait();
-      expect(await meTokenRegistry.meTokenDuration()).to.be.equal(duration);
 
       await migrationRegistry.approve(
         singleAssetVault.address,

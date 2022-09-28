@@ -659,12 +659,6 @@ const setup = async () => {
         let vaultDaiBalanceBefore = await dai.balanceOf(
           singleAssetVault.address
         );
-        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
-        //   expectedMeTokensMinted,
-        //   hubIdDAI,
-        //   0,
-        //   0
-        // );
         const calculated = calculateCollateralToDepositFromZero(
           toETHNumber(expectedMeTokensMinted),
           toETHNumber(baseY),
@@ -674,11 +668,6 @@ const setup = async () => {
           calculated,
           0.000000000000000000000001
         );
-
-        // expect(toETHNumber(amount1)).to.approximately(
-        //   toETHNumber(expectedAssetsDeposited),
-        //   0.000000000000000000000001
-        // );
 
         // Mint first meTokens to owner account1
         await meTokenRegistry
@@ -719,12 +708,7 @@ const setup = async () => {
           0,
           0
         );
-        // let expectedAssetsDeposited = await curve.viewAssetsDeposited(
-        //   expectedMeTokensMinted,
-        //   hubIdDAI,
-        //   0,
-        //   0
-        // );
+
         // Get balances before mint
         let minterDaiBalanceBefore = await dai.balanceOf(account2.address);
         let vaultDaiBalanceBefore = await dai.balanceOf(
@@ -763,10 +747,6 @@ const setup = async () => {
         expect(vaultDaiBalanceAfter.sub(vaultDaiBalanceBefore)).to.equal(
           amount1
         );
-        // expect(toETHNumber(amount1)).to.be.approximately(
-        //   toETHNumber(expectedAssetsDeposited),
-        //   0.000000000000000001
-        // );
       });
 
       it("balanceLocked = 0, balancePooled > 0", async () => {
@@ -972,9 +952,6 @@ const setup = async () => {
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(4).toString();
 
         // 10 hour
-        await hub.setHubDuration(600 * 60);
-        await hub.setHubWarmup(60 * 60);
-        await hub.setHubCooldown(60 * 60);
         // vault stays the same
         await hub.initUpdate(hubIdDAI, targetRefundRatio, reserveWeight);
       });
@@ -1039,11 +1016,10 @@ const setup = async () => {
       });
       it("mint() Should work after some time during the migration ", async () => {
         // metoken should be registered
-        let block = await ethers.provider.getBlock("latest");
-        await mineBlock(block.timestamp + 25 * 60 * 60);
-
         const hubDetail = await hub.getHubInfo(hubIdDAI);
-        block = await ethers.provider.getBlock("latest");
+        await mineBlock(hubDetail.startTime.toNumber() + 2);
+
+        const block = await ethers.provider.getBlock("latest");
         expect(hubDetail.startTime).to.be.lt(block.timestamp);
         const balVaultBefore = await dai.balanceOf(hubDetail.vault);
         const balBefore = await dai.balanceOf(account2.address);
@@ -1240,6 +1216,10 @@ const setup = async () => {
         );
       });
       it("should be able to donate", async () => {
+        const { endTime } = await meTokenRegistry.getMeTokenInfo(
+          meToken.address
+        );
+        await mineBlock(endTime.toNumber() + 1);
         await meTokenRegistry.finishResubscribe(meToken.address);
 
         const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
@@ -1503,10 +1483,6 @@ const setup = async () => {
         // weight at 10% quadratic curve
         const reserveWeight = BigNumber.from(MAX_WEIGHT).div(20).toString();
 
-        // 10 hour
-        await hub.setHubDuration(600 * 60);
-        await hub.setHubWarmup(60 * 60);
-        await hub.setHubCooldown(60 * 60);
         hubIdUSDC = 1;
         await meTokenRegistry
           .connect(account2)
@@ -1590,11 +1566,10 @@ const setup = async () => {
       });
       it("mint() Should work after some time during the migration ", async () => {
         // metoken should be registered
-        let block = await ethers.provider.getBlock("latest");
-        await mineBlock(block.timestamp + 25 * 60 * 60);
-
         const hubDetail = await hub.getHubInfo(hubIdDAI);
-        block = await ethers.provider.getBlock("latest");
+        await mineBlock(hubDetail.startTime.toNumber() + 2);
+
+        const block = await ethers.provider.getBlock("latest");
         expect(hubDetail.startTime).to.be.lt(block.timestamp);
         const balVaultBefore = await usdc.balanceOf(hubDetail.vault);
         const balBefore = await usdc.balanceOf(account2.address);
@@ -1715,6 +1690,7 @@ const setup = async () => {
         );
         expect(beforeMeTokenInfo.hubId).to.equal(hubIdUSDC);
         expect(beforeMeTokenInfo.targetHubId).to.equal(hubIdWETH);
+        await mineBlock(beforeMeTokenInfo.endTime.toNumber() + 1);
 
         await foundry
           .connect(account2)
@@ -1738,11 +1714,6 @@ const setup = async () => {
       let newReserveWeight: BigNumber;
 
       beforeEach(async () => {
-        // Finish endCoolDown of last hub update
-        await mineBlock(
-          Number((await hub.getHubInfo(hubIdDAI)).endCooldown.add(1))
-        );
-
         migration = await deploy<UniswapSingleTransferMigration>(
           "UniswapSingleTransferMigration",
           undefined,

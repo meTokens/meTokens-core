@@ -97,26 +97,7 @@ const setup = async () => {
         .mint(meTokenAddr, tokenDeposited, account2.address);
       const vaultBalAfter = await token.balanceOf(singleAssetVault.address);
       expect(vaultBalAfter.sub(vaultBalBefore)).to.equal(tokenDeposited);
-      //setWarmup for 2 days (3 days after buffer)
-      let warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(0);
-      await hub.setHubWarmup(172800);
-
-      warmup = await hub.hubWarmup();
-      expect(warmup).to.equal(172800 + 24 * 60 * 60);
-      let cooldown = await hub.hubCooldown();
-      expect(cooldown).to.equal(0);
-      //setCooldown for 1 day
-      await hub.setHubCooldown(86400);
-      cooldown = await hub.hubCooldown();
-      expect(cooldown).to.equal(86400);
-
-      let duration = await hub.hubDuration();
-      expect(duration).to.equal(0);
-      //setDuration for 1 week
       await hub.setHubDuration(604800);
-      duration = await hub.hubDuration();
-      expect(duration).to.equal(604800);
     });
 
     describe("Warmup", () => {
@@ -502,18 +483,7 @@ const setup = async () => {
         );
         const hubId = (await hub.count()).toNumber();
         expect(hubId).to.be.equal(firstHubId + 1);
-        await hub.setHubWarmup(0);
-        await hub.setHubCooldown(5);
-        await hub.setHubDuration(0);
 
-        let warmup = await hub.hubWarmup();
-        expect(warmup).to.equal(24 * 60 * 60);
-
-        let cooldown = await hub.hubCooldown();
-        expect(cooldown).to.equal(5);
-
-        let duration = await hub.hubDuration();
-        expect(duration).to.equal(0);
         const detBefore = await hub.getHubInfo(hubId);
 
         expect(detBefore.active).to.be.true;
@@ -527,8 +497,7 @@ const setup = async () => {
         expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio / 2);
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
 
-        const block = await ethers.provider.getBlock("latest");
-        const { endTime } = await hub.getHubInfo(1);
+        const { endTime } = await hub.getHubInfo(hubId);
         await mineBlock(endTime.toNumber() + 1);
         await hub.finishUpdate(hubId);
         const detAfterUpdate = await hub.getHubInfo(hubId);
@@ -549,7 +518,7 @@ const setup = async () => {
           endTime,
           endCooldown,
           targetRefundRatio,
-        } = await hub.getHubInfo(1);
+        } = await hub.getHubInfo(2);
 
         expect(active).to.be.true;
         expect(updating).to.be.false;
@@ -560,7 +529,6 @@ const setup = async () => {
         expect(block.timestamp).to.be.gt(endTime);
         expect(block.timestamp).to.be.lt(endCooldown);
 
-        // await passSeconds(endCooldown.sub(block.timestamp).toNumber() + 1);
         await mineBlock(endCooldown.toNumber() + 1);
         await hub.initUpdate(1, 1000, 0);
 
@@ -584,14 +552,6 @@ const setup = async () => {
         const hubId = (await hub.count()).toNumber();
         expect(hubId).to.be.equal(firstHubId + 2);
 
-        let warmup = await hub.hubWarmup();
-        expect(warmup).to.equal(24 * 60 * 60);
-
-        let cooldown = await hub.hubCooldown();
-        expect(cooldown).to.equal(5);
-
-        let duration = await hub.hubDuration();
-        expect(duration).to.equal(0);
         const detBefore = await hub.getHubInfo(hubId);
         expect(detBefore.active).to.be.true;
         expect(detBefore.updating).to.be.false;
@@ -603,11 +563,6 @@ const setup = async () => {
         expect(detAfterInit.updating).to.be.true;
         expect(detAfterInit.refundRatio).to.equal(targetedRefundRatio / 2);
         expect(detAfterInit.targetRefundRatio).to.equal(targetedRefundRatio);
-
-        const block = await ethers.provider.getBlock("latest");
-        expect(detAfterInit.endCooldown.sub(block.timestamp)).to.equal(
-          24 * 60 * 60 + 5
-        );
 
         // fast fwd to update again
         await mineBlock(detAfterInit.endCooldown.toNumber() + 1);

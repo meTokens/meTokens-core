@@ -170,17 +170,16 @@ contract HubFacet is IHubFacet, Modifiers {
     {
         require(period != s.hubWarmup, "same warmup");
         require(period <= 60 days, "too long");
-        require(period >= 2 days, "too short");
+        require(period >= 3 days, "too short");
         // NOTE: this check is done to ensure a meToken is not still resubscribing
-        //  when the hub it points to has its' update live
+        //  when the hub it points to has its' update live.  Add one day so that a
+        // resubscribing meToken has time to resubscribe again if the target hub
+        // starts an update immediately after the meToken triggers the resubscribe
         require(
-            period >= s.meTokenWarmup + s.meTokenDuration,
+            period >= s.meTokenWarmup + s.meTokenDuration + 1 days,
             "warmup < meTokenWarmup + meTokenDuration"
         );
-        // Add one day to the warmup so that a resubscribing meToken has time to
-        // resubscribe again if the target hub starts an update immediately after
-        // the meToken triggers the resubscribe
-        s.hubWarmup = period + 1 days;
+        s.hubWarmup = period;
     }
 
     /// @inheritdoc IHubFacet

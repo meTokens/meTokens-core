@@ -21,6 +21,7 @@ import {
   UniswapSingleTransferMigration,
 } from "../../../artifacts/types";
 import { getQuote } from "../../utils/uniswap";
+
 const setup = async () => {
   describe("MeToken Resubscribe - new RefundRatio", () => {
     let meTokenRegistry: MeTokenRegistryFacet;
@@ -123,9 +124,6 @@ const setup = async () => {
         reserveWeight,
         encodedVaultArgs
       );
-      await hub.setHubWarmup(7 * 60 * 24 * 24); // 1 week
-      await meTokenRegistry.setMeTokenWarmup(2 * 60 * 24 * 24); // 2 days
-      await meTokenRegistry.setMeTokenDuration(4 * 60 * 24 * 24); // 4 days
 
       const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
         ["uint24"],
