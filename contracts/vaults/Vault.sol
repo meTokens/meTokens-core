@@ -18,6 +18,7 @@ contract Vault is IVault, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
     address public diamond;
+    address public feeRecipient;
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
 
@@ -29,6 +30,9 @@ contract Vault is IVault, Ownable, ReentrancyGuard {
     constructor(address _newOwner, address _diamond) {
         _transferOwnership(_newOwner);
         diamond = _diamond;
+        feeRecipient = _newOwner;
+
+        emit SetFeeRecipient(_newOwner);
     }
 
     /// @inheritdoc IVault
@@ -81,8 +85,16 @@ contract Vault is IVault, Ownable, ReentrancyGuard {
             require(amount <= accruedFees[asset], "amount > accrued fees");
         }
         accruedFees[asset] -= amount;
-        IERC20(asset).safeTransfer(owner(), amount);
-        emit Claim(owner(), asset, amount);
+        IERC20(asset).safeTransfer(feeRecipient, amount);
+        emit Claim(feeRecipient, asset, amount);
+    }
+
+    /// @inheritdoc IVault
+    function setFeeRecipient(address newRecipient) external onlyOwner {
+        require(newRecipient != address(0), "address(0)");
+        require(newRecipient != feeRecipient, "Same address");
+        feeRecipient = newRecipient;
+        emit SetFeeRecipient(newRecipient);
     }
 
     /// @inheritdoc IVault

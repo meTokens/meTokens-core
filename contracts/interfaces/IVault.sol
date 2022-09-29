@@ -34,6 +34,10 @@ interface IVault {
     /// @param amount      Amount of asset
     event Claim(address recipient, address asset, uint256 amount);
 
+    /// @notice Event of setting the address to receive claimed fees
+    /// @param newRecipient New address to receive the claim
+    event SetFeeRecipient(address newRecipient);
+
     /// @notice Claim the accrued fees of an asset
     /// @param asset   Address of asset
     /// @param max     True if claiming all accrued fees of the asset, else false
@@ -43,6 +47,10 @@ interface IVault {
         bool max,
         uint256 amount
     ) external;
+
+    /// @notice Set the address to receive claimed fees
+    /// @param newRecipient New address to receive the claim
+    function setFeeRecipient(address newRecipient) external;
 
     /// @notice Deposit an asset to the vault
     /// @param from            Address which is depositing the asset
