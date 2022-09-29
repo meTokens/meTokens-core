@@ -11,6 +11,7 @@ import {
 import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateCollateralReturned,
+  calculateTokenReturned,
   calculateTokenReturnedFromZero,
   deploy,
   fromETHNumber,
@@ -99,6 +100,7 @@ const setup = async () => {
     const hubId = 1; // DAI
     const hubId2 = 2; // WETH
     const hubId3 = 3; // USDT
+    const hubId4 = 4; // DAI
     const MAX_WEIGHT = 1000000;
     const PRECISION = BigNumber.from(10).pow(18);
     const reserveWeight = MAX_WEIGHT / 2;
@@ -156,6 +158,15 @@ const setup = async () => {
         refundRatio, //refund ratio
         baseY,
         reserveWeight,
+        encodedVaultArgs
+      );
+      await hub.register(
+        account0.address,
+        DAI,
+        singleAssetVault.address,
+        refundRatio,
+        baseY.div(2),
+        reserveWeight / 4,
         encodedVaultArgs
       );
 
@@ -1219,6 +1230,90 @@ const setup = async () => {
         expect(await meTokenRegistry.meTokenDuration()).to.be.equal(
           duration - 1
         );
+      });
+    });
+
+    describe("initResubscribe - during hub update", () => {
+      const targetReserveWeight = MAX_WEIGHT / 4;
+      let meTokenAddr: string;
+      let meToken: MeToken;
+
+      before(async () => {
+        const max = ethers.constants.MaxUint256;
+        await weth.connect(account3).approve(singleAssetVault.address, max);
+        await weth.connect(account3).approve(migration.address, max);
+        await weth
+          .connect(wethWhale)
+          .transfer(account3.address, ethers.utils.parseEther("300"));
+
+        // Acc3 creates their metoken
+        const name = "Carl3 meToken";
+        const symbol = "CARL3";
+        await meTokenRegistry
+          .connect(account3)
+          .subscribe(name, symbol, hubId2, tokenDeposited);
+        meTokenAddr = await meTokenRegistry.getOwnerMeToken(account3.address);
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+        // hub1 inits update
+        await hub.initUpdate(hubId4, 0, targetReserveWeight);
+      });
+
+      it("can resubscribe during hub warmup", async () => {
+        // fast-fwd to shortly before startTime - which is still during warmup
+        const { startTime } = await hub.getHubInfo(hubId4);
+        await mineBlock(startTime.toNumber() - 600);
+
+        // acc3 resubscribes to new hub
+        const fee = 3000;
+        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fee]
+        );
+        await meTokenRegistry
+          .connect(account3)
+          .initResubscribe(
+            meTokenAddr,
+            hubId3,
+            migration.address,
+            encodedMigrationArgs
+          );
+      });
+      it("during hub duration, weighted average is based on hub pre-update values", async () => {
+        // Fast-fwd to after startTime but still during resubscribe
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meTokenAddr);
+        await mineBlock(meTokenInfo.endTime.toNumber() - 600);
+        const hubInfo = await hub.getHubInfo(hubId4);
+        // should should be live
+        const block = await ethers.provider.getBlock("latest");
+        expect(block.timestamp).to.be.gt(hubInfo.startTime);
+
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const tokenDeposited = ethers.utils.parseEther("50");
+        const balancePooled = (
+          await meTokenRegistry.getMeTokenInfo(meToken.address)
+        ).balancePooled;
+        const targetTokenReturn = calculateTokenReturned(
+          toETHNumber(tokenDeposited),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(balancePooled),
+          reserveWeight / MAX_WEIGHT
+        );
+
+        const wethBalanceBefore = await weth.balanceOf(account3.address);
+        const meTokenBalanceBefore = await meToken.balanceOf(account3.address);
+        await foundry
+          .connect(account3)
+          .mint(meToken.address, tokenDeposited, account3.address);
+        const wethBalanceAfter = await weth.balanceOf(account3.address);
+        const meTokenBalanceAfter = await meToken.balanceOf(account3.address);
+
+        expect(toETHNumber(wethBalanceBefore.sub(wethBalanceAfter))).to.equal(
+          50
+        );
+        expect(
+          toETHNumber(meTokenBalanceAfter.sub(meTokenBalanceBefore))
+        ).to.be.approximately(targetTokenReturn, 1e-12);
       });
     });
   });
