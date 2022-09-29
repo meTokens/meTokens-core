@@ -57,7 +57,7 @@ library LibFoundry {
         address recipient
     ) internal returns (uint256) {
         require(assetsDeposited > 0, "assetsDeposited==0");
-        (address asset, address sender, uint256 meTokensMinted) = handleMint(
+        (address asset, address sender, uint256 meTokensMinted) = _handleMint(
             meToken,
             assetsDeposited
         );
@@ -75,7 +75,7 @@ library LibFoundry {
         return meTokensMinted;
     }
 
-    function handleMint(address meToken, uint256 assetsDeposited)
+    function _handleMint(address meToken, uint256 assetsDeposited)
         internal
         returns (
             address,
@@ -164,6 +164,91 @@ library LibFoundry {
         return amounts[0];
     }
 
+    function _handleMintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) private returns (address asset, uint256[2] memory amounts) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        amounts[1] =
+            assetsDeposited -
+            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
+
+        amounts[0] = calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
+
+        asset = _handlingChangesWithPermit(
+            amounts[1],
+            meToken,
+            meTokenInfo,
+            hubInfo,
+            assetsDeposited,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        return (asset, amounts);
+    }
+
+    function _handlingChangesWithPermit(
+        uint256 assetsDepositedAfterFees,
+        address meToken,
+        MeTokenInfo memory meTokenInfo,
+        HubInfo memory hubInfo,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) private returns (address asset) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        IVault vault = IVault(hubInfo.vault);
+        asset = hubInfo.asset;
+
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime &&
+            IMigration(meTokenInfo.migration).isStarted(meToken)
+        ) {
+            // Use meToken address to get the asset address from the migration vault
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
+        }
+        vault.handleDepositWithPermit(
+            LibMeta.msgSender(),
+            asset,
+            assetsDeposited,
+            (assetsDeposited * s.mintFee) / s.PRECISION,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
+
+        // Handling changes
+        if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+            }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
+        }
+    }
+
     // BURN FLOW CHART
     /****************************************************************************
     //                                                                         //
@@ -178,7 +263,7 @@ library LibFoundry {
     //                                           /               \             //
     //                                  TIME-WEIGHTED             \            //
     //                                     AVERAGE                 \           //
-    //                                        |                     |          //
+    //                                        |                     \          //
     //                              WEIGHTED BURN RETURN       BURN RETURN     //
     //                                     /     \               /    \        //
     // is msg.sender the -{              (N)     (Y)           (Y)    (N)      //
@@ -188,8 +273,7 @@ library LibFoundry {
     //                            REFUND RATIO        RETURNED        RATIO    //
     //                                  |                |              |      //
     //                              .mul(wRR)        .add(BLR)      .mul(RR)   //
-    //                                   \|/       //
-    //                                                   |                     //
+    //                                  \                |             /       //
     //                                     ACTUAL (WEIGHTED) BURN RETURN       //
     //                                                   |                     //
     //                                               .sub(fees)                //
@@ -415,91 +499,6 @@ library LibFoundry {
                         s.MAX_REFUND_RATIO;
                 }
             }
-        }
-    }
-
-    function _handleMintWithPermit(
-        address meToken,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    ) private returns (address asset, uint256[2] memory amounts) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
-        amounts[1] =
-            assetsDeposited -
-            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
-
-        amounts[0] = calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
-
-        asset = _handlingChangesWithPermit(
-            amounts[1],
-            meToken,
-            meTokenInfo,
-            hubInfo,
-            assetsDeposited,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        return (asset, amounts);
-    }
-
-    function _handlingChangesWithPermit(
-        uint256 assetsDepositedAfterFees,
-        address meToken,
-        MeTokenInfo memory meTokenInfo,
-        HubInfo memory hubInfo,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    ) private returns (address asset) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        IVault vault = IVault(hubInfo.vault);
-        asset = hubInfo.asset;
-
-        if (
-            meTokenInfo.migration != address(0) &&
-            block.timestamp > meTokenInfo.startTime &&
-            IMigration(meTokenInfo.migration).isStarted(meToken)
-        ) {
-            // Use meToken address to get the asset address from the migration vault
-            vault = IVault(meTokenInfo.migration);
-            asset = s.hubs[meTokenInfo.targetHubId].asset;
-        }
-        vault.handleDepositWithPermit(
-            LibMeta.msgSender(),
-            asset,
-            assetsDeposited,
-            (assetsDeposited * s.mintFee) / s.PRECISION,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
-
-        // Handling changes
-        if (meTokenInfo.targetHubId != 0) {
-            if (block.timestamp > meTokenInfo.endTime) {
-                hubInfo = s.hubs[meTokenInfo.targetHubId];
-                meTokenInfo = LibMeToken.finishResubscribe(meToken);
-            } else if (block.timestamp > meTokenInfo.startTime) {
-                // Handle migration actions if needed
-                IMigration(meTokenInfo.migration).poke(meToken);
-            }
-        }
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
         }
     }
 
