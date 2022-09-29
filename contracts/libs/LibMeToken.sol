@@ -11,7 +11,6 @@ struct MeTokenInfo {
     uint256 balanceLocked;
     uint256 startTime;
     uint256 endTime;
-    uint256 endCooldown;
     uint256 targetHubId;
     address migration;
 }
@@ -73,7 +72,6 @@ library LibMeToken {
             block.timestamp > meTokenInfo.endTime,
             "block.timestamp < endTime"
         );
-        // Update balancePooled / balanceLocked
 
         IMigration(meTokenInfo.migration).finishMigration(meToken);
 
@@ -100,7 +98,6 @@ library LibMeToken {
         meToken.balanceLocked = s.meTokens[token].balanceLocked;
         meToken.startTime = s.meTokens[token].startTime;
         meToken.endTime = s.meTokens[token].endTime;
-        meToken.endCooldown = s.meTokens[token].endCooldown;
         meToken.targetHubId = s.meTokens[token].targetHubId;
         meToken.migration = s.meTokens[token].migration;
     }
@@ -113,10 +110,5 @@ library LibMeToken {
     function duration() internal view returns (uint256) {
         AppStorage storage s = LibAppStorage.diamondStorage();
         return s.meTokenDuration;
-    }
-
-    function cooldown() internal view returns (uint256) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        return s.meTokenCooldown;
     }
 }

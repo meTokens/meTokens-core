@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import {IDiamondCutFacet} from "./interfaces/IDiamondCutFacet.sol";
 import {IDiamondLoupeFacet} from "./interfaces/IDiamondLoupeFacet.sol";
 import {IMigrationRegistry} from "./interfaces/IMigrationRegistry.sol";
 import {IVaultRegistry} from "./interfaces/IVaultRegistry.sol";
@@ -13,7 +13,7 @@ import {LibCurve} from "./libs/LibCurve.sol";
 import {ABDKMathQuad} from "./utils/ABDKMathQuad.sol";
 
 /// @title Diamond Init
-/// @author Carter Carlson (@cartercarlson), @zgorizzo69
+/// @author Carter Carlson (@cartercarlson), @zgorizzo69, @mudgen
 /// @notice Contract to initialize state variables, similar to OZ's initialize()
 contract DiamondInit {
     using ABDKMathQuad for uint256;
@@ -52,10 +52,16 @@ contract DiamondInit {
         s.NOT_ENTERED = 1;
         s.ENTERED = 2;
 
+        s.hubWarmup = 7 days;
+        s.hubDuration = 1 days;
+        s.hubCooldown = 1 days;
+        s.meTokenWarmup = 1 days;
+        s.meTokenDuration = 1 days;
+
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
         // Adding erc165 data
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
+        ds.supportedInterfaces[type(IDiamondCutFacet).interfaceId] = true;
         ds.supportedInterfaces[type(IDiamondLoupeFacet).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
 

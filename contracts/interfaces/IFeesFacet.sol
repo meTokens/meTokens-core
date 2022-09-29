@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-/// @title MeTokens fee interface
+/// @title meTokens Protocol Fees Facet interface
 /// @author Carter Carlson (@cartercarlson)
 interface IFeesFacet {
     /// @notice Event of setting the Mint fee for meTokens protocol
@@ -17,14 +17,17 @@ interface IFeesFacet {
     event SetBurnOwnerFee(uint256 rate);
 
     /// @notice Set Mint fee for meTokens protocol
+    /// @dev Only callable by FeesController
     /// @param rate New fee rate
     function setMintFee(uint256 rate) external;
 
     /// @notice Set BurnBuyer fee for meTokens protocol
+    /// @dev Only callable by FeesController
     /// @param rate New fee rate
     function setBurnBuyerFee(uint256 rate) external;
 
     /// @notice Set BurnOwner fee for meTokens protocol
+    /// @dev Only callable by FeesController
     /// @param rate New fee rate
     function setBurnOwnerFee(uint256 rate) external;
 

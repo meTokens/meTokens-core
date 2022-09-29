@@ -24,6 +24,7 @@ library LibHub {
     function finishUpdate(uint256 id) internal {
         HubInfo storage hubInfo = LibAppStorage.diamondStorage().hubs[id];
 
+        require(hubInfo.updating, "Not updating");
         require(block.timestamp > hubInfo.endTime, "Still updating");
 
         if (hubInfo.targetRefundRatio != 0) {

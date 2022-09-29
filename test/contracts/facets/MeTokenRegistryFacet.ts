@@ -11,6 +11,7 @@ import {
 import { hubSetup } from "../../utils/hubSetup";
 import {
   calculateCollateralReturned,
+  calculateTokenReturned,
   calculateTokenReturnedFromZero,
   deploy,
   fromETHNumber,
@@ -99,14 +100,14 @@ const setup = async () => {
     const hubId = 1; // DAI
     const hubId2 = 2; // WETH
     const hubId3 = 3; // USDT
+    const hubId4 = 4; // DAI
     const MAX_WEIGHT = 1000000;
     const PRECISION = BigNumber.from(10).pow(18);
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
+    const hubWarmup = 7 * 24 * 60 * 60; // 1 week
+    const warmup = 2 * 24 * 60 * 60; // 2 days
+    const duration = 4 * 24 * 60 * 60; // 4 days
     const fees = 3000;
     const tokenDepositedInETH = 100;
     const tokenDeposited = ethers.utils.parseEther(
@@ -159,10 +160,15 @@ const setup = async () => {
         reserveWeight,
         encodedVaultArgs
       );
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup - 1);
-      await meTokenRegistry.setMeTokenCooldown(coolDown + 1);
-      await meTokenRegistry.setMeTokenDuration(duration - 1);
+      await hub.register(
+        account0.address,
+        DAI,
+        singleAssetVault.address,
+        refundRatio,
+        baseY.div(2),
+        reserveWeight / 4,
+        encodedVaultArgs
+      );
 
       // Deploy uniswap migration and approve it to the registry
       migration = await deploy<UniswapSingleTransferMigration>(
@@ -247,7 +253,6 @@ const setup = async () => {
         expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
         expect(meTokenRegistryDetails.startTime).to.equal(0);
         expect(meTokenRegistryDetails.endTime).to.equal(0);
-        expect(meTokenRegistryDetails.endCooldown).to.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.equal(0);
         expect(meTokenRegistryDetails.migration).to.equal(
           ethers.constants.AddressZero
@@ -326,7 +331,6 @@ const setup = async () => {
         expect(meTokenRegistryDetails.balanceLocked).to.equal(0);
         expect(meTokenRegistryDetails.startTime).to.equal(0);
         expect(meTokenRegistryDetails.endTime).to.equal(0);
-        expect(meTokenRegistryDetails.endCooldown).to.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.equal(0);
         expect(meTokenRegistryDetails.migration).to.equal(
           ethers.constants.AddressZero
@@ -369,9 +373,16 @@ const setup = async () => {
         const tx = meTokenRegistry.setMeTokenWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("same warmup");
       });
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenWarmup(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(30 * 24 * 60 * 60);
+      });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setMeTokenWarmup(hubWarmup);
-        await expect(tx).to.be.revertedWith("too long");
+        await expect(tx).to.be.revertedWith("> hubWarmup");
       });
       it("should be able to setMeTokenWarmup", async () => {
         tx = await meTokenRegistry.setMeTokenWarmup(warmup);
@@ -394,31 +405,12 @@ const setup = async () => {
       });
       it("should revert when warmup + duration > hub's warmup", async () => {
         const tx = meTokenRegistry.setMeTokenDuration(hubWarmup);
-        await expect(tx).to.be.revertedWith("too long");
+        await expect(tx).to.be.revertedWith("> hubWarmup");
       });
       it("should be able to setMeTokenDuration", async () => {
         tx = await meTokenRegistry.setMeTokenDuration(duration);
         await tx.wait();
         expect(await meTokenRegistry.meTokenDuration()).to.be.equal(duration);
-      });
-    });
-
-    describe("setMeTokenCooldown()", () => {
-      it("should revert to setMeTokenCooldown if not owner", async () => {
-        const tx = meTokenRegistry
-          .connect(account1)
-          .setMeTokenCooldown(coolDown);
-        await expect(tx).to.be.revertedWith("!durationsController");
-      });
-      it("should revert to setMeTokenCooldown if same as before", async () => {
-        const oldWarmup = await meTokenRegistry.meTokenCooldown();
-        const tx = meTokenRegistry.setMeTokenCooldown(oldWarmup);
-        await expect(tx).to.be.revertedWith("same cooldown");
-      });
-      it("should be able to setMeTokenCooldown", async () => {
-        tx = await meTokenRegistry.setMeTokenCooldown(coolDown);
-        await tx.wait();
-        expect(await meTokenRegistry.meTokenCooldown()).to.be.equal(coolDown);
       });
     });
 
@@ -470,8 +462,11 @@ const setup = async () => {
         );
         await expect(tx).to.be.revertedWith("targetHub inactive");
       });
-      it("Fails if current hub currently updating", async () => {
-        await hub.initUpdate(hubId, refundRatio / 2, 0);
+      it("Fails if current hub update has passed the hub warmup", async () => {
+        await hub.initUpdate(hubId, refundRatio / 4, 0);
+
+        const { startTime, endTime } = await hub.getHubInfo(hubId);
+        await mineBlock(startTime.toNumber() + 1);
 
         const tx = meTokenRegistry.initResubscribe(
           meTokenAddr0,
@@ -479,8 +474,10 @@ const setup = async () => {
           ethers.constants.AddressZero,
           "0x"
         );
+
         await expect(tx).to.be.revertedWith("hub updating");
-        await hub.cancelUpdate(hubId);
+        await mineBlock(endTime.toNumber() + 1);
+        await hub.finishUpdate(hubId);
       });
       it("Fails if target hub currently updating", async () => {
         await hub.initUpdate(hubId2, refundRatio / 2, 0);
@@ -560,8 +557,6 @@ const setup = async () => {
         const block = await ethers.provider.getBlock(receipt.blockNumber);
         const expectedStartTime = block.timestamp + warmup;
         const expectedEndTime = block.timestamp + warmup + duration;
-        const expectedEndCooldownTime =
-          block.timestamp + warmup + duration + coolDown;
 
         const meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meTokenAddr0
@@ -569,9 +564,6 @@ const setup = async () => {
 
         expect(meTokenRegistryDetails.startTime).to.equal(expectedStartTime);
         expect(meTokenRegistryDetails.endTime).to.equal(expectedEndTime);
-        expect(meTokenRegistryDetails.endCooldown).to.equal(
-          expectedEndCooldownTime
-        );
         expect(meTokenRegistryDetails.targetHubId).to.equal(targetHubId);
         expect(meTokenRegistryDetails.migration).to.equal(migration.address);
       });
@@ -585,14 +577,15 @@ const setup = async () => {
             encodedMigrationArgs
           );
       });
-      it("Fail if already resubscribing before endCoolDown", async () => {
-        const tx = meTokenRegistry.initResubscribe(
-          meToken,
-          targetHubId,
-          migration.address,
-          encodedMigrationArgs
-        );
-        await expect(tx).to.be.revertedWith("Cooldown not complete");
+      it("Fails when attempting to resubscribe again", async () => {
+        await expect(
+          meTokenRegistry.initResubscribe(
+            meToken,
+            targetHubId,
+            migration.address,
+            encodedMigrationArgs
+          )
+        ).to.be.revertedWith("meToken still resubscribing");
       });
     });
 
@@ -621,7 +614,6 @@ const setup = async () => {
         );
         expect(meTokenRegistryDetails.startTime).to.be.equal(0);
         expect(meTokenRegistryDetails.endTime).to.be.equal(0);
-        expect(meTokenRegistryDetails.endCooldown).to.be.equal(0);
         expect(meTokenRegistryDetails.targetHubId).to.be.equal(0);
         expect(meTokenRegistryDetails.migration).to.be.equal(
           ethers.constants.AddressZero
@@ -655,11 +647,11 @@ const setup = async () => {
         await tx.wait();
       });
       it("should revert if migration started (usts.started = true)", async () => {
-        // forward time to endCoolDown
+        // forward time to after duration
         await mineBlock(
           (
             await meTokenRegistry.getMeTokenInfo(meTokenAddr0)
-          ).endCooldown.toNumber() + 2
+          ).endTime.toNumber() + 2
         );
         block = await ethers.provider.getBlock("latest");
 
@@ -763,7 +755,6 @@ const setup = async () => {
     });
 
     describe("updateBalances()", () => {
-      let expectedEndCooldownTime: number;
       before(async () => {
         encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
           ["uint24"],
@@ -780,13 +771,11 @@ const setup = async () => {
           );
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
-        expectedEndCooldownTime =
-          block.timestamp + warmup + duration + coolDown;
       });
 
       it("revert when sender is not migration", async () => {
         await expect(
-          meTokenRegistry.updateBalances(meTokenAddr0, 5)
+          meTokenRegistry.updateBalances(meTokenAddr1, 5)
         ).to.be.revertedWith("!migration");
       });
 
@@ -850,7 +839,6 @@ const setup = async () => {
         expect(meTokenInfo.balanceLocked).to.equal(calculatedNewBalanceLocked);
         expect(meTokenInfo.startTime).to.equal(0);
         expect(meTokenInfo.endTime).to.equal(0);
-        expect(meTokenInfo.endCooldown).to.equal(expectedEndCooldownTime);
         expect(meTokenInfo.targetHubId).to.equal(0);
         expect(meTokenInfo.migration).to.equal(ethers.constants.AddressZero);
       });
@@ -1174,6 +1162,158 @@ const setup = async () => {
             meTokenInfo.balanceLocked.sub(newMeTokenInfo.balanceLocked)
           )
         ).to.be.approximately(lockedAmount, 1e-13);
+      });
+    });
+
+    describe("setMeTokenWarmup()", () => {
+      it("should revert if not durationsController", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenWarmup(warmup - 1);
+        await expect(tx).to.be.revertedWith("!durationsController");
+      });
+      it("should revert if same as before", async () => {
+        const oldWarmup = await meTokenRegistry.meTokenWarmup();
+        const tx = meTokenRegistry.setMeTokenWarmup(oldWarmup);
+        await expect(tx).to.be.revertedWith("same warmup");
+      });
+      it("should revert if less than 1 day buffer to hub warmup", async () => {
+        // 6 days 1 second
+        const tx = meTokenRegistry.setMeTokenWarmup(6 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("> hubWarmup");
+      });
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenWarmup(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        // 30 days 1 second
+        const tx = meTokenRegistry.setMeTokenWarmup(30 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("too long");
+      });
+      it("should be able to call setMeTokenWarmup", async () => {
+        const tx = await meTokenRegistry.setMeTokenWarmup(warmup - 1);
+        await tx.wait();
+        expect(await meTokenRegistry.meTokenWarmup()).to.be.equal(warmup - 1);
+      });
+    });
+
+    describe("setMeTokenDuration()", () => {
+      it("should revert if not durationsController", async () => {
+        const tx = meTokenRegistry
+          .connect(account1)
+          .setMeTokenDuration(duration);
+        await expect(tx).to.be.revertedWith("!durationsController");
+      });
+      it("should revert if same as before", async () => {
+        const oldDuration = await meTokenRegistry.meTokenDuration();
+        const tx = meTokenRegistry.setMeTokenDuration(oldDuration);
+        await expect(tx).to.be.revertedWith("same duration");
+      });
+
+      it("should revert if too short", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = meTokenRegistry.setMeTokenDuration(30 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("too long");
+      });
+      it("should revert if less than 1 day buffer to hub warmup", async () => {
+        // 6 days 1 second
+        const tx = meTokenRegistry.setMeTokenDuration(6 * 24 * 60 * 60 + 1);
+        await expect(tx).to.be.revertedWith("> hubWarmup");
+      });
+      it("should be able to call setMeTokenDuration", async () => {
+        const tx = await meTokenRegistry.setMeTokenDuration(duration - 1);
+        await tx.wait();
+        expect(await meTokenRegistry.meTokenDuration()).to.be.equal(
+          duration - 1
+        );
+      });
+    });
+
+    describe("initResubscribe - during hub update", () => {
+      const targetReserveWeight = MAX_WEIGHT / 4;
+      let meTokenAddr: string;
+      let meToken: MeToken;
+
+      before(async () => {
+        const max = ethers.constants.MaxUint256;
+        await weth.connect(account3).approve(singleAssetVault.address, max);
+        await weth.connect(account3).approve(migration.address, max);
+        await weth
+          .connect(wethWhale)
+          .transfer(account3.address, ethers.utils.parseEther("300"));
+
+        // Acc3 creates their metoken
+        const name = "Carl3 meToken";
+        const symbol = "CARL3";
+        await meTokenRegistry
+          .connect(account3)
+          .subscribe(name, symbol, hubId2, tokenDeposited);
+        meTokenAddr = await meTokenRegistry.getOwnerMeToken(account3.address);
+        meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+
+        // hub1 inits update
+        await hub.initUpdate(hubId4, 0, targetReserveWeight);
+      });
+
+      it("can resubscribe during hub warmup", async () => {
+        // fast-fwd to shortly before startTime - which is still during warmup
+        const { startTime } = await hub.getHubInfo(hubId4);
+        await mineBlock(startTime.toNumber() - 600);
+
+        // acc3 resubscribes to new hub
+        const fee = 3000;
+        const encodedMigrationArgs = ethers.utils.defaultAbiCoder.encode(
+          ["uint24"],
+          [fee]
+        );
+        await meTokenRegistry
+          .connect(account3)
+          .initResubscribe(
+            meTokenAddr,
+            hubId3,
+            migration.address,
+            encodedMigrationArgs
+          );
+      });
+      it("during hub duration, weighted average is based on hub pre-update values", async () => {
+        // Fast-fwd to after startTime but still during resubscribe
+        const meTokenInfo = await meTokenRegistry.getMeTokenInfo(meTokenAddr);
+        await mineBlock(meTokenInfo.endTime.toNumber() - 600);
+        const hubInfo = await hub.getHubInfo(hubId4);
+        // should should be live
+        const block = await ethers.provider.getBlock("latest");
+        expect(block.timestamp).to.be.gt(hubInfo.startTime);
+
+        const meTokenTotalSupply = await meToken.totalSupply();
+        const tokenDeposited = ethers.utils.parseEther("50");
+        const balancePooled = (
+          await meTokenRegistry.getMeTokenInfo(meToken.address)
+        ).balancePooled;
+        const targetTokenReturn = calculateTokenReturned(
+          toETHNumber(tokenDeposited),
+          toETHNumber(meTokenTotalSupply),
+          toETHNumber(balancePooled),
+          reserveWeight / MAX_WEIGHT
+        );
+
+        const wethBalanceBefore = await weth.balanceOf(account3.address);
+        const meTokenBalanceBefore = await meToken.balanceOf(account3.address);
+        await foundry
+          .connect(account3)
+          .mint(meToken.address, tokenDeposited, account3.address);
+        const wethBalanceAfter = await weth.balanceOf(account3.address);
+        const meTokenBalanceAfter = await meToken.balanceOf(account3.address);
+
+        expect(toETHNumber(wethBalanceBefore.sub(wethBalanceAfter))).to.equal(
+          50
+        );
+        expect(
+          toETHNumber(meTokenBalanceAfter.sub(meTokenBalanceBefore))
+        ).to.be.approximately(targetTokenReturn, 1e-12);
       });
     });
   });

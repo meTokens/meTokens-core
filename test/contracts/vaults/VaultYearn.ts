@@ -121,7 +121,7 @@ describe("Vault with Yearn Token", () => {
   });
   it("metoken issuer should benefits from price per share increase", async () => {
     expect(await vault.PRECISION()).to.be.equal(precision);
-    expect(await vault.dao()).to.be.equal(dao.address);
+    expect(await vault.owner()).to.be.equal(dao.address);
     expect(await vault.diamond()).to.be.equal(diamond.address);
     expect(await vault.accruedFees(YDAI)).to.be.equal(0);
   });
@@ -255,7 +255,7 @@ describe("Vault with Yearn Token", () => {
     it("Reverts when not called by owner", async () => {
       await expect(
         vault.connect(account1).claim(YDAI, true, 0)
-      ).to.be.revertedWith("!DAO");
+      ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
     it("should revert when amount is 0", async () => {

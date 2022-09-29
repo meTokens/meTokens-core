@@ -92,8 +92,9 @@ const setup = async () => {
     describe("Check initial state", () => {
       it("check initial state", async () => {
         expect(await vault.PRECISION()).to.be.equal(precision);
-        expect(await vault.dao()).to.be.equal(dao.address);
+        expect(await vault.owner()).to.be.equal(dao.address);
         expect(await vault.diamond()).to.be.equal(diamond.address);
+        expect(await vault.feeRecipient()).to.be.equal(dao.address);
         expect(await vault.accruedFees(DAI)).to.be.equal(0);
       });
     });
@@ -198,10 +199,10 @@ const setup = async () => {
         const tx = await vault.claim(DAI, true, 0);
         await tx.wait();
       });
-      it("Reverts when not called by owner", async () => {
+      it("should revert when not called by owner", async () => {
         await expect(
           vault.connect(account1).claim(DAI, true, 0)
-        ).to.be.revertedWith("!DAO");
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
 
       it("should revert when amount is 0", async () => {
@@ -254,6 +255,32 @@ const setup = async () => {
         expect(daoBalanceAfter.sub(daoBalanceBefore)).to.be.equal(
           amountToClaim
         );
+      });
+    });
+
+    describe("setFeeRecipient()", () => {
+      it("should revert when not called by owner", async () => {
+        await expect(
+          vault.connect(account1).setFeeRecipient(account1.address)
+        ).to.be.revertedWith("Ownable: caller is not the owner");
+      });
+      it("should revert if set to address(0)", async () => {
+        await expect(
+          vault.setFeeRecipient(ethers.constants.AddressZero)
+        ).to.be.revertedWith("address(0)");
+      });
+      it("should revert if set to the same address as before", async () => {
+        await expect(vault.setFeeRecipient(dao.address)).to.be.revertedWith(
+          "Same address"
+        );
+      });
+      it("should succeed in changing fee recipient", async () => {
+        const tx = await vault.setFeeRecipient(account1.address);
+        await tx.wait();
+        await expect(tx)
+          .to.emit(vault, "SetFeeRecipient")
+          .withArgs(account1.address);
+        expect(await vault.feeRecipient()).to.be.equal(account1.address);
       });
     });
 

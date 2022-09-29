@@ -6,17 +6,12 @@ pragma solidity 0.8.9;
 * EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
 /******************************************************************************/
 
-import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
+import {IDiamondCutFacet} from "../interfaces/IDiamondCutFacet.sol";
 import {LibDiamond} from "../libs/LibDiamond.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
-contract DiamondCutFacet is IDiamondCut, Modifiers {
-    /// @notice Add/replace/remove any number of functions and optionally execute
-    ///         a function with delegatecall
-    /// @param cut Contains the facet addresses and function selectors
-    /// @param init The address of the contract or facet to execute calldata
-    /// @param data A function call, including function selector and arguments
-    ///                  calldata is executed with delegatecall on init
+contract DiamondCutFacet is IDiamondCutFacet, Modifiers {
+    /// @inheritdoc IDiamondCutFacet
     function diamondCut(
         FacetCut[] calldata cut,
         address init,

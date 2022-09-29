@@ -28,9 +28,8 @@ import {
 import { getQuote } from "../../utils/uniswap";
 
 // Differences:
-// 1. Curve details: baseY, reserveWeight - encodedStepwiseDetails
-// 2. Curves: bancorCurve - stepwiseCurve
-// 3. Refund ratio: initialRefundRatio - targetRefundRatio
+// 1. Curve details: baseY => targetBaseY, reserveWeight => targetReserveWeight
+// 3. Refund ratio: initialRefundRatio => targetRefundRatio
 
 const setup = async () => {
   describe("MeToken Resubscribe - multiple differences", () => {
@@ -51,16 +50,12 @@ const setup = async () => {
     let UNIV3Factory: string;
     const hubId1 = 1;
     const hubId2 = 2;
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
     const MAX_WEIGHT = 1000000;
     const PRECISION = BigNumber.from(10).pow(18);
     const baseY = PRECISION.div(1000);
     const reserveWeight = MAX_WEIGHT / 10;
-    const newBaseY = PRECISION.div(10000);
-    const newReserveWeight = MAX_WEIGHT / 8;
+    const targetBaseY = PRECISION.div(10000);
+    const targetReserveWeight = MAX_WEIGHT / 8;
     const initialRefundRatio = ethers.utils.parseUnits("5000", 0); // 0.005%
     const targetRefundRatio = ethers.utils.parseUnits("500000", 0); // 50%
     const fee = 3000;
@@ -115,16 +110,11 @@ const setup = async () => {
         WETH,
         singleAssetVault.address,
         targetRefundRatio,
-        newBaseY,
-        newReserveWeight,
+        targetBaseY,
+        targetReserveWeight,
         encodedVaultArgs
       );
 
-      // set update/resubscribe times
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup);
-      await meTokenRegistry.setMeTokenDuration(duration);
-      await meTokenRegistry.setMeTokenCooldown(coolDown);
       await fees.setBurnOwnerFee(burnOwnerFee);
       await fees.setBurnBuyerFee(burnBuyerFee);
 
@@ -351,8 +341,8 @@ const setup = async () => {
         );
         const calculatedTargetReturn = calculateTokenReturnedFromZero(
           tokenDepositedInETH,
-          toETHNumber(newBaseY),
-          newReserveWeight / MAX_WEIGHT
+          toETHNumber(targetBaseY),
+          targetReserveWeight / MAX_WEIGHT
         );
 
         const calcWAvgRe = weightedAverageSimulation(
@@ -422,7 +412,7 @@ const setup = async () => {
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenInfo.balancePooled),
-          newReserveWeight / MAX_WEIGHT
+          targetReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -502,7 +492,7 @@ const setup = async () => {
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenInfo.balancePooled),
-          newReserveWeight / MAX_WEIGHT
+          targetReserveWeight / MAX_WEIGHT
         );
 
         const calcWAvgRes = weightedAverageSimulation(
@@ -548,7 +538,7 @@ const setup = async () => {
       });
     });
 
-    describe("Cooldown", () => {
+    describe("After Duration", () => {
       before(async () => {
         // IncreaseBlockTime > endTime
         const meTokenInfo = await meTokenRegistry.getMeTokenInfo(
@@ -570,8 +560,8 @@ const setup = async () => {
         );
         const calculatedTargetReturn = calculateTokenReturnedFromZero(
           tokenDepositedInETH,
-          toETHNumber(newBaseY),
-          newReserveWeight / MAX_WEIGHT
+          toETHNumber(targetBaseY),
+          targetReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -608,7 +598,7 @@ const setup = async () => {
           toETHNumber(buyerMeToken),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenInfo.balancePooled),
-          newReserveWeight / MAX_WEIGHT
+          targetReserveWeight / MAX_WEIGHT
         );
 
         await foundry
@@ -660,7 +650,7 @@ const setup = async () => {
           toETHNumber(ownerMeToken),
           toETHNumber(meTokenTotalSupply),
           toETHNumber(meTokenInfo.balancePooled),
-          newReserveWeight / MAX_WEIGHT
+          targetReserveWeight / MAX_WEIGHT
         );
 
         await foundry

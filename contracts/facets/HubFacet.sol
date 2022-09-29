@@ -12,7 +12,7 @@ import {Modifiers} from "../libs/LibAppStorage.sol";
 
 /// @title meTokens Hub Facet
 /// @author @cartercarlson, @zgorizzo69, @parv3213
-/// @notice This contract manages all hub configurations for meTokens protocol
+/// @notice This contract manages all hub configurations for meTokens Protocol
 contract HubFacet is IHubFacet, Modifiers {
     /// @inheritdoc IHubFacet
     function register(
@@ -163,39 +163,69 @@ contract HubFacet is IHubFacet, Modifiers {
     }
 
     /// @inheritdoc IHubFacet
-    function setHubWarmup(uint256 warmup)
+    function setHubWarmup(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(warmup != s.hubWarmup, "same warmup");
+        require(period != s.hubWarmup, "same warmup");
+        require(period <= 60 days, "too long");
+        require(period >= 3 days, "too short");
         // NOTE: this check is done to ensure a meToken is not still resubscribing
-        //  when the hub it points to has its' update live
+        //  when the hub it points to has its' update live.  Add one day so that a
+        // resubscribing meToken has time to resubscribe again if the target hub
+        // starts an update immediately after the meToken triggers the resubscribe
         require(
-            warmup >= s.meTokenWarmup + s.meTokenDuration,
+            period >= s.meTokenWarmup + s.meTokenDuration + 1 days,
             "warmup < meTokenWarmup + meTokenDuration"
         );
-        s.hubWarmup = warmup;
+        s.hubWarmup = period;
     }
 
     /// @inheritdoc IHubFacet
-    function setHubDuration(uint256 duration)
+    function setHubDuration(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(duration != s.hubDuration, "same duration");
-        s.hubDuration = duration;
+        require(period != s.hubDuration, "same duration");
+        require(period <= 30 days, "too long");
+        require(period >= 1 days, "too short");
+        s.hubDuration = period;
     }
 
     /// @inheritdoc IHubFacet
-    function setHubCooldown(uint256 cooldown)
+    function setHubCooldown(uint256 period)
         external
         override
         onlyDurationsController
     {
-        require(cooldown != s.hubCooldown, "same cooldown");
-        s.hubCooldown = cooldown;
+        require(period != s.hubCooldown, "same cooldown");
+        require(period <= 365 days, "too long");
+        s.hubCooldown = period;
+    }
+
+    /// @inheritdoc IHubFacet
+    function getBasicHubInfo(uint256 id)
+        external
+        view
+        override
+        returns (
+            uint256 refundRatio,
+            address owner,
+            address vault,
+            address asset,
+            bool updating,
+            bool active
+        )
+    {
+        HubInfo storage hubInfo = s.hubs[id];
+        refundRatio = hubInfo.refundRatio;
+        owner = hubInfo.owner;
+        vault = hubInfo.vault;
+        asset = hubInfo.asset;
+        updating = hubInfo.updating;
+        active = hubInfo.active;
     }
 
     /// @inheritdoc IHubFacet

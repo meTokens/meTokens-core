@@ -53,9 +53,8 @@ const resubscribe = async (
     );
 
   await mineBlock(
-    (
-      await meTokenRegistry.getMeTokenInfo(meToken.address)
-    ).endCooldown.toNumber() + 1
+    (await meTokenRegistry.getMeTokenInfo(meToken.address)).endTime.toNumber() +
+      1
   );
   const block = await ethers.provider.getBlock("latest");
   expect(
@@ -124,10 +123,6 @@ const setup = async () => {
     const reserveWeight = MAX_WEIGHT / 2;
     const PRECISION = BigNumber.from(10).pow(6);
     const baseY = PRECISION.div(1000);
-    const hubWarmup = 7 * 60 * 24 * 24; // 1 week
-    const warmup = 2 * 60 * 24 * 24; // 2 days
-    const duration = 4 * 60 * 24 * 24; // 4 days
-    const coolDown = 5 * 60 * 24 * 24; // 5 days
 
     let encodedMigrationArgs: string;
     let badEncodedMigrationArgs: string;
@@ -286,11 +281,6 @@ const setup = async () => {
         account1.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-
-      await hub.setHubWarmup(hubWarmup);
-      await meTokenRegistry.setMeTokenWarmup(warmup);
-      await meTokenRegistry.setMeTokenCooldown(coolDown);
-      await meTokenRegistry.setMeTokenDuration(duration);
     });
 
     describe("isValid()", () => {
@@ -490,9 +480,6 @@ const setup = async () => {
         let meTokenRegistryDetails = await meTokenRegistry.getMeTokenInfo(
           meToken.address
         );
-        await mineBlock(meTokenRegistryDetails.endCooldown.toNumber() + 2);
-        block = await ethers.provider.getBlock("latest");
-        expect(meTokenRegistryDetails.endCooldown).to.be.lt(block.timestamp);
 
         await migrationRegistry.approve(
           wethVault.address,
@@ -909,7 +896,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
           // Burn all collateral
           await foundry.burn(
@@ -1012,7 +999,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
 
           // Burn all collateral
@@ -1112,7 +1099,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
 
           // Burn all collateral
@@ -1223,7 +1210,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
 
           // Burn all collateral
@@ -1323,7 +1310,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
 
           // Burn all collateral
@@ -1423,7 +1410,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
 
           // Burn all collateral
@@ -1523,7 +1510,7 @@ const setup = async () => {
           await mineBlock(
             (
               await meTokenRegistry.getMeTokenInfo(meToken.address)
-            ).endCooldown.toNumber() + 1
+            ).endTime.toNumber() + 1
           );
           // Burn all collateral
           await foundry.burn(

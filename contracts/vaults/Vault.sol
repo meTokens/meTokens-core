@@ -5,6 +5,7 @@ import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/draft
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
@@ -13,11 +14,11 @@ import {IVault} from "../interfaces/IVault.sol";
 /// @title MeTokens Basic Vault
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
-contract Vault is IVault, ReentrancyGuard {
+contract Vault is IVault, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     uint256 public constant PRECISION = 10**18;
-    address public dao;
     address public diamond;
+    address public feeRecipient;
     /// @dev key: addr of asset, value: cumulative fees paid in the asset
     mapping(address => uint256) public accruedFees;
 
@@ -26,9 +27,12 @@ contract Vault is IVault, ReentrancyGuard {
         _;
     }
 
-    constructor(address _dao, address _diamond) {
-        dao = _dao;
+    constructor(address _newOwner, address _diamond) {
+        _transferOwnership(_newOwner);
         diamond = _diamond;
+        feeRecipient = _newOwner;
+
+        emit SetFeeRecipient(_newOwner);
     }
 
     /// @inheritdoc IVault
@@ -73,8 +77,7 @@ contract Vault is IVault, ReentrancyGuard {
         address asset,
         bool max,
         uint256 amount
-    ) external virtual override nonReentrant {
-        require(msg.sender == dao, "!DAO");
+    ) external virtual override nonReentrant onlyOwner {
         if (max) {
             amount = accruedFees[asset];
         } else {
@@ -82,8 +85,16 @@ contract Vault is IVault, ReentrancyGuard {
             require(amount <= accruedFees[asset], "amount > accrued fees");
         }
         accruedFees[asset] -= amount;
-        IERC20(asset).safeTransfer(dao, amount);
-        emit Claim(dao, asset, amount);
+        IERC20(asset).safeTransfer(feeRecipient, amount);
+        emit Claim(feeRecipient, asset, amount);
+    }
+
+    /// @inheritdoc IVault
+    function setFeeRecipient(address newRecipient) external onlyOwner {
+        require(newRecipient != address(0), "address(0)");
+        require(newRecipient != feeRecipient, "Same address");
+        feeRecipient = newRecipient;
+        emit SetFeeRecipient(newRecipient);
     }
 
     /// @inheritdoc IVault

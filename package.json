@@ -1,8 +1,8 @@
 {
   "name": "meTokens-core",
   "version": "1.0.0",
-  "description": "meTokens core smart contract protocol ",
-  "homepage": "https://meTokens.eth",
+  "description": "meTokens Protocol core smart contracts ",
+  "homepage": "https://meTokens.com",
   "keywords": [
     "erc20",
     "ethereum",

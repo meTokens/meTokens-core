@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-/******************************************************************************\
-* Author: Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
-* EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
-/******************************************************************************/
-import {IDiamondCut} from "../interfaces/IDiamondCut.sol";
+import {IDiamondCutFacet} from "../interfaces/IDiamondCutFacet.sol";
 
+/// @title meTokens Protocol diamond library
+/// @author Nick Mudge <nick@perfectabstractions.com> (https://twitter.com/mudgen)
+/// @notice Diamond library to enable library storage of meTokens protocol.
+/// @dev EIP-2535 Diamonds: https://eips.ethereum.org/EIPS/eip-2535
 library LibDiamond {
     struct FacetAddressAndPosition {
         address facetAddress;
@@ -35,30 +35,30 @@ library LibDiamond {
         keccak256("diamond.standard.diamond.storage");
 
     event DiamondCut(
-        IDiamondCut.FacetCut[] diamondCut,
+        IDiamondCutFacet.FacetCut[] diamondCut,
         address init,
         bytes data
     );
 
     // Internal function version of diamondCut
     function diamondCut(
-        IDiamondCut.FacetCut[] memory cut,
+        IDiamondCutFacet.FacetCut[] memory cut,
         address init,
         bytes memory data
     ) internal {
         for (uint256 facetIndex; facetIndex < cut.length; facetIndex++) {
-            IDiamondCut.FacetCutAction action = cut[facetIndex].action;
-            if (action == IDiamondCut.FacetCutAction.Add) {
+            IDiamondCutFacet.FacetCutAction action = cut[facetIndex].action;
+            if (action == IDiamondCutFacet.FacetCutAction.Add) {
                 addFunctions(
                     cut[facetIndex].facetAddress,
                     cut[facetIndex].functionSelectors
                 );
-            } else if (action == IDiamondCut.FacetCutAction.Replace) {
+            } else if (action == IDiamondCutFacet.FacetCutAction.Replace) {
                 replaceFunctions(
                     cut[facetIndex].facetAddress,
                     cut[facetIndex].functionSelectors
                 );
-            } else if (action == IDiamondCut.FacetCutAction.Remove) {
+            } else if (action == IDiamondCutFacet.FacetCutAction.Remove) {
                 removeFunctions(
                     cut[facetIndex].facetAddress,
                     cut[facetIndex].functionSelectors

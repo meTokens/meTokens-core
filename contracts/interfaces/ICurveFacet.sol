@@ -3,7 +3,8 @@ pragma solidity 0.8.9;
 
 import {LibCurve} from "../libs/LibCurve.sol";
 
-/// @title Curve Facet interface
+/// @title meTokens Protocol Curve Facet interface
+/// @author Carter Carlson (@cartercarlson), @zgorizzo69
 interface ICurveFacet {
     /// @notice Get curveInfo for a hub
     /// @param hubId Unique hub identifier

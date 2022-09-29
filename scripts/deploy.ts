@@ -2,22 +2,23 @@ import { Contract } from "@ethersproject/contracts";
 import { deploy } from "../test/utils/helpers";
 import fs from "fs";
 import { network, run, ethers, getNamedAccounts } from "hardhat";
-import { DiamondCutFacet } from "../artifacts/types/contracts/facets/DiamondCutFacet";
-import { Diamond } from "../artifacts/types/contracts/Diamond";
-import { DiamondInit } from "../artifacts/types/contracts/DiamondInit";
-import { HubFacet } from "../artifacts/types/contracts/facets/HubFacet";
-import { FoundryFacet } from "../artifacts/types/contracts/facets/FoundryFacet";
-import { FeesFacet } from "../artifacts/types/contracts/facets/FeesFacet";
-import { MeTokenRegistryFacet } from "../artifacts/types/contracts/facets/MeTokenRegistryFacet";
-import { DiamondLoupeFacet } from "../artifacts/types/contracts/facets/DiamondLoupeFacet";
-import { OwnershipFacet } from "../artifacts/types/contracts/facets/OwnershipFacet";
 import { getSelectors } from "./libraries/helpers";
 import {
-  CurveFacet,
-  MeTokenFactory,
+  MinimalForwarder,
   MigrationRegistry,
-  SingleAssetVault,
   VaultRegistry,
+  DiamondCutFacet,
+  Diamond,
+  DiamondInit,
+  SingleAssetVault,
+  MeTokenFactory,
+  HubFacet,
+  FoundryFacet,
+  CurveFacet,
+  FeesFacet,
+  MeTokenRegistryFacet,
+  DiamondLoupeFacet,
+  OwnershipFacet,
 } from "../artifacts/types";
 import { verifyContract } from "./utils";
 
@@ -47,6 +48,13 @@ async function main() {
 
   console.log("Deploying on network", network.name);
   console.log("Deployer address:", deployerAddr);
+
+  const minimalForwarder = await deploy<MinimalForwarder>("MinimalForwarder");
+  console.log("minimalForwarder deployed at:", minimalForwarder.address);
+  contracts.push({
+    name: "contracts/registries/MinimalForwarder.sol:MinimalForwarder",
+    address: minimalForwarder.address,
+  });
 
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"
@@ -173,7 +181,10 @@ async function main() {
 
   // Upgrade diamond w/ facets
   console.log("\nDiamond Cut successful");
-  const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
+  const diamondCut = await ethers.getContractAt(
+    "IDiamondCutFacet",
+    diamond.address
+  );
   let tx;
   let receipt;
   let args: any = [
@@ -235,6 +246,7 @@ async function main() {
   // Verify contracts on etherscan
   const deploymentInfo = {
     network: network.name,
+    "Minimal Forwarder": minimalForwarder.address,
     "Diamond Cut Facet Contract Address:": diamondCutFacet.address,
     "Diamond Loupe Facet Contract Address:": diamondLoupeFacet.address,
     "Diamond Contract Address:": diamond.address,

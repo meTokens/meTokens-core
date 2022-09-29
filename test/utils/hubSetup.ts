@@ -249,7 +249,10 @@ export async function hubSetupWithoutRegister(fees?: number[]): Promise<{
     });
   }
   // upgrade diamond w/ facets
-  const diamondCut = await ethers.getContractAt("IDiamondCut", diamond.address);
+  const diamondCut = await ethers.getContractAt(
+    "IDiamondCutFacet",
+    diamond.address
+  );
   let args: any = [
     {
       mintFee: feeInitialization[0],

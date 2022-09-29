@@ -3,8 +3,6 @@ pragma solidity 0.8.9;
 
 import {ABDKMathQuad} from "../utils/ABDKMathQuad.sol";
 
-//import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
-
 library LibCurve {
     using ABDKMathQuad for uint256;
     using ABDKMathQuad for bytes16;

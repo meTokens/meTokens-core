@@ -6,7 +6,7 @@ import {Modifiers} from "../libs/LibAppStorage.sol";
 
 /// @title meTokens Fees Facet
 /// @author @cartercarlson, @parv3213
-/// @notice This contract defines the fee structure for meTokens protocol
+/// @notice This contract defines the fee structure for meTokens Protocol
 contract FeesFacet is IFeesFacet, Modifiers {
     /// @inheritdoc IFeesFacet
     function setMintFee(uint256 rate) external override onlyFeesController {

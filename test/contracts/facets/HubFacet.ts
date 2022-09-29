@@ -31,7 +31,6 @@ const setup = async () => {
 
     let singleAssetVault: SingleAssetVault;
     let encodedVaultDAIArgs: string;
-    let encodedCurveInfo: string;
     let token: ERC20;
     let dai: ERC20;
     let whale: Signer;
@@ -42,7 +41,7 @@ const setup = async () => {
     const refundRatio1 = 250000;
     const refundRatio2 = 240000;
     const PRECISION = ethers.utils.parseEther("1");
-    const duration = 60 * 60;
+    const duration = 4 * 24 * 60 * 60; // 4 days
 
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
@@ -59,10 +58,6 @@ const setup = async () => {
       encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
-      );
-      encodedCurveInfo = ethers.utils.defaultAbiCoder.encode(
-        ["uint256", "uint32"],
-        [baseY, reserveWeight]
       );
 
       ({
@@ -82,9 +77,9 @@ const setup = async () => {
       it("Check initial values", async () => {
         // expect(await hub.owner()).to.be.equal(account0.address);
         expect(await hub.count()).to.be.equal(0);
-        expect(await hub.hubWarmup()).to.be.equal(0);
-        expect(await hub.hubDuration()).to.be.equal(0);
-        expect(await hub.hubCooldown()).to.be.equal(0);
+        expect(await hub.hubWarmup()).to.be.equal(7 * 24 * 60 * 60);
+        expect(await hub.hubDuration()).to.be.equal(24 * 60 * 60);
+        expect(await hub.hubCooldown()).to.be.equal(24 * 60 * 60);
         // expect(await hub.registerer()).to.be.equal(account0.address);
         const info = await hub.getHubInfo(0);
         expect(info.active).to.be.equal(false);
@@ -285,14 +280,30 @@ const setup = async () => {
         const tx = hub.setHubWarmup(oldWarmup);
         await expect(tx).to.be.revertedWith("same warmup");
       });
+      it("should revert if too short", async () => {
+        const tx = hub.setHubWarmup(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = hub.setHubWarmup(366 * 24 * 60 * 60); // 1 year 1 day
+        await expect(tx).to.be.revertedWith("too long");
+      });
       it("should be able to call setHubWarmup", async () => {
         const tx = await hub.setHubWarmup(duration);
         await tx.wait();
         expect(await hub.hubWarmup()).to.be.equal(duration);
       });
-      it("should revert if period < meTokenWarmup + meTokenDuration", async () => {
-        await meTokenRegistry.setMeTokenWarmup(duration - 1);
-        const tx = hub.setHubWarmup(duration - 2);
+      it("should revert if period < meTokenWarmup + meTokenDuration + 1 day", async () => {
+        // first adjust meToken warmup so that it won't revert for "too short"
+        await meTokenRegistry.setMeTokenWarmup(2 * 24 * 60 * 60);
+        const meTokenWarmup = await meTokenRegistry.meTokenWarmup();
+        const meTokenDuration = await meTokenRegistry.meTokenDuration();
+        const tx = hub.setHubWarmup(
+          meTokenWarmup.toNumber() +
+            meTokenDuration.toNumber() +
+            24 * 60 * 60 -
+            1
+        );
         await expect(tx).to.be.revertedWith(
           "warmup < meTokenWarmup + meTokenDuration"
         );
@@ -308,6 +319,14 @@ const setup = async () => {
         const oldDuration = await hub.hubDuration();
         const tx = hub.setHubDuration(oldDuration);
         await expect(tx).to.be.revertedWith("same duration");
+      });
+      it("should revert if too short", async () => {
+        const tx = hub.setHubDuration(1);
+        await expect(tx).to.be.revertedWith("too short");
+      });
+      it("should revert if too long", async () => {
+        const tx = hub.setHubDuration(366 * 24 * 60 * 60); // 1 year 1 day
+        await expect(tx).to.be.revertedWith("too long");
       });
       it("should be able to call setHubDuration", async () => {
         const tx = await hub.setHubDuration(duration);
@@ -325,6 +344,10 @@ const setup = async () => {
         const oldCooldown = await hub.hubCooldown();
         const tx = hub.setHubCooldown(oldCooldown);
         await expect(tx).to.be.revertedWith("same cooldown");
+      });
+      it("should revert if too long", async () => {
+        const tx = hub.setHubCooldown(366 * 24 * 60 * 60); // 1 year 1 day
+        await expect(tx).to.be.revertedWith("too long");
       });
       it("should be able to call setHubCooldown", async () => {
         const tx = await hub.setHubCooldown(duration);
@@ -367,10 +390,17 @@ const setup = async () => {
         const tx = await hub.initUpdate(hubId, refundRatio2, 0);
         const receipt = await tx.wait();
         const block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const hubWarmup = await hub.hubWarmup();
+        const hubDuration = await hub.hubDuration();
+        const hubCooldown = await hub.hubCooldown();
+        const expectedStartTime = block.timestamp + hubWarmup.toNumber();
+        const expectedEndTime =
+          block.timestamp + hubWarmup.toNumber() + hubDuration.toNumber();
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp +
+          hubWarmup.toNumber() +
+          hubDuration.toNumber() +
+          hubCooldown.toNumber();
 
         await expect(tx)
           .to.emit(hub, "InitUpdate")
@@ -468,10 +498,17 @@ const setup = async () => {
         expect(info.endCooldown).to.be.lte(block.timestamp);
 
         block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const hubWarmup = await hub.hubWarmup();
+        const hubDuration = await hub.hubDuration();
+        const hubCooldown = await hub.hubCooldown();
+        const expectedStartTime = block.timestamp + hubWarmup.toNumber();
+        const expectedEndTime =
+          block.timestamp + hubWarmup.toNumber() + hubDuration.toNumber();
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp +
+          hubWarmup.toNumber() +
+          hubDuration.toNumber() +
+          hubCooldown.toNumber();
 
         await expect(txAfterEndCooldown)
           .to.emit(hub, "FinishUpdate")
@@ -537,10 +574,17 @@ const setup = async () => {
         const receipt = await tx.wait();
 
         let block = await ethers.provider.getBlock(receipt.blockNumber);
-        const expectedStartTime = block.timestamp + duration;
-        const expectedEndTime = block.timestamp + duration + duration;
+        const hubWarmup = await hub.hubWarmup();
+        const hubDuration = await hub.hubDuration();
+        const hubCooldown = await hub.hubCooldown();
+        const expectedStartTime = block.timestamp + hubWarmup.toNumber();
+        const expectedEndTime =
+          block.timestamp + hubWarmup.toNumber() + hubDuration.toNumber();
         const expectedEndCooldownTime =
-          block.timestamp + duration + duration + duration;
+          block.timestamp +
+          hubWarmup.toNumber() +
+          hubDuration.toNumber() +
+          hubCooldown.toNumber();
 
         await expect(tx)
           .to.emit(hub, "InitUpdate")

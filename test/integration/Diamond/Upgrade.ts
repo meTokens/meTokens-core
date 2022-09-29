@@ -12,7 +12,7 @@ import {
   Diamond,
   DiamondLoupeFacet,
   FeesFacetMock,
-  IDiamondCut,
+  IDiamondCutFacet,
   FeesFacet,
   OwnershipFacet,
   DiamondInit,
@@ -29,7 +29,7 @@ const setup = async () => {
     let whale: Signer;
     let account2: SignerWithAddress;
     let account3: SignerWithAddress;
-    let diamondCut: IDiamondCut;
+    let diamondCut: IDiamondCutFacet;
     let updatedFeesFacet: FeesFacetMock;
     const one = ethers.utils.parseEther("1");
     const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
@@ -62,8 +62,8 @@ const setup = async () => {
         account3,
         meTokenRegistry,
       } = await hubSetup(baseY, reserveWeight, encodedVaultArgs, refundRatio));
-      diamondCut = await getContractAt<IDiamondCut>(
-        "IDiamondCut",
+      diamondCut = await getContractAt<IDiamondCutFacet>(
+        "IDiamondCutFacet",
         diamond.address
       );
 

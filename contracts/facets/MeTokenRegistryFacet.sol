@@ -3,23 +3,20 @@ pragma solidity 0.8.9;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IHubFacet} from "../interfaces/IHubFacet.sol";
 import {IMeToken} from "../interfaces/IMeToken.sol";
 import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
-import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {LibCurve} from "../libs/LibCurve.sol";
-import {LibDiamond} from "../libs/LibDiamond.sol";
-import {LibHub, HubInfo} from "../libs/LibHub.sol";
+import {HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
 import {Modifiers} from "../libs/LibAppStorage.sol";
 
 /// @title meTokens Registry Facet
 /// @author @cbobrobison, @cartercarlson, @zgorizzo69, @parv3213
-/// @notice This contract tracks info about a meToken within meTokens protocol
+/// @notice This contract tracks info about a meToken within meTokens Protocol
 contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     using SafeERC20 for IERC20;
 
@@ -97,12 +94,17 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
 
         require(LibMeta.msgSender() == meTokenInfo.owner, "!owner");
         require(
-            block.timestamp >= meTokenInfo.endCooldown,
-            "Cooldown not complete"
+            block.timestamp >= meTokenInfo.endTime,
+            "meToken still resubscribing"
         );
         require(meTokenInfo.hubId != targetHubId, "same hub");
         require(targetHubInfo.active, "targetHub inactive");
-        require(!hubInfo.updating, "hub updating");
+        // NOTE: This next statement allows a meToken to resubscribe from a hub
+        // if the hub is updating but still in the warmup period
+        require(
+            !hubInfo.updating || block.timestamp < hubInfo.startTime,
+            "hub updating"
+        );
         require(!targetHubInfo.updating, "targetHub updating");
 
         require(migration != address(0), "migration address(0)");
@@ -125,11 +127,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
             block.timestamp +
             s.meTokenWarmup +
             s.meTokenDuration;
-        meTokenInfo.endCooldown =
-            block.timestamp +
-            s.meTokenWarmup +
-            s.meTokenDuration +
-            s.meTokenCooldown;
         meTokenInfo.targetHubId = targetHubId;
         meTokenInfo.migration = migration;
 
@@ -155,7 +152,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
 
         meTokenInfo.startTime = 0;
         meTokenInfo.endTime = 0;
-        meTokenInfo.endCooldown = 0;
         meTokenInfo.targetHubId = 0;
         meTokenInfo.migration = address(0);
 
@@ -243,29 +239,54 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function setMeTokenWarmup(uint256 warmup) external onlyDurationsController {
-        require(warmup != s.meTokenWarmup, "same warmup");
-        require(warmup + s.meTokenDuration < s.hubWarmup, "too long");
-        s.meTokenWarmup = warmup;
+    function setMeTokenWarmup(uint256 period) external onlyDurationsController {
+        require(period != s.meTokenWarmup, "same warmup");
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
+        // NOTE: 1 day buffer so that a resubscribing meToken has time to
+        // resubscribe again if the target hub starts an update immediately
+        // after the meToken triggers the resubscribe
+        require(
+            period + s.meTokenDuration + 1 days <= s.hubWarmup,
+            "> hubWarmup"
+        );
+        s.meTokenWarmup = period;
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function setMeTokenDuration(uint256 duration)
+    function setMeTokenDuration(uint256 period)
         external
         onlyDurationsController
     {
-        require(duration != s.meTokenDuration, "same duration");
-        require(s.meTokenWarmup + duration < s.hubWarmup, "too long");
-        s.meTokenDuration = duration;
+        require(period != s.meTokenDuration, "same duration");
+        require(period >= 1 days, "too short");
+        require(period <= 30 days, "too long");
+        require(
+            s.meTokenWarmup + period + 1 days <= s.hubWarmup,
+            "> hubWarmup"
+        );
+        s.meTokenDuration = period;
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
-    function setMeTokenCooldown(uint256 cooldown)
+    function getBasicMeTokenInfo(address meToken)
         external
-        onlyDurationsController
+        view
+        override
+        returns (
+            address owner,
+            uint256 hubId,
+            uint256 balancePooled,
+            uint256 balanceLocked,
+            address migration
+        )
     {
-        require(cooldown != s.meTokenCooldown, "same cooldown");
-        s.meTokenCooldown = cooldown;
+        MeTokenInfo storage meTokenInfo = s.meTokens[meToken];
+        owner = meTokenInfo.owner;
+        hubId = meTokenInfo.hubId;
+        balancePooled = meTokenInfo.balancePooled;
+        balanceLocked = meTokenInfo.balanceLocked;
+        migration = meTokenInfo.migration;
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
@@ -306,11 +327,6 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
     /// @inheritdoc IMeTokenRegistryFacet
     function meTokenDuration() external view returns (uint256) {
         return LibMeToken.duration();
-    }
-
-    /// @inheritdoc IMeTokenRegistryFacet
-    function meTokenCooldown() external view returns (uint256) {
-        return LibMeToken.cooldown();
     }
 
     /// @inheritdoc IMeTokenRegistryFacet

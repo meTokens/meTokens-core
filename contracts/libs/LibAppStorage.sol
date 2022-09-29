@@ -21,7 +21,6 @@ struct AppStorage {
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
     uint256 meTokenDuration;
-    uint256 meTokenCooldown;
     mapping(address => MeTokenInfo) meTokens;
     mapping(address => address) meTokenOwners;
     mapping(address => address) pendingMeTokenOwners;
@@ -45,7 +44,6 @@ struct AppStorage {
     address trustedForwarder;
     address feesController;
     address durationsController;
-    address meTokenRegistryController;
     address registerController;
     address deactivateController;
 }
@@ -62,7 +60,6 @@ library LibAppStorage {
         s.diamondController = _firstController;
         s.feesController = _firstController;
         s.durationsController = _firstController;
-        s.meTokenRegistryController = _firstController;
         s.registerController = _firstController;
         s.deactivateController = _firstController;
     }
@@ -115,14 +112,6 @@ contract Modifiers {
         require(
             LibMeta.msgSender() == s.durationsController,
             "!durationsController"
-        );
-        _;
-    }
-
-    modifier onlyMeTokenRegistryController() {
-        require(
-            LibMeta.msgSender() == s.meTokenRegistryController,
-            "!meTokenRegistryController"
         );
         _;
     }

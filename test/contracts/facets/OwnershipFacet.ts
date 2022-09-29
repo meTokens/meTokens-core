@@ -187,47 +187,6 @@ const setup = async () => {
       });
     });
 
-    describe("setMeTokenRegistryController", () => {
-      let oldMTRController: SignerWithAddress;
-      let newMTRController: SignerWithAddress;
-      before(async () => {
-        oldMTRController = account0;
-        newMTRController = account1;
-        expect(await ownershipFacet.meTokenRegistryController()).to.equal(
-          oldMTRController.address
-        );
-      });
-      it("should revert when caller is not meToken registry controller", async () => {
-        await expect(
-          ownershipFacet
-            .connect(newMTRController)
-            .setMeTokenRegistryController(newMTRController.address)
-        ).to.be.revertedWith("!meTokenRegistryController");
-      });
-      it("should revert when new meToken registry controller is same as old", async () => {
-        await expect(
-          ownershipFacet.setMeTokenRegistryController(oldMTRController.address)
-        ).to.be.revertedWith("same");
-      });
-      it("should be able to set new meToken registry controller", async () => {
-        await ownershipFacet.setMeTokenRegistryController(
-          newMTRController.address
-        );
-        expect(await ownershipFacet.meTokenRegistryController()).to.equal(
-          newMTRController.address
-        );
-      });
-      after(async () => {
-        // set back original meToken registry controller
-        await ownershipFacet
-          .connect(account1)
-          .setMeTokenRegistryController(oldMTRController.address);
-        expect(await ownershipFacet.meTokenRegistryController()).to.equal(
-          oldMTRController.address
-        );
-      });
-    });
-
     describe("setRegisterController", () => {
       let oldRegisterController: SignerWithAddress;
       let newRegisterController: SignerWithAddress;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.9;
 
-/// @title MeTokens foundry interface
+/// @title meTokens Protocol Foundry Facet interface
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213)
 interface IFoundryFacet {
     /// @notice Event of minting a meToken
@@ -52,11 +52,12 @@ interface IFoundryFacet {
     /// @param meToken          Address of meToken to mint
     /// @param assetsDeposited  Amount of assets to deposit
     /// @param recipient        Address to receive minted meTokens
+    /// @return meTokensMinted  Amount of meTokens minted
     function mint(
         address meToken,
         uint256 assetsDeposited,
         address recipient
-    ) external;
+    ) external returns (uint256 meTokensMinted);
 
     /// @notice Mint a meToken by depositing a EIP compliant asset
     /// @param meToken          Address of meToken to mint
@@ -66,6 +67,7 @@ interface IFoundryFacet {
     /// @param v                v of the signature
     /// @param r                r of the signature
     /// @param s                s of the signature
+    /// @return meTokensMinted  Amount of meTokens minted
     function mintWithPermit(
         address meToken,
         uint256 assetsDeposited,
@@ -74,17 +76,18 @@ interface IFoundryFacet {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external;
+    ) external returns (uint256 meTokensMinted);
 
     /// @notice Burn a meToken to receive the underlying asset
     /// @param meToken          Address of meToken to burn
     /// @param meTokensBurned   Amount of meTokens to burn
     /// @param recipient        Address to receive the underlying assets
+    /// @return assetsReturned  Amount of assets returned
     function burn(
         address meToken,
         uint256 meTokensBurned,
         address recipient
-    ) external;
+    ) external returns (uint256 assetsReturned);
 
     /// @notice Donate a meToken's underlying asset to its owner
     /// @param meToken          Address of meToken to donate

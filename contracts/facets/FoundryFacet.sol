@@ -11,15 +11,15 @@ import {IVault} from "../interfaces/IVault.sol";
 
 /// @title meTokens Foundry Facet
 /// @author @cartercarlson, @parv3213
-/// @notice This contract manages all minting / burning for meTokens protocol
+/// @notice This contract manages all minting / burning for meTokens Protocol
 contract FoundryFacet is IFoundryFacet, Modifiers {
     /// @inheritdoc IFoundryFacet
     function mint(
         address meToken,
         uint256 assetsDeposited,
         address recipient
-    ) external override {
-        LibFoundry.mint(meToken, assetsDeposited, recipient);
+    ) external override returns (uint256 meTokensMinted) {
+        meTokensMinted = LibFoundry.mint(meToken, assetsDeposited, recipient);
     }
 
     /// @inheritdoc IFoundryFacet
@@ -31,8 +31,8 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         uint8 vSig,
         bytes32 rSig,
         bytes32 sSig
-    ) external override {
-        LibFoundry.mintWithPermit(
+    ) external override returns (uint256 meTokensMinted) {
+        meTokensMinted = LibFoundry.mintWithPermit(
             meToken,
             assetsDeposited,
             recipient,
@@ -48,8 +48,8 @@ contract FoundryFacet is IFoundryFacet, Modifiers {
         address meToken,
         uint256 meTokensBurned,
         address recipient
-    ) external override {
-        LibFoundry.burn(meToken, meTokensBurned, recipient);
+    ) external override returns (uint256 assetsReturned) {
+        assetsReturned = LibFoundry.burn(meToken, meTokensBurned, recipient);
     }
 
     /// @inheritdoc IFoundryFacet

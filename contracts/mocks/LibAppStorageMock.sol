@@ -22,7 +22,6 @@ struct AppStorageMock {
     // MeTokenRegistry-specific
     uint256 meTokenWarmup;
     uint256 meTokenDuration;
-    uint256 meTokenCooldown;
     mapping(address => MeTokenInfo) meTokens;
     mapping(address => address) meTokenOwners;
     mapping(address => address) pendingMeTokenOwners;
@@ -44,7 +43,6 @@ struct AppStorageMock {
     address trustedForwarder;
     address feesController;
     address durationsController;
-    address meTokenRegistryController;
     address registerController;
     address deactivateController;
     // NOTE: This is the upgraded value for AppStorage
@@ -67,7 +65,6 @@ library LibAppStorageMock {
         s.diamondController = _firstController;
         s.feesController = _firstController;
         s.durationsController = _firstController;
-        s.meTokenRegistryController = _firstController;
         s.registerController = _firstController;
         s.deactivateController = _firstController;
     }
@@ -93,14 +90,6 @@ contract ModifiersMock {
         require(
             LibMeta.msgSender() == s.durationsController,
             "!durationsController"
-        );
-        _;
-    }
-
-    modifier onlyMeTokenRegistryController() {
-        require(
-            LibMeta.msgSender() == s.meTokenRegistryController,
-            "!meTokenRegistryController"
         );
         _;
     }

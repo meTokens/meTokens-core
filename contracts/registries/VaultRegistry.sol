@@ -4,11 +4,11 @@ pragma solidity 0.8.9;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IVaultRegistry} from "../interfaces/IVaultRegistry.sol";
 
-/// @title Registry
+/// @title meTokens Protocol Vault Registry
 /// @author Carter Carlson (@cartercarlson)
-/// @notice Keeps track of approved addresses for a given Registry
+/// @notice Approved vaults to be used within meTokens Protocol.
 contract VaultRegistry is IVaultRegistry, Ownable {
-    // NOTE: approved vault factories could be for
+    // NOTE: approved vault factories could be for:
     // Vanilla erc20 vaults, Uniswap-LP vaults, Balancer LP  vaults, etc.
     mapping(address => bool) private _approved;
 
