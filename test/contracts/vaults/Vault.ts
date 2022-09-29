@@ -92,7 +92,7 @@ const setup = async () => {
     describe("Check initial state", () => {
       it("check initial state", async () => {
         expect(await vault.PRECISION()).to.be.equal(precision);
-        expect(await vault.dao()).to.be.equal(dao.address);
+        expect(await vault.owner()).to.be.equal(dao.address);
         expect(await vault.diamond()).to.be.equal(diamond.address);
         expect(await vault.accruedFees(DAI)).to.be.equal(0);
       });
@@ -201,7 +201,7 @@ const setup = async () => {
       it("Reverts when not called by owner", async () => {
         await expect(
           vault.connect(account1).claim(DAI, true, 0)
-        ).to.be.revertedWith("!DAO");
+        ).to.be.revertedWith("Ownable: caller is not the owner");
       });
 
       it("should revert when amount is 0", async () => {
