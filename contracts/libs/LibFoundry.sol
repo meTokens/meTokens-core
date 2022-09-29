@@ -75,59 +75,6 @@ library LibFoundry {
         return meTokensMinted;
     }
 
-    function _handleMint(address meToken, uint256 assetsDeposited)
-        internal
-        returns (
-            address,
-            address,
-            uint256
-        )
-    {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-        address sender = LibMeta.msgSender();
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-        uint256[3] memory amounts;
-        amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
-        amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
-
-        amounts[0] = calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
-        IVault vault = IVault(hubInfo.vault);
-        address asset = hubInfo.asset;
-
-        // Check if meToken is using a migration vault and in the active stage of resubscribing.
-        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
-        // in which case a migration vault isn't needed
-        if (
-            meTokenInfo.migration != address(0) &&
-            block.timestamp > meTokenInfo.startTime &&
-            IMigration(meTokenInfo.migration).isStarted(meToken)
-        ) {
-            // Use meToken address to get the asset address from the migration vault
-            vault = IVault(meTokenInfo.migration);
-            asset = s.hubs[meTokenInfo.targetHubId].asset;
-        }
-        vault.handleDeposit(sender, asset, assetsDeposited, amounts[1]);
-        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
-
-        // Handling changes
-        if (meTokenInfo.targetHubId != 0) {
-            if (block.timestamp > meTokenInfo.endTime) {
-                hubInfo = s.hubs[meTokenInfo.targetHubId];
-                meTokenInfo = LibMeToken.finishResubscribe(meToken);
-            } else if (block.timestamp > meTokenInfo.startTime) {
-                // Handle migration actions if needed
-                IMigration(meTokenInfo.migration).poke(meToken);
-            }
-        }
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        }
-
-        return (asset, sender, amounts[0]);
-    }
-
     function mintWithPermit(
         address meToken,
         uint256 assetsDeposited,
@@ -162,91 +109,6 @@ library LibFoundry {
             amounts[0]
         );
         return amounts[0];
-    }
-
-    function _handleMintWithPermit(
-        address meToken,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    ) private returns (address asset, uint256[2] memory amounts) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
-
-        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
-        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
-
-        amounts[1] =
-            assetsDeposited -
-            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
-
-        amounts[0] = calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
-
-        asset = _handlingChangesWithPermit(
-            amounts[1],
-            meToken,
-            meTokenInfo,
-            hubInfo,
-            assetsDeposited,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        return (asset, amounts);
-    }
-
-    function _handlingChangesWithPermit(
-        uint256 assetsDepositedAfterFees,
-        address meToken,
-        MeTokenInfo memory meTokenInfo,
-        HubInfo memory hubInfo,
-        uint256 assetsDeposited,
-        uint256 deadline,
-        uint8 vSig,
-        bytes32 rSig,
-        bytes32 sSig
-    ) private returns (address asset) {
-        AppStorage storage s = LibAppStorage.diamondStorage();
-        IVault vault = IVault(hubInfo.vault);
-        asset = hubInfo.asset;
-
-        if (
-            meTokenInfo.migration != address(0) &&
-            block.timestamp > meTokenInfo.startTime &&
-            IMigration(meTokenInfo.migration).isStarted(meToken)
-        ) {
-            // Use meToken address to get the asset address from the migration vault
-            vault = IVault(meTokenInfo.migration);
-            asset = s.hubs[meTokenInfo.targetHubId].asset;
-        }
-        vault.handleDepositWithPermit(
-            LibMeta.msgSender(),
-            asset,
-            assetsDeposited,
-            (assetsDeposited * s.mintFee) / s.PRECISION,
-            deadline,
-            vSig,
-            rSig,
-            sSig
-        );
-        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
-
-        // Handling changes
-        if (meTokenInfo.targetHubId != 0) {
-            if (block.timestamp > meTokenInfo.endTime) {
-                hubInfo = s.hubs[meTokenInfo.targetHubId];
-                meTokenInfo = LibMeToken.finishResubscribe(meToken);
-            } else if (block.timestamp > meTokenInfo.startTime) {
-                // Handle migration actions if needed
-                IMigration(meTokenInfo.migration).poke(meToken);
-            }
-        }
-        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
-            LibHub.finishUpdate(meTokenInfo.hubId);
-        }
     }
 
     // BURN FLOW CHART
@@ -499,6 +361,144 @@ library LibFoundry {
                         s.MAX_REFUND_RATIO;
                 }
             }
+        }
+    }
+
+    function _handleMint(address meToken, uint256 assetsDeposited)
+        private
+        returns (
+            address,
+            address,
+            uint256
+        )
+    {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+        address sender = LibMeta.msgSender();
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+        uint256[3] memory amounts;
+        amounts[1] = (assetsDeposited * s.mintFee) / s.PRECISION; // fee
+        amounts[2] = assetsDeposited - amounts[1]; //assetsDepositedAfterFees
+
+        amounts[0] = calculateMeTokensMinted(meToken, amounts[2]); // meTokensMinted
+        IVault vault = IVault(hubInfo.vault);
+        address asset = hubInfo.asset;
+
+        // Check if meToken is using a migration vault and in the active stage of resubscribing.
+        // Sometimes a meToken may be resubscribing to a hub w/ the same asset,
+        // in which case a migration vault isn't needed
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime &&
+            IMigration(meTokenInfo.migration).isStarted(meToken)
+        ) {
+            // Use meToken address to get the asset address from the migration vault
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
+        }
+        vault.handleDeposit(sender, asset, assetsDeposited, amounts[1]);
+        LibMeToken.updateBalancePooled(true, meToken, amounts[2]);
+
+        // Handling changes
+        if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+            }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
+        }
+
+        return (asset, sender, amounts[0]);
+    }
+
+    function _handleMintWithPermit(
+        address meToken,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) private returns (address asset, uint256[2] memory amounts) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // 0-meTokensMinted 1-fee 2-assetsDepositedAfterFees
+
+        MeTokenInfo memory meTokenInfo = s.meTokens[meToken];
+        HubInfo memory hubInfo = s.hubs[meTokenInfo.hubId];
+
+        amounts[1] =
+            assetsDeposited -
+            ((assetsDeposited * s.mintFee) / s.PRECISION); //assetsDepositedAfterFees
+
+        amounts[0] = calculateMeTokensMinted(meToken, amounts[1]); // meTokensMinted
+
+        asset = _handlingChangesWithPermit(
+            amounts[1],
+            meToken,
+            meTokenInfo,
+            hubInfo,
+            assetsDeposited,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        return (asset, amounts);
+    }
+
+    function _handlingChangesWithPermit(
+        uint256 assetsDepositedAfterFees,
+        address meToken,
+        MeTokenInfo memory meTokenInfo,
+        HubInfo memory hubInfo,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) private returns (address asset) {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        IVault vault = IVault(hubInfo.vault);
+        asset = hubInfo.asset;
+
+        if (
+            meTokenInfo.migration != address(0) &&
+            block.timestamp > meTokenInfo.startTime &&
+            IMigration(meTokenInfo.migration).isStarted(meToken)
+        ) {
+            // Use meToken address to get the asset address from the migration vault
+            vault = IVault(meTokenInfo.migration);
+            asset = s.hubs[meTokenInfo.targetHubId].asset;
+        }
+        vault.handleDepositWithPermit(
+            LibMeta.msgSender(),
+            asset,
+            assetsDeposited,
+            (assetsDeposited * s.mintFee) / s.PRECISION,
+            deadline,
+            vSig,
+            rSig,
+            sSig
+        );
+        LibMeToken.updateBalancePooled(true, meToken, assetsDepositedAfterFees);
+
+        // Handling changes
+        if (meTokenInfo.targetHubId != 0) {
+            if (block.timestamp > meTokenInfo.endTime) {
+                hubInfo = s.hubs[meTokenInfo.targetHubId];
+                meTokenInfo = LibMeToken.finishResubscribe(meToken);
+            } else if (block.timestamp > meTokenInfo.startTime) {
+                // Handle migration actions if needed
+                IMigration(meTokenInfo.migration).poke(meToken);
+            }
+        }
+        if (hubInfo.updating && block.timestamp > hubInfo.endTime) {
+            LibHub.finishUpdate(meTokenInfo.hubId);
         }
     }
 
