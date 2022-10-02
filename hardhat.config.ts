@@ -32,6 +32,7 @@ const INFURA_NETWORKS = [
   "mainnet",
   "rinkeby",
   "kovan",
+  "goerli",
   "arbitrum-mainnet",
   "arbitrum-rinkeby",
 ];
@@ -45,7 +46,7 @@ const accounts = PRIVATE_KEY
       count: 10,
     };
 
-const networks = ["mainnet", "kovan" /*"rinkeby" */];
+const networks = ["mainnet", "kovan", "goerli"];
 
 /**
  * Given the name of a network build a Hardhat Network object
@@ -124,11 +125,6 @@ const config: HardhatUserConfig = {
       gas: "auto",
       timeout: 1800000,
       chainId: 1,
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${INFURA_KEY}`,
-      accounts,
-      gas: 10000000,
     },
     ...networks.reduce((obj: any, entry) => {
       obj[entry] = makeNetwork(entry);

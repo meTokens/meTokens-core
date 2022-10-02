@@ -24,7 +24,7 @@ import { verifyContract } from "./utils";
 
 const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
-const SUPPORTED_NETWORK = [1, 4, 42, 100, 31337];
+const SUPPORTED_NETWORK = [1, 4, 5, 42, 100, 31337];
 const REFUND_RATIO = 800000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
@@ -214,8 +214,9 @@ async function main() {
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
-  await vaultRegistry.approve(singleAssetVault.address);
-  console.log("curve and singleAssetVault approved");
+  tx = await vaultRegistry.approve(singleAssetVault.address);
+  receipt = await tx.wait();
+  console.log("singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
   let reserveWeight = 500000;
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
