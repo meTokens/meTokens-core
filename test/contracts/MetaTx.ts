@@ -264,6 +264,118 @@ const setup = async () => {
         );
       expect(await forwarder.getNonce(message.from)).to.equal(1);
     });
+
+    it("should subscribeWithPermit()", async () => {
+      const amount = ethers.utils.parseEther("20");
+      const res = await transferFromWhale(account1.address, DAI, DAIWhale);
+      token = res.token;
+      /*
+      BUILDING THE PERMIT SIGNATURE
+      */
+      const Permit = [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ];
+      // NOTE: From https://rinkeby.etherscan.io/token/0xc7ad46e0b8a400bb3c915120d284aafba8fc4735#readContract
+      const domainDai = {
+        name: "Dai Stablecoin",
+        version: "1",
+        chainId: "1",
+        verifyingContract: DAI,
+      };
+      const permitMsg = {
+        owner: account1.address,
+        spender: singleAssetVault.address,
+        value: amount,
+        nonce: 0,
+        deadline: ethers.constants.MaxUint256,
+      };
+
+      const permitSig = await account1._signTypedData(
+        domainDai,
+        { Permit },
+        permitMsg
+      );
+      const { v, r, s } = ethers.utils.splitSignature(permitSig);
+
+      /*
+      BUILDING THE TX
+      */
+
+      const name = "TOP TOKEN";
+      const symbol = "TOP";
+      const { data } =
+        await meTokenRegistry.populateTransaction.subscribeWithPermit(
+          name,
+          symbol,
+          hubId,
+          amount,
+          ethers.constants.MaxUint256,
+          v,
+          r,
+          s
+        );
+      if (!data) {
+        throw Error("No data");
+      }
+      const gasLimit = await ethers.provider.estimateGas({
+        to: meTokenRegistry.address,
+        from: account1.address,
+        data,
+      });
+      const message = {
+        from: account1.address,
+        to: hub.address,
+        value: 0,
+        gas: gasLimit.toNumber() * 10,
+        nonce: 0,
+        data,
+      };
+      const nonce = await forwarder.getNonce(message.from);
+      expect(nonce).to.equal(0);
+
+      const signature = await account1._signTypedData(
+        domain,
+        { ForwardRequest },
+        message
+      );
+      const verifiedAddress = ethers.utils.verifyTypedData(
+        domain,
+        { ForwardRequest },
+        message,
+        signature
+      );
+      const verifiedFromContract = await forwarder.verify(message, signature);
+
+      expect(verifiedFromContract).to.equal(true);
+
+      expect(verifiedAddress).to.equal(account1.address);
+
+      // @ts-ignore
+      const tx = await forwarder.connect(account2).execute(message, signature);
+      const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
+        account1.address
+      );
+      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      expect(await meToken.totalSupply()).to.equal(0);
+      await expect(tx)
+        .to.emit(meTokenRegistry, "Subscribe")
+        .withArgs(
+          meTokenAddr,
+          account1.address,
+          0,
+          DAI,
+          0,
+          name,
+          symbol,
+          hubId
+        );
+      expect(await forwarder.getNonce(message.from)).to.equal(1);
+    });
+
     it("should mint", async () => {
       const amount = ethers.utils.parseEther("20");
       const res = await transferFromWhale(account1.address, DAI, DAIWhale);
