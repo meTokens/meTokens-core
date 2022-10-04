@@ -37,6 +37,7 @@ const setup = async () => {
     let forwarder: MinimalForwarder;
     let foundry: FoundryFacet;
     let domain: TypedDataDomain;
+    let domainUSDC: TypedDataDomain;
     let ownershipFacet: OwnershipFacet;
     let refundRatio: number;
     let meTokenRegistry: MeTokenRegistryFacet;
@@ -84,9 +85,9 @@ const setup = async () => {
         foundry,
       } = await hubSetupWithoutRegister());
 
-      usdc = await getContractAt<ERC20>("ERC20", USDC);
-      const usdcWhale = await impersonate(USDCWhale);
-      await usdc.connect(usdcWhale).transfer(account2.address, amount);
+      // usdc = await getContractAt<ERC20>("ERC20", USDC);
+      // const usdcWhale = await impersonate(USDCWhale);
+      // await usdc.connect(usdcWhale).transfer(account2.address, amount);
 
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
@@ -286,8 +287,7 @@ const setup = async () => {
       /*
       BUILDING THE PERMIT SIGNATURE
       */
-      // NOTE: From https://rinkeby.etherscan.io/token/0xc7ad46e0b8a400bb3c915120d284aafba8fc4735#readContract
-      const domainDai = {
+      const domainUSDC = {
         name: "USD Coin",
         version: "2",
         chainId: "1",
@@ -302,7 +302,7 @@ const setup = async () => {
       };
 
       const permitSig = await account2._signTypedData(
-        domainDai,
+        domainUSDC,
         { Permit },
         permitMsg
       );
@@ -364,11 +364,17 @@ const setup = async () => {
       // @ts-ignore
       console.log("made it to execute");
       const tx = await forwarder.connect(account1).execute(message, signature);
+      const receipt = await tx.wait();
+      console.log("made it past execute!");
+      console.log(receipt);
+      console.log(receipt.events);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
         account2.address
       );
-      meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
-      expect(await meToken.totalSupply()).to.equal(0);
+      console.log(meTokenAddr);
+      // const meToken2 = await getContractAt<MeToken>("MeToken", meTokenAddr);
+      // const meTokensMinted = await meToken2.totalSupply();
+      // expect(meTokensMinted).to.be.gt(0);
       await expect(tx)
         .to.emit(meTokenRegistry, "Subscribe")
         .withArgs(
@@ -376,7 +382,7 @@ const setup = async () => {
           account2.address,
           0,
           USDC,
-          0,
+          amount,
           name,
           symbol,
           hubId
