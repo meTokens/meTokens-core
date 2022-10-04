@@ -3,6 +3,9 @@ pragma solidity 0.8.9;
 
 import {LibAppStorage, AppStorage} from "./LibAppStorage.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
+import {IMeToken} from "../interfaces/IMeToken.sol";
+import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
+import {LibCurve} from "./LibCurve.sol";
 
 struct MeTokenInfo {
     address owner;
@@ -16,14 +19,72 @@ struct MeTokenInfo {
 }
 
 library LibMeToken {
+    /// @dev reference IMeTokenRegistryFacet
     event UpdateBalancePooled(bool add, address meToken, uint256 amount);
     event UpdateBalanceLocked(bool add, address meToken, uint256 amount);
+    event Subscribe(
+        address indexed meToken,
+        address indexed owner,
+        uint256 minted,
+        address asset,
+        uint256 assetsDeposited,
+        string name,
+        string symbol,
+        uint256 hubId
+    );
     event FinishResubscribe(address indexed meToken);
 
+    function subscribe(
+        address sender,
+        string calldata name,
+        string calldata symbol,
+        uint256 hubId,
+        uint256 assetsDeposited
+    ) internal {
+        AppStorage storage s = LibAppStorage.diamondStorage();
+        // Create meToken erc20 contract
+        address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
+            name,
+            symbol,
+            address(this)
+        );
+
+        // Register the address which created a meToken
+        s.meTokenOwners[sender] = meTokenAddr;
+
+        // Add meToken to registry
+        s.meTokens[meTokenAddr].owner = sender;
+        s.meTokens[meTokenAddr].hubId = hubId;
+        s.meTokens[meTokenAddr].balancePooled = assetsDeposited;
+
+        // Mint meToken to user
+        uint256 meTokensMinted;
+        if (assetsDeposited > 0) {
+            meTokensMinted = LibCurve.viewMeTokensMinted(
+                assetsDeposited, // deposit_amount
+                hubId, // hubId
+                0, // supply
+                0 // balancePooled
+            );
+            IMeToken(meTokenAddr).mint(sender, meTokensMinted);
+        }
+
+        emit Subscribe(
+            meTokenAddr,
+            sender,
+            meTokensMinted,
+            s.hubs[hubId].asset,
+            assetsDeposited,
+            name,
+            symbol,
+            hubId
+        );
+    }
+
     /// @notice Update a meToken's balancePooled
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
+    /// @param add     Boolean that is true if adding to balance, false if subtracting
+    /// @param meToken Address of meToken
+    /// @param amount  Amount to add/subtract
     function updateBalancePooled(
         bool add,
         address meToken,
@@ -41,9 +102,9 @@ library LibMeToken {
     }
 
     /// @notice Update a meToken's balanceLocked
-    /// @param add     boolean that is true if adding to balance, false if subtracting
-    /// @param meToken address of meToken
-    /// @param amount  amount to add/subtract
+    /// @param add     Boolean that is true if adding to balance, false if subtracting
+    /// @param meToken Address of meToken
+    /// @param amount  Amount to add/subtract
     function updateBalanceLocked(
         bool add,
         address meToken,

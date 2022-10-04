@@ -92,6 +92,26 @@ interface IMeTokenRegistryFacet {
         uint256 assetsDeposited
     ) external;
 
+    /// @notice Create and subscribe a meToken to a hub and deposit assets using permit()
+    /// @param name             Name of meToken
+    /// @param symbol           Symbol of meToken
+    /// @param hubId            Initial hub to subscribe to
+    /// @param assetsDeposited  Amount of assets deposited at meToken initialization
+    /// @param deadline         The time at which this expires (unix time)
+    /// @param vSig             v of the signature
+    /// @param rSig             r of the signature
+    /// @param sSig             s of the signature
+    function subscribeWithPermit(
+        string calldata name,
+        string calldata symbol,
+        uint256 hubId,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) external;
+
     /// @notice Initialize a meToken resubscription to a new hub
     /// @dev Only callable by meToken owner
     /// @param meToken                 Address of meToken

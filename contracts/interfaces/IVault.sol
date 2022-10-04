@@ -65,14 +65,14 @@ interface IVault {
     ) external;
 
     /// @notice Deposit an EIP2612 compliant asset to the vault
-    /// @param from            Address which is depositing the asset
-    /// @param asset           Address of asset
-    /// @param depositAmount   Amount of assets deposited
-    /// @param feeAmount       Amount of fees paid
-    /// @param deadline  The time at which this expires (unix time)
-    /// @param v         v of the signature
-    /// @param r         r of the signature
-    /// @param s         s of the signature
+    /// @param from             Address which is depositing the asset
+    /// @param asset            Address of asset
+    /// @param depositAmount    Amount of assets deposited
+    /// @param feeAmount        Amount of fees paid
+    /// @param deadline         The time at which this expires (unix time)
+    /// @param v                v of the signature
+    /// @param r                r of the signature
+    /// @param s                s of the signature
     function handleDepositWithPermit(
         address from,
         address asset,

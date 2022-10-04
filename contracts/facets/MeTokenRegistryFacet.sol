@@ -3,12 +3,9 @@ pragma solidity 0.8.9;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IMeToken} from "../interfaces/IMeToken.sol";
-import {IMeTokenFactory} from "../interfaces/IMeTokenFactory.sol";
 import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigration} from "../interfaces/IMigration.sol";
 import {IVault} from "../interfaces/IVault.sol";
-import {LibCurve} from "../libs/LibCurve.sol";
 import {HubInfo} from "../libs/LibHub.sol";
 import {LibMeta} from "../libs/LibMeta.sol";
 import {LibMeToken, MeTokenInfo} from "../libs/LibMeToken.sol";
@@ -42,43 +39,38 @@ contract MeTokenRegistryFacet is IMeTokenRegistryFacet, Modifiers {
                 0
             );
         }
-        // Create meToken erc20 contract
-        address meTokenAddr = IMeTokenFactory(s.meTokenFactory).create(
-            name,
-            symbol,
-            address(this)
-        );
+        LibMeToken.subscribe(sender, name, symbol, hubId, assetsDeposited);
+    }
 
-        // Register the address which created a meToken
-        s.meTokenOwners[sender] = meTokenAddr;
+    /// @inheritdoc IMeTokenRegistryFacet
+    function subscribeWithPermit(
+        string calldata name,
+        string calldata symbol,
+        uint256 hubId,
+        uint256 assetsDeposited,
+        uint256 deadline,
+        uint8 vSig,
+        bytes32 rSig,
+        bytes32 sSig
+    ) external override {
+        address sender = LibMeta.msgSender();
+        require(!isOwner(sender), "msg.sender already owns a meToken");
+        require(s.hubs[hubId].active, "Hub inactive");
+        require(!s.hubs[hubId].updating, "Hub updating");
 
-        // Add meToken to registry
-        s.meTokens[meTokenAddr].owner = sender;
-        s.meTokens[meTokenAddr].hubId = hubId;
-        s.meTokens[meTokenAddr].balancePooled = assetsDeposited;
-
-        // Mint meToken to user
-        uint256 meTokensMinted;
         if (assetsDeposited > 0) {
-            meTokensMinted = LibCurve.viewMeTokensMinted(
-                assetsDeposited, // deposit_amount
-                hubId, // hubId
-                0, // supply
-                0 // balancePooled
+            IVault(s.hubs[hubId].vault).handleDepositWithPermit(
+                sender,
+                s.hubs[hubId].asset,
+                assetsDeposited,
+                0,
+                deadline,
+                vSig,
+                rSig,
+                sSig
             );
-            IMeToken(meTokenAddr).mint(sender, meTokensMinted);
         }
-
-        emit Subscribe(
-            meTokenAddr,
-            sender,
-            meTokensMinted,
-            s.hubs[hubId].asset,
-            assetsDeposited,
-            name,
-            symbol,
-            hubId
-        );
+        LibMeToken.subscribe(sender, name, symbol, hubId, assetsDeposited);
     }
 
     /// @inheritdoc IMeTokenRegistryFacet
