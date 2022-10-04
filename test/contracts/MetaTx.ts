@@ -17,6 +17,7 @@ import {
   Diamond,
   OwnershipFacet,
 } from "../../artifacts/types";
+import { impersonate } from "../utils/hardhatNode";
 
 const setup = async () => {
   describe("Meta Transactions", () => {
@@ -27,8 +28,9 @@ const setup = async () => {
     let hub: HubFacet;
     let hubId: BigNumber;
     let singleAssetVault: SingleAssetVault;
-    let encodedVaultDAIArgs: string;
+    let encodedVaultUSDCArgs: string;
     let baseY: BigNumber;
+    let amount: BigNumber;
     let reserveWeight: number;
     let token: ERC20;
     let diamond: Diamond;
@@ -38,8 +40,9 @@ const setup = async () => {
     let ownershipFacet: OwnershipFacet;
     let refundRatio: number;
     let meTokenRegistry: MeTokenRegistryFacet;
-    let DAI: string;
-    let DAIWhale: string;
+    let USDC: string;
+    let USDCWhale: string;
+    let usdc: ERC20;
     let meToken: MeToken;
     const ForwardRequest = [
       { name: "from", type: "address" },
@@ -49,16 +52,25 @@ const setup = async () => {
       { name: "nonce", type: "uint256" },
       { name: "data", type: "bytes" },
     ];
+    const Permit = [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "nonce", type: "uint256" },
+      { name: "deadline", type: "uint256" },
+    ];
     before("setup", async () => {
-      ({ DAI, DAIWhale } = await getNamedAccounts());
-      encodedVaultDAIArgs = ethers.utils.defaultAbiCoder.encode(
+      ({ USDC, USDCWhale } = await getNamedAccounts());
+
+      encodedVaultUSDCArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
-        [DAI]
+        [USDC]
       );
       const PRECISION = ethers.utils.parseEther("1");
       const MAX_WEIGHT = 1000000;
       reserveWeight = MAX_WEIGHT / 2;
       baseY = PRECISION.div(1000);
+      amount = ethers.utils.parseUnits("20", 6);
 
       ({
         hub,
@@ -71,6 +83,11 @@ const setup = async () => {
         curve,
         foundry,
       } = await hubSetupWithoutRegister());
+
+      usdc = await getContractAt<ERC20>("ERC20", USDC);
+      const usdcWhale = await impersonate(USDCWhale);
+      await usdc.connect(usdcWhale).transfer(account2.address, amount);
+
       forwarder = await deploy<MinimalForwarder>("MinimalForwarder");
       ownershipFacet = await getContractAt<OwnershipFacet>(
         "OwnershipFacet",
@@ -91,12 +108,12 @@ const setup = async () => {
     it("should register a hub", async () => {
       const { data } = await hub.populateTransaction.register(
         account0.address,
-        DAI,
+        USDC,
         singleAssetVault.address,
         refundRatio,
         baseY,
         reserveWeight,
-        encodedVaultDAIArgs
+        encodedVaultUSDCArgs
       );
 
       if (!data) {
@@ -144,24 +161,24 @@ const setup = async () => {
         .withArgs(
           hubCount,
           account0.address,
-          DAI,
+          USDC,
           singleAssetVault.address,
           refundRatio,
           baseY,
           reserveWeight,
-          encodedVaultDAIArgs
+          encodedVaultUSDCArgs
         );
       expect(await forwarder.getNonce(message.from)).to.equal(1);
     });
     it("should revert if trying to register a hub with a non controller account", async () => {
       const { data } = await hub.populateTransaction.register(
         account0.address,
-        DAI,
+        USDC,
         singleAssetVault.address,
         refundRatio,
         baseY,
         reserveWeight,
-        encodedVaultDAIArgs
+        encodedVaultUSDCArgs
       );
       if (!data) {
         throw Error("No data");
@@ -256,7 +273,7 @@ const setup = async () => {
           meTokenAddr,
           account1.address,
           0,
-          DAI,
+          USDC,
           0,
           name,
           symbol,
@@ -266,35 +283,25 @@ const setup = async () => {
     });
 
     it("should subscribeWithPermit()", async () => {
-      const amount = ethers.utils.parseEther("20");
-      const res = await transferFromWhale(account1.address, DAI, DAIWhale);
-      token = res.token;
       /*
       BUILDING THE PERMIT SIGNATURE
       */
-      const Permit = [
-        { name: "owner", type: "address" },
-        { name: "spender", type: "address" },
-        { name: "value", type: "uint256" },
-        { name: "nonce", type: "uint256" },
-        { name: "deadline", type: "uint256" },
-      ];
       // NOTE: From https://rinkeby.etherscan.io/token/0xc7ad46e0b8a400bb3c915120d284aafba8fc4735#readContract
       const domainDai = {
-        name: "Dai Stablecoin",
-        version: "1",
+        name: "USD Coin",
+        version: "2",
         chainId: "1",
-        verifyingContract: DAI,
+        verifyingContract: USDC,
       };
       const permitMsg = {
-        owner: account1.address,
+        owner: account2.address,
         spender: singleAssetVault.address,
         value: amount,
         nonce: 0,
         deadline: ethers.constants.MaxUint256,
       };
 
-      const permitSig = await account1._signTypedData(
+      const permitSig = await account2._signTypedData(
         domainDai,
         { Permit },
         permitMsg
@@ -321,23 +328,23 @@ const setup = async () => {
       if (!data) {
         throw Error("No data");
       }
-      const gasLimit = await ethers.provider.estimateGas({
-        to: meTokenRegistry.address,
-        from: account1.address,
-        data,
-      });
+      // const gasLimit = await ethers.provider.estimateGas({
+      //   to: meTokenRegistry.address,
+      //   from: account2.address,
+      //   data,
+      // });
       const message = {
-        from: account1.address,
+        from: account2.address,
         to: hub.address,
         value: 0,
-        gas: gasLimit.toNumber() * 10,
+        gas: 3000000,
         nonce: 0,
         data,
       };
       const nonce = await forwarder.getNonce(message.from);
       expect(nonce).to.equal(0);
 
-      const signature = await account1._signTypedData(
+      const signature = await account2._signTypedData(
         domain,
         { ForwardRequest },
         message
@@ -352,12 +359,13 @@ const setup = async () => {
 
       expect(verifiedFromContract).to.equal(true);
 
-      expect(verifiedAddress).to.equal(account1.address);
+      expect(verifiedAddress).to.equal(account2.address);
 
       // @ts-ignore
-      const tx = await forwarder.connect(account2).execute(message, signature);
+      console.log("made it to execute");
+      const tx = await forwarder.connect(account1).execute(message, signature);
       const meTokenAddr = await meTokenRegistry.getOwnerMeToken(
-        account1.address
+        account2.address
       );
       meToken = await getContractAt<MeToken>("MeToken", meTokenAddr);
       expect(await meToken.totalSupply()).to.equal(0);
@@ -365,9 +373,9 @@ const setup = async () => {
         .to.emit(meTokenRegistry, "Subscribe")
         .withArgs(
           meTokenAddr,
-          account1.address,
+          account2.address,
           0,
-          DAI,
+          USDC,
           0,
           name,
           symbol,
@@ -377,8 +385,8 @@ const setup = async () => {
     });
 
     it("should mint", async () => {
-      const amount = ethers.utils.parseEther("20");
-      const res = await transferFromWhale(account1.address, DAI, DAIWhale);
+      const amount = ethers.utils.parseUnits("20", 6);
+      const res = await transferFromWhale(account1.address, USDC, USDCWhale);
       token = res.token;
       await token.connect(account1).approve(singleAssetVault.address, amount);
 
