@@ -2,16 +2,13 @@ import { ethers, getNamedAccounts, network } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Signer, BigNumber } from "ethers";
 import { expect } from "chai";
-import { fromETHNumber, getContractAt, toETHNumber } from "../../utils/helpers";
-import { impersonate, mineBlock } from "../../utils/hardhatNode";
+import { getContractAt } from "../../utils/helpers";
 import { hubSetup } from "../../utils/hubSetup";
 import {
-  HubFacet,
   FoundryFacet,
   MeTokenRegistryFacet,
   MeToken,
   ERC20,
-  MigrationRegistry,
   SingleAssetVault,
   IERC20Permit,
 } from "../../../artifacts/types";
@@ -22,17 +19,13 @@ const setup = async () => {
   describe("FoundryFacet.sol - DAI Permit", () => {
     let DAI: string;
     let dai: ERC20;
-    let DAIWhale: string;
     let account0: SignerWithAddress;
     let meTokenRegistry: MeTokenRegistryFacet;
     let foundry: FoundryFacet;
     let token: ERC20;
     let meToken: MeToken;
     let whale: Signer;
-    let daiWhale: Signer;
-    let hub: HubFacet;
     let singleAssetVault: SingleAssetVault;
-    let migrationRegistry: MigrationRegistry;
     let encodedVaultArgs: string;
     const hubId = 1;
     const name = "Carl meToken";
@@ -40,13 +33,10 @@ const setup = async () => {
     const initRefundRatio = 50000;
     const PRECISION = ethers.utils.parseEther("1");
     const amount = ethers.utils.parseEther("100");
-    const amountInETH = 100;
 
     const MAX_WEIGHT = 1000000;
     const reserveWeight = MAX_WEIGHT / 2;
     const baseY = PRECISION.div(1000);
-    const max = ethers.constants.MaxUint256;
-    const overrides = { gasLimit: 3000000 };
 
     let domain: TypedDataDomain;
     let message: Record<string, any>;
@@ -58,25 +48,18 @@ const setup = async () => {
     let snapshotId: any;
     before(async () => {
       snapshotId = await network.provider.send("evm_snapshot");
-      ({ DAI, DAIWhale } = await getNamedAccounts());
+      ({ DAI } = await getNamedAccounts());
       encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
         ["address"],
         [DAI]
       );
-      ({
-        token,
-        whale,
-        hub,
-        foundry,
-        singleAssetVault,
-        meTokenRegistry,
-        account0,
-      } = await hubSetup(
-        baseY,
-        reserveWeight,
-        encodedVaultArgs,
-        initRefundRatio
-      ));
+      ({ token, whale, foundry, singleAssetVault, meTokenRegistry, account0 } =
+        await hubSetup(
+          baseY,
+          reserveWeight,
+          encodedVaultArgs,
+          initRefundRatio
+        ));
 
       // Prefund owner/buyer w/ DAI
       dai = token;
@@ -121,9 +104,7 @@ const setup = async () => {
           dai.address
         )
       );
-      console.log(account0.address);
       const nonce = await daiPermit.nonces(account0.address);
-      console.log(nonce.toNumber());
       const expiry = 0;
 
       message = {
@@ -146,8 +127,7 @@ const setup = async () => {
       const daiBalOwner = await dai.balanceOf(account0.address);
       const daiBalVault = await dai.balanceOf(singleAssetVault.address);
 
-      /* tx */
-      const tx = await foundry
+      await foundry
         .connect(account0)
         .mintWithPermit(
           meToken.address,
@@ -156,10 +136,8 @@ const setup = async () => {
           expiry,
           v,
           r,
-          s,
-          overrides
+          s
         );
-      const receipt = await tx.wait();
 
       /* state checks  */
       const daiBalOwnerAfter = await dai.balanceOf(account0.address);
