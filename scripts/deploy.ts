@@ -24,17 +24,17 @@ import { verifyContract } from "./utils";
 
 const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 };
 const ETHERSCAN_CHAIN_IDS = [1, 3, 4, 5, 42];
-const SUPPORTED_NETWORK = [1, 4, 42, 100, 31337];
+const SUPPORTED_NETWORK = [1, 4, 5, 42, 100, 31337];
 const REFUND_RATIO = 800000;
 const contracts: { name?: string; address: string }[] = [];
 const deployDir = "deployment";
 const feeInitialization = [0, 0, 0];
 
 async function main() {
-  let [deployer, DAO] = await ethers.getSigners();
+  let [deployer] = await ethers.getSigners();
   const deployerAddr = await deployer.getAddress();
-  // NOTE: this is done when PK is used over mnemonic
-  DAO = deployer;
+  // NOTE: this is meTokens mainnet msig
+  let DAO = "0xee4a339c6E3E4637F8Ec86A4E4555dcc3D70ccD8";
   const { DAI } = await getNamedAccounts();
 
   const tokenAddr = DAI;
@@ -90,7 +90,7 @@ async function main() {
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
-    DAO.address, // DAO
+    DAO, // DAO
     diamond.address
   );
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
@@ -214,8 +214,9 @@ async function main() {
   if (!receipt.status) {
     throw Error(`Diamond upgrade failed: ${tx.hash}`);
   }
-  await vaultRegistry.approve(singleAssetVault.address);
-  console.log("curve and singleAssetVault approved");
+  tx = await vaultRegistry.approve(singleAssetVault.address);
+  receipt = await tx.wait();
+  console.log("singleAssetVault approved");
   let baseY = ethers.utils.parseEther("1");
   let reserveWeight = 500000;
   let encodedVaultArgs = ethers.utils.defaultAbiCoder.encode(
@@ -282,7 +283,7 @@ async function main() {
     console.log("Verifying Contracts...\n");
 
     await verifyContract("SingleAssetVault", singleAssetVault.address, [
-      DAO.address,
+      DAO,
       diamond.address,
     ]);
     await verifyContract("Diamond", diamond.address, [
