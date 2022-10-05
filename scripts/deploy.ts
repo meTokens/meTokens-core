@@ -31,10 +31,10 @@ const deployDir = "deployment";
 const feeInitialization = [0, 0, 0];
 
 async function main() {
-  let [deployer, DAO] = await ethers.getSigners();
+  let [deployer] = await ethers.getSigners();
   const deployerAddr = await deployer.getAddress();
-  // NOTE: this is done when PK is used over mnemonic
-  DAO = deployer;
+  // NOTE: this is meTokens mainnet msig
+  let DAO = "0xee4a339c6E3E4637F8Ec86A4E4555dcc3D70ccD8";
   const { DAI } = await getNamedAccounts();
 
   const tokenAddr = DAI;
@@ -90,7 +90,7 @@ async function main() {
   const singleAssetVault = await deploy<SingleAssetVault>(
     "SingleAssetVault",
     undefined, //no libs
-    DAO.address, // DAO
+    DAO, // DAO
     diamond.address
   );
   console.log("singleAssetVault deployed at:", singleAssetVault.address);
@@ -283,7 +283,7 @@ async function main() {
     console.log("Verifying Contracts...\n");
 
     await verifyContract("SingleAssetVault", singleAssetVault.address, [
-      DAO.address,
+      DAO,
       diamond.address,
     ]);
     await verifyContract("Diamond", diamond.address, [
