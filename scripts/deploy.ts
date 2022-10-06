@@ -51,10 +51,6 @@ async function main() {
 
   const minimalForwarder = await deploy<MinimalForwarder>("MinimalForwarder");
   console.log("minimalForwarder deployed at:", minimalForwarder.address);
-  contracts.push({
-    name: "contracts/registries/MinimalForwarder.sol:MinimalForwarder",
-    address: minimalForwarder.address,
-  });
 
   const migrationRegistry = await deploy<MigrationRegistry>(
     "MigrationRegistry"

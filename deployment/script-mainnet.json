@@ -1,0 +1,18 @@
+{
+  "network": "mainnet",
+  "Minimal Forwarder": "0x5fFb9EDD354f71AbE7F8bb26B8d9577D92B3efFd",
+  "Diamond Cut Facet Contract Address:": "0x82419BBb80C20BA4945Af39a11e26d3Be13E8C3C",
+  "Diamond Loupe Facet Contract Address:": "0x59F96e820A1f11Ad6FAeEE11513Ed163B109494B",
+  "Diamond Contract Address:": "0x0B4ec400e8D10218D0869a5b0036eA4BCf92d905",
+  "Curve Facet": "0x480e29421F2b490d014468D5C527516Ee7f86f10",
+  "Hub Facet Contract Address": "0x4555cf6E984186F6C0dfeba1A26764b21553B39f",
+  "Fee Facet Contract Address": "0x3FC010F716A77d065D0c98663eB1Ce6a291edBAA",
+  "Foundry Facet Contract Address": "0xA56AAF637b057a5EDf7b7252D0B7280042E71335",
+  "MeToken Registry Facet Contract Address": "0x8b91FcF2230ab04A46e2D83aaF062EC1B5AAAa5c",
+  "Ownership Facet Contract Address": "0xBf4c9c5eaf23C0210b343896Ad0aECb70d74bCFb",
+  "VaultRegistry Contract Address": "0x3b1265e3997349B100764BA08416CCc277fbeeFb",
+  "Migration Registry Contract Address": "0x247f600bAa33A3aAb7f93d6774Cb689ABC897517",
+  "SingleAsset Vault Contract Address": "0x6BB0B4889663f507f50110B1606CE80aBe9a738d",
+  "MeToken Factory Contract Address": "0x8D4ee3599aF814bF3Aa884c161f0dE81d9e97225",
+  "Block Number": "15684640"
+}
