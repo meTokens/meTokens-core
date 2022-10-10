@@ -99,7 +99,7 @@ const config: HardhatUserConfig = {
       default: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // here this will by default take the first account as deployer
       1: "0x6B175474E89094C44Da98b954EedeAC495271d0F", // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
       4: "0xc7ad46e0b8a400bb3c915120d284aafba8fc4735", // but for rinkeby it will be a specific address
-      goerli: "0x84b9514E013710b9dD0811c9Fe46b837a4A0d8E0", //it can also specify a specific netwotk name (specified in hardhat.config.js)
+      goerli: "0x0C4f55df47B20c8Fbb134494B45A7a01097849ff", //it can also specify a specific netwotk name (specified in hardhat.config.js)
     },
     DAIWhale: "0x47ac0Fb4F2D84898e4D9E7b4DaB3C24507a6D503",
     WETH: {

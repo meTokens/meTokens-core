@@ -11,6 +11,19 @@ import {IMeTokenRegistryFacet} from "../interfaces/IMeTokenRegistryFacet.sol";
 import {IMigrationRegistry} from "../interfaces/IMigrationRegistry.sol";
 import {IVault} from "../interfaces/IVault.sol";
 
+interface IDAI {
+    function permit(
+        address,
+        address,
+        uint256,
+        uint256,
+        bool,
+        uint8,
+        bytes32,
+        bytes32
+    ) external;
+}
+
 /// @title MeTokens Basic Vault
 /// @author Carter Carlson (@cartercarlson), Parv Garg (@parv3213), @zgorizzo69
 /// @notice Most basic vault implementation to be inherited by meToken vaults
@@ -46,15 +59,30 @@ contract Vault is IVault, Ownable, ReentrancyGuard {
         bytes32 r,
         bytes32 s
     ) external virtual override {
-        IERC20Permit(asset).permit(
-            from,
-            address(this),
-            depositAmount,
-            deadline,
-            v,
-            r,
-            s
-        );
+        // edge case for DAI - as it does not follow the permit standard
+        if (asset == 0x6B175474E89094C44Da98b954EedeAC495271d0F) {
+            IDAI(asset).permit(
+                from,
+                address(this),
+                IERC20Permit(asset).nonces(from),
+                deadline,
+                true,
+                v,
+                r,
+                s
+            );
+        } else {
+            IERC20Permit(asset).permit(
+                from,
+                address(this),
+                depositAmount,
+                deadline,
+                v,
+                r,
+                s
+            );
+        }
+
         handleDeposit(from, asset, depositAmount, feeAmount);
     }
 
